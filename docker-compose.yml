@@ -1,0 +1,40 @@
+services:
+  app:
+    build: .
+    image: butterfly_room:dev
+    container_name: butterfly_room-app
+    working_dir: /app
+    env_file:
+      - ./.env
+    volumes:
+      - .:/app:cached
+      - bundle-cache:/usr/local/bundle
+      - node-cache:/app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      RAILS_ENV: development
+      NODE_ENV: development
+      DATABASE_URL: postgres://postgres:postgres@db:5432/butterfly_room_development
+      # Windows でファイル監視を安定させるため:
+      WEB_CONCURRENCY: "0"
+      APP_HOST: localhost
+      APP_PORT: "3000"
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16
+    container_name: butterfly_room-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432" # ローカルから参照したい場合
+
+volumes:
+  bundle-cache:
+  node-cache:
+  pgdata:

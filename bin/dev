@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+set -e
+export PATH="/usr/local/bundle/bin:$PATH"   # 念のため
+exec /usr/local/bundle/bin/foreman start -f Procfile.dev
