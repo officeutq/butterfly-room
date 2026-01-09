@@ -194,5 +194,5 @@
 ## 13. リンク
 
 * [要件定義書](docs/02_要件定義書.md)
-* [基本設計_Phase](docs/03_基本設計（Phase 1）.md)
+* [基本設計_Phase](docs/03_基本設計_Phase1.md)
 * [Rails設計](docs/04_Rails設計.md)
