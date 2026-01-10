@@ -38,6 +38,9 @@
 !/app/assets/builds/.keep
 
 /node_modules/
+
+# Issue取得ツール
 /export_issues_with_body.ps1
 /project_export.tsv
 /issues_with_body.csv
+/_issues.json
