@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
 set -e
+export SASS_PATH=node_modules:$SASS_PATH
 export PATH="/usr/local/bundle/bin:$PATH"   # 念のため
 exec /usr/local/bundle/bin/foreman start -f Procfile.dev
