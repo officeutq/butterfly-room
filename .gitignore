@@ -40,7 +40,10 @@
 /node_modules/
 
 # Issue取得ツール
-/export_issues_with_body.ps1
+/export_github_project_with_body.ps1
 /project_export.tsv
 /issues_with_body.csv
+/issues_with_pr.csv
+/issues_with_pr_expanded.csv
 /_issues.json
+/_prs.json
