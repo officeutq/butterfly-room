@@ -1,14 +1,52 @@
 Rails.application.routes.draw do
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
-
-  # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
-  # Can be used by load balancers and uptime monitors to verify that the app is live.
   get "up" => "rails/health#show", as: :rails_health_check
 
-  # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
-  # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
-  # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
+  devise_for :users, skip: %i[registrations]
 
-  # Defines the root path route ("/")
-  # root "posts#index"
+  root "home#show"
+
+  # --- Public (customer) ---
+  resources :booths, only: %i[show]
+
+  resources :stream_sessions, only: [] do
+    resources :comments, only: %i[create], module: :stream_sessions
+    resources :drink_orders, only: %i[create], module: :stream_sessions
+
+    resource :presence, only: [] do
+      post :ping
+    end
+  end
+
+  namespace :wallet do
+    resources :purchases, only: %i[create]
+  end
+
+  get  "/checkout/return", to: "checkout#return"
+  post "/webhooks/stripe", to: "webhooks/stripe#create"
+
+  # --- Cast ---
+  namespace :cast do
+    resources :booths, only: %i[index show] do
+      patch :status, on: :member
+      resources :stream_sessions, only: %i[create], module: :booths
+    end
+
+    resources :stream_sessions, only: [] do
+      post :end, on: :member
+      get  :pending_drink_orders, on: :member
+    end
+
+    resources :drink_orders, only: [] do
+      post :consume, on: :member
+    end
+  end
+
+  # --- Store Admin ---
+  namespace :admin do
+    resource :store, only: %i[show update]
+    resources :booths, only: %i[index create update]
+    resources :drink_items, only: %i[index create update destroy]
+    resources :store_bans, only: %i[create destroy]
+    get "/cast_metrics", to: "metrics#cast"
+  end
 end
