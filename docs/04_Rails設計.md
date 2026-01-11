@@ -8,6 +8,25 @@
 * **通知（Turbo Streams）は“結果に応じて”Notifierに集約**
 * **PresenceはServiceで抽象化**（DB→Redis差し替え可能に）
 
+* **認証は Devise（User）を採用**：`users` は email+password を基本とし、`role`（enum）で customer/cast/store_admin/system_admin を管理
+
+---
+
+## 1.0.1 認証/認可（Devise）
+
+### 認証
+
+* Devise によるセッション認証を使用する
+  * 基本は `before_action :authenticate_user!`
+* ログイン主体は `User`（単一テーブル）
+
+### ロール（権限）
+
+* `users.role` を enum で管理（DB設計に準拠）
+* ルーティング/Controller では「認証 → ロール/所属チェック → Service」の順に統一する
+  * ロール/所属チェックは Policy（Pundit など）または `before_action` で実装（方針は後続Issueで確定）
+
+
 ---
 
 ## 1.1. ディレクトリ/クラス構成（例）
@@ -76,7 +95,7 @@ app/
 
 責務
 
-1. 認証（customer）
+1. Devise認証（authenticate_user!）＋role=customer を確認
 2. BANチェック（Policy or before_action）
 3. Service呼び出し
 4. 成功→JSON返す、失敗→エラーコード返す
