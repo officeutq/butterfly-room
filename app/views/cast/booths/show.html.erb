@@ -1,0 +1,51 @@
+<h1>Cast Booths#show</h1>
+
+<p>
+  booth: <strong>#<%= @booth.id %> <%= @booth.name %></strong>
+</p>
+
+<p>
+  status: <strong><%= @booth.status %></strong>
+</p>
+
+<p>
+  current_stream_session_id: <strong><%= @booth.current_stream_session_id || "-" %></strong>
+</p>
+
+<hr>
+
+<div class="d-flex gap-2 flex-wrap">
+  <%= button_to "開始",
+        cast_booth_stream_sessions_path(@booth),
+        method: :post,
+        class: "btn btn-primary",
+        disabled: !@booth.offline? %>
+
+  <%= button_to "席外し",
+        status_cast_booth_path(@booth, to: :away),
+        method: :patch,
+        class: "btn btn-warning",
+        disabled: !@booth.live? %>
+
+  <%= button_to "復帰",
+        status_cast_booth_path(@booth, to: :live),
+        method: :patch,
+        class: "btn btn-success",
+        disabled: !@booth.away? %>
+
+  <% if @booth.current_stream_session_id.present? %>
+    <%= button_to "終了",
+          finish_cast_stream_session_path(@booth.current_stream_session_id),
+          method: :post,
+          class: "btn btn-danger" %>
+  <% else %>
+    <button class="btn btn-danger" disabled>終了</button>
+  <% end %>
+</div>
+
+<hr>
+
+<p>
+  <%= link_to "戻る", cast_booths_path %> |
+  <%= link_to "home", root_path %>
+</p>

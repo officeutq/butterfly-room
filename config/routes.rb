@@ -32,7 +32,7 @@ Rails.application.routes.draw do
     end
 
     resources :stream_sessions, only: [] do
-      post :end, on: :member
+      post :finish, on: :member
       get  :pending_drink_orders, on: :member
     end
 

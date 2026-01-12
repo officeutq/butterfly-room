@@ -1,13 +1,15 @@
 <h1>home (stub)</h1>
 
-<p>
-  <%= link_to "cast booths", cast_booths_path %> |
-  <%= link_to "admin booths", admin_booths_path %>
-</p>
+<ul>
+  <li><%= link_to "Public booth show (id=1)", booth_path(1) %></li>
+  <li><%= link_to "Cast booths", cast_booths_path %></li>
+  <li><%= link_to "Admin booths", admin_booths_path %></li>
+</ul>
+
+<hr>
 
 <% if user_signed_in? %>
   <p>ログイン中: <%= current_user.email %>（role: <%= current_user.role %>）</p>
-
   <%= button_to "ログアウト", destroy_user_session_path, method: :delete %>
 <% else %>
   <%= link_to "ログイン", new_user_session_path %>
