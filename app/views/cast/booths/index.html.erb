@@ -1,0 +1,16 @@
+<h1>Cast Booths#index</h1>
+
+<ul>
+  <% @booths.each do |booth| %>
+    <li>
+      <%= link_to "booth ##{booth.id} #{booth.name} (#{booth.status})", cast_booth_path(booth) %>
+      <% if booth.current_stream_session_id.present? %>
+        / current_session: <%= booth.current_stream_session_id %>
+      <% end %>
+    </li>
+  <% end %>
+</ul>
+
+<p>
+  <%= link_to "home", root_path %>
+</p>

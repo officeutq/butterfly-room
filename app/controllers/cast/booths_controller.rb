@@ -1,11 +1,25 @@
 module Cast
-  class BoothsController < BaseController
+  class BoothsController < Cast::BaseController
     def index
-      render plain: "cast booths index (stub)"
+      @booths = Booth.order(:id)
     end
 
     def show
-      render plain: "cast booths show (stub)"
+      @booth = Booth.find(params[:id])
+    end
+
+    def status
+      booth = Booth.find(params[:id])
+
+      StreamSessions::StatusService.new(
+        booth: booth,
+        actor: current_user,
+        to_status: params[:to]
+      ).call
+
+      redirect_to cast_booth_path(booth), notice: "状態更新: #{params[:to]}"
+    rescue => e
+      redirect_to cast_booth_path(booth), alert: e.message
     end
   end
 end
