@@ -12,6 +12,16 @@
   current_stream_session_id: <strong><%= @booth.current_stream_session_id || "-" %></strong>
 </p>
 
+<% if @stream_session.present? %>
+  <div
+    data-controller="presence-poll"
+    data-presence-poll-summary-url-value="<%= presence_summary_stream_session_path(@stream_session) %>"
+    data-presence-poll-interval-ms-value="10000"
+  >
+    viewers: <span data-presence-poll-target="count">-</span>
+  </div>
+<% end %>
+
 <hr>
 
 <div class="d-flex gap-2 flex-wrap">

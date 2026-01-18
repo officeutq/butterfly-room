@@ -12,9 +12,11 @@ Rails.application.routes.draw do
     resources :comments, only: %i[create], module: :stream_sessions
     resources :drink_orders, only: %i[create], module: :stream_sessions
 
-    resource :presence, only: [] do
+    resource :presence, only: [], module: :stream_sessions do
       post :ping
     end
+
+    get :presence_summary, on: :member
   end
 
   namespace :wallet do
