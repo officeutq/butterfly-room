@@ -280,7 +280,7 @@ app/
 
 ---
 
-### 1.3.7 Presence::PingService / SummaryService
+### 1.3.7 Presences::PingService / SummaryService
 
 **Ping**
 

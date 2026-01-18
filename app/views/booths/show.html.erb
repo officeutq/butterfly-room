@@ -2,6 +2,21 @@
 
 <p>booth_id: <%= @booth_id %></p>
 
+<% if @stream_session.present? %>
+  <div
+    data-controller="presence-poll"
+    data-presence-poll-ping-url-value="<%= ping_stream_session_presence_path(@stream_session) %>"
+    data-presence-poll-summary-url-value="<%= presence_summary_stream_session_path(@stream_session) %>"
+    data-presence-poll-interval-ms-value="20000"
+  >
+    viewers: <span data-presence-poll-target="count">-</span>
+  </div>
+<% end %>
+
+<div class="d-flex justify-content-end mb-3">
+  <%= link_to "退室", root_path, class: "btn btn-outline-secondary" %>
+</div>
+
 <p>
   このページは customer 側の入り口（stub）。
   ここから stream_sessions 配下のURLを手で叩いて到達確認できます。

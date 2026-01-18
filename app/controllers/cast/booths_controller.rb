@@ -6,6 +6,7 @@ module Cast
 
     def show
       @booth = Booth.find(params[:id])
+      @stream_session = @booth.current_stream_session
     end
 
     def status
