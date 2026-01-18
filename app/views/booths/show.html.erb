@@ -13,9 +13,25 @@
   </div>
 <% end %>
 
-<div class="d-flex justify-content-end mb-3">
+<% if @stream_session.present? %>
+  <%= turbo_stream_from @stream_session, :comments %>
+
+  <div id="comments">
+    <%= render partial: "comments/comment", collection: @comments, as: :comment %>
+  </div>
+
+  <%= render "stream_sessions/comments/form", stream_session: @stream_session %>
+<% else %>
+  <p>配信中のみコメントできます</p>
+<% end %>
+
+<hr>
+
+<div class="d-flex justify-content mb-3">
   <%= link_to "退室", root_path, class: "btn btn-outline-secondary" %>
 </div>
+
+<hr>
 
 <p>
   このページは customer 側の入り口（stub）。
