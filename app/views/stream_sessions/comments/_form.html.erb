@@ -1,0 +1,6 @@
+<turbo-frame id="comment_form">
+  <%= form_with url: stream_session_comments_path(stream_session), scope: :comment do |f| %>
+    <%= f.text_field :body, maxlength: 200, required: true, autocomplete: "off", autofocus: true %>
+    <%= f.submit "送信" %>
+  <% end %>
+</turbo-frame>
