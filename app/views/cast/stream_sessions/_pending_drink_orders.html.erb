@@ -1,0 +1,22 @@
+<% pending = DrinkOrder
+  .includes(:drink_item)
+  .where(stream_session_id: stream_session.id, status: :pending)
+  .order(:created_at, :id) %>
+<div id="cast_pending_drink_orders">
+  <div class="vstack gap-2">
+    <% if pending.empty? %>
+      <div class="text-muted">未消化のドリンクはありません</div>
+    <% else %>
+      <% pending.each do |order| %>
+        <div class="card">
+          <div class="card-body py-2">
+            <div class="fw-semibold"><%= order.drink_item.name %></div>
+            <div class="text-muted small">
+              <%= l(order.created_at, format: :short) rescue order.created_at %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</div>

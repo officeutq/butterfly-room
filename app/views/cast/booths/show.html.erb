@@ -12,6 +12,11 @@
   current_stream_session_id: <strong><%= @booth.current_stream_session_id || "-" %></strong>
 </p>
 
+<p class="text-muted small">
+  debug: current_stream_session_id=<%= @booth.current_stream_session_id || "-" %>,
+  @stream_session_id=<%= @stream_session&.id || "-" %>
+</p>
+
 <% if @stream_session.present? %>
   <div
     data-controller="presence-poll"
@@ -21,7 +26,8 @@
     viewers: <span data-presence-poll-target="count">-</span>
   </div>
 <% end %>
-
+<hr>
+<div data-controller="stream-debug" class="text-muted small"></div>
 <hr>
 
 <div class="d-flex gap-2 flex-wrap">
@@ -56,7 +62,22 @@
 <hr>
 
 <% if @stream_session.present? %>
-  <%= turbo_stream_from @stream_session, :comments %>
+  <%= turbo_stream_from [@stream_session, :pending_drink_orders] %>
+<% end %>
+
+<div id="cast-pending-drink-orders-container">
+  <% if @stream_session.present? %>
+    <%= render "cast/stream_sessions/pending_drink_orders", stream_session: @stream_session %>
+  <% else %>
+    <div class="text-muted">配信が開始されていません</div>
+  <% end %>
+</div>
+
+<hr>
+
+<% if @stream_session.present? %>
+  <%# turbo_stream_from @stream_session, :comments %>
+  <%= turbo_stream_from [@stream_session, :comments] %>
 
   <div id="comments">
     <%= render partial: "comments/comment", collection: @comments, as: :comment %>
