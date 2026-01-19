@@ -1,5 +1,11 @@
 <h1>Public Booth#show (stub)</h1>
+<% if notice.present? %>
+  <div class="alert alert-success" role="alert"><%= notice %></div>
+<% end %>
 
+<% if alert.present? %>
+  <div class="alert alert-danger" role="alert"><%= alert %></div>
+<% end %>
 <p>booth_id: <%= @booth_id %></p>
 
 <% if @stream_session.present? %>
@@ -14,7 +20,8 @@
 <% end %>
 
 <% if @stream_session.present? %>
-  <%= turbo_stream_from @stream_session, :comments %>
+  <%# turbo_stream_from @stream_session, :comments %>
+  <%= turbo_stream_from [@stream_session, :comments] %>
 
   <div id="comments">
     <%= render partial: "comments/comment", collection: @comments, as: :comment %>
@@ -28,12 +35,26 @@
 <hr>
 
 <h2>ドリンクメニュー（enabledのみ）</h2>
-<% if @drink_items.any? %>
+
+<% if @stream_session.blank? %>
+  <p>配信中のみドリンク送信できます</p>
+
+<% elsif @drink_items.any? %>
   <ul>
     <% @drink_items.each do |item| %>
-      <li><%= item.name %>（<%= item.price_points %>pt）</li>
+      <li class="mb-2">
+        <%= item.name %>（<%= item.price_points %>pt）
+
+        <%= button_to "送信",
+              stream_session_drink_orders_path(@stream_session),
+              method: :post,
+              params: { drink_item_id: item.id },
+              form: { data: { turbo: false } },
+              class: "btn btn-sm btn-primary ms-2" %>
+      </li>
     <% end %>
   </ul>
+
 <% else %>
   <p>現在、表示できるドリンクがありません</p>
 <% end %>

@@ -16,7 +16,10 @@ module Cast
     end
 
     def pending_drink_orders
-      @stream_session_id = params[:id]
+      stream_session = StreamSession.find(params[:id])
+
+      render partial: "cast/stream_sessions/pending_drink_orders",
+             locals: { stream_session: stream_session }
     end
   end
 end
