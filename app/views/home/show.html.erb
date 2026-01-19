@@ -4,6 +4,9 @@
   <li><%= link_to "Public booth show (id=1)", booth_path(1) %></li>
   <li><%= link_to "Cast booths", cast_booths_path %></li>
   <li><%= link_to "Admin booths", admin_booths_path %></li>
+  <% if user_signed_in? && (current_user.store_admin? || current_user.system_admin?) %>
+    <li><%= link_to "Admin drink items", admin_drink_items_path %></li>
+  <% end %>
 </ul>
 
 <hr>

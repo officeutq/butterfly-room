@@ -1,0 +1,39 @@
+<%= form_with model: drink_item, url: url, method: method do |f| %>
+  <% if drink_item.errors.any? %>
+    <div class="alert alert-danger">
+      <ul class="mb-0">
+        <% drink_item.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="row g-3">
+    <div class="col-md-5">
+      <%= f.label :name, class: "form-label" %>
+      <%= f.text_field :name, class: "form-control" %>
+    </div>
+
+    <div class="col-md-3">
+      <%= f.label :price_points, class: "form-label" %>
+      <%= f.number_field :price_points, min: 1, class: "form-control" %>
+    </div>
+
+    <div class="col-md-2">
+      <%= f.label :position, class: "form-label" %>
+      <%= f.number_field :position, class: "form-control" %>
+    </div>
+
+    <div class="col-md-2 d-flex align-items-end">
+      <div class="form-check">
+        <%= f.check_box :enabled, class: "form-check-input" %>
+        <%= f.label :enabled, class: "form-check-label" %>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <%= f.submit "保存", class: "btn btn-primary" %>
+    </div>
+  </div>
+<% end %>

@@ -27,6 +27,19 @@
 
 <hr>
 
+<h2>ドリンクメニュー（enabledのみ）</h2>
+<% if @drink_items.any? %>
+  <ul>
+    <% @drink_items.each do |item| %>
+      <li><%= item.name %>（<%= item.price_points %>pt）</li>
+    <% end %>
+  </ul>
+<% else %>
+  <p>現在、表示できるドリンクがありません</p>
+<% end %>
+
+<hr>
+
 <div class="d-flex justify-content mb-3">
   <%= link_to "退室", root_path, class: "btn btn-outline-secondary" %>
 </div>
