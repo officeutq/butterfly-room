@@ -40,10 +40,14 @@ app/
     stream_sessions/presences_controller.rb
     wallet/purchases_controller.rb
     cast/
+      base_controller.rb
       booths_controller.rb
       stream_sessions_controller.rb
       drink_orders_controller.rb
+      booths/
+        stream_sessions_controller.rb
     admin/
+      base_controller.rb
       drink_items_controller.rb
       booths_controller.rb
       store_bans_controller.rb
@@ -54,12 +58,15 @@ app/
       start_service.rb
       end_service.rb
       status_service.rb
+      comments/
+        create_service.rb
     drink_orders/
       create_service.rb
       consume_service.rb
       refund_service.rb
       fifo_guard.rb
     wallets/
+      consume_service.rb
       hold_service.rb
       purchase_credit_service.rb
       release_service.rb
