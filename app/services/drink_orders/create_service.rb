@@ -59,7 +59,7 @@ module DrinkOrders
       end
 
       # commit後に通知（ロールバック時の誤通知防止）
-      DrinkOrderNotifier.replace_pending_list(drink_order)
+      DrinkOrderNotifier.replace_pending_lists(drink_order)
 
       Result.new(drink_order: drink_order, wallet: wallet.reload)
     end

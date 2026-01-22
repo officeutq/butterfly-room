@@ -2,18 +2,34 @@
   .includes(:drink_item)
   .where(stream_session_id: stream_session.id, status: :pending)
   .order(:created_at, :id) %>
+
 <div id="cast_pending_drink_orders">
   <div class="vstack gap-2">
     <% if pending.empty? %>
       <div class="text-muted">未消化のドリンクはありません</div>
     <% else %>
+      <% head_id = pending.first.id %>
+
       <% pending.each do |order| %>
         <div class="card">
-          <div class="card-body py-2">
-            <div class="fw-semibold"><%= order.drink_item.name %></div>
-            <div class="text-muted small">
-              <%= l(order.created_at, format: :short) rescue order.created_at %>
+          <div class="card-body py-2 d-flex justify-content-between align-items-center gap-2">
+            <div>
+              <div class="fw-semibold"><%= order.drink_item.name %></div>
+              <div class="text-muted small">
+                <%= l(order.created_at, format: :short) rescue order.created_at %>
+              </div>
             </div>
+
+            <% if order.id == head_id %>
+              <%= button_to "消化",
+                    consume_cast_drink_order_path(order),
+                    method: :post,
+                    class: "btn btn-sm btn-success" %>
+            <% elsif order.id == head_id %>
+              <button class="btn btn-sm btn-outline-secondary" disabled>先頭</button>
+            <% else %>
+              <button class="btn btn-sm btn-outline-secondary" disabled>待機</button>
+            <% end %>
           </div>
         </div>
       <% end %>
