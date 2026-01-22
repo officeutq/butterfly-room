@@ -62,7 +62,7 @@
 <hr>
 
 <% if @stream_session.present? %>
-  <%= turbo_stream_from [@stream_session, :pending_drink_orders] %>
+  <%= turbo_stream_from [@stream_session, :cast_pending_drink_orders] %>
 <% end %>
 
 <div id="cast-pending-drink-orders-container">
@@ -76,7 +76,6 @@
 <hr>
 
 <% if @stream_session.present? %>
-  <%# turbo_stream_from @stream_session, :comments %>
   <%= turbo_stream_from [@stream_session, :comments] %>
 
   <div id="comments">
