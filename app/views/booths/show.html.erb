@@ -45,6 +45,32 @@
 
 <hr>
 
+<h2>所持ポイント</h2>
+
+<% if user_signed_in? %>
+  <p>残高: <strong><%= @wallet&.available_points || 0 %>pt</strong></p>
+
+  <div class="d-flex gap-2 mb-3">
+    <%= button_to "1000pt 購入",
+          wallet_purchases_path,
+          method: :post,
+          params: { points: 1000, booth_id: @booth.id },
+          form: { data: { turbo: false } },
+          class: "btn btn-sm btn-outline-primary" %>
+
+    <%= button_to "3000pt 購入",
+          wallet_purchases_path,
+          method: :post,
+          params: { points: 3000, booth_id: @booth.id },
+          form: { data: { turbo: false } },
+          class: "btn btn-sm btn-outline-primary" %>
+  </div>
+<% else %>
+  <p class="text-muted">ログインすると購入できます</p>
+<% end %>
+
+<hr>
+
 <h2>ドリンクメニュー（enabledのみ）</h2>
 
 <% if @stream_session.blank? %>

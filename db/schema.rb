@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_11_060446) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_24_045637) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -163,6 +163,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_11_060446) do
     t.index ["store_id"], name: "index_stream_sessions_on_store_id"
   end
 
+  create_table "stripe_webhook_events", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "event_id", null: false
+    t.string "event_type", null: false
+    t.string "livemode"
+    t.jsonb "payload"
+    t.datetime "received_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_id"], name: "index_stripe_webhook_events_on_event_id", unique: true
+  end
+
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "display_name"
@@ -176,6 +187,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_11_060446) do
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
     t.index ["role"], name: "index_users_on_role"
+  end
+
+  create_table "wallet_purchases", force: :cascade do |t|
+    t.bigint "booth_id"
+    t.datetime "created_at", null: false
+    t.datetime "credited_at"
+    t.datetime "paid_at"
+    t.integer "points", null: false
+    t.integer "status", default: 0, null: false
+    t.string "stripe_checkout_session_id"
+    t.string "stripe_customer_id"
+    t.string "stripe_payment_intent_id"
+    t.datetime "updated_at", null: false
+    t.bigint "wallet_id", null: false
+    t.index ["booth_id"], name: "index_wallet_purchases_on_booth_id"
+    t.index ["stripe_checkout_session_id"], name: "index_wallet_purchases_on_stripe_checkout_session_id", unique: true
+    t.index ["wallet_id"], name: "index_wallet_purchases_on_wallet_id"
   end
 
   create_table "wallet_transactions", force: :cascade do |t|
@@ -229,6 +257,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_11_060446) do
   add_foreign_key "stream_sessions", "booths"
   add_foreign_key "stream_sessions", "stores"
   add_foreign_key "stream_sessions", "users", column: "started_by_cast_user_id"
+  add_foreign_key "wallet_purchases", "wallets"
   add_foreign_key "wallet_transactions", "wallets"
   add_foreign_key "wallets", "users", column: "customer_user_id"
 end
