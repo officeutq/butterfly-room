@@ -14,6 +14,7 @@ module StreamSessions
     def call
       authorize!
 
+      ended_session = nil
       StreamSession.transaction do
         session = StreamSession.lock.find(@stream_session.id)
         raise AlreadyEnded if session.ended_at.present?
@@ -26,16 +27,14 @@ module StreamSessions
           current_stream_session_id: nil
         )
 
-        # 返却Service呼び出し（Issue15では「接続だけ」）
-        # 実体が未実装なら TODO のままでもOK（ただしPhase1の最終要件では必須）
-        if defined?(DrinkOrders::RefundService)
-          DrinkOrders::RefundService.new(stream_session: session).call
-        end
+        DrinkOrders::RefundService.new(stream_session: session).call!
 
         session.update!(ended_at: Time.current, status: :ended)
 
-        session
+        ended_session = session
       end
+      StreamSessionNotifier.broadcast_ended(ended_session)
+      ended_session
     end
 
     private
