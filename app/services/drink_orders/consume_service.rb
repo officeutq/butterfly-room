@@ -29,7 +29,7 @@ module DrinkOrders
         raise NotHeadError if head.nil? || head.id != drink_order.id
 
         now = Time.current
-        points = drink_order.drink_item.price_points
+        points = hold_points_for!(drink_order)
 
         # reserved 減 + consume transaction 記録
         wallet = drink_order.customer_user.wallet
@@ -67,6 +67,13 @@ module DrinkOrders
       )
     rescue ActiveRecord::RecordNotUnique
       StoreLedgerEntry.find_by!(drink_order_id: drink_order.id)
+    end
+
+    def hold_points_for!(drink_order)
+      txs = WalletTransaction.where(kind: :hold, ref: drink_order).lock.to_a
+      raise MissingWalletError, "hold tx missing drink_order_id=#{drink_order.id}" if txs.empty?
+      raise MissingWalletError, "hold tx duplicated drink_order_id=#{drink_order.id}" if txs.size > 1
+      txs.first.points.abs
     end
   end
 end

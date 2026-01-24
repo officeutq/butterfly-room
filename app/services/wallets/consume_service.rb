@@ -19,8 +19,9 @@ module Wallets
           raise InsufficientReservedPoints
         end
 
-        @wallet.reserved_points -= @points
-        @wallet.save!
+        @wallet.update!(
+          reserved_points: @wallet.reserved_points - @points
+        )
 
         WalletTransaction.create!(
           wallet: @wallet,
