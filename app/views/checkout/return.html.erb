@@ -1,0 +1,23 @@
+<h1>ポイント購入</h1>
+
+<% if @status == "cancel" %>
+  <div class="alert alert-warning">購入はキャンセルされました。</div>
+<% elsif @status == "success" %>
+  <div class="alert alert-info">
+    決済は完了しました。反映まで少し時間がかかる場合があります。
+  </div>
+<% else %>
+  <div class="alert alert-danger">購入に失敗した可能性があります。</div>
+<% end %>
+
+<% if @wallet.present? %>
+  <p>現在の残高: <strong><%= @wallet.available_points %>pt</strong></p>
+<% else %>
+  <p class="text-muted">Wallet が見つかりません。</p>
+<% end %>
+
+<% if @booth_id.present? %>
+  <%= link_to "ブースへ戻る", booth_path(@booth_id), class: "btn btn-primary" %>
+<% else %>
+  <%= link_to "トップへ戻る", root_path, class: "btn btn-outline-secondary" %>
+<% end %>
