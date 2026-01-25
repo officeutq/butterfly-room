@@ -34,11 +34,16 @@
 ```
 app/
   controllers/
+    home_controller.rb
     booths_controller.rb
-    stream_sessions/comments_controller.rb
-    stream_sessions/drink_orders_controller.rb
-    stream_sessions/presences_controller.rb
-    wallet/purchases_controller.rb
+    checkout_controller.rb
+    stream_sessions_controller.rb
+    stream_sessions/
+      comments_controller.rb
+      drink_orders_controller.rb
+      presences_controller.rb
+    wallet/
+      purchases_controller.rb
     cast/
       base_controller.rb
       booths_controller.rb
@@ -52,6 +57,8 @@ app/
       booths_controller.rb
       store_bans_controller.rb
       metrics_controller.rb
+    webhooks/
+      stripe_controller.rb
 
   services/
     stream_sessions/
@@ -66,6 +73,8 @@ app/
       refund_service.rb
       fifo_guard.rb
     wallets/
+      apply_purchase_from_stripe_service.rb
+      create_checkout_service.rb
       consume_service.rb
       hold_service.rb
       purchase_credit_service.rb
