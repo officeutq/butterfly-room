@@ -2,8 +2,12 @@
 
 module StreamSessions
   class DrinkOrdersController < ApplicationController
+    include StoreBanGuard
+
     before_action :authenticate_user!
     before_action :require_customer!
+    before_action :set_stream_session
+    before_action :reject_banned_customer_for_stream_session!
 
     def create
       stream_session = StreamSession.find(params[:stream_session_id])
@@ -44,6 +48,14 @@ module StreamSessions
     end
 
     private
+
+    def set_stream_session
+      @stream_session = StreamSession.find(params[:stream_session_id])
+    end
+
+    def reject_banned_customer_for_stream_session!
+      reject_banned_customer!(store: @stream_session.store)
+    end
 
     def require_customer!
       head :forbidden unless current_user.customer?

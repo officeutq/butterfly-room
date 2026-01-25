@@ -50,7 +50,7 @@ Rails.application.routes.draw do
     resource :store, only: %i[show update]
     resources :booths, only: %i[index create update]
     resources :drink_items, only: %i[index create update destroy]
-    resources :store_bans, only: %i[create destroy]
+    resources :store_bans, only: %i[index create destroy]
     resources :casts, only: %i[index create destroy]
     get "/cast_metrics", to: "metrics#cast"
   end

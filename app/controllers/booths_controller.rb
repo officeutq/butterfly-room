@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
 class BoothsController < ApplicationController
+  include StoreBanGuard
+
+  before_action :set_booth, only: %i[show]
+  before_action :reject_banned_customer_for_booth!, only: %i[show]
+
   def show
-    @booth = Booth.find(params[:id])
     @stream_session = @booth.current_stream_session
     @drink_items = @booth.store.drink_items.enabled_only.ordered
 
@@ -23,5 +27,15 @@ class BoothsController < ApplicationController
       else
         []
       end
+  end
+
+  private
+
+  def set_booth
+    @booth = Booth.find(params[:id])
+  end
+
+  def reject_banned_customer_for_booth!
+    reject_banned_customer!(store: @booth.store)
   end
 end
