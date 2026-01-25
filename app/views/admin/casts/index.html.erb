@@ -1,0 +1,49 @@
+<h1>キャスト管理</h1>
+
+<h2 class="h5 mt-4">登録済みキャスト</h2>
+
+<table class="table table-sm">
+  <thead>
+    <tr>
+      <th>キャスト</th>
+      <th>Email</th>
+      <th class="text-end">操作</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @cast_memberships.each do |m| %>
+      <tr>
+        <td><%= m.user.display_name.presence || "-" %></td>
+        <td><%= m.user.email %></td>
+        <td class="text-end">
+          <%= button_to "削除",
+                        admin_cast_path(m),
+                        method: :delete,
+                        data: { turbo_confirm: "このキャスト登録を解除しますか？" },
+                        class: "btn btn-sm btn-outline-danger" %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<h2 class="h5 mt-4">キャストを追加</h2>
+
+<% if @candidate_cast_users.any? %>
+  <%= form_with model: @store_membership, url: admin_casts_path, scope: :store_membership do |f| %>
+    <div class="row g-2 align-items-end">
+      <div class="col-auto">
+        <%= f.label :user_id, "追加するキャスト", class: "form-label" %>
+        <%= f.select :user_id,
+                     options_from_collection_for_select(@candidate_cast_users, :id, :email),
+                     {},
+                     class: "form-select" %>
+      </div>
+      <div class="col-auto">
+        <%= f.submit "追加", class: "btn btn-primary" %>
+      </div>
+    </div>
+  <% end %>
+<% else %>
+  <p class="text-muted">追加できる cast ユーザーがいません。</p>
+<% end %>
