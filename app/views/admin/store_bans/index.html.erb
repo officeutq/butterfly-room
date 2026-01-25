@@ -1,0 +1,26 @@
+<h1>店舗BAN</h1>
+
+<%= form_with model: @store_ban, url: admin_store_bans_path, scope: :store_ban, method: :post do |f| %>
+  <div>
+    <%= f.label :customer_user_id, "customer_user_id" %>
+    <%= f.number_field :customer_user_id, required: true %>
+  </div>
+  <div>
+    <%= f.label :reason, "理由" %>
+    <%= f.text_field :reason %>
+  </div>
+  <%= f.submit "BANする" %>
+<% end %>
+
+<hr>
+
+<ul>
+  <% @store_bans.each do |ban| %>
+    <li>
+      user_id=<%= ban.customer_user_id %>
+      (<%= ban.customer_user&.email %>)
+      - <%= ban.reason %>
+      <%= button_to "解除", admin_store_ban_path(ban), method: :delete %>
+    </li>
+  <% end %>
+</ul>

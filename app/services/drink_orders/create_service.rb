@@ -22,11 +22,6 @@ module DrinkOrders
         raise Conflict
       end
 
-      # BAN
-      if StoreBan.exists?(store_id: booth.store_id, customer_user_id: @customer_user.id)
-        raise Forbidden
-      end
-
       # item 妥当性
       unless @drink_item.store_id == booth.store_id && @drink_item.enabled? && @drink_item.price_points.to_i.positive?
         raise InvalidItem

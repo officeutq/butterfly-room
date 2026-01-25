@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
 class StreamSessions::PresencesController < ApplicationController
+  include StoreBanGuard
+
   before_action :authenticate_user!
   before_action :set_stream_session
-  # before_action :require_customer! # 必要なら有効化
+  before_action :reject_banned_customer_for_stream_session!
 
   def ping
     Presences::PingService.new(
@@ -20,8 +22,7 @@ class StreamSessions::PresencesController < ApplicationController
     @stream_session = StreamSession.find(params[:stream_session_id])
   end
 
-  # def require_customer!
-  #   return if current_user.customer?
-  #   render json: { error: "forbidden" }, status: :forbidden
-  # end
+  def reject_banned_customer_for_stream_session!
+    reject_banned_customer!(store: @stream_session.store)
+  end
 end
