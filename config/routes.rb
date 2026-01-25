@@ -45,6 +45,8 @@ Rails.application.routes.draw do
 
   # --- Store Admin ---
   namespace :admin do
+    root "dashboard#show"
+
     resource :store, only: %i[show update]
     resources :booths, only: %i[index create update]
     resources :drink_items, only: %i[index create update destroy]

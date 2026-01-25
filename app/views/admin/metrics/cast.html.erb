@@ -1,0 +1,28 @@
+<h1>キャスト別数値一覧</h1>
+
+<p class="text-muted">
+  期間：直近30日（Phase1の暫定）
+</p>
+
+<table class="table table-sm">
+  <thead>
+    <tr>
+      <th>キャスト</th>
+      <th class="text-end">配信売上(pt)</th>
+      <th class="text-end">配信時間</th>
+      <th class="text-end">売上/時間</th>
+      <th class="text-end">実店舗売上(参照)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @rows.each do |r| %>
+      <tr>
+        <td><%= r.cast_display_name %></td>
+        <td class="text-end"><%= r.stream_sales_points %></td>
+        <td class="text-end"><%= seconds_to_hhmm(r.stream_seconds) %></td>
+        <td class="text-end"><%= r.sales_per_hour || "-" %></td>
+        <td class="text-end"><%= r.real_store_sales_yen || "-" %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

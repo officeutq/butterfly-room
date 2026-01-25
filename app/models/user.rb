@@ -4,4 +4,6 @@ class User < ApplicationRecord
   enum :role, { customer: 0, cast: 1, store_admin: 2, system_admin: 3 }
 
   has_one :wallet, foreign_key: :customer_user_id, dependent: :destroy, inverse_of: :customer_user
+  has_many :store_memberships, dependent: :destroy
+  has_many :stores, through: :store_memberships
 end
