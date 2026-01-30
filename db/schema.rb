@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_24_045637) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_30_055729) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -150,6 +150,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_24_045637) do
     t.bigint "booth_id", null: false
     t.datetime "created_at", null: false
     t.datetime "ended_at"
+    t.string "ivs_stage_arn"
     t.datetime "started_at", null: false
     t.bigint "started_by_cast_user_id", null: false
     t.integer "status", null: false
@@ -158,6 +159,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_24_045637) do
     t.index ["booth_id", "started_at"], name: "index_stream_sessions_on_booth_id_and_started_at"
     t.index ["booth_id"], name: "index_stream_sessions_on_booth_id"
     t.index ["ended_at"], name: "index_stream_sessions_on_ended_at"
+    t.index ["ivs_stage_arn"], name: "index_stream_sessions_on_ivs_stage_arn", unique: true, where: "(ivs_stage_arn IS NOT NULL)"
     t.index ["started_by_cast_user_id"], name: "index_stream_sessions_on_started_by_cast_user_id"
     t.index ["store_id", "started_at"], name: "index_stream_sessions_on_store_id_and_started_at"
     t.index ["store_id"], name: "index_stream_sessions_on_store_id"

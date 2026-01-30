@@ -67,3 +67,4 @@ end
 
 gem "devise", "~> 4.9"
 gem "stripe"
+gem "aws-sdk-ivsrealtime"
