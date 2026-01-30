@@ -61,6 +61,46 @@
 
 <hr>
 
+<div
+  class="card"
+  data-controller="camera-preview"
+  data-camera-preview-status-value="<%= @booth.status %>"
+  data-camera-preview-active-value="<%= (@booth.live? || @booth.away?) %>"
+>
+  <div class="card-header">
+    カメラプレビュー
+  </div>
+
+  <div class="card-body">
+    <video
+      class="w-100 rounded"
+      style="aspect-ratio: 16 / 9; background: #000;"
+      playsinline
+      autoplay
+      muted
+      data-camera-preview-target="video"
+    ></video>
+
+    <div class="mt-2 text-danger small" data-camera-preview-target="error"></div>
+
+    <div class="mt-2 d-flex gap-2">
+      <button type="button" class="btn btn-outline-secondary btn-sm" data-action="camera-preview#start">
+        プレビュー開始
+      </button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" data-action="camera-preview#stop">
+        停止
+      </button>
+    </div>
+
+    <%# offline のときの補足表示（任意） %>
+    <% if @booth.offline? %>
+      <div class="mt-2 text-muted small">配信開始（live/away）になると自動でプレビュー開始します</div>
+    <% end %>
+  </div>
+</div>
+
+<hr>
+
 <% if @stream_session.present? %>
   <%= turbo_stream_from [@stream_session, :cast_pending_drink_orders] %>
 <% end %>
