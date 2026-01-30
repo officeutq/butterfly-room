@@ -27,6 +27,9 @@ module StreamSessions
           started_by_cast_user: @actor
         )
 
+        # ここで Stage を確定（同一sessionなら固定）
+        StreamSessions::EnsureIvsStageService.new(stream_session: session).call
+
         booth.update!(
           status: :live,
           current_stream_session_id: session.id

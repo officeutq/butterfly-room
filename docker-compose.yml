@@ -10,6 +10,7 @@ services:
       - .:/app:cached
       - bundle-cache:/usr/local/bundle
       - node-cache:/app/node_modules
+      - ${USERPROFILE}\.aws:/root/.aws:ro
     ports:
       - "3000:3000"
     environment:
@@ -20,6 +21,8 @@ services:
       WEB_CONCURRENCY: "0"
       APP_HOST: localhost
       APP_PORT: "3000"
+      AWS_REGION: ap-northeast-1
+      AWS_PROFILE: default
     depends_on:
       - db
 
