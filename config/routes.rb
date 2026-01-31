@@ -11,6 +11,7 @@ Rails.application.routes.draw do
   resources :stream_sessions, only: [] do
     resources :comments, only: %i[create], module: :stream_sessions
     resources :drink_orders, only: %i[create], module: :stream_sessions
+    resources :ivs_participant_tokens, only: %i[create], module: :stream_sessions
 
     resource :presence, only: [], module: :stream_sessions do
       post :ping
