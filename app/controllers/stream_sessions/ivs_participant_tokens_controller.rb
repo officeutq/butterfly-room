@@ -8,6 +8,11 @@ module StreamSessions
       stream_session = StreamSession.find(params[:stream_session_id])
       role = params.require(:role)
 
+      # stage が未作成なら ensure（最小）
+      if stream_session.ivs_stage_arn.blank?
+        StreamSessions::EnsureIvsStageService.new(stream_session: stream_session).call
+      end
+
       token = Ivs::CreateParticipantTokenService.new(
         stream_session: stream_session,
         actor: current_user,
