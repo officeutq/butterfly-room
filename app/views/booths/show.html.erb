@@ -1,5 +1,9 @@
 <% content_for :head do %>
   <meta name="turbo-cache-control" content="no-cache">
+  <script
+    src="https://web-broadcast.live-video.net/1.30.0/amazon-ivs-web-broadcast.js"
+    data-turbo-track="reload"
+  ></script>
 <% end %>
 
 <h1>Public Booth#show (stub)</h1>
@@ -108,13 +112,41 @@
 
 <hr>
 
-<p>
-  このページは customer 側の入り口（stub）。
-  ここから stream_sessions 配下のURLを手で叩いて到達確認できます。
-</p>
+<% if @stream_session.present? && params[:debug_ivs].present? %>
+  <hr>
 
-<ul>
-  <li>POST /stream_sessions/:id/comments</li>
-  <li>POST /stream_sessions/:id/drink_orders</li>
-  <li>POST /stream_sessions/:id/presence/ping</li>
+  <div
+    class="card"
+    data-controller="ivs-viewer"
+    data-ivs-viewer-token-url-value="<%= stream_session_ivs_participant_tokens_path(@stream_session) %>"
+  >
+    <div class="card-header">
+      （デバッグ）IVS Viewer
+      <span class="ms-2 text-muted small" data-ivs-viewer-target="state">idle</span>
+    </div>
+
+    <div class="card-body">
+      <video
+        class="w-100 rounded"
+        style="aspect-ratio: 16 / 9; background: #000;"
+        playsinline
+        autoplay
+        controls
+        data-ivs-viewer-target="video"
+      ></video>
+
+      <div class="mt-2 text-danger small" data-ivs-viewer-target="error"></div>
+
+      <div class="mt-2 d-flex gap-2">
+        <button type="button" class="btn btn-primary btn-sm" data-action="ivs-viewer#start">
+          視聴開始
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-action="ivs-viewer#stop">
+          視聴停止
+        </button>
+      </div>
+    </div>
+  </div>
+<% end %>
+
 </ul>

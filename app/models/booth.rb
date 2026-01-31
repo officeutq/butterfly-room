@@ -7,4 +7,8 @@ class Booth < ApplicationRecord
   has_many :cast_users, through: :booth_casts, source: :cast_user
 
   enum :status, { offline: 0, live: 1, away: 2 }
+
+  def primary_cast_user_id
+    booth_casts.order(created_at: :desc, id: :desc).pick(:cast_user_id)
+  end
 end

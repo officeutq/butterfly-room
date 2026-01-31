@@ -68,7 +68,7 @@ module Ivs
 
     def capabilities_for(role)
       case role
-      when ROLE_PUBLISHER then %w[PUBLISH SUBSCRIBE]
+      when ROLE_PUBLISHER then %w[PUBLISH]
       when ROLE_VIEWER    then %w[SUBSCRIBE]
       end
     end

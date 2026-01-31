@@ -8,11 +8,17 @@ module Authorization
       # cast/system_admin の基本条件
       return false unless BoothPolicy.new(user, record.booth).cast_operate?
 
-      # 「その booth の cast」であること
-      # ただし、cast所属（booth.cast_users）が未整備でも、
-      # セッション開始者本人は publisher token を取得できるようにする
-      # TODO: booth.cast_users の整備
-      record.booth.cast_users.exists?(id: user.id) ||
+      booth = record.booth
+
+      # フェーズ1: 担当cast（primary）が設定されている場合は、その1人だけ許可
+      primary_cast_user_id = booth.primary_cast_user_id
+      if primary_cast_user_id.present?
+        return primary_cast_user_id == user.id
+      end
+
+      # 担当未設定の暫定措置：
+      # booth.cast_users の整備前でも、セッション開始者本人は publisher token を取得できるようにする
+      booth.cast_users.exists?(id: user.id) ||
         record.started_by_cast_user_id == user.id
     end
 
