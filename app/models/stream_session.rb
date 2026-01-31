@@ -5,4 +5,6 @@ class StreamSession < ApplicationRecord
   has_many :presences, dependent: :destroy
 
   enum :status, { live: 0, ended: 1 }
+
+  delegate :current_stream_session_id, :status, to: :booth, prefix: true
 end
