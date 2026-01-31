@@ -34,68 +34,79 @@
 ```
 app/
   controllers/
-    home_controller.rb
+    application_controller.rb
     booths_controller.rb
     checkout_controller.rb
+    home_controller.rb
     stream_sessions_controller.rb
-    stream_sessions/
-      comments_controller.rb
-      drink_orders_controller.rb
-      presences_controller.rb
-    wallet/
-      purchases_controller.rb
+    admin/
+      base_controller.rb
+      booths_controller.rb
+      casts_controller.rb
+      dashboard_controller.rb
+      drink_items_controller.rb
+      metrics_controller.rb
+      store_bans_controller.rb
     cast/
       base_controller.rb
       booths_controller.rb
-      stream_sessions_controller.rb
       drink_orders_controller.rb
+      stream_sessions_controller.rb
       booths/
         stream_sessions_controller.rb
-    admin/
-      base_controller.rb
-      drink_items_controller.rb
-      booths_controller.rb
-      store_bans_controller.rb
-      metrics_controller.rb
+    concerns/
+      store_ban_guard.rb
+    stream_sessions/
+      comments_controller.rb
+      drink_orders_controller.rb
+      ivs_participant_tokens_controller.rb
+      presences_controller.rb
+    wallet/
+      purchases_controller.rb
     webhooks/
       stripe_controller.rb
 
   services/
-    stream_sessions/
-      start_service.rb
-      end_service.rb
-      status_service.rb
-      comments/
-        create_service.rb
+    authorization/
+      application_policy.rb
+      booth_policy.rb
+      store_ban_checker.rb
+      stream_session_policy.rb
     drink_orders/
+      consume_service.rb
       create_service.rb
-      consume_service.rb
-      refund_service.rb
       fifo_guard.rb
-    wallets/
-      apply_purchase_from_stripe_service.rb
-      create_checkout_service.rb
-      consume_service.rb
-      hold_service.rb
-      purchase_credit_service.rb
-      release_service.rb
+      refund_service.rb
+    ivs/
+      client.rb
+      create_participant_token_service.rb
     presence/
       ping_service.rb
       summary_service.rb
-    authorization/
-      booth_policy.rb
-      stream_session_policy.rb
-      admin_policy.rb
+    stream_sessions/
+      end_service.rb
+      ensure_ivs_stage_service.rb
+      start_service.rb
+      status_service.rb
+      comments/
+        create_service.rb
+    wallets/
+      apply_purchase_from_stripe_service.rb
+      consume_service.rb
+      create_checkout_service.rb
+      hold_service.rb
+      purchase_credit_service.rb（未実装）
+      release_service.rb
 
   notifiers/
-    stream_session_notifier.rb
-    drink_order_notifier.rb
     comment_notifier.rb
+    drink_order_notifier.rb
+    stream_session_notifier.rb
 
   queries/
-    pending_drink_orders_query.rb
     cast_metrics_query.rb
-    presence_count_query.rb
+    pending_drink_orders_query.rb（未実装）
+    presence_count_query.rb（未実装）
 ```
 
 > Serviceが増えるのはOK。MVPでも「金銭と状態」があるので、
@@ -219,7 +230,7 @@ app/
 **処理（トランザクション）**
 
 1. セッション/ブース状態チェック（live/awayのみ）
-2. BANチェック
+
 3. itemが store に属し enabled であること確認
 4. `Wallets::HoldService`（available↓ reserved↑）
 5. drink_order(pending)作成
@@ -301,7 +312,6 @@ app/
 **Ping**
 
 * joined_at作成 or last_seen更新
-* BANなら403
 * endedなら409
 
 **Summary**
