@@ -105,8 +105,9 @@ class IvsParticipantTokensTest < ActionDispatch::IntegrationTest
     assert_equal "invalid_role", body["error"]
   end
 
-  test "stage_not_bound returns 409" do
-    @session.update!(ivs_stage_arn: nil)
+  test "not_joinable returns 409 when booth is offline (publisher)" do
+    # ensure を走らせないために joinable を崩す（validate_joinable! で 409）
+    @booth.update!(status: :offline)
 
     sign_in @cast, scope: :user
 
@@ -116,7 +117,7 @@ class IvsParticipantTokensTest < ActionDispatch::IntegrationTest
 
     assert_response :conflict
     body = JSON.parse(response.body)
-    assert_equal "stage_not_bound", body["error"]
+    assert_equal "not_joinable", body["error"]
   end
 
   test "not_joinable returns 409 when booth current_stream_session mismatches" do
