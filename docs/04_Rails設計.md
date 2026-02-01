@@ -29,7 +29,7 @@
 
 ---
 
-## 1.1. ディレクトリ/クラス構成（例）
+## 1.1. ディレクトリ/クラス構成
 
 ```
 app/
@@ -66,6 +66,51 @@ app/
     webhooks/
       stripe_controller.rb
 
+  helpers/
+    application_helper.rb
+    admin/
+      metrics_helper.rb
+
+  javascript/
+    application.js
+    controllers/
+      application.js
+      camera_preview_controller.js
+      index.js
+      ivs_publisher_controller.js
+      ivs_viewer_controller.js
+      presence_poll_controller.js
+      stream_debug_controller.js
+
+  models/
+    application_record.rb
+    booth_cast.rb
+    booth.rb
+    comment.rb
+    drink_item.rb
+    drink_order.rb
+    presence.rb
+    store_ban.rb
+    store_ledger_entry.rb
+    store_membership.rb
+    store.rb
+    stream_session.rb
+    stripe_webhook_event.rb
+    user.rb
+    wallet_purchase.rb
+    wallet_transaction.rb
+    wallet.rb
+
+  notifiers/
+    comment_notifier.rb
+    drink_order_notifier.rb
+    stream_session_notifier.rb
+
+  queries/
+    cast_metrics_query.rb
+    pending_drink_orders_query.rb（未実装）
+    presence_count_query.rb（未実装）
+
   services/
     authorization/
       application_policy.rb
@@ -98,15 +143,17 @@ app/
       purchase_credit_service.rb（未実装）
       release_service.rb
 
-  notifiers/
-    comment_notifier.rb
-    drink_order_notifier.rb
-    stream_session_notifier.rb
-
-  queries/
-    cast_metrics_query.rb
-    pending_drink_orders_query.rb（未実装）
-    presence_count_query.rb（未実装）
+config/
+  ...
+  routes.rb
+  ...
+  environments/
+    ...
+  initializers/
+    ...
+    stripe.rb
+  locales/
+    ...
 ```
 
 > Serviceが増えるのはOK。MVPでも「金銭と状態」があるので、
@@ -405,8 +452,8 @@ app/
 
 ---
 
-了解。では続けて **Railsルーティング案（REST構造）** と **モデル関連（ActiveRecord）**、さらに **enum/validation** と **マイグレーション順**まで、Phase1実装に直結する形でまとめます。
-※あなたの過去プロジェクト前提（Rails + Hotwire/Turbo、form_with）に寄せます。
+了解。では続けて **Railsルーティング（REST構造）** と **モデル関連（ActiveRecord）**、さらに **enum/validation** と **マイグレーション順**まで、Phase1実装に直結する形でまとめます。
+※プロジェクト前提（Rails + Hotwire/Turbo、form_with）に寄せます。
 
 ---
 
@@ -429,7 +476,7 @@ Rails.application.routes.draw do
     get  :presence_summary, on: :member
 
     # presence ping
-    resource :presence, only: [] do
+    resource :presence, only: [], module: :stream_sessions do
       post :ping
     end
 
@@ -438,6 +485,10 @@ Rails.application.routes.draw do
 
     # ドリンク注文（pending作成）
     resources :drink_orders, only: %i[create], module: :stream_sessions
+
+    resources :ivs_participant_tokens, only: %i[create], module: :stream_sessions
+
+    get :presence_summary, on: :member
   end
 end
 ```
@@ -472,7 +523,7 @@ Rails.application.routes.draw do
     end
 
     resources :stream_sessions, only: [] do
-      post :end, on: :member
+      post :finish, on: :member
       get  :pending_drink_orders, on: :member
     end
 
@@ -490,12 +541,15 @@ end
 ```ruby
 Rails.application.routes.draw do
   namespace :admin do
+    root "dashboard#show"
+
     resource :store, only: %i[show update]
 
     resources :booths, only: %i[index create update]
     resources :drink_items, only: %i[index create update destroy]
 
-    resources :store_bans, only: %i[create destroy]
+    resources :store_bans, only: %i[index create destroy]
+    resources :casts, only: %i[index create destroy]
     get "/cast_metrics", to: "metrics#cast"
   end
 end
@@ -618,24 +672,29 @@ end
 
 * User
 
-  * role: { customer: 0, cast: 1, store_admin: 2, system_admin: 3 }
+  * enum :role, { customer: 0, cast: 1, store_admin: 2, system_admin: 3 }
 
 * StoreMembership
 
-  * membership_role: { cast: 0, admin: 1 }
+  * enum :membership_role, { cast: 0, admin: 1 }
 
 * Booth
 
-  * status: { offline: 0, live: 1, away: 2 }
+  * enum :status, { offline: 0, live: 1, away: 2 }
 
 * DrinkOrder
 
-  * status: { pending: 0, consumed: 1, refunded: 2 }
+  * enum :status, { pending: 0, consumed: 1, refunded: 2 }
 
 * WalletTransaction
 
-  * kind: { purchase: 0, hold: 1, release: 2, consume: 3, adjustment: 4 }
+  * enum :kind, { purchase: 0, hold: 1, release: 2, consume: 3, adjustment: 4 }
 
+* StreamSession
+  * enum :status, { live: 0, ended: 1 }
+
+* WalletPurchase
+  * enum :status, {pending: 0, paid: 1, credited: 2, canceled: 3, failed: 4 }
 ---
 
 ## 4.2 validation（最低限）
