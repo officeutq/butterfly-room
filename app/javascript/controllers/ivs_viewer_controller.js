@@ -8,12 +8,25 @@ export default class extends Controller {
 
   connect() {
     this._stage = null
+    this._lastJoinable = null
+
     this._beforeCache = () => this.stop()
     document.addEventListener("turbo:before-cache", this._beforeCache)
+
+    this._onJoinable = (e) => {
+      if (e?.detail?.joinable === false) {
+        // Rails状態が正：joinable=false なら viewer を止める
+        this._setError("配信が終了しました")
+        this.stop()
+      }
+    }
+    window.addEventListener("stream-session:joinable", this._onJoinable)
+
     this._setState("idle")
   }
 
   disconnect() {
+    window.removeEventListener("stream-session:joinable", this._onJoinable)
     document.removeEventListener("turbo:before-cache", this._beforeCache)
     this.stop()
   }
@@ -38,21 +51,25 @@ export default class extends Controller {
 
       this._stage = new Stage(token, strategy)
 
-      // 接続状態ログ
-      if (StageEvents?.STAGE_CONNECTION_STATE_CHANGED) {
-        this._stage.on(StageEvents.STAGE_CONNECTION_STATE_CHANGED, (state) => {
+      // 接続状態ログ（存在するときだけ）
+      const evtConn = StageEvents?.STAGE_CONNECTION_STATE_CHANGED
+      if (evtConn) {
+        this._stage.on(evtConn, (state) => {
           console.log("[ivs-viewer] connection state:", state)
           this._setState(String(state))
         })
       }
 
-      // 受信した MediaStreamTrack を video に流す
-      // ※ イベント名は SDK バージョンで差が出ることがあるので、
-      //   まずは “参加者/ストリームが追加されたら track を拾う” だけに寄せる
-      this._stage.on(StageEvents?.STAGE_PARTICIPANT_STREAMS_ADDED, (participant, streams) => {
-        const tracks = streams.flatMap((s) => (s.mediaStreamTrack ? [s.mediaStreamTrack] : []))
-        this._attachTracks(tracks)
-      })
+      // 受信トラック（存在するときだけ）
+      const evtAdded = StageEvents?.STAGE_PARTICIPANT_STREAMS_ADDED
+      if (evtAdded) {
+        this._stage.on(evtAdded, (_participant, streams) => {
+          const tracks = streams.flatMap((s) => (s.mediaStreamTrack ? [s.mediaStreamTrack] : []))
+          this._attachTracks(tracks)
+        })
+      } else {
+        console.warn("[ivs-viewer] StageEvents.STAGE_PARTICIPANT_STREAMS_ADDED is missing")
+      }
 
       await this._stage.join()
       this._setState("joined")
@@ -67,6 +84,7 @@ export default class extends Controller {
     try {
       if (this._stage) this._stage.leave()
     } catch (_) {
+      // noop
     } finally {
       this._stage = null
       if (this.hasVideoTarget) this.videoTarget.srcObject = null
@@ -95,8 +113,9 @@ export default class extends Controller {
 
   _attachTracks(tracks) {
     if (!tracks.length) return
+    if (!this.hasVideoTarget) return
 
-    // track から MediaStream を作って video に流す
+    // フェーズ1：1キャスト前提なので「毎回上書き」でOK
     const ms = new MediaStream()
     tracks.forEach((t) => ms.addTrack(t))
 
@@ -120,6 +139,7 @@ export default class extends Controller {
     const msg = `${err?.message || err}`
     if (msg.includes("token_api_failed(403)")) return "視聴権限がありません（forbidden）"
     if (msg.includes("token_api_failed(409)")) return "視聴できない状態です（配信中か確認）"
+    if (msg.includes("IVS SDK not loaded")) return "IVS SDK の読み込みに失敗しました（script tag を確認してください）。"
     return `視聴開始に失敗しました: ${msg}`
   }
 }

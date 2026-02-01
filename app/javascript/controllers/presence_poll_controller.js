@@ -51,5 +51,15 @@ export default class extends Controller {
 
     const data = await res2.json()
     this.countTarget.textContent = String(data.viewer_count ?? "-")
+
+    if (typeof data.joinable === "boolean") {
+      const next = data.joinable
+      if (this._lastJoinable !== next) {
+        this._lastJoinable = next
+        window.dispatchEvent(
+          new CustomEvent("stream-session:joinable", { detail: { joinable: next } })
+        )
+      }
+    }
   }
 }

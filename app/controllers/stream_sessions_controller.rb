@@ -13,7 +13,13 @@ class StreamSessionsController < ApplicationController
       threshold_seconds: 45
     ).call!
 
-    render json: { viewer_count: viewer_count }
+    joinable = Ivs::CreateParticipantTokenService.new(
+      stream_session: @stream_session,
+      actor: current_user,
+      role: Ivs::CreateParticipantTokenService::ROLE_VIEWER
+    ).joinable?
+
+    render json: { viewer_count: viewer_count, joinable: joinable }
   end
 
   private

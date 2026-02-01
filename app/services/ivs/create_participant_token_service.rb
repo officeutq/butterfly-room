@@ -33,6 +33,16 @@ module Ivs
       resp.participant_token.token
     end
 
+    def joinable?
+      return false if @stream_session.ivs_stage_arn.blank?
+
+      booth = @stream_session.booth
+
+      @stream_session.live? &&
+        %w[live away].include?(booth.status) &&
+        booth.current_stream_session_id == @stream_session.id
+    end
+
     private
 
     def validate_role!
@@ -42,15 +52,7 @@ module Ivs
 
     def validate_joinable!
       raise StageNotBound, "ivs_stage_arn is blank" if @stream_session.ivs_stage_arn.blank?
-
-      booth = @stream_session.booth
-
-      joinable =
-        @stream_session.live? &&
-        %w[live away].include?(booth.status) &&
-        booth.current_stream_session_id == @stream_session.id
-
-      raise NotJoinable, "not joinable" unless joinable
+      raise NotJoinable, "not joinable" unless joinable?
     end
 
     def authorize!
