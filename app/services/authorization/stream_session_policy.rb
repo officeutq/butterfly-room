@@ -28,7 +28,7 @@ module Authorization
       # viewer: customer または admin（store_admin/system_admin）
       allowed =
         user.customer? ||
-        BoothPolicy.new(user: user, record: record.booth).admin_operate?
+        BoothPolicy.new(user, record.booth).admin_operate?
 
       return false unless allowed
 

@@ -1,0 +1,33 @@
+<div
+  class="card"
+  data-controller="ivs-viewer"
+  data-ivs-viewer-token-url-value="<%= stream_session_ivs_participant_tokens_path(stream_session) %>"
+>
+  <div class="card-header">
+    視聴
+    <span class="ms-2 text-muted small" data-ivs-viewer-target="state">idle</span>
+  </div>
+
+  <div class="card-body">
+    <video
+      class="w-100 rounded"
+      style="aspect-ratio: 16 / 9; background: #000;"
+      playsinline
+      autoplay
+      muted
+      controls
+      data-ivs-viewer-target="video"
+    ></video>
+
+    <div class="mt-2 text-danger small" data-ivs-viewer-target="error"></div>
+
+    <div class="mt-2 d-flex gap-2">
+      <button type="button" class="btn btn-primary btn-sm" data-action="ivs-viewer#start">
+        視聴開始
+      </button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" data-action="ivs-viewer#stop">
+        視聴停止
+      </button>
+    </div>
+  </div>
+</div>
