@@ -7,10 +7,32 @@ module StreamSessions
     def create
       stream_session = StreamSession.find(params[:stream_session_id])
       role = params.require(:role)
+      booth = stream_session.booth
 
-      # stage が未作成なら ensure（最小）
-      if stream_session.ivs_stage_arn.blank?
-        StreamSessions::EnsureIvsStageService.new(stream_session: stream_session).call
+      case role
+      when "viewer"
+        # スタンバイ中は viewer を join させない（Issue #78）
+        unless booth.current_stream_session_id == stream_session.id && (booth.live? || booth.away?)
+          return render json: { error: "not_joinable" }, status: :conflict
+        end
+
+        # viewer 側トリガで stage を作らせない（事故防止）
+        if stream_session.ivs_stage_arn.blank?
+          return render json: { error: "stage_not_bound" }, status: :conflict
+        end
+
+      when "publisher"
+        # publisher はスタンバイでも token 取得 OK（ただし current_session 一致は必須）
+        unless booth.current_stream_session_id == stream_session.id && booth.status.to_sym.in?(%i[standby live away])
+          return render json: { error: "not_joinable" }, status: :conflict
+        end
+
+        # stage が未作成なら ensure（publisher 側でのみ）
+        if stream_session.ivs_stage_arn.blank?
+          StreamSessions::EnsureIvsStageService.new(stream_session: stream_session).call
+        end
+      else
+        return render json: { error: "invalid_role" }, status: :unprocessable_entity
       end
 
       token = Ivs::CreateParticipantTokenService.new(

@@ -37,10 +37,20 @@ module Ivs
       return false if @stream_session.ivs_stage_arn.blank?
 
       booth = @stream_session.booth
+      return false if booth.current_stream_session_id != @stream_session.id
 
-      @stream_session.live? &&
-        %w[live away].include?(booth.status) &&
-        booth.current_stream_session_id == @stream_session.id
+      booth_status = booth.status.to_s
+
+      case @role
+      when ROLE_PUBLISHER
+        # Issue #78: standby でも publisher は join/publish してよい
+        %w[standby live away].include?(booth_status)
+      when ROLE_VIEWER
+        # Issue #78: viewer は live/away のみ
+        %w[live away].include?(booth_status)
+      else
+        false
+      end
     end
 
     private

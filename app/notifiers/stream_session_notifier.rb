@@ -15,5 +15,13 @@ class StreamSessionNotifier
       partial: "cast/stream_sessions/ended",
       locals: { stream_session: stream_session }
     )
+
+    # viewer 側の映像領域を「終了表示」に差し替え（黒画面防止）
+    Turbo::StreamsChannel.broadcast_replace_to(
+      [ stream_session, :viewer_stage ],
+      target: "viewer_stage",
+      partial: "stream_sessions/viewer_ended",
+      locals: { stream_session: stream_session }
+    )
   end
 end
