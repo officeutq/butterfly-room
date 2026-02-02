@@ -27,9 +27,25 @@ module Cast
         to_status: params[:to]
       ).call
 
-      redirect_to cast_booth_path(booth), notice: "状態更新: #{params[:to]}"
+      respond_to do |format|
+        format.html do
+          redirect_to cast_booth_path(booth), notice: "状態更新: #{params[:to]}"
+        end
+
+        # fetch / Turbo Stream 経由は redirect しない（←これが重要）
+        format.turbo_stream { head :no_content }
+        format.json { render json: { ok: true }, status: :ok }
+        format.any  { head :no_content }
+      end
     rescue => e
-      redirect_to cast_booth_path(booth), alert: e.message
+      respond_to do |format|
+        format.html do
+          redirect_to cast_booth_path(booth), alert: e.message
+        end
+        format.turbo_stream { render plain: e.message, status: :unprocessable_entity }
+        format.json { render json: { error: e.message }, status: :unprocessable_entity }
+        format.any  { render plain: e.message, status: :unprocessable_entity }
+      end
     end
   end
 end
