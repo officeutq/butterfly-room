@@ -135,13 +135,134 @@ IVS SDK のイベントとして、最低限以下の概念を扱う。
 
 ---
 
+## 6.参加トークン発行API（Participant Token API）仕様（role分岐・スタンバイ封じ）
+
+### 目的
+
+* **配信事故防止**のため、**viewer 起点で Stage を作成しない**ことを保証する
+* **スタンバイ中は viewer が join できない**ことを API レベルで担保する（UI が残っていても安全）
+* publisher は **スタンバイ中でも準備を進められる**（token取得は許可）
+
+
+### 用語と状態
+
+* #### Booth.status（サーバ側の配信状態）
+
+  * `offline`：配信セッションなし
+  * `standby`：配信セッション作成済み（準備中）だが、視聴者には見せない
+  * `live`：配信中
+  * `away`：席外し中（視聴は継続するが、映像は切り替える想定）
+
+  ※ `standby` は既存 enum の末尾追加で導入する（既存値を壊さない）。
+
+### join 可能条件（最重要ルール）
+
+参加（token発行・join）の可否は **role（viewer/publisher）ごと**に判定する。
+
+* #### 共通条件
+
+  * `booth.current_stream_session_id == stream_session.id` が一致していること
+    → “今の配信セッション” と一致しない限り join 不可（409 not_joinable）
+
+* #### viewer の join 条件（厳格）
+
+  * `booth.status` が `live` または `away` のときのみ join 可能
+  * `standby` は **join 不可**
+  * `stream_session.ivs_stage_arn` が空の場合は **409 stage_not_bound**
+
+    * viewer 側のトリガで Stage を生成させない（事故防止）
+    * viewer role では Stage ensure（作成）を **行わない**
+
+* #### publisher の join 条件（準備を許可）
+
+  * `booth.status` が `standby` / `live` / `away` のいずれかなら join 可能（ただし current_session 一致は必須）
+  * `stream_session.ivs_stage_arn` が空の場合は **publisher role のみ** Stage ensure を実行してから token を発行する
+    → Stage の作成責務は publisher 側に限定する
+
+### Token API のレスポンス／エラー
+
+* #### 正常（200）
+
+  * `stream_session_id`
+  * `ivs_stage_arn`
+  * `role`
+  * `participant_token`
+
+* #### エラー（主にUI制御・事故防止目的）
+
+  * 404 `not_found`：stream_session が存在しない
+  * 422 `missing_role`：role パラメータがない
+  * 422 `invalid_role`：role が viewer/publisher 以外
+  * 409 `not_joinable`：join 条件を満たさない（current_session 不一致、viewer が standby など）
+  * 409 `stage_not_bound`：viewer で Stage 未準備（ivs_stage_arn 空）
+  * 403 `forbidden`：権限不足（サービス側の認可）
+
+### Stage 作成（EnsureIvsStageService）の責務分離
+
+* **Stage 作成（ensure）は publisher 起点のみ**で許可する
+
+  * viewer 起点では実行しない（万一 UI/JS が誤って呼んでも Stage が増えない）
+* `stream_session.ivs_stage_arn` が空の場合：
+
+  * viewer：409 `stage_not_bound`
+  * publisher：`EnsureIvsStageService` を実行してから token 発行
+
+### スタンバイ開始（StreamSessions::StartService）の仕様
+
+* #### 目的
+
+  * “配信準備中（スタンバイ）” をサーバ状態として確定させ、viewer を封じる
+  * Stage は **この時点では作成しない**（配信開始＝publisher join のタイミングで初めて作成）
+
+* #### 処理
+
+  * `booth.offline?` を前提に、新しい `stream_session` を作成
+  * Booth を `standby` にし、`current_stream_session_id` を新しいセッションに紐付ける
+  * `EnsureIvsStageService` は **呼ばない**
+
+
+* #### スタンバイ中の配信メタ情報入力
+
+  * スタンバイ開始時に `stream_sessions` を作成し、`booth.current_stream_session_id` に紐付ける。これにより、スタンバイ中に配信タイトル/説明（`stream_sessions.title / stream_sessions.description`）を編集可能とする。
+  * 編集は **current_session**一致かつ **booth.status=standby** の場合に限定し、配信中（live/away）は原則 read-only とする（事故防止）。
+  * 視聴側の表示は `stream_session.title` を優先し、未入力の場合は `booth.name` をフォールバック表示する。
+
+
+
+* #### 結果
+
+  * “スタンバイ中” は **セッションは存在する**が、viewer join は不可能（APIとUIで二重に封じる）
+
+### Public（viewer）画面の表示制御
+
+* #### 目的
+
+  * スタンバイ中に「黒画面」「繋がりそうなUI」を出さない
+  * ただし UI が残っても Token API が最後の砦として join を拒否する
+
+* #### 仕様
+
+  * `@stream_session` が存在し、かつ `booth.status` が `live` / `away` の場合のみ視聴UI（ivs_viewer）を表示する
+  * `@stream_session` が存在するが `booth.status` が `standby` の場合は、
+
+    * 視聴UIを表示しない
+    * 代わりに「配信準備中（スタンバイ）」を表示する
+
+### 設計上の狙い（まとめ）
+
+  * スタンバイ中は **UIでもAPIでも** viewer を join させない（二重防御）
+  * Stage 作成は publisher 起点に限定し、**viewer による stage 増殖事故**を構造的に防ぐ
+  * `booth.current_stream_session_id` を “正” として join 可否を判断し、**セッション整合性**を担保する
+
+---
+
 ## 6. 注意点・制約（フェーズ1）
 
 * 本番のスケールは IVS に委譲する（多数視聴を想定）
 * 認可は必ず Rails で行い、token 発行をゲートにする
-* Booth.status（live / away / offline）と映像UIは統合する
+* Booth.status（live / away / offline / standby）と映像UIは統合する
 
-  * live：配信中（通常映像）またはスタンバイ（未配信）。実際の publish 状態はフロントが保持する
+  * live：配信中（通常映像）。実際の publish 状態はフロントが保持する
   * away：配信継続。映像は「席外し中」画面へ切替（publisher/viewer とも同一映像）
   * offline：配信終了（Rails finish）。viewer 側は joinable=false を検知して終了状態へ
 
