@@ -3,19 +3,29 @@
 module Admin
   class BoothsController < Admin::BaseController
     before_action :require_current_store!, only: %i[watch]
-    before_action :set_booth, only: %i[show update watch]
-    before_action :authorize_update!, only: %i[update]
+    before_action :set_booth, only: %i[show edit update watch]
+    before_action :authorize_update!, only: %i[edit update]
 
     def index
       render plain: "admin booths index (stub)"
     end
 
     def show
-      render plain: "admin booths show (stub)"
+    end
+
+    def edit
     end
 
     def update
-      head :not_implemented
+      if remove_thumbnail_image?
+        @booth.thumbnail_image.purge_later if @booth.thumbnail_image.attached?
+      end
+
+      if @booth.update(booth_params)
+        redirect_to admin_booth_path(@booth), notice: "更新しました"
+      else
+        render :edit, status: :unprocessable_entity
+      end
     end
 
     def watch
@@ -41,6 +51,14 @@ module Admin
     def authorize_update!
       policy = Authorization::BoothPolicy.new(current_user, @booth)
       head :forbidden unless policy.update?
+    end
+
+    def booth_params
+      params.require(:booth).permit(:description, :thumbnail_image)
+    end
+
+    def remove_thumbnail_image?
+      params.dig(:booth, :remove_thumbnail_image) == "1"
     end
   end
 end

@@ -27,6 +27,10 @@
   </div>
 <% end %>
 <hr>
+<% policy = Authorization::BoothPolicy.new(current_user, @booth) %>
+<% if policy.update? %>
+  <%= link_to "ブース編集", edit_cast_booth_path(@booth), class: "btn btn-outline-secondary btn-sm" %>
+<% end %>
 <div data-controller="stream-debug" class="text-muted small"></div>
 <hr>
 

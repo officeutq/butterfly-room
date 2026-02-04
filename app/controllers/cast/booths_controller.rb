@@ -21,11 +21,18 @@ module Cast
     end
 
     def edit
-      render plain: "cast booths edit (stub)"
     end
 
     def update
-      head :not_implemented
+      if remove_thumbnail_image?
+        @booth.thumbnail_image.purge_later if @booth.thumbnail_image.attached?
+      end
+
+      if @booth.update(booth_params)
+        redirect_to cast_booth_path(@booth), notice: "更新しました"
+      else
+        render :edit, status: :unprocessable_entity
+      end
     end
 
     def status
@@ -67,6 +74,14 @@ module Cast
     def authorize_update!
       policy = Authorization::BoothPolicy.new(current_user, @booth)
       head :forbidden unless policy.update?
+    end
+
+    def booth_params
+      params.require(:booth).permit(:description, :thumbnail_image)
+    end
+
+    def remove_thumbnail_image?
+      params.dig(:booth, :remove_thumbnail_image) == "1"
     end
   end
 end
