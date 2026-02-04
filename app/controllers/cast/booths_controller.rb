@@ -1,11 +1,13 @@
 module Cast
   class BoothsController < Cast::BaseController
+    before_action :set_booth, only: %i[show status edit update]
+    before_action :authorize_update!, only: %i[edit update]
+
     def index
       @booths = Booth.order(:id)
     end
 
     def show
-      @booth = Booth.find(params[:id])
       @stream_session = @booth.current_stream_session
       @comments =
         if @stream_session.present?
@@ -16,6 +18,14 @@ module Cast
         else
           []
         end
+    end
+
+    def edit
+      render plain: "cast booths edit (stub)"
+    end
+
+    def update
+      head :not_implemented
     end
 
     def status
@@ -46,6 +56,17 @@ module Cast
         format.json { render json: { error: e.message }, status: :unprocessable_entity }
         format.any  { render plain: e.message, status: :unprocessable_entity }
       end
+    end
+
+    private
+
+    def set_booth
+      @booth = Booth.find(params[:id])
+    end
+
+    def authorize_update!
+      policy = Authorization::BoothPolicy.new(current_user, @booth)
+      head :forbidden unless policy.update?
     end
   end
 end

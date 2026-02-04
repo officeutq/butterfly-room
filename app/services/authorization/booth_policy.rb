@@ -11,5 +11,28 @@ module Authorization
     def admin_operate?
       user.store_admin? || user.system_admin?
     end
+
+    def edit?
+      update?
+    end
+
+    def update?
+      return false if user.blank?
+
+      return true if user.system_admin?
+      return false if user.customer?
+
+      if user.store_admin?
+        # store_admin：自分の store の booth のみ編集可
+        return user.store_memberships.admin_only.exists?(store_id: record.store_id)
+      end
+
+      if user.cast?
+        # cast：所属する booth のみ編集可
+        return record.booth_casts.exists?(cast_user_id: user.id)
+      end
+
+      false
+    end
   end
 end
