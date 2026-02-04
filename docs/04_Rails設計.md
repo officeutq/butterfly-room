@@ -143,6 +143,44 @@ app/
       purchase_credit_service.rb（未実装）
       release_service.rb
 
+    views/
+      admin/
+        casts/
+          index.html.erb
+        dashboard/
+          show.html.erb
+        drink_items/
+          _form.html.erb
+          index.html.erb
+        metrics/
+          cast.html.erb
+        store_bans/
+          index.html.erb
+      booths/
+        show.html.erb
+      cast/
+        booths/
+          index.html.erb
+          show.html.erb
+        stream_sessions/
+          _ended.html.erb
+          _pending_drink_orders.html.erb
+      checkout/
+        return.html.erb
+      comments/
+        _comment.html.erb
+      home/
+        show.html.erb
+      layouts/
+        application.html.erb
+      stream_sessions/
+        _ended.html.erb
+        _ivs_viewer.html.erb
+        _pending_drink_orders.html.erb
+        _viewer_ended.html.erb
+        comments/
+          _form.html.erb
+
 config/
   ...
   routes.rb
