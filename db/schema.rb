@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_30_055729) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_04_032111) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -27,6 +27,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_30_055729) do
   create_table "booths", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "current_stream_session_id"
+    t.text "description"
     t.string "name", null: false
     t.integer "status", null: false
     t.bigint "store_id", null: false
