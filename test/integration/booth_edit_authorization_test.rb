@@ -49,7 +49,8 @@ class BoothEditAuthorizationTest < ActionDispatch::IntegrationTest
     sign_in @store_admin, scope: :user
 
     patch admin_booth_path(@booth1), params: { booth: { name: "x" } }
-    assert_response :not_implemented # update stubならこれでOK（403にならないのが重要）
+    assert_response :redirect
+    assert_redirected_to admin_booth_path(@booth1)
 
     patch admin_booth_path(@booth2), params: { booth: { name: "x" } }
     assert_response :forbidden
@@ -59,9 +60,11 @@ class BoothEditAuthorizationTest < ActionDispatch::IntegrationTest
     sign_in @system_admin, scope: :user
 
     patch admin_booth_path(@booth1), params: { booth: { name: "x" } }
-    assert_response :not_implemented
+    assert_response :redirect
+    assert_redirected_to admin_booth_path(@booth1)
 
     patch admin_booth_path(@booth2), params: { booth: { name: "x" } }
-    assert_response :not_implemented
+    assert_response :redirect
+    assert_redirected_to admin_booth_path(@booth2)
   end
 end
