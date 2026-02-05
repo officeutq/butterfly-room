@@ -1,0 +1,26 @@
+FROM ruby:3.3-slim
+
+ENV LANG=C.UTF-8 TZ=Asia/Tokyo \
+    BUNDLE_PATH=/usr/local/bundle \
+    BUNDLE_JOBS=4 BUNDLE_RETRY=3 \
+    PATH="/usr/local/bundle/bin:${PATH}"
+
+RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+    build-essential libpq-dev curl git nodejs npm \
+    pkg-config libyaml-dev \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# 先に Gemfile だけコピーして bundle install をキャッシュさせる
+COPY Gemfile Gemfile.lock ./
+RUN gem update --system -N && gem install bundler -N
+RUN bundle config set deployment 'true' \
+ && bundle config set without 'development test' \
+ && bundle install
+
+# アプリ本体をコピー
+COPY . .
+
+# 本番起動（Railsが 0.0.0.0 でlisten）
+CMD ["bash", "-lc", "bundle exec rails server -b 0.0.0.0 -p 3000"]
