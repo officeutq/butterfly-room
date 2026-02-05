@@ -7,7 +7,6 @@ Rails.application.config.assets.version = "1.0"
 # Rails.application.config.assets.paths << Emoji.images_path
 Rails.application.config.assets.paths << Rails.root.join("app/assets/builds")
 Rails.application.config.assets.paths << Rails.root.join("node_modules")
+# bootstrap-icons を含む vendor assets を全環境で解決させる
 Rails.application.config.assets.paths << Rails.root.join("vendor/assets")
 Rails.application.config.assets.paths << Rails.root.join("vendor/assets/stylesheets")
-Rails.application.config.assets.paths << Rails.root.join("vendor/assets/stylesheets/bootstrap-icons")
-Rails.application.config.assets.paths << Rails.root.join("vendor/assets/stylesheets/bootstrap-icons/fonts")
