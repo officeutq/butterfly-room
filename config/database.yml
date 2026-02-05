@@ -18,9 +18,18 @@ test:
         ) %>
 
 production:
-  <<: *default
-  url: <%= if (ENV["RAILS_ENV"] || ENV["RACK_ENV"]) == "production"
-             ENV.fetch("DATABASE_URL")
-           else
-             ENV["DATABASE_URL"] || "postgres://postgres:postgres@db:5432/dummy"
-           end %>
+  primary:
+    <<: *default
+    url: <%= ENV["DATABASE_URL"] || "postgres://postgres:postgres@localhost:5432/dummy" %>
+
+  cable:
+    <<: *default
+    url: <%= ENV["DATABASE_URL"] || "postgres://postgres:postgres@localhost:5432/dummy" %>
+
+  queue:
+    <<: *default
+    url: <%= ENV["DATABASE_URL"] || "postgres://postgres:postgres@localhost:5432/dummy" %>
+
+  cache:
+    <<: *default
+    url: <%= ENV["DATABASE_URL"] || "postgres://postgres:postgres@localhost:5432/dummy" %>
