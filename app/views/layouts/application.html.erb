@@ -21,7 +21,7 @@
     <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <% unless Rails.env.test? %>
-      <%= stylesheet_link_tag "bootstrap-icons", "data-turbo-track": "reload" %>
+      <%= stylesheet_link_tag "bootstrap-icons/font/bootstrap-icons", "data-turbo-track": "reload" %>
     <% end %>
     <%= javascript_importmap_tags %>
     <script
