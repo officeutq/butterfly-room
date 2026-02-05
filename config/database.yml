@@ -20,16 +20,16 @@ test:
 production:
   primary:
     <<: *default
-    url: <%= ENV.fetch("DATABASE_URL") %>
+    url: <%= ENV["DATABASE_URL"] || "postgres://postgres:postgres@localhost:5432/dummy" %>
 
   cable:
     <<: *default
-    url: <%= ENV.fetch("DATABASE_URL") %>
+    url: <%= ENV["DATABASE_URL"] || "postgres://postgres:postgres@localhost:5432/dummy" %>
 
   queue:
     <<: *default
-    url: <%= ENV.fetch("DATABASE_URL") %>
+    url: <%= ENV["DATABASE_URL"] || "postgres://postgres:postgres@localhost:5432/dummy" %>
 
   cache:
     <<: *default
-    url: <%= ENV.fetch("DATABASE_URL") %>
+    url: <%= ENV["DATABASE_URL"] || "postgres://postgres:postgres@localhost:5432/dummy" %>
