@@ -26,9 +26,7 @@ RUN test -f package.json && (npm ci || npm install) || true
 # アプリ本体をコピー
 COPY . .
 
-# ★ production build：css:build を必ず実行（SECRET_KEY_BASEはダミーでOK）
 ENV RAILS_ENV=production NODE_ENV=production
-RUN SECRET_KEY_BASE=dummy bundle exec rails css:build
 
 # （必要なら）assets:precompile はここでは “まだ入れない” 方針でOK
 # RUN SECRET_KEY_BASE=dummy bundle exec rails assets:precompile
