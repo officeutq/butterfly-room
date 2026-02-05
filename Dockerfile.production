@@ -19,8 +19,18 @@ RUN bundle config set deployment 'true' \
  && bundle config set without 'development test' \
  && bundle install
 
+# ★ npm 依存も先に入れてキャッシュ（cssbundling用）
+COPY package.json package-lock.json* ./
+RUN test -f package.json && (npm ci || npm install) || true
+
 # アプリ本体をコピー
 COPY . .
 
-# 本番起動（Railsが 0.0.0.0 でlisten）
+# ★ production build：css:build を必ず実行（SECRET_KEY_BASEはダミーでOK）
+ENV RAILS_ENV=production NODE_ENV=production
+RUN SECRET_KEY_BASE=dummy bundle exec rails css:build
+
+# （必要なら）assets:precompile はここでは “まだ入れない” 方針でOK
+# RUN SECRET_KEY_BASE=dummy bundle exec rails assets:precompile
+
 CMD ["bash", "-lc", "bundle exec rails server -b 0.0.0.0 -p 3000"]
