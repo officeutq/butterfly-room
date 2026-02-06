@@ -13,4 +13,5 @@ services:
     environment:
       RAILS_ENV: production
       NODE_ENV: production
+      RAILS_SERVE_STATIC_FILES: "true"
     restart: unless-stopped

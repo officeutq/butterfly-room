@@ -12,23 +12,21 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# 先に Gemfile だけコピーして bundle install をキャッシュさせる
 COPY Gemfile Gemfile.lock ./
 RUN gem update --system -N && gem install bundler -N
 RUN bundle config set deployment 'true' \
  && bundle config set without 'development test' \
  && bundle install
 
-# ★ npm 依存も先に入れてキャッシュ（cssbundling用）
 COPY package.json package-lock.json* ./
 RUN test -f package.json && (npm ci || npm install) || true
 
-# アプリ本体をコピー
 COPY . .
 
 ENV RAILS_ENV=production NODE_ENV=production
 
-# （必要なら）assets:precompile はここでは “まだ入れない” 方針でOK
-# RUN SECRET_KEY_BASE=dummy bundle exec rails assets:precompile
+# ★ここが本命：ビルド中に必ず precompile
+# credentials を要しないよう SECRET_KEY_BASE はダミーでOK（ビルド時のみ）
+RUN SECRET_KEY_BASE=dummy bundle exec rails assets:precompile
 
 CMD ["bash", "-lc", "bundle exec rails server -b 0.0.0.0 -p 3000"]
