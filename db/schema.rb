@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_07_010003) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_07_055613) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -190,7 +190,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_07_010003) do
     t.index ["booth_id", "started_at"], name: "index_stream_sessions_on_booth_id_and_started_at"
     t.index ["booth_id"], name: "index_stream_sessions_on_booth_id"
     t.index ["ended_at"], name: "index_stream_sessions_on_ended_at"
-    t.index ["ivs_stage_arn"], name: "index_stream_sessions_on_ivs_stage_arn", unique: true, where: "(ivs_stage_arn IS NOT NULL)"
+    t.index ["ivs_stage_arn"], name: "index_stream_sessions_on_ivs_stage_arn"
     t.index ["started_by_cast_user_id"], name: "index_stream_sessions_on_started_by_cast_user_id"
     t.index ["store_id", "started_at"], name: "index_stream_sessions_on_store_id_and_started_at"
     t.index ["store_id"], name: "index_stream_sessions_on_store_id"
