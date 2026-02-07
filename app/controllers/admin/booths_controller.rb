@@ -2,7 +2,7 @@
 
 module Admin
   class BoothsController < Admin::BaseController
-    before_action :require_current_store!
+    before_action :require_current_store_for_booths!
     before_action :set_booth, only: %i[show edit update watch]
     before_action :authorize_update!, only: %i[edit update]
 
@@ -68,8 +68,15 @@ module Admin
     private
 
     def set_booth
-      # current_store 制約をかける（他店舗ID直打ち防止）
-      @booth = current_store.booths.find(params[:id])
+      scope =
+        if current_user.system_admin?
+          Booth.all
+        else
+          # require_current_store! があるので current_store は必ずいる前提
+          current_store.booths
+        end
+
+      @booth = scope.find(params[:id])
     end
 
     def authorize_update!
@@ -94,6 +101,11 @@ module Admin
 
     def remove_thumbnail_image?
       params.dig(:booth, :remove_thumbnail_image) == "1"
+    end
+
+    def require_current_store_for_booths!
+      return if current_store.present?
+      head :forbidden
     end
   end
 end

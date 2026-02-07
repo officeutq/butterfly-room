@@ -20,6 +20,7 @@ module Admin
     helper_method :current_store
 
     def require_current_store!
+      return if current_user.system_admin?
       return if current_store.present?
 
       head :forbidden
