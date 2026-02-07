@@ -27,10 +27,11 @@ module StreamSessions
           return render json: { error: "not_joinable" }, status: :conflict
         end
 
-        # stage が未作成なら ensure（publisher 側でのみ）
+        # Stage 未束縛ならエラー（作成は booth 作成時に完了している前提）
         if stream_session.ivs_stage_arn.blank?
-          StreamSessions::EnsureIvsStageService.new(stream_session: stream_session).call
+          return render json: { error: "stage_not_bound" }, status: :conflict
         end
+
       else
         return render json: { error: "invalid_role" }, status: :unprocessable_entity
       end

@@ -16,7 +16,12 @@
   debug: current_stream_session_id=<%= @booth.current_stream_session_id || "-" %>,
   @stream_session_id=<%= @stream_session&.id || "-" %>
 </p>
-
+<% if @stream_session.present? %>
+  <p class="text-muted small">
+    debug: booth.ivs_stage_arn=<%= @booth.ivs_stage_arn || "-" %><br>
+    debug: session.ivs_stage_arn=<%= @stream_session.ivs_stage_arn || "-" %>
+  </p>
+<% end %>
 <% if @stream_session.present? %>
   <div
     data-controller="presence-poll"

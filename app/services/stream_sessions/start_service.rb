@@ -5,6 +5,7 @@ module StreamSessions
     class Error < StandardError; end
     class BoothNotOffline < Error; end
     class NotAuthorized < Error; end
+    class BoothStageNotBound < Error; end
 
     def initialize(booth:, actor:)
       @booth = booth
@@ -19,15 +20,17 @@ module StreamSessions
 
         raise BoothNotOffline, "booth is #{booth.status}" unless booth.offline?
 
+        raise BoothStageNotBound, "booth.ivs_stage_arn is blank" if booth.ivs_stage_arn.blank?
+
         session = StreamSession.create!(
           booth: booth,
           store: booth.store,
-          status: :live,
+          status: :live, # ※ここは現状維持でもOK（後で整理してもよい）
           started_at: Time.current,
-          started_by_cast_user: @actor
+          started_by_cast_user: @actor,
+          ivs_stage_arn: booth.ivs_stage_arn # ★ここが #123
         )
 
-        # ★スタンバイでは stage を作らない（publisher の配信開始時に作る）
         booth.update!(
           status: :standby,
           current_stream_session_id: session.id
@@ -40,9 +43,8 @@ module StreamSessions
     private
 
     def authorize!
-      # 最小：cast/system_adminのみ
-      # 追加：そのブースに所属しているか（booth_casts等）をここで担保
-      allowed = @actor.cast? || @actor.system_admin?
+      policy = Authorization::BoothPolicy.new(@actor, @booth)
+      allowed = policy.cast_operate? # これがあるなら
       raise NotAuthorized unless allowed
     end
   end
