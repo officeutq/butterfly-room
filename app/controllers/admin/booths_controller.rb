@@ -2,15 +2,38 @@
 
 module Admin
   class BoothsController < Admin::BaseController
-    before_action :require_current_store!, only: %i[watch]
+    before_action :require_current_store!
     before_action :set_booth, only: %i[show edit update watch]
     before_action :authorize_update!, only: %i[edit update]
 
     def index
-      render plain: "admin booths index (stub)"
+      # current_store 配下だけ出す（店舗管理なので）
+      @booths = current_store.booths.order(id: :desc)
     end
 
     def show
+    end
+
+    def new
+      @booth = current_store.booths.new
+      authorize_create!
+    end
+
+    def create
+      @booth = current_store.booths.new(booth_create_params)
+      authorize_create!
+
+      Booth.transaction do
+        @booth.save!
+        Booths::ProvisionIvsStageService.new(booth: @booth).call!
+      end
+
+      redirect_to admin_booth_path(@booth), notice: "ブースを作成しました"
+    rescue ActiveRecord::RecordInvalid
+      render :new, status: :unprocessable_entity
+    rescue Booths::ProvisionIvsStageService::StageProvisionFailed => e
+      @booth.errors.add(:base, "IVS Stage の作成に失敗しました: #{e.message}")
+      render :new, status: :unprocessable_entity
     end
 
     def edit
@@ -45,7 +68,8 @@ module Admin
     private
 
     def set_booth
-      @booth = Booth.find(params[:id])
+      # current_store 制約をかける（他店舗ID直打ち防止）
+      @booth = current_store.booths.find(params[:id])
     end
 
     def authorize_update!
@@ -53,6 +77,17 @@ module Admin
       head :forbidden unless policy.update?
     end
 
+    def authorize_create!
+      policy = Authorization::BoothPolicy.new(current_user, @booth)
+      head :forbidden unless policy.create?
+    end
+
+    # create 用（name など許可）
+    def booth_create_params
+      params.require(:booth).permit(:name, :description, :thumbnail_image)
+    end
+
+    # update 用（現状維持）
     def booth_params
       params.require(:booth).permit(:description, :thumbnail_image)
     end

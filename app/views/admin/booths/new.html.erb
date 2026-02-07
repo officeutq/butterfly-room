@@ -1,0 +1,33 @@
+<h1>ブース作成</h1>
+
+<%= form_with model: [:admin, @booth] do |f| %>
+  <% if @booth.errors.any? %>
+    <div class="alert alert-danger">
+      <ul class="mb-0">
+        <% @booth.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="mb-3">
+    <%= f.label :name, "ブース名", class: "form-label" %>
+    <%= f.text_field :name, class: "form-control", required: true %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :description, "説明文", class: "form-label" %>
+    <%= f.text_area :description, class: "form-control", rows: 6 %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :thumbnail_image, "サムネ画像", class: "form-label" %>
+    <%= f.file_field :thumbnail_image, class: "form-control" %>
+  </div>
+
+  <div class="d-flex gap-2">
+    <%= f.submit "作成する", class: "btn btn-primary" %>
+    <%= link_to "戻る", admin_booths_path, class: "btn btn-outline-secondary" %>
+  </div>
+<% end %>

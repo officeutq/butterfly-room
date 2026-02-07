@@ -49,7 +49,7 @@ Rails.application.routes.draw do
     root "dashboard#show"
 
     resource :store, only: %i[show update]
-    resources :booths, only: %i[index show edit create update] do
+    resources :booths, only: %i[index show new edit create update] do
       member do
         get :watch
       end
