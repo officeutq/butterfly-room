@@ -36,32 +36,24 @@ module Cast
     end
 
     def status
-      booth = Booth.find(params[:id])
-
       StreamSessions::StatusService.new(
-        booth: booth,
+        booth: @booth,
         actor: current_user,
         to_status: params[:to]
       ).call
 
       respond_to do |format|
-        format.html do
-          redirect_to cast_booth_path(booth), notice: "状態更新: #{params[:to]}"
-        end
-
-        # fetch / Turbo Stream 経由は redirect しない（←これが重要）
+        format.html { redirect_to cast_booth_path(@booth), notice: "状態更新: #{params[:to]}" }
         format.turbo_stream { head :no_content }
         format.json { render json: { ok: true }, status: :ok }
-        format.any  { head :no_content }
+        format.any { head :no_content }
       end
     rescue => e
       respond_to do |format|
-        format.html do
-          redirect_to cast_booth_path(booth), alert: e.message
-        end
+        format.html { redirect_to cast_booth_path(@booth), alert: e.message }
         format.turbo_stream { render plain: e.message, status: :unprocessable_entity }
         format.json { render json: { error: e.message }, status: :unprocessable_entity }
-        format.any  { render plain: e.message, status: :unprocessable_entity }
+        format.any { render plain: e.message, status: :unprocessable_entity }
       end
     end
 

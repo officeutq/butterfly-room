@@ -9,6 +9,10 @@ module StreamSessions
       role = params.require(:role)
       booth = stream_session.booth
 
+      if booth.ivs_stage_arn.present? && stream_session.ivs_stage_arn != booth.ivs_stage_arn
+        return render json: { error: "stage_mismatch" }, status: :conflict
+      end
+
       case role
       when "viewer"
         # スタンバイ中は viewer を join させない（Issue #78）
