@@ -5,20 +5,22 @@ module Admin
     private
 
     def current_store
-      return @current_store if defined?(@current_store)
+      return Store.first if current_user.system_admin?
 
       membership =
         StoreMembership
           .includes(:store)
-          .where(user_id: current_user.id, membership_role: StoreMembership.membership_roles[:admin])
+          .where(user_id: current_user.id, membership_role: :admin)
           .order(:id)
           .first
 
-      @current_store = membership&.store
+      membership&.store
     end
+
     helper_method :current_store
 
     def require_current_store!
+      return if current_user.system_admin?
       return if current_store.present?
 
       head :forbidden

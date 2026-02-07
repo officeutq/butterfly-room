@@ -16,6 +16,16 @@ module Authorization
       update?
     end
 
+    def create?
+      return false if user.blank?
+
+      return true if user.system_admin?
+      return false unless user.store_admin?
+
+      # store_admin：自分の store の booth のみ作成可
+      user.store_memberships.admin_only.exists?(store_id: record.store_id)
+    end
+
     def update?
       return false if user.blank?
 

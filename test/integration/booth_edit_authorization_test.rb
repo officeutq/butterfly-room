@@ -53,7 +53,7 @@ class BoothEditAuthorizationTest < ActionDispatch::IntegrationTest
     assert_redirected_to admin_booth_path(@booth1)
 
     patch admin_booth_path(@booth2), params: { booth: { name: "x" } }
-    assert_response :forbidden
+    assert_response :not_found
   end
 
   test "system_admin can update any booth" do

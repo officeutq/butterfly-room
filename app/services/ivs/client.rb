@@ -7,8 +7,8 @@ module Ivs
     end
 
     # returns stage arn
-    def create_stage!(name:)
-      resp = @client.create_stage(name: name)
+    def create_stage!(name:, tags: {})
+      resp = @client.create_stage(name: name, tags: tags)
       resp.stage.arn
     end
   end

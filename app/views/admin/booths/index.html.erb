@@ -1,0 +1,30 @@
+<h1>ブース管理</h1>
+
+<div class="mb-3">
+  <%= link_to "新規作成", new_admin_booth_path, class: "btn btn-primary" %>
+</div>
+
+<table class="table table-sm align-middle">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>名前</th>
+      <th>Status</th>
+      <th>IVS Stage ARN</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @booths.each do |booth| %>
+      <tr>
+        <td><%= booth.id %></td>
+        <td><%= booth.name %></td>
+        <td><%= booth.status %></td>
+        <td class="text-muted small"><%= booth.ivs_stage_arn.presence || "-" %></td>
+        <td class="text-end">
+          <%= link_to "詳細", admin_booth_path(booth), class: "btn btn-outline-secondary btn-sm" %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
