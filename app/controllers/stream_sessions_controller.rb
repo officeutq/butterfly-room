@@ -8,16 +8,28 @@ class StreamSessionsController < ApplicationController
   before_action :reject_banned_customer_for_stream_session!
 
   def presence_summary
-    viewer_count = Presences::SummaryService.new(
-      stream_session: @stream_session,
-      threshold_seconds: 45
-    ).call!
+    viewer_count =
+      begin
+        Presences::SummaryService.new(
+          stream_session: @stream_session,
+          threshold_seconds: 45
+        ).call!
+      rescue => e
+        Rails.logger.warn("[presence_summary] viewer_count failed: #{e.class} #{e.message}")
+        0
+      end
 
-    joinable = Ivs::CreateParticipantTokenService.new(
-      stream_session: @stream_session,
-      actor: current_user,
-      role: Ivs::CreateParticipantTokenService::ROLE_VIEWER
-    ).joinable?
+    joinable =
+      begin
+        Ivs::CreateParticipantTokenService.new(
+          stream_session: @stream_session,
+          actor: current_user,
+          role: Ivs::CreateParticipantTokenService::ROLE_VIEWER
+        ).joinable?
+      rescue => e
+        Rails.logger.warn("[presence_summary] joinable failed: #{e.class} #{e.message}")
+        false
+      end
 
     render json: { viewer_count: viewer_count, joinable: joinable }
   end
