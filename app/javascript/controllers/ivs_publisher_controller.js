@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["preview", "canvas", "error", "state", "awayAudio", "startBtn", "endBtn", "awayBtn", "backBtn"]
+  static targets = ["preview", "canvas", "error", "state", "awayAudio", "startBtn", "endBtn", "awayBtn", "backBtn", "summaryBtn"]
   static values = {
     tokenUrl: String,
     finishUrl: String,
@@ -20,7 +20,14 @@ export default class extends Controller {
     this._mode = this.initialModeValue === "away" ? "away" : "normal"
     this._raf = null
 
-    this._beforeCache = () => this.endBroadcast({ skipFinish: true })
+    // before-cache でフラグを立ててから片付ける
+    this._beforeCache = () => {
+      // 配信中（=join済み）だったら「復帰候補」を残す
+      if (this._broadcasting) {
+        sessionStorage.setItem(this._resumeKey(), "1")
+      }
+      this.endBroadcast({ skipFinish: true })
+    }
     document.addEventListener("turbo:before-cache", this._beforeCache)
 
     if (this.mirrorValue) {
@@ -32,12 +39,24 @@ export default class extends Controller {
     this._setState("idle")
     this._boothStatus = this.initialBoothStatusValue || "offline" // 画面の初期
     this._broadcasting = false // stage join 済みか
+
+    // ★復帰候補判定（live/away かつ resumeKeyあり）
+    this._resumable =
+      (this._boothStatus === "live" || this._boothStatus === "away") &&
+      sessionStorage.getItem(this._resumeKey()) === "1"
     this._syncUI()
   }
 
   disconnect() {
     document.removeEventListener("turbo:before-cache", this._beforeCache)
-    // ページ離脱時は後片付け優先（finishはしない）
+    // ★配信中に離脱したなら「復帰」候補を残す（finishはしない）
+    if (this._broadcasting) {
+      sessionStorage.setItem(this._resumeKey(), "1")
+    }
+    // サーバのfinishはしないが、Stageは確実に離脱する
+    try {
+      if (this._stage) this._stage.leave()
+    } catch (_) {}
     this._cleanupStage()
     this._cleanupMediaAndCanvas()
   }
@@ -119,6 +138,9 @@ export default class extends Controller {
       this._cleanupStage()
       this._cleanupMediaAndCanvas()
     }
+    sessionStorage.removeItem(this._resumeKey())
+    this._resumable = false
+    this._syncUI()
   }
 
   /**
@@ -203,6 +225,20 @@ export default class extends Controller {
 
     // 3) 席外し中 音声トグル
     this._syncAwayAudioUI()
+
+    // サマリーへ戻る
+    if (this.hasSummaryBtnTarget) {
+      const visible = (this._boothStatus === "standby") && !this._broadcasting
+      this.summaryBtnTarget.classList.toggle("d-none", !visible)
+      this.summaryBtnTarget.disabled = !visible
+    }
+
+    // ★startボタンのラベル切替（復帰候補なら「配信に戻る」）
+    if (this.hasStartBtnTarget) {
+      const normal = this.startBtnTarget.dataset.labelNormal || "配信開始"
+      const resume = this.startBtnTarget.dataset.labelResume || "配信に戻る"
+      this.startBtnTarget.textContent = this._resumable ? resume : normal
+    }
   }
 
   onBoothStatusPatched(event) {
@@ -415,5 +451,10 @@ export default class extends Controller {
     }
 
     return `配信開始に失敗しました: ${msg}`
+  }
+
+  _resumeKey() {
+    // booth単位で復帰候補を持つ
+    return `ivs:resume:${window.location.pathname}`
   }
 }

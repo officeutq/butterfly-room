@@ -3,7 +3,9 @@
 <ul>
   <% @booths.each do |booth| %>
     <li>
-      <%= link_to "booth ##{booth.id} #{booth.name} (#{booth.status})", cast_booth_path(booth) %>
+      <% path = booth.offline? ? cast_booth_path(booth) : live_cast_booth_path(booth) %>
+      <%= link_to "booth ##{booth.id} #{booth.name} (#{booth.status})", path %>
+
       <% if booth.current_stream_session_id.present? %>
         / current_session: <%= booth.current_stream_session_id %>
       <% end %>
