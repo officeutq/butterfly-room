@@ -117,6 +117,8 @@ app/
       booth_policy.rb
       store_ban_checker.rb
       stream_session_policy.rb
+    booths/
+      provision_ivs_stage_service.rb
     drink_orders/
       consume_service.rb
       create_service.rb
@@ -130,7 +132,6 @@ app/
       summary_service.rb
     stream_sessions/
       end_service.rb
-      ensure_ivs_stage_service.rb
       start_service.rb
       status_service.rb
       comments/
@@ -145,6 +146,11 @@ app/
 
     views/
       admin/
+        booths/
+          edit.html.erb
+          index.html.erb
+          new.html.erb
+          show.html.erb
         casts/
           index.html.erb
         dashboard/
@@ -160,6 +166,7 @@ app/
         show.html.erb
       cast/
         booths/
+          edit.html.erb
           index.html.erb
           show.html.erb
         stream_sessions/
