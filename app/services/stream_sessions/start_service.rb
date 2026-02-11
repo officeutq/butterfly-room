@@ -22,6 +22,10 @@ module StreamSessions
 
         raise BoothStageNotBound, "booth.ivs_stage_arn is blank" if booth.ivs_stage_arn.blank?
 
+        # NOTE:
+        # Stage は booth 固定。stream_session は booth.ivs_stage_arn をコピーして保持するだけ。
+        # stream_session 起点で Stage を作る処理は廃止済み（旧 EnsureIvsStageService）。
+
         session = StreamSession.create!(
           booth: booth,
           store: booth.store,

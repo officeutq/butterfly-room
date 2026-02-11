@@ -12,6 +12,11 @@ module Booths
       @ivs_client = ivs_client
     end
 
+    # NOTE:
+    # IVS Stage は「booth 固定」。stream_session 単位で create_stage しない。
+    # Stage 作成はこのサービス（Booths::ProvisionIvsStageService）に集約する。
+    # viewer/publisher token 発行などの経路から accidental create が起きないようにする。
+
     def call!
       @booth.with_lock do
         return @booth.ivs_stage_arn if @booth.ivs_stage_arn.present?

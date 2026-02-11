@@ -9,6 +9,8 @@ module StreamSessions
       role = params.require(:role)
       booth = stream_session.booth
 
+      # booth 固定 stage と stream_session の stage が一致しないのは不整合（事故/旧データ混在）
+      # すぐに 409 で止める
       if booth.ivs_stage_arn.present? && stream_session.ivs_stage_arn != booth.ivs_stage_arn
         return render json: { error: "stage_mismatch" }, status: :conflict
       end
@@ -21,6 +23,9 @@ module StreamSessions
         end
 
         # viewer 側トリガで stage を作らせない（事故防止）
+        # NOTE:
+        # Stage 作成は booth 側で完了している前提。
+        # token 発行のリクエストをトリガに Stage を作らせない（accidental create 防止）。
         if stream_session.ivs_stage_arn.blank?
           return render json: { error: "stage_not_bound" }, status: :conflict
         end
@@ -32,6 +37,9 @@ module StreamSessions
         end
 
         # Stage 未束縛ならエラー（作成は booth 作成時に完了している前提）
+        # NOTE:
+        # Stage 作成は booth 側で完了している前提。
+        # token 発行のリクエストをトリガに Stage を作らせない（accidental create 防止）。
         if stream_session.ivs_stage_arn.blank?
           return render json: { error: "stage_not_bound" }, status: :conflict
         end
