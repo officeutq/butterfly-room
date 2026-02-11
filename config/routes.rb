@@ -30,6 +30,7 @@ Rails.application.routes.draw do
   # --- Cast ---
   namespace :cast do
     resources :booths, only: %i[index show edit update] do
+      get :live, on: :member
       patch :status, on: :member
       resources :stream_sessions, only: %i[create], module: :booths
     end

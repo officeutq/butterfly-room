@@ -1,0 +1,149 @@
+<h1>Cast Booth（Live）</h1>
+
+<p>
+  booth: <strong>#<%= @booth.id %> <%= @booth.name %></strong>
+</p>
+
+<p>
+  status: <strong><%= @booth.status %></strong>
+</p>
+
+<p>
+  current_stream_session_id: <strong><%= @booth.current_stream_session_id || "-" %></strong>
+</p>
+
+<p class="text-muted small">
+  debug: current_stream_session_id=<%= @booth.current_stream_session_id || "-" %>,
+  @stream_session_id=<%= @stream_session&.id || "-" %>
+</p>
+
+<p class="text-muted small">
+  debug: booth.ivs_stage_arn=<%= @booth.ivs_stage_arn || "-" %><br>
+  debug: session.ivs_stage_arn=<%= @stream_session.ivs_stage_arn || "-" %>
+</p>
+
+<div
+  data-controller="presence-poll"
+  data-presence-poll-summary-url-value="<%= presence_summary_stream_session_path(@stream_session) %>"
+  data-presence-poll-interval-ms-value="10000"
+>
+  viewers: <span data-presence-poll-target="count">-</span>
+</div>
+
+<hr>
+
+<div data-controller="stream-debug" class="text-muted small"></div>
+
+<hr>
+
+<div
+  class="card"
+  data-controller="ivs-publisher"
+  data-ivs-publisher-token-url-value="<%= stream_session_ivs_participant_tokens_path(@stream_session) %>"
+  data-ivs-publisher-finish-url-value="<%= finish_cast_stream_session_path(@stream_session) %>"
+  data-ivs-publisher-status-url-value="<%= status_cast_booth_path(@booth) %>"
+  data-ivs-publisher-mirror-value="true"
+  data-ivs-publisher-initial-mode-value="<%= @booth.away? ? "away" : "normal" %>"
+  data-ivs-publisher-initial-booth-status-value="<%= @booth.status %>"
+>
+  <div class="card-header">
+    配信（Real-Time Stage）
+    <span class="ms-2 text-muted small" data-ivs-publisher-target="state">idle</span>
+
+      <%# ★サマリーへ戻る＝スタンバイ解除（StreamSession終了） %>
+      <% if @booth.standby? %>
+        <%= button_to "サマリーへ戻る",
+              finish_cast_stream_session_path(@stream_session),
+              method: :post,
+              class: "btn btn-outline-secondary",
+              data: { ivs_publisher_target: "summaryBtn" } %>
+      <% end %>
+  </div>
+
+  <div class="card-body">
+    <video class="w-100 rounded" style="aspect-ratio: 16 / 9; background: #000;"
+          playsinline autoplay muted
+          data-ivs-publisher-target="preview"></video>
+
+    <canvas class="w-100 rounded d-none"
+            style="aspect-ratio: 16 / 9; background: #000;"
+            width="1280" height="720"
+            data-ivs-publisher-target="canvas"></canvas>
+
+    <div class="mt-2 text-danger small" data-ivs-publisher-target="error"></div>
+
+    <div class="mt-2 d-flex gap-2 flex-wrap">
+      <!-- 配信開始/終了 -->
+      <button type="button"
+        class="btn btn-primary btn-sm"
+        data-action="ivs-publisher#startBroadcast"
+        data-ivs-publisher-target="startBtn"
+        data-label-normal="配信開始"
+        data-label-resume="配信に戻る"
+      >配信開始</button>
+
+      <button type="button"
+        class="btn btn-danger btn-sm d-none"
+        data-action="ivs-publisher#endBroadcast"
+        data-ivs-publisher-target="endBtn"
+      >配信終了</button>
+
+      <!-- 離席/復帰（Railsにstatus PATCH） -->
+      <%= form_with url: status_cast_booth_path(@booth, to: :away),
+                    method: :patch,
+                    data: { action: "turbo:submit-end->ivs-publisher#onBoothStatusPatched" } do %>
+        <button type="submit"
+          class="btn btn-warning btn-sm"
+          data-ivs-publisher-target="awayBtn">
+          離席
+        </button>
+      <% end %>
+
+      <%= form_with url: status_cast_booth_path(@booth, to: :live),
+                    method: :patch,
+                    data: { action: "turbo:submit-end->ivs-publisher#onBoothStatusPatched" } do %>
+        <button type="submit"
+          class="btn btn-success btn-sm"
+          data-ivs-publisher-target="backBtn">
+          復帰
+        </button>
+      <% end %>
+
+      <!-- 離席中の音声トグル -->
+      <div class="form-check form-switch mt-3">
+        <input class="form-check-input" type="checkbox" role="switch"
+              id="away-audio"
+              data-ivs-publisher-target="awayAudio"
+              data-action="change->ivs-publisher#toggleAwayAudio"
+              disabled>
+        <label class="form-check-label" for="away-audio">
+          離席中も音声を送る
+        </label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<%= turbo_stream_from [@stream_session, :cast_pending_drink_orders] %>
+
+<div id="cast-pending-drink-orders-container">
+  <%= render "cast/stream_sessions/pending_drink_orders", stream_session: @stream_session %>
+</div>
+
+<hr>
+
+<%= turbo_stream_from [@stream_session, :comments] %>
+
+<div id="comments">
+  <%= render partial: "comments/comment", collection: @comments, as: :comment %>
+</div>
+
+<%= render "stream_sessions/comments/form", stream_session: @stream_session %>
+
+<hr>
+
+<p>
+  <%= link_to "home", root_path %>
+</p>
