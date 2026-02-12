@@ -53,6 +53,7 @@ Rails.application.routes.draw do
     resources :booths, only: %i[index show new edit create update] do
       member do
         get :watch
+        patch :archive
       end
     end
     resources :drink_items, only: %i[index create update destroy]

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_07_055613) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_12_065201) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -53,6 +53,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_07_055613) do
   end
 
   create_table "booths", force: :cascade do |t|
+    t.datetime "archived_at"
     t.datetime "created_at", null: false
     t.bigint "current_stream_session_id"
     t.text "description"
@@ -61,8 +62,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_07_055613) do
     t.integer "status", default: 0, null: false
     t.bigint "store_id", null: false
     t.datetime "updated_at", null: false
+    t.index ["archived_at"], name: "index_booths_on_archived_at"
     t.index ["current_stream_session_id"], name: "index_booths_on_current_stream_session_id"
     t.index ["ivs_stage_arn"], name: "index_booths_on_ivs_stage_arn"
+    t.index ["store_id", "archived_at"], name: "index_booths_on_store_id_and_archived_at"
     t.index ["store_id", "status"], name: "index_booths_on_store_id_and_status"
     t.index ["store_id"], name: "index_booths_on_store_id"
   end

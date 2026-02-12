@@ -4,11 +4,16 @@ module Admin
   class BoothsController < Admin::BaseController
     before_action :require_current_store_for_booths!
     before_action :set_booth, only: %i[show edit update watch]
+    before_action :set_booth, only: %i[show edit update watch archive]
     before_action :authorize_update!, only: %i[edit update]
 
     def index
-      # current_store 配下だけ出す（店舗管理なので）
-      @booths = current_store.booths.order(id: :desc)
+      @include_archived = ActiveModel::Type::Boolean.new.cast(params[:archived])
+
+      scope = current_store.booths
+      scope = scope.active unless @include_archived
+
+      @booths = scope.order(id: :desc)
     end
 
     def show
@@ -63,6 +68,23 @@ module Admin
       end
 
       redirect_to booth_path(@booth)
+    end
+
+    def archive
+      policy = Authorization::BoothPolicy.new(current_user, @booth)
+      head :forbidden and return unless policy.update?
+
+      booth = Booth.lock.find(@booth.id)
+
+      if !booth.offline? || booth.current_stream_session_id.present?
+        redirect_to admin_booths_path,
+                    alert: "ブース##{booth.id}（#{booth.name}）は配信中の可能性があるためアーカイブできません。先に配信を終了してください。"
+        return
+      end
+
+      booth.update!(archived_at: Time.current)
+
+      redirect_to admin_booths_path, notice: "ブースをアーカイブしました"
     end
 
     private

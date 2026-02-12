@@ -32,7 +32,7 @@ class BoothsController < ApplicationController
   private
 
   def set_booth
-    @booth = Booth.find(params[:id])
+    @booth = Booth.active.find(params[:id])
   end
 
   def reject_banned_customer_for_booth!

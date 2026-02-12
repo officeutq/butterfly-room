@@ -6,6 +6,7 @@ module StreamSessions
     class BoothNotOffline < Error; end
     class NotAuthorized < Error; end
     class BoothStageNotBound < Error; end
+    class BoothArchived < Error; end
 
     def initialize(booth:, actor:)
       @booth = booth
@@ -17,6 +18,8 @@ module StreamSessions
 
       StreamSession.transaction do
         booth = Booth.lock.find(@booth.id)
+
+        raise BoothArchived, "booth is archived" if booth.archived?
 
         raise BoothNotOffline, "booth is #{booth.status}" unless booth.offline?
 
