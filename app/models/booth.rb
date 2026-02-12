@@ -9,6 +9,13 @@ class Booth < ApplicationRecord
 
   enum :status, { offline: 0, live: 1, away: 2, standby: 3 }
 
+  scope :active, -> { where(archived_at: nil) }
+  scope :archived, -> { where.not(archived_at: nil) }
+
+  def archived?
+    archived_at.present?
+  end
+
   def primary_cast_user_id
     booth_casts.order(created_at: :desc, id: :desc).pick(:cast_user_id)
   end

@@ -14,17 +14,29 @@
 
 <hr>
 
-<% policy = Authorization::BoothPolicy.new(current_user, @booth) %>
-<% if policy.update? %>
-  <%= link_to "ブース編集", edit_cast_booth_path(@booth), class: "btn btn-outline-secondary btn-sm" %>
+<% if @booth.archived? %>
+  <div class="alert alert-warning">
+    このブースはアーカイブされています。配信は開始できません。
+  </div>
 <% end %>
 
-<hr>
+<% if @booth.archived? %>
+<% else %>
+  <% policy = Authorization::BoothPolicy.new(current_user, @booth) %>
+  <% if policy.update? %>
+    <%= link_to "ブース編集", edit_cast_booth_path(@booth), class: "btn btn-outline-secondary btn-sm" %>
+    <hr>
+  <% end %>
+<% end %>
 
-<%= button_to "スタンバイ開始",
-      cast_booth_stream_sessions_path(@booth),
-      method: :post,
-      class: "btn btn-primary" %>
+<% if @booth.archived? %>
+  <button class="btn btn-primary" disabled>スタンバイ開始</button>
+<% else %>
+  <%= button_to "スタンバイ開始",
+        cast_booth_stream_sessions_path(@booth),
+        method: :post,
+        class: "btn btn-primary" %>
+<% end %>
 
 <hr>
 
