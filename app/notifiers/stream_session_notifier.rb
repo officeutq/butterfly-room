@@ -1,6 +1,21 @@
 # frozen_string_literal: true
 
 class StreamSessionNotifier
+  def self.broadcast_stream_state(booth:)
+    booth = Booth.find(booth.id)
+    Turbo::StreamsChannel.broadcast_replace_to(
+      [ booth, :stream_state ],
+      target: "stream_state",
+      partial: "booths/stream_state",
+      locals: {
+        booth: booth,
+        stream_session: booth.current_stream_session,
+        comments: booth.current_stream_session ? Comment.alive.where(stream_session: booth.current_stream_session)
+                                               .order(created_at: :desc).limit(50).reverse : []
+      }
+    )
+  end
+
   def self.broadcast_ended(stream_session)
     Turbo::StreamsChannel.broadcast_replace_to(
       [ stream_session, :pending_drink_orders ],

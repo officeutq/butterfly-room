@@ -49,14 +49,15 @@ module Cast
     end
 
     def status
-      StreamSessions::StatusService.new(
+      booth = StreamSessions::StatusService.new(
         booth: @booth,
         actor: current_user,
         to_status: params[:to]
       ).call
 
+      StreamSessionNotifier.broadcast_stream_state(booth: booth)
+
       respond_to do |format|
-        # ★HTML fallback は live へ寄せる
         format.html { redirect_to live_cast_booth_path(@booth), notice: "状態更新: #{params[:to]}" }
         format.turbo_stream { head :no_content }
         format.json { render json: { ok: true }, status: :ok }
