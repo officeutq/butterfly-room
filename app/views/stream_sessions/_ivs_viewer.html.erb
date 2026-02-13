@@ -9,25 +9,38 @@
   </div>
 
   <div class="card-body">
-    <video
-      class="w-100 rounded"
-      style="aspect-ratio: 16 / 9; background: #000;"
-      playsinline
-      autoplay
-      muted
-      controls
-      data-ivs-viewer-target="video"
-    ></video>
+    <div class="position-relative">
+      <video
+        class="w-100 rounded"
+        style="aspect-ratio: 16 / 9; background: #000;"
+        playsinline
+        autoplay
+        data-ivs-viewer-target="video"
+      ></video>
+
+      <%# ★常時表示：ミュートトグル（🔇/🔊） %>
+      <div class="position-absolute top-0 start-0 m-2">
+        <button
+          type="button"
+          class="btn btn-dark btn-sm"
+          data-action="ivs-viewer#toggleMute"
+          data-ivs-viewer-target="muteButton"
+          aria-label="ミュート切替"
+        >
+          🔇
+        </button>
+
+        <%# 音が出ない等のときだけ出す補助文 %>
+        <div
+          class="small mt-1 text-white-50"
+          data-ivs-viewer-target="muteHint"
+          style="display: none;"
+        >
+          タップで音を出せます
+        </div>
+      </div>
+    </div>
 
     <div class="mt-2 text-danger small" data-ivs-viewer-target="error"></div>
-
-    <div class="mt-2 d-flex gap-2">
-      <button type="button" class="btn btn-primary btn-sm" data-action="ivs-viewer#start">
-        視聴開始
-      </button>
-      <button type="button" class="btn btn-outline-secondary btn-sm" data-action="ivs-viewer#stop">
-        視聴停止
-      </button>
-    </div>
   </div>
 </div>

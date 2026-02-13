@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["video", "error", "state"]
+  static targets = ["video", "error", "state", "muteButton", "muteHint"]
   static values = {
     tokenUrl: String, // /stream_sessions/:id/ivs_participant_tokens
   }
@@ -22,7 +22,12 @@ export default class extends Controller {
     }
     window.addEventListener("stream-session:joinable", this._onJoinable)
 
+    // 初期UI
     this._setState("idle")
+    this._syncMuteUI({ hint: false })
+
+    // ★YouTube寄せ：表示されたら自動で視聴開始を試みる
+    queueMicrotask(() => this.start())
   }
 
   disconnect() {
@@ -80,6 +85,30 @@ export default class extends Controller {
     }
   }
 
+  // 🔇/🔊 トグル（常時表示）
+  async toggleMute() {
+    if (!this.hasVideoTarget) return
+    const v = this.videoTarget
+
+    if (v.muted) {
+      // muted -> unmuted（ユーザー操作なので play 再試行する）
+      v.muted = false
+      try {
+        await v.play?.()
+        this._syncMuteUI({ hint: false })
+      } catch (_) {
+        // まだ音が出せない（端末制約など）→ミュートに戻し、ヒントを出す
+        v.muted = true
+        try { await v.play?.() } catch (_) {}
+        this._syncMuteUI({ hint: true })
+      }
+    } else {
+      // unmuted -> muted
+      v.muted = true
+      this._syncMuteUI({ hint: false })
+    }
+  }
+
   stop() {
     try {
       if (this._stage) this._stage.leave()
@@ -89,6 +118,7 @@ export default class extends Controller {
       this._stage = null
       if (this.hasVideoTarget) this.videoTarget.srcObject = null
       this._setState("idle")
+      this._syncMuteUI({ hint: false })
     }
   }
 
@@ -111,16 +141,45 @@ export default class extends Controller {
     return body.participant_token
   }
 
-  _attachTracks(tracks) {
+  async _attachTracks(tracks) {
     if (!tracks.length) return
     if (!this.hasVideoTarget) return
 
-    // フェーズ1：1キャスト前提なので「毎回上書き」でOK
     const ms = new MediaStream()
     tracks.forEach((t) => ms.addTrack(t))
 
-    this.videoTarget.srcObject = ms
-    this.videoTarget.play?.().catch(() => {})
+    const v = this.videoTarget
+    v.srcObject = ms
+
+    // 1) まず音あり（unmuted autoplay）を試す
+    // 2) 失敗したら muted autoplay にフォールバック（映像優先）
+    try {
+      v.muted = false
+      await v.play?.()
+      this._syncMuteUI({ hint: false })
+    } catch (_) {
+      v.muted = true
+      try { await v.play?.() } catch (_) {}
+      // 音が出ない状態を明示（ユーザー操作で解除できる）
+      this._syncMuteUI({ hint: true })
+    }
+  }
+
+  _syncMuteUI(opts = {}) {
+    const { hint = false } = opts
+    if (!this.hasVideoTarget) return
+    const v = this.videoTarget
+
+    if (this.hasMuteButtonTarget) {
+      // muted=true なら「🔇」、muted=false なら「🔊」
+      this.muteButtonTarget.textContent = v.muted ? "🔇" : "🔊"
+    }
+
+    if (this.hasMuteHintTarget) {
+      // ヒントは「音が出ない（=mutedで視聴している）」時だけ、必要に応じて表示
+      const show = hint && v.muted
+      this.muteHintTarget.style.display = show ? "" : "none"
+    }
   }
 
   _setState(s) {
