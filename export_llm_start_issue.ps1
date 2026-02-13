@@ -253,45 +253,44 @@ if (@($relatedIssues).Count -gt 0) {
   $null = $sb.AppendLine("")
 }
 
-# LLMへの指示（新規着手専用）
-# - SECTION 1 を「仕様の正本」として扱わせる
-# - SECTION 2（親Epic）でスコープ暴走を防ぐ
-# - SECTION 3（兄弟MERGED）で既存実装パターンに寄せる
-# - SECTION 4（関連Issue）で依存・重複・衝突を避ける
-# - さらに「ブランチ名候補」「貼り付け対象ファイル一覧」「貼り付け用コード」を必ず出させる
+# LLMへの指示（反復型・安全実装モード）
+# - コードを即出力しない
+# - 最新ソースを段階的に収集する
+# - 必要ファイルが揃うまでスケルトンを出さない
+
 $null = $sb.AppendLine("INSTRUCTIONS TO LLM")
-# 仕様→タスク分解→実装順の決定
 $null = $sb.AppendLine("1) Read SECTION 1 as the source of truth. Extract tasks + Done criteria and order them.")
-# Epicの目的に沿わせ、やりすぎ（過剰実装）を防ぐ
 $null = $sb.AppendLine("2) Use SECTION 2 (Epic) to align scope/priority and avoid over-implementation.")
-# 既にマージされた兄弟Issueの実装パターン（命名・責務・構造）に合わせる
 $null = $sb.AppendLine("3) Use SECTION 3 (merged siblings) to match existing patterns, naming, and architecture.")
 $null = $sb.AppendLine("   - Note: PR URL in SECTION 3 is for human reference only (LLM cannot open it).")
-# 本文で明示された関連Issueの整合（依存・重複・衝突）を考慮する
 $null = $sb.AppendLine("4) If SECTION 4 exists, use it (related) to avoid conflicts/duplication and respect dependencies.")
 $null = $sb.AppendLine("")
-# ブランチ名候補（Issue番号込み、prefixは improve/ feature/ fix/ chore/ を優先）
 $null = $sb.AppendLine("5) Propose Git branch name candidates (3-5) using this repo conventions.")
 $null = $sb.AppendLine("   - Prefer prefixes: improve/, feature/, fix/, chore/")
-$null = $sb.AppendLine("   - Include the Issue number (e.g. improve/80-video-resolution)")
+$null = $sb.AppendLine("   - Include the Issue number.")
 $null = $sb.AppendLine("")
-# 実装で「中身を貼る」可能性が高いファイル一覧をA/B/Cで分類してチェックリスト化
-$null = $sb.AppendLine("6) Provide a checklist of file paths to edit/create for implementation.")
-$null = $sb.AppendLine("   - Group by: (A) must edit/create, (B) likely, (C) optional")
-$null = $sb.AppendLine("   - For each file: explain WHY it changes and WHAT to paste/change (1-2 lines).")
+$null = $sb.AppendLine("6) ITERATIVE MODE (MANDATORY):")
+$null = $sb.AppendLine("   - Step A: Output ONLY the list of source files that must be pasted next.")
+$null = $sb.AppendLine("   - Group by: (A) must now, (B) likely next, (C) optional.")
+$null = $sb.AppendLine("   - For each file: explain WHY it is needed and WHAT part to paste.")
+$null = $sb.AppendLine("   - Ask clarification questions if needed.")
 $null = $sb.AppendLine("")
-# (A)必須ファイルは、貼り付け可能なコードブロックを出す（全体 or 最小差分 + 挿入位置）
-$null = $sb.AppendLine("7) For (A) must files, output paste-ready code blocks.")
-$null = $sb.AppendLine("   - Prefer complete file content when small.")
-$null = $sb.AppendLine("   - If the file is large, show minimal diff chunks and specify exact insertion points.")
+$null = $sb.AppendLine("   - After user pastes files:")
+$null = $sb.AppendLine("       * Re-evaluate the situation.")
+$null = $sb.AppendLine("       * If additional files are needed, request them.")
+$null = $sb.AppendLine("       * DO NOT output implementation code yet.")
 $null = $sb.AppendLine("")
-# 出力順を固定して、毎回のやりとりを安定させる
-$null = $sb.AppendLine("Output order must be:")
-$null = $sb.AppendLine("(1) Implementation plan")
+$null = $sb.AppendLine("   - Only when the user explicitly says 'ALL FILES PROVIDED' or 'GO':")
+$null = $sb.AppendLine("       * Output final implementation plan and paste-ready code.")
+$null = $sb.AppendLine("")
+$null = $sb.AppendLine("STRICT RULE:")
+$null = $sb.AppendLine("   - Absolutely no code blocks, skeletons, or diffs until user confirmation.")
+$null = $sb.AppendLine("")
+$null = $sb.AppendLine("Phase 1 Output order:")
+$null = $sb.AppendLine("(1) High-level implementation understanding (no code)")
 $null = $sb.AppendLine("(2) Branch name candidates")
-$null = $sb.AppendLine("(3) Files checklist (A/B/C)")
-$null = $sb.AppendLine("(4) Paste-ready code blocks (A only)")
-$null = $sb.AppendLine("(5) Pitfalls / verification steps")
+$null = $sb.AppendLine("(3) Files-to-paste checklist (A/B/C)")
+$null = $sb.AppendLine("(4) Questions / assumptions")
 $null = $sb.AppendLine("")
 
 $out = $sb.ToString()
