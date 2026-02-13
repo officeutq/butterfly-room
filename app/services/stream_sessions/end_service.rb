@@ -15,6 +15,8 @@ module StreamSessions
       authorize!
 
       ended_session = nil
+      ended_booth = nil
+
       StreamSession.transaction do
         session = StreamSession.lock.find(@stream_session.id)
         raise AlreadyEnded if session.ended_at.present?
@@ -32,8 +34,14 @@ module StreamSessions
         session.update!(ended_at: Time.current, status: :ended)
 
         ended_session = session
+        ended_booth = booth
       end
+
       StreamSessionNotifier.broadcast_ended(ended_session)
+
+      # ★Issue42: booth単位のUIを「未配信」に自動切替（リロード不要）
+      StreamSessionNotifier.broadcast_stream_state(booth: ended_booth)
+
       ended_session
     end
 

@@ -3,6 +3,7 @@
 <% end %>
 
 <h1>Public Booth#show (stub)</h1>
+
 <% if notice.present? %>
   <div class="alert alert-success" role="alert"><%= notice %></div>
 <% end %>
@@ -10,42 +11,15 @@
 <% if alert.present? %>
   <div class="alert alert-danger" role="alert"><%= alert %></div>
 <% end %>
-<p>booth_id: <%= @booth_id %></p>
 
-<% if @stream_session.present? %>
-  <div
-    data-controller="presence-poll"
-    data-presence-poll-ping-url-value="<%= ping_stream_session_presence_path(@stream_session) %>"
-    data-presence-poll-summary-url-value="<%= presence_summary_stream_session_path(@stream_session) %>"
-    data-presence-poll-interval-ms-value="20000"
-  >
-    viewers: <span data-presence-poll-target="count">-</span>
-  </div>
-<% end %>
+<p>booth_id: <%= @booth.id %></p>
 
-<% if @stream_session.present? %>
-  <%= turbo_stream_from [@stream_session, :pending_drink_orders] %>
-<% end %>
+<%# ★Issue42: booth単位で常時購読（開始/終了/状態変化を自動反映） %>
+<%= turbo_stream_from [@booth, :stream_state] %>
 
-<div id="pending-drink-orders-container">
-  <% if @stream_session.present? %>
-    <%= render "stream_sessions/pending_drink_orders", stream_session: @stream_session %>
-  <% else %>
-    <div class="text-muted">配信中のみ表示されます</div>
-  <% end %>
+<div id="stream_state">
+  <%= render "booths/stream_state", booth: @booth, stream_session: @stream_session, comments: @comments %>
 </div>
-
-<% if @stream_session.present? %>
-  <%= turbo_stream_from [@stream_session, :comments] %>
-
-  <div id="comments">
-    <%= render partial: "comments/comment", collection: @comments, as: :comment %>
-  </div>
-
-  <%= render "stream_sessions/comments/form", stream_session: @stream_session %>
-<% else %>
-  <p>配信中のみコメントできます</p>
-<% end %>
 
 <hr>
 
@@ -77,9 +51,8 @@
 
 <h2>ドリンクメニュー（enabledのみ）</h2>
 
-<% if @stream_session.blank? %>
+<% if @stream_session.blank? || !(@booth.live? || @booth.away?) %>
   <p>配信中のみドリンク送信できます</p>
-
 <% elsif @drink_items.any? %>
   <ul>
     <% @drink_items.each do |item| %>
@@ -95,7 +68,6 @@
       </li>
     <% end %>
   </ul>
-
 <% else %>
   <p>現在、表示できるドリンクがありません</p>
 <% end %>
@@ -105,21 +77,3 @@
 <div class="d-flex justify-content mb-3">
   <%= link_to "退室", root_path, class: "btn btn-outline-secondary" %>
 </div>
-
-<hr>
-
-<% if @stream_session.present? %>
-  <%= turbo_stream_from [@stream_session, :viewer_stage] %>
-<% end %>
-
-<div id="viewer_stage">
-  <% if @stream_session.present? && (@booth.live? || @booth.away?) %>
-    <%= render "stream_sessions/ivs_viewer", stream_session: @stream_session %>
-  <% elsif @stream_session.present? %>
-    <div class="alert alert-secondary" role="alert">
-      配信準備中です（スタンバイ）
-    </div>
-  <% end %>
-</div>
-
-</ul>
