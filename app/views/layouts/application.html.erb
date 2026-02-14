@@ -11,14 +11,10 @@
 
     <%= yield :head %>
 
-    <%# Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!) %>
-    <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
-
     <link rel="icon" href="/icon.png" type="image/png">
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
 
-    <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <% unless Rails.env.test? %>
       <%= stylesheet_link_tag "bootstrap-icons/font/bootstrap-icons", "data-turbo-track": "reload" %>
@@ -31,6 +27,19 @@
   </head>
 
   <body>
+    <%# ★常時存在する flash の箱（StoreBanGuard の turbo_stream target） %>
+    <div class="container mt-3">
+      <div id="flash_inner">
+        <% if notice.present? %>
+          <div class="alert alert-success" role="alert"><%= notice %></div>
+        <% end %>
+
+        <% if alert.present? %>
+          <div class="alert alert-danger" role="alert"><%= alert %></div>
+        <% end %>
+      </div>
+    </div>
+
     <%= yield %>
   </body>
 </html>

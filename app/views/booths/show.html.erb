@@ -4,21 +4,18 @@
 
 <h1>Public Booth#show (stub)</h1>
 
-<% if notice.present? %>
-  <div class="alert alert-success" role="alert"><%= notice %></div>
-<% end %>
-
-<% if alert.present? %>
-  <div class="alert alert-danger" role="alert"><%= alert %></div>
-<% end %>
-
 <p>booth_id: <%= @booth.id %></p>
 
-<%# ★Issue42: booth単位で常時購読（開始/終了/状態変化を自動反映） %>
+<%# ★booth単位で常時購読（開始/終了/状態変化を自動反映） %>
 <%= turbo_stream_from [@booth, :stream_state] %>
 
+<%# ★箱（wrapper）は show 側に固定。idを絶対に消さない %>
 <div id="stream_state">
-  <%= render "booths/stream_state", booth: @booth, stream_session: @stream_session, comments: @comments %>
+  <%= render "booths/stream_state",
+        booth: @booth,
+        stream_session: @stream_session,
+        comments: @comments,
+        drink_items: @drink_items %>
 </div>
 
 <hr>
@@ -45,31 +42,6 @@
   </div>
 <% else %>
   <p class="text-muted">ログインすると購入できます</p>
-<% end %>
-
-<hr>
-
-<h2>ドリンクメニュー（enabledのみ）</h2>
-
-<% if @stream_session.blank? || !(@booth.live? || @booth.away?) %>
-  <p>配信中のみドリンク送信できます</p>
-<% elsif @drink_items.any? %>
-  <ul>
-    <% @drink_items.each do |item| %>
-      <li class="mb-2">
-        <%= item.name %>（<%= item.price_points %>pt）
-
-        <%= button_to "送信",
-              stream_session_drink_orders_path(@stream_session),
-              method: :post,
-              params: { drink_item_id: item.id },
-              form: { data: { turbo: false } },
-              class: "btn btn-sm btn-primary ms-2" %>
-      </li>
-    <% end %>
-  </ul>
-<% else %>
-  <p>現在、表示できるドリンクがありません</p>
 <% end %>
 
 <hr>
