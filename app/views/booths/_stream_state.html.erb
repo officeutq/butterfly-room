@@ -1,12 +1,8 @@
-<%# locals: booth:, stream_session:, comments: %>
+<%# locals: booth:, stream_session:, comments:, drink_items: %>
 
 <% live_like = booth.live? || booth.away? %>
 
 <% if stream_session.present? && live_like %>
-  <%# ----------------------------
-      配信中（live/away）のみ見せる
-      ---------------------------- %>
-
   <div
     data-controller="presence-poll"
     data-presence-poll-ping-url-value="<%= ping_stream_session_presence_path(stream_session) %>"
@@ -18,11 +14,31 @@
 
   <hr>
 
-  <%= turbo_stream_from [stream_session, :pending_drink_orders] %>
+  <h2>ドリンクメニュー（enabledのみ）</h2>
 
-  <div id="pending_drink_orders">
-    <%= render "stream_sessions/pending_drink_orders", stream_session: stream_session %>
-  </div>
+  <% if (drink_items || []).any? %>
+    <ul>
+      <% (drink_items || []).each do |item| %>
+        <li class="mb-2">
+          <%= item.name %>（<%= item.price_points %>pt）
+
+          <%= button_to "送信",
+                stream_session_drink_orders_path(stream_session),
+                method: :post,
+                params: { drink_item_id: item.id },
+                form: { data: { turbo: false } },
+                class: "btn btn-sm btn-primary ms-2" %>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <p>現在、表示できるドリンクがありません</p>
+  <% end %>
+
+  <hr>
+
+  <%= turbo_stream_from [stream_session, :pending_drink_orders] %>
+  <%= render "stream_sessions/pending_drink_orders", stream_session: stream_session %>
 
   <hr>
 
@@ -43,12 +59,12 @@
   </div>
 
 <% else %>
-  <%# ----------------------------
-      未配信（offline/standby/セッションなし）
-      ※standby も未配信と同じ見え方にする
-      ---------------------------- %>
-
   <div class="text-muted">現在配信していません</div>
+
+  <hr>
+
+  <h2>ドリンクメニュー（enabledのみ）</h2>
+  <p>配信中のみドリンク送信できます</p>
 
   <hr>
 

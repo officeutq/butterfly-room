@@ -22,17 +22,19 @@ module StoreBanGuard
       end
 
       format.turbo_stream do
-        html = <<~HTML
-          <turbo-stream action="append" target="comments">
-            <template>
-              <script>
-                window.location.href = #{root_path.to_json};
-              </script>
-            </template>
-          </turbo-stream>
-        HTML
+        stream = turbo_stream.append(
+          "flash_inner",
+          <<~HTML
+            <div class="alert alert-danger" role="alert">
+              この店舗では操作できません（BANされています）。トップへ移動します。
+            </div>
+            <script>
+              window.location.href = #{root_path.to_json};
+            </script>
+          HTML
+        )
 
-        render plain: html, content_type: "text/vnd.turbo-stream.html", status: :ok
+        render turbo_stream: stream, status: :ok
       end
 
       format.html do
