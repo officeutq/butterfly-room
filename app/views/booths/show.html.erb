@@ -23,7 +23,13 @@
 <h2>所持ポイント</h2>
 
 <% if user_signed_in? %>
-  <p>残高: <strong><%= @wallet&.available_points || 0 %>pt</strong></p>
+  <%# ★wallet（個人UI）は booth に混ぜず user(wallet) チャンネルで購読 %>
+  <%= turbo_stream_from [current_user, :wallet] %>
+
+  <%# ★箱（wrapper）は show 側に固定。idを絶対に消さない %>
+  <div id="wallet_balance">
+    <%= render "wallets/balance", wallet: @wallet %>
+  </div>
 
   <div class="d-flex gap-2 mb-3">
     <%= button_to "1000pt 購入",

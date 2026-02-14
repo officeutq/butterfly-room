@@ -52,6 +52,9 @@ module DrinkOrders
       # pending一覧の置換はTX外
       DrinkOrderNotifier.replace_pending_lists(drink_order)
 
+      # ★wallet（個人UI）は user(wallet) チャンネルで更新
+      WalletNotifier.broadcast_balance_for_user(drink_order.customer_user)
+
       Result.new(drink_order:, store_ledger_entry: ledger_entry)
     end
 

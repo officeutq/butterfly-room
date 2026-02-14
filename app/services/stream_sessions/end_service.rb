@@ -16,6 +16,7 @@ module StreamSessions
 
       ended_session = nil
       ended_booth = nil
+      refund_result = nil
 
       StreamSession.transaction do
         session = StreamSession.lock.find(@stream_session.id)
@@ -29,7 +30,7 @@ module StreamSessions
           current_stream_session_id: nil
         )
 
-        DrinkOrders::RefundService.new(stream_session: session).call!
+        refund_result = DrinkOrders::RefundService.new(stream_session: session).call!
 
         session.update!(ended_at: Time.current, status: :ended)
 
@@ -41,6 +42,9 @@ module StreamSessions
 
       # ★Issue42: booth単位のUIを「未配信」に自動切替（リロード不要）
       StreamSessionNotifier.broadcast_stream_state(booth: ended_booth)
+
+      # ★Issue146: 返却が発生したユーザーの wallet 残高を個人チャンネルで更新
+      WalletNotifier.broadcast_balance_for_wallet_ids(refund_result&.wallet_ids)
 
       ended_session
     end

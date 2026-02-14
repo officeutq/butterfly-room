@@ -56,6 +56,9 @@ module DrinkOrders
       # commit後に通知（ロールバック時の誤通知防止）
       DrinkOrderNotifier.replace_pending_lists(drink_order)
 
+      # ★wallet（個人UI）は user(wallet) チャンネルで更新
+      WalletNotifier.broadcast_balance_for_user(@customer_user)
+
       Result.new(drink_order: drink_order, wallet: wallet.reload)
     end
   end

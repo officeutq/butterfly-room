@@ -7,7 +7,7 @@ module DrinkOrders
     class DuplicateHold < Error; end
     class InsufficientReserved < Error; end
 
-    Result = Struct.new(:refunded_count, :refunded_points_sum, keyword_init: true)
+    Result = Struct.new(:refunded_count, :refunded_points_sum, :wallet_ids, keyword_init: true)
 
     def initialize(stream_session:)
       @stream_session = stream_session
@@ -21,7 +21,7 @@ module DrinkOrders
         .lock
         .to_a
 
-      return Result.new(refunded_count: 0, refunded_points_sum: 0) if pending_orders.empty?
+      return Result.new(refunded_count: 0, refunded_points_sum: 0, wallet_ids: []) if pending_orders.empty?
 
       holds = WalletTransaction
         .where(kind: :hold, ref: pending_orders)
@@ -41,6 +41,8 @@ module DrinkOrders
       # wallet_id ごとに集計して reserved→available を返す（顧客ごと集計の要件を満たす）
       refund_points_by_wallet_id =
         holds.group_by(&:wallet_id).transform_values { |txs| txs.sum { |tx| tx.points.abs } }
+
+      wallet_ids = refund_points_by_wallet_id.keys
 
       refund_points_by_wallet_id.each do |wallet_id, points|
         refunded_points_sum += points
@@ -69,7 +71,7 @@ module DrinkOrders
         updated_at: now
       )
 
-      Result.new(refunded_count: pending_orders.size, refunded_points_sum: refunded_points_sum)
+      Result.new(refunded_count: pending_orders.size, refunded_points_sum: refunded_points_sum, wallet_ids: wallet_ids)
     end
   end
 end
