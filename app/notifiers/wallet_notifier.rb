@@ -5,7 +5,7 @@ class WalletNotifier
     wallet = Wallet.find_by(customer_user_id: user.id)
     return if wallet.nil?
 
-    Turbo::StreamsChannel.broadcast_replace_to(
+    Turbo::StreamsChannel.broadcast_update_to(
       [ user, :wallet ],
       target: "wallet_balance",
       partial: "wallets/balance",

@@ -14,26 +14,10 @@
 
   <hr>
 
-  <h2>ドリンクメニュー（enabledのみ）</h2>
-
-  <% if (drink_items || []).any? %>
-    <ul>
-      <% (drink_items || []).each do |item| %>
-        <li class="mb-2">
-          <%= item.name %>（<%= item.price_points %>pt）
-
-          <%= button_to "送信",
-                stream_session_drink_orders_path(stream_session),
-                method: :post,
-                params: { drink_item_id: item.id },
-                form: { data: { turbo: false } },
-                class: "btn btn-sm btn-primary ms-2" %>
-        </li>
-      <% end %>
-    </ul>
-  <% else %>
-    <p>現在、表示できるドリンクがありません</p>
-  <% end %>
+  <%= render "booths/drink_menu",
+        booth: booth,
+        stream_session: stream_session,
+        drink_items: drink_items %>
 
   <hr>
 
@@ -63,8 +47,10 @@
 
   <hr>
 
-  <h2>ドリンクメニュー（enabledのみ）</h2>
-  <p>配信中のみドリンク送信できます</p>
+  <%= render "booths/drink_menu",
+        booth: booth,
+        stream_session: stream_session,
+        drink_items: drink_items %>
 
   <hr>
 
