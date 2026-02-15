@@ -60,6 +60,31 @@
       </div>
     <% end %>
 
+    <%# cast: current_booth 表示（/cast 配下のみ） %>
+    <% if current_user.present? && (current_user.cast? || current_user.system_admin?) && request.path.start_with?("/cast") %>
+      <div class="container mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="text-muted small">
+            現在のブース:
+            <% if defined?(current_booth) && current_booth.present? %>
+              <strong><%= current_booth.name.presence || "(no name)" %></strong>
+            <% else %>
+              <span class="text-danger">未選択</span>
+            <% end %>
+          </div>
+
+          <% confirm_message = "配信中（またはスタンバイ/離席中）のブースから切り替えます。よろしいですか？" %>
+          <% needs_confirm = defined?(current_booth) && current_booth.present? && !current_booth.offline? %>
+
+          <%= link_to "ブースを切り替える",
+                cast_booths_path,
+                class: "btn btn-sm btn-outline-secondary",
+                onclick: (needs_confirm ? "return confirm('#{j(confirm_message)}')" : nil) %>
+
+        </div>
+      </div>
+    <% end %>
+
     <%= yield %>
   </body>
 </html>

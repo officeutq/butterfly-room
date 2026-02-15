@@ -1,10 +1,22 @@
+# frozen_string_literal: true
+
 module Cast
   class BoothsController < Cast::BaseController
     before_action :set_booth, only: %i[show live status edit update]
     before_action :authorize_update!, only: %i[edit update]
 
     def index
-      @booths = Booth.order(:id)
+      @booths =
+        if current_user.system_admin?
+          Booth.order(:id)
+        else
+          Booth.joins(:booth_casts)
+              .where(booth_casts: { cast_user_id: current_user.id })
+              .order(:id)
+        end
+
+      @current_booth_id = session[:current_booth_id]
+      @confirm_switch_booth = current_booth.present? && !current_booth.offline?
     end
 
     # Summary（offline専用）
@@ -75,7 +87,16 @@ module Cast
     private
 
     def set_booth
-      @booth = Booth.find(params[:id])
+      booth = Booth.find(params[:id])
+
+      unless current_user.system_admin? || BoothCast.exists?(cast_user_id: current_user.id, booth_id: booth.id)
+        session.delete(:current_booth_id)
+        head :forbidden
+        return
+      end
+
+      @booth = booth
+      session[:current_booth_id] = @booth.id
     end
 
     def authorize_update!
