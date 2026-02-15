@@ -33,12 +33,16 @@
 
 ```
 app/
+  assets/
+    builds/
+      app/
+        assets/
+          builds/
+      bootstrap-icons/
+        fonts/
+    images/
+    stylesheets/
   controllers/
-    application_controller.rb
-    booths_controller.rb
-    checkout_controller.rb
-    home_controller.rb
-    stream_sessions_controller.rb
     admin/
       base_controller.rb
       booths_controller.rb
@@ -48,12 +52,12 @@ app/
       metrics_controller.rb
       store_bans_controller.rb
     cast/
+      booths/
+        stream_sessions_controller.rb
       base_controller.rb
       booths_controller.rb
       drink_orders_controller.rb
       stream_sessions_controller.rb
-      booths/
-        stream_sessions_controller.rb
     concerns/
       store_ban_guard.rb
     stream_sessions/
@@ -65,52 +69,56 @@ app/
       purchases_controller.rb
     webhooks/
       stripe_controller.rb
-
+    application_controller.rb
+    booths_controller.rb
+    checkout_controller.rb
+    home_controller.rb
+    stream_sessions_controller.rb
   helpers/
-    application_helper.rb
     admin/
       metrics_helper.rb
-
+    application_helper.rb
   javascript/
-    application.js
     controllers/
       application.js
       camera_preview_controller.js
+      hello_controller.js
       index.js
       ivs_publisher_controller.js
       ivs_viewer_controller.js
       presence_poll_controller.js
       stream_debug_controller.js
-
+    application.js
+  jobs/
+    application_job.rb
+  mailers/
+    application_mailer.rb
   models/
+    concerns/
     application_record.rb
-    booth_cast.rb
     booth.rb
+    booth_cast.rb
     comment.rb
     drink_item.rb
     drink_order.rb
     presence.rb
+    store.rb
     store_ban.rb
     store_ledger_entry.rb
     store_membership.rb
-    store.rb
     stream_session.rb
     stripe_webhook_event.rb
     user.rb
+    wallet.rb
     wallet_purchase.rb
     wallet_transaction.rb
-    wallet.rb
-
   notifiers/
     comment_notifier.rb
     drink_order_notifier.rb
     stream_session_notifier.rb
-
+    wallet_notifier.rb
   queries/
     cast_metrics_query.rb
-    pending_drink_orders_query.rb（未実装）
-    presence_count_query.rb（未実装）
-
   services/
     authorization/
       application_policy.rb
@@ -127,78 +135,108 @@ app/
     ivs/
       client.rb
       create_participant_token_service.rb
-    presence/
+    presences/
       ping_service.rb
       summary_service.rb
     stream_sessions/
+      comments/
+        create_service.rb
       end_service.rb
       start_service.rb
       status_service.rb
-      comments/
-        create_service.rb
     wallets/
       apply_purchase_from_stripe_service.rb
       consume_service.rb
       create_checkout_service.rb
       hold_service.rb
-      purchase_credit_service.rb（未実装）
       release_service.rb
-
-    views/
-      admin/
-        booths/
-          edit.html.erb
-          index.html.erb
-          new.html.erb
-          show.html.erb
-        casts/
-          index.html.erb
-        dashboard/
-          show.html.erb
-        drink_items/
-          _form.html.erb
-          index.html.erb
-        metrics/
-          cast.html.erb
-        store_bans/
-          index.html.erb
+  views/
+    admin/
       booths/
+        edit.html.erb
+        index.html.erb
+        new.html.erb
         show.html.erb
-      cast/
-        booths/
-          edit.html.erb
-          index.html.erb
-          show.html.erb
-        stream_sessions/
-          _ended.html.erb
-          _pending_drink_orders.html.erb
-      checkout/
-        return.html.erb
-      comments/
-        _comment.html.erb
-      home/
+      casts/
+        index.html.erb
+      dashboard/
         show.html.erb
-      layouts/
-        application.html.erb
+      drink_items/
+        _form.html.erb
+        index.html.erb
+      metrics/
+        cast.html.erb
+      store_bans/
+        index.html.erb
+    booths/
+      _drink_menu.html.erb
+      _stream_state.html.erb
+      show.html.erb
+    cast/
+      booths/
+        edit.html.erb
+        index.html.erb
+        live.html.erb
+        show.html.erb
       stream_sessions/
         _ended.html.erb
-        _ivs_viewer.html.erb
         _pending_drink_orders.html.erb
-        _viewer_ended.html.erb
-        comments/
-          _form.html.erb
+    checkout/
+      return.html.erb
+    comments/
+      _comment.html.erb
+    home/
+      show.html.erb
+    layouts/
+      application.html.erb
+      mailer.html.erb
+      mailer.text.erb
+    pwa/
+      manifest.json.erb
+      service-worker.js
+    shared/
+      _flash_message.html.erb
+    stream_sessions/
+      comments/
+        _form.html.erb
+      _ended.html.erb
+      _ivs_viewer.html.erb
+      _pending_drink_orders.html.erb
+      _viewer_ended.html.erb
+    wallets/
+      _balance.html.erb
 
 config/
-  ...
-  routes.rb
-  ...
   environments/
-    ...
+    development.rb
+    production.rb
+    test.rb
   initializers/
-    ...
+    assets.rb
+    content_security_policy.rb
+    dartsass.rb
+    devise.rb
+    filter_parameter_logging.rb
+    inflections.rb
     stripe.rb
   locales/
-    ...
+    devise.en.yml
+    en.yml
+  application.rb
+  boot.rb
+  bundler-audit.yml
+  cable.yml
+  cache.yml
+  ci.rb
+  database.yml
+  deploy.yml
+  environment.rb
+  importmap.rb
+  puma.rb
+  queue.yml
+  recurring.yml
+  routes.rb
+  storage.yml
 ```
 
 > Serviceが増えるのはOK。MVPでも「金銭と状態」があるので、
@@ -562,9 +600,10 @@ end
 ```ruby
 Rails.application.routes.draw do
   namespace :cast do
-    resources :booths, only: %i[index show] do
+    resources :booths, only: %i[index show edit update] do
+      get :live, on: :member
+      patch :status, on: :member
       resources :stream_sessions, only: %i[create], module: :booths
-      patch :status, on: :member # live/away切替
     end
 
     resources :stream_sessions, only: [] do
@@ -589,10 +628,13 @@ Rails.application.routes.draw do
     root "dashboard#show"
 
     resource :store, only: %i[show update]
-
-    resources :booths, only: %i[index create update]
+    resources :booths, only: %i[index show new edit create update] do
+      member do
+        get :watch
+        patch :archive
+      end
+    end
     resources :drink_items, only: %i[index create update destroy]
-
     resources :store_bans, only: %i[index create destroy]
     resources :casts, only: %i[index create destroy]
     get "/cast_metrics", to: "metrics#cast"
