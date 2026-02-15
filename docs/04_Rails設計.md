@@ -47,10 +47,12 @@ app/
       base_controller.rb
       booths_controller.rb
       casts_controller.rb
+      current_stores_controller.rb
       dashboard_controller.rb
       drink_items_controller.rb
       metrics_controller.rb
       store_bans_controller.rb
+      stores_controller.rb
     cast/
       booths/
         stream_sessions_controller.rb
@@ -179,6 +181,8 @@ app/
       metrics/
         cast.html.erb
       store_bans/
+        index.html.erb
+      stores/
         index.html.erb
     booths/
       _drink_menu.html.erb
