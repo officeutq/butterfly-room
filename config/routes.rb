@@ -61,4 +61,9 @@ Rails.application.routes.draw do
     resources :casts, only: %i[index create destroy]
     get "/cast_metrics", to: "metrics#cast"
   end
+
+  # --- System Admin ---
+  namespace :system_admin do
+    root "dashboard#show"
+  end
 end
