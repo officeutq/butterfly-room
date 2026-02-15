@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_15_040810) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_15_051559) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -189,7 +189,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_15_040810) do
   create_table "stores", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name", null: false
+    t.bigint "referral_code_id"
     t.datetime "updated_at", null: false
+    t.index ["referral_code_id"], name: "index_stores_on_referral_code_id"
   end
 
   create_table "stream_sessions", force: :cascade do |t|
@@ -304,6 +306,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_15_040810) do
   add_foreign_key "store_ledger_entries", "stream_sessions"
   add_foreign_key "store_memberships", "stores"
   add_foreign_key "store_memberships", "users"
+  add_foreign_key "stores", "referral_codes"
   add_foreign_key "stream_sessions", "booths"
   add_foreign_key "stream_sessions", "stores"
   add_foreign_key "stream_sessions", "users", column: "started_by_cast_user_id"

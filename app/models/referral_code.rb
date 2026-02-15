@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class ReferralCode < ApplicationRecord
+  has_many :stores, dependent: :nullify
+
   validates :code, presence: true, uniqueness: true
 
   def expired?
