@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_12_065201) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_15_040810) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -133,6 +133,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_12_065201) do
     t.index ["stream_session_id", "last_seen_at"], name: "index_presences_on_stream_session_id_and_last_seen_at"
     t.index ["stream_session_id", "left_at"], name: "index_presences_on_stream_session_id_and_left_at"
     t.index ["stream_session_id"], name: "index_presences_on_stream_session_id"
+  end
+
+  create_table "referral_codes", force: :cascade do |t|
+    t.string "code", null: false
+    t.datetime "created_at", null: false
+    t.boolean "enabled", default: true, null: false
+    t.datetime "expires_at"
+    t.string "label"
+    t.datetime "updated_at", null: false
+    t.index ["code"], name: "index_referral_codes_on_code", unique: true
+    t.index ["enabled"], name: "index_referral_codes_on_enabled"
+    t.index ["expires_at"], name: "index_referral_codes_on_expires_at"
   end
 
   create_table "store_bans", force: :cascade do |t|

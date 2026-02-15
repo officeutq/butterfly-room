@@ -1,0 +1,65 @@
+<h1>紹介コード管理</h1>
+
+<div class="mb-3 d-flex gap-2">
+  <%= link_to "新規作成", new_system_admin_referral_code_path, class: "btn btn-primary" %>
+  <%= link_to "ダッシュボードへ戻る", system_admin_root_path, class: "btn btn-outline-secondary" %>
+</div>
+
+<table class="table table-sm align-middle">
+  <thead>
+    <tr>
+      <th>Code</th>
+      <th>Label</th>
+      <th>Expires</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @referral_codes.each do |rc| %>
+      <tr class="<%= "text-muted" if !rc.enabled? || rc.expired? %>">
+        <td class="fw-semibold"><%= rc.code %></td>
+        <td><%= rc.label.presence || "-" %></td>
+        <td class="text-muted small">
+          <%= rc.expires_at.present? ? l(rc.expires_at) : "-" %>
+        </td>
+
+        <td>
+          <% if rc.expired? %>
+            <span class="badge text-bg-warning">expired</span>
+          <% end %>
+
+          <% if rc.enabled? %>
+            <span class="badge text-bg-success">enabled</span>
+          <% else %>
+            <span class="badge text-bg-secondary">disabled</span>
+          <% end %>
+
+          <% unless rc.usable? %>
+            <span class="badge text-bg-danger ms-1">登録不可</span>
+          <% end %>
+        </td>
+
+        <td class="d-flex justify-content-end gap-2">
+          <%= link_to "編集", edit_system_admin_referral_code_path(rc), class: "btn btn-outline-secondary btn-sm" %>
+
+          <% if rc.enabled? %>
+            <%= button_to "無効化",
+                  system_admin_referral_code_path(rc),
+                  method: :patch,
+                  params: { referral_code: { enabled: false } },
+                  class: "btn btn-outline-danger btn-sm",
+                  data: { turbo_confirm: "この紹介コードを無効化します。よろしいですか？" } %>
+          <% else %>
+            <%= button_to "有効化",
+                  system_admin_referral_code_path(rc),
+                  method: :patch,
+                  params: { referral_code: { enabled: true } },
+                  class: "btn btn-outline-success btn-sm" %>
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
