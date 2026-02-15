@@ -68,6 +68,7 @@ app/
     system_admin/
       base_controller.rb
       dashboard_controller.rb
+      referral_codes_controller.rb
     wallet/
       purchases_controller.rb
     webhooks/
@@ -105,6 +106,7 @@ app/
     drink_item.rb
     drink_order.rb
     presence.rb
+    referral_code.rb
     store.rb
     store_ban.rb
     store_ledger_entry.rb
@@ -209,6 +211,11 @@ app/
     system_admin/
       dashboard/
         show.html.erb
+      referral_codes/
+        _form.html.erb
+        edit.html.erb
+        index.html.erb
+        new.html.erb
     wallets/
       _balance.html.erb
 
