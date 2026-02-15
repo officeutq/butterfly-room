@@ -87,16 +87,15 @@ module Cast
     private
 
     def set_booth
-      # session 優先で解決（不正なら current_booth が nil になり一覧へ戻す）
-      booth = current_booth
-      if booth.blank?
-        redirect_to cast_booths_path, alert: "選択できないブースです"
+      booth = Booth.find(params[:id])
+
+      unless current_user.system_admin? || BoothCast.exists?(cast_user_id: current_user.id, booth_id: booth.id)
+        session.delete(:current_booth_id)
+        head :forbidden
         return
       end
 
       @booth = booth
-
-      # 遷移で明示的に booth が指された場合も、正なら current を更新しておく
       session[:current_booth_id] = @booth.id
     end
 
