@@ -65,5 +65,7 @@ Rails.application.routes.draw do
   # --- System Admin ---
   namespace :system_admin do
     root "dashboard#show"
+
+    resources :referral_codes, only: %i[index new create edit update]
   end
 end
