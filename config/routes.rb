@@ -55,6 +55,10 @@ Rails.application.routes.draw do
   namespace :admin do
     root "dashboard#show"
 
+    # current_store selection
+    resources :stores, only: %i[index]
+    resource :current_store, only: %i[create]
+
     resource :store, only: %i[show update]
     resources :booths, only: %i[index show new edit create update] do
       member do

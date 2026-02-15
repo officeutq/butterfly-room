@@ -40,6 +40,26 @@
       </div>
     </div>
 
+    <%# admin: current_store 表示（最低限） %>
+    <% if current_user.present? && (current_user.store_admin? || current_user.system_admin?) %>
+      <div class="container mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="text-muted small">
+            現在の店舗:
+            <% if defined?(current_store) && current_store.present? %>
+              <strong><%= current_store.name.presence || "(no name)" %></strong>
+            <% else %>
+              <span class="text-danger">未選択</span>
+            <% end %>
+          </div>
+
+          <% if current_user.store_admin? %>
+            <%= link_to "店舗を切り替える", admin_stores_path, class: "btn btn-sm btn-outline-secondary" %>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
     <%= yield %>
   </body>
 </html>
