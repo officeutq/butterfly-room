@@ -5,6 +5,12 @@ Rails.application.routes.draw do
 
   root "home#show"
 
+  # --- Public (store registration) ---
+  namespace :stores do
+    get  :new_registration, to: "registrations#new"
+    post :registrations,    to: "registrations#create"
+  end
+
   # --- Public (customer) ---
   resources :booths, only: %i[show]
 
