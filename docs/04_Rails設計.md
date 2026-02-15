@@ -60,6 +60,8 @@ app/
       stream_sessions_controller.rb
     concerns/
       store_ban_guard.rb
+    stores/
+      registrations_controller.rb
     stream_sessions/
       comments_controller.rb
       drink_orders_controller.rb
@@ -78,6 +80,9 @@ app/
     checkout_controller.rb
     home_controller.rb
     stream_sessions_controller.rb
+  forms/
+    stores/
+      registration_form.rb
   helpers/
     admin/
       metrics_helper.rb
@@ -143,6 +148,8 @@ app/
     presences/
       ping_service.rb
       summary_service.rb
+    stores/
+      register_store_admin.rb
     stream_sessions/
       comments/
         create_service.rb
@@ -201,6 +208,9 @@ app/
       service-worker.js
     shared/
       _flash_message.html.erb
+    stores/
+      registrations/
+        new.html.erb
     stream_sessions/
       comments/
         _form.html.erb

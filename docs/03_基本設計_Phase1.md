@@ -364,6 +364,9 @@ erDiagram
     USERS ||--o{ STORE_BANS : creates
     USERS ||--o{ STORE_BANS : banned
 
+    %% Referral Codes (store registration)
+    REFERRAL_CODES ||--o{ STORES : used_by
+
     %% Booth / StreamSession
     BOOTHS ||--o{ STREAM_SESSIONS : runs
     BOOTHS ||--o{ DRINK_ORDERS : receives
@@ -395,7 +398,7 @@ erDiagram
     ACTIVE_STORAGE_VARIANT_RECORDS }o--|| ACTIVE_STORAGE_BLOBS : blob
 ```
 
-* ※ `active_storage_*` は Rails 標準の添付機構（ドメイン外）であり、ER図には参考として掲載している。  
+* ※ `active_storage_*` は Rails 標準の添付機構（ドメイン外）であり、ER図には参考として掲載している。
 * ※ `stripe_webhook_events` は Stripe Webhook 受信ログ（外部連携ログ）で、業務ドメインの正規データは別テーブル（wallet_purchases / wallet_transactions 等）に保持する。
 
 
@@ -406,6 +409,7 @@ erDiagram
 店舗（売上・配信の管理主体）。
 
 * `name`（必須）
+* `referral_code_id`（店舗登録で使用した紹介コード、FK。登録フローでは必須扱い）
 
 #### users
 
@@ -533,6 +537,15 @@ erDiagram
 * `paid_at` / `credited_at`（任意）
 * `stripe_checkout_session_id`（任意・unique）
 * `booth_id`（任意）
+
+#### referral_codes
+
+店舗登録の入口制御・流入計測のための「許可リスト」（共通コード）。
+
+* `code`（必須・unique）
+* `label`（任意：運用上の識別）
+* `enabled`（必須・default: true）
+* `expires_at`（任意：期限）
 
 #### stripe_webhook_events
 
