@@ -65,6 +65,9 @@ app/
       drink_orders_controller.rb
       ivs_participant_tokens_controller.rb
       presences_controller.rb
+    system_admin/
+      base_controller.rb
+      dashboard_controller.rb
     wallet/
       purchases_controller.rb
     webhooks/
@@ -203,6 +206,9 @@ app/
       _ivs_viewer.html.erb
       _pending_drink_orders.html.erb
       _viewer_ended.html.erb
+    system_admin/
+      dashboard/
+        show.html.erb
     wallets/
       _balance.html.erb
 
