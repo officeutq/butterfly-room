@@ -1,18 +1,45 @@
-<h1>Cast Booths#index</h1>
+<h1>ブースを選択</h1>
 
-<ul>
-  <% @booths.each do |booth| %>
-    <li>
-      <% path = booth.offline? ? cast_booth_path(booth) : live_cast_booth_path(booth) %>
-      <%= link_to "booth ##{booth.id} #{booth.name} (#{booth.status})", path %>
+<% if @booths.blank? %>
+  <div class="alert alert-warning" role="alert">
+    操作可能なブースがありません。
+  </div>
+<% else %>
+  <table class="table align-middle">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>ブース名</th>
+        <th>状態</th>
+        <th>current_session</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @booths.each do |booth| %>
+        <tr class="<%= "table-active" if booth.id.to_s == @current_booth_id.to_s %>">
+          <td><%= booth.id %></td>
+          <td><%= booth.name.presence || "(no name)" %></td>
+          <td><%= booth.status %></td>
+          <td><%= booth.current_stream_session_id || "-" %></td>
+          <td class="text-end">
+            <% data_attrs = {} %>
+            <% if @confirm_switch_booth && booth.id.to_s != @current_booth_id.to_s %>
+              <% data_attrs[:turbo_confirm] = "配信中（またはスタンバイ/離席中）のブースから切り替えます。よろしいですか？" %>
+            <% end %>
 
-      <% if booth.current_stream_session_id.present? %>
-        / current_session: <%= booth.current_stream_session_id %>
+            <%= button_to "このブースを開く",
+                  cast_current_booth_path(booth_id: booth.id),
+                  method: :post,
+                  class: "btn btn-primary btn-sm",
+                  data: data_attrs %>
+          </td>
+        </tr>
       <% end %>
-    </li>
-  <% end %>
-</ul>
+    </tbody>
+  </table>
+<% end %>
 
-<p>
-  <%= link_to "home", root_path %>
+<p class="mt-3">
+  <%= link_to "home", root_path, class: "btn btn-outline-secondary" %>
 </p>

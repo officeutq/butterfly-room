@@ -1,10 +1,22 @@
+# frozen_string_literal: true
+
 module Cast
   class BoothsController < Cast::BaseController
     before_action :set_booth, only: %i[show live status edit update]
     before_action :authorize_update!, only: %i[edit update]
 
     def index
-      @booths = Booth.order(:id)
+      @booths =
+        if current_user.system_admin?
+          Booth.order(:id)
+        else
+          Booth.joins(:booth_casts)
+              .where(booth_casts: { cast_user_id: current_user.id })
+              .order(:id)
+        end
+
+      @current_booth_id = session[:current_booth_id]
+      @confirm_switch_booth = current_booth.present? && !current_booth.offline?
     end
 
     # Summary（offline専用）
@@ -75,7 +87,17 @@ module Cast
     private
 
     def set_booth
-      @booth = Booth.find(params[:id])
+      # session 優先で解決（不正なら current_booth が nil になり一覧へ戻す）
+      booth = current_booth
+      if booth.blank?
+        redirect_to cast_booths_path, alert: "選択できないブースです"
+        return
+      end
+
+      @booth = booth
+
+      # 遷移で明示的に booth が指された場合も、正なら current を更新しておく
+      session[:current_booth_id] = @booth.id
     end
 
     def authorize_update!

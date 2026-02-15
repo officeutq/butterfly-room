@@ -35,6 +35,9 @@ Rails.application.routes.draw do
 
   # --- Cast ---
   namespace :cast do
+    # current_booth selection
+    resource :current_booth, only: %i[create]
+
     resources :booths, only: %i[index show edit update] do
       get :live, on: :member
       patch :status, on: :member
