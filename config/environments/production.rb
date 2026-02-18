@@ -87,6 +87,8 @@ Rails.application.configure do
 
   # Allow CloudFront host (暫定: いまの distribution を許可)
   config.hosts << "d1qeq5amxvhfv3.cloudfront.net"
+  # Allow ALB healthcheck host (VPC内IPが Host になることがある)
+  config.hosts << /10\.\d+\.\d+\.\d+/
 
   # Skip DNS rebinding protection for the default health check endpoint.
   # config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
