@@ -87,6 +87,8 @@ Rails.application.configure do
 
   # Allow CloudFront host (暫定: いまの distribution を許可)
   config.hosts << "d1qeq5amxvhfv3.cloudfront.net"
+  # Allow ALB host (healthcheck)
+  config.hosts << /.*\.elb\.amazonaws\.com/
   # Allow ALB healthcheck host (VPC内IPが Host になることがある)
   config.hosts << /10\.\d+\.\d+\.\d+/
 
