@@ -1,18 +1,26 @@
-<h1>home (stub)</h1>
-
-<ul>
-  <li><%= link_to "Public booth show (id=7)", booth_path(7) %></li>
-  <li><%= link_to "Cast booths", cast_booths_path %></li>
-  <li><%= link_to "Store Admin Dashboard", admin_root_path %></li>
-  <li><%= link_to "System Admin Dashboard", system_admin_root_path %></li>
-  <li><%= link_to "店舗として登録（ref=TEST）", stores_new_registration_path(ref: "TEST") %></li>
-</ul>
-
-<hr>
-
 <% if user_signed_in? %>
+  <h1>home (stub)</h1>
+
+  <ul>
+    <li><%= link_to "Public booth show (id=7)", booth_path(7) %></li>
+    <li><%= link_to "Cast booths", cast_booths_path %></li>
+    <li><%= link_to "Store Admin Dashboard", admin_root_path %></li>
+    <li><%= link_to "System Admin Dashboard", system_admin_root_path %></li>
+    <li><%= link_to "店舗として登録（ref=TEST）", stores_new_registration_path(ref: "TEST") %></li>
+  </ul>
+
+  <hr>
+
   <p>ログイン中: <%= current_user.email %>（role: <%= current_user.role %>）</p>
   <%= button_to "ログアウト", destroy_user_session_path, method: :delete %>
 <% else %>
-  <%= link_to "ログイン", new_user_session_path %>
+  <div class="container mt-4" style="max-width: 720px;">
+    <h1 class="mb-3">ようこそ</h1>
+    <p class="text-muted">視聴するにはログイン、または新規アカウント作成を行ってください。</p>
+
+    <div class="d-flex gap-2 mt-3">
+      <%= link_to "ログイン", new_user_session_path, class: "btn btn-primary" %>
+      <%= link_to "新規アカウント作成", sign_up_path, class: "btn btn-outline-primary" %>
+    </div>
+  </div>
 <% end %>
