@@ -58,6 +58,7 @@ app/
         stream_sessions_controller.rb
       base_controller.rb
       booths_controller.rb
+      current_booths_controller.rb
       drink_orders_controller.rb
       stream_sessions_controller.rb
     concerns/
