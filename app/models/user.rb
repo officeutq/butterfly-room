@@ -13,6 +13,8 @@ class User < ApplicationRecord
   has_one :wallet, foreign_key: :customer_user_id, dependent: :destroy, inverse_of: :customer_user
   has_many :store_memberships, dependent: :destroy
   has_many :stores, through: :store_memberships
+  has_many :favorite_booths, dependent: :destroy
+  has_many :favorite_stores, dependent: :destroy
 
   def role_level
     ROLE_LEVELS.fetch(role.to_sym)
