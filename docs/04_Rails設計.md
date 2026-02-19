@@ -84,6 +84,7 @@ app/
     booths_controller.rb
     checkout_controller.rb
     home_controller.rb
+    stores_controller.rb
     stream_sessions_controller.rb
   forms/
     customers/
@@ -227,6 +228,7 @@ app/
     stores/
       registrations/
         new.html.erb
+      show.html.erb
     stream_sessions/
       comments/
         _form.html.erb
