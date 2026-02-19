@@ -1,0 +1,66 @@
+<div class="container mt-4" style="max-width: 960px;">
+  <div class="d-flex justify-content-between align-items-start gap-3">
+    <div>
+      <h1 class="mb-1"><%= @store.name %></h1>
+      <p class="text-muted mb-0">店舗詳細</p>
+    </div>
+
+    <%# #176 で Turbo 置換する前提の “置き場” だけ用意 %>
+    <div id="store_favorite_button">
+      <span class="badge text-bg-secondary">お気に入り（準備中）</span>
+    </div>
+  </div>
+
+  <hr class="my-4">
+
+  <h2 class="h5 mb-3">ブース一覧</h2>
+
+  <% if @booths.blank? %>
+    <div class="alert alert-warning" role="alert">
+      公開中のブースがありません。
+    </div>
+  <% else %>
+    <div class="list-group">
+      <% @booths.each do |booth| %>
+        <div class="list-group-item">
+          <div class="d-flex justify-content-between align-items-center gap-3">
+            <div class="flex-grow-1">
+              <div class="d-flex align-items-center gap-2">
+                <strong><%= booth.name %></strong>
+
+                <%# 任意：状態バッジ（最小） %>
+                <% if booth.live? %>
+                  <span class="badge text-bg-danger">LIVE</span>
+                <% elsif booth.standby? %>
+                  <span class="badge text-bg-success">STANDBY</span>
+                <% elsif booth.away? %>
+                  <span class="badge text-bg-warning">AWAY</span>
+                <% else %>
+                  <span class="badge text-bg-secondary">OFFLINE</span>
+                <% end %>
+              </div>
+
+              <% casts = booth.cast_users.to_a %>
+              <% if casts.present? %>
+                <div class="text-muted small mt-1">
+                  cast:
+                  <%= casts.map { |u| u.display_name.presence || u.email }.join(" / ") %>
+                </div>
+              <% else %>
+                <div class="text-muted small mt-1">cast: (未設定)</div>
+              <% end %>
+            </div>
+
+            <div class="text-end">
+              <%= link_to "視聴ページへ", booth_path(booth), class: "btn btn-outline-primary btn-sm" %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div class="mt-4">
+    <%= link_to "戻る", root_path, class: "btn btn-outline-secondary" %>
+  </div>
+</div>

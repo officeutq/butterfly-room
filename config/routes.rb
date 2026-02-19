@@ -15,6 +15,9 @@ Rails.application.routes.draw do
     post :registrations,    to: "registrations#create"
   end
 
+  # --- Customer (login required) ---
+  resources :stores, only: %i[show]
+
   # --- Public (customer) ---
   resources :booths, only: %i[show]
 
