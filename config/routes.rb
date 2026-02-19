@@ -5,6 +5,10 @@ Rails.application.routes.draw do
 
   root "home#show"
 
+  # --- Public (customer registration) ---
+  get  "/sign_up", to: "customers/registrations#new",    as: :sign_up
+  post "/sign_up", to: "customers/registrations#create"
+
   # --- Public (store registration) ---
   namespace :stores do
     get  :new_registration, to: "registrations#new"
