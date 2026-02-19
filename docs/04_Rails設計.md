@@ -117,6 +117,8 @@ app/
     comment.rb
     drink_item.rb
     drink_order.rb
+    favorite_booth.rb
+    favorite_store.rb
     presence.rb
     referral_code.rb
     store.rb
