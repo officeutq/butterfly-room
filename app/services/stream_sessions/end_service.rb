@@ -52,8 +52,7 @@ module StreamSessions
     private
 
     def authorize!
-      allowed = @actor.cast? || @actor.system_admin?
-      raise NotAuthorized unless allowed
+      raise NotAuthorized unless @actor.at_least?(:cast)
     end
   end
 end

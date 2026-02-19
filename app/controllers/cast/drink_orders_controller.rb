@@ -2,7 +2,7 @@
 
 class Cast::DrinkOrdersController < ApplicationController
   before_action :authenticate_user!
-  before_action :require_cast_or_system_admin!
+  before_action -> { require_at_least!(:cast) }
 
   def consume
     result = DrinkOrders::ConsumeService.new(drink_order_id: params[:id]).call!
@@ -15,13 +15,5 @@ class Cast::DrinkOrdersController < ApplicationController
     render json: { error: "missing_wallet" }, status: :conflict
   rescue Wallets::ConsumeService::InsufficientReservedPoints
     render json: { error: "insufficient_reserved_points" }, status: :conflict
-  end
-
-  private
-
-  def require_cast_or_system_admin!
-    return if current_user.cast? || current_user.system_admin?
-
-    head :forbidden
   end
 end

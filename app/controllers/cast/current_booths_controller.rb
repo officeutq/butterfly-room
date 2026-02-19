@@ -12,8 +12,16 @@ module Cast
         return
       end
 
-      # session 改ざん対策：必ず所有チェック
-      unless current_user.system_admin? || BoothCast.exists?(cast_user_id: current_user.id, booth_id: booth.id)
+      allowed =
+        if current_user.system_admin?
+          true
+        elsif current_user.at_least?(:store_admin)
+          current_user.admin_of_store?(booth.store_id)
+        else
+          BoothCast.exists?(cast_user_id: current_user.id, booth_id: booth.id)
+        end
+
+      unless allowed
         session.delete(:current_booth_id)
         redirect_to cast_booths_path, alert: "選択できないブースです"
         return

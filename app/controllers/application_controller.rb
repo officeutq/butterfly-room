@@ -7,11 +7,20 @@ class ApplicationController < ActionController::Base
 
   private
 
+  # 既存：完全一致（そのまま残す。階層が必要な箇所は require_at_least! を使う）
   def require_role!(*roles)
     authenticate_user! # Devise
 
     role = current_user.role.to_sym
     return if roles.include?(role)
+
+    head :forbidden
+  end
+
+  def require_at_least!(required_role)
+    authenticate_user! # Devise
+
+    return if current_user.at_least?(required_role)
 
     head :forbidden
   end

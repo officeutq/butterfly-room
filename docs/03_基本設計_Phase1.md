@@ -585,7 +585,45 @@ booths テーブルに archived_at を追加する。
 
 売上は store_ledger_entries を基準に集計する。
 
-### 4.6 将来拡張の余地（Phase2への布石）
+### 4.6 ロール設計（Phase1）
+
+#### ■ ロール階層
+
+Phase1では以下の階層ロールを持つ：
+
+```
+system_admin > store_admin > cast > customer
+```
+
+上位ロールは下位ロールの権限を包含する。
+
+#### ■ 判定方法
+
+ロール判定は `User#at_least?` を利用する。
+
+```ruby
+user.at_least?(:cast)
+```
+
+のように「最低ロール」で判定する。
+
+role の直接比較（`user.cast?` など）は原則禁止。
+
+#### ■ 名前空間ガード
+
+* Admin → at_least?(:store_admin)
+* Cast → at_least?(:cast)
+* SystemAdmin → at_least?(:system_admin)
+
+#### ■ sales の扱い
+
+sales は階層ロールに含めない。
+
+* `users.role` には追加しない
+* 別軸（boolean等）で管理する
+* sales用 controller 名前空間を分離する
+
+### 4.7 将来拡張の余地（Phase2への布石）
 
 Phase2以降で以下の拡張を想定する。
 

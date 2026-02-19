@@ -1,6 +1,6 @@
 module Admin
   class BaseController < ApplicationController
-    before_action -> { require_role!(:store_admin, :system_admin) }
+    before_action -> { require_at_least!(:store_admin) }
 
     private
 

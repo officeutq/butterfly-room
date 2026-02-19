@@ -2,6 +2,6 @@
 
 module SystemAdmin
   class BaseController < ApplicationController
-    before_action -> { require_role!(:system_admin) }
+    before_action -> { require_at_least!(:system_admin) }
   end
 end

@@ -134,6 +134,22 @@ class IvsParticipantTokensTest < ActionDispatch::IntegrationTest
     assert_equal "not_joinable", body["error"]
   end
 
+  test "publisher: store_admin of booth store can get token" do
+    StoreMembership.create!(store: @store, user: @admin, membership_role: :admin)
+    sign_in @admin, scope: :user
+
+    stub_ivs_token("ADMIN_PUB_TOKEN") do
+      post stream_session_ivs_participant_tokens_path(@session),
+          params: { role: "publisher" }.to_json,
+          headers: json_headers
+    end
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_equal "publisher", body["role"]
+    assert_equal "ADMIN_PUB_TOKEN", body["participant_token"]
+  end
+
   private
 
   def json_headers
