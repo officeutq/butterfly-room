@@ -63,6 +63,8 @@ app/
       stream_sessions_controller.rb
     concerns/
       store_ban_guard.rb
+    customers/
+      registrations_controller.rb
     stores/
       registrations_controller.rb
     stream_sessions/
@@ -84,6 +86,8 @@ app/
     home_controller.rb
     stream_sessions_controller.rb
   forms/
+    customers/
+      registration_form.rb
     stores/
       registration_form.rb
   helpers/
@@ -140,6 +144,8 @@ app/
       stream_session_policy.rb
     booths/
       provision_ivs_stage_service.rb
+    customers/
+      register_customer.rb
     drink_orders/
       consume_service.rb
       create_service.rb
@@ -202,6 +208,9 @@ app/
       return.html.erb
     comments/
       _comment.html.erb
+    customers/
+      registrations/
+        new.html.erb
     home/
       show.html.erb
     layouts/
