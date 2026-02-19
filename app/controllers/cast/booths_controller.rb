@@ -9,6 +9,11 @@ module Cast
       @booths =
         if current_user.system_admin?
           Booth.order(:id)
+        elsif current_user.at_least?(:store_admin)
+          Booth.joins(store: :store_memberships)
+              .where(store_memberships: { user_id: current_user.id, membership_role: :admin })
+              .distinct
+              .order(:id)
         else
           Booth.joins(:booth_casts)
               .where(booth_casts: { cast_user_id: current_user.id })
@@ -89,7 +94,16 @@ module Cast
     def set_booth
       booth = Booth.find(params[:id])
 
-      unless current_user.system_admin? || BoothCast.exists?(cast_user_id: current_user.id, booth_id: booth.id)
+      allowed =
+        if current_user.system_admin?
+          true
+        elsif current_user.at_least?(:store_admin)
+          current_user.admin_of_store?(booth.store_id)
+        else
+          BoothCast.exists?(cast_user_id: current_user.id, booth_id: booth.id)
+        end
+
+      unless allowed
         session.delete(:current_booth_id)
         head :forbidden
         return

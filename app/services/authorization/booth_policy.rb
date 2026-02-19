@@ -5,11 +5,13 @@ module Authorization
     end
 
     def cast_operate?
-      user.cast? || user.system_admin?
+      return false if user.blank?
+      user.at_least?(:cast)
     end
 
     def admin_operate?
-      user.store_admin? || user.system_admin?
+      return false if user.blank?
+      user.at_least?(:store_admin)
     end
 
     def edit?
@@ -18,7 +20,6 @@ module Authorization
 
     def create?
       return false if user.blank?
-
       return true if user.system_admin?
       return false unless user.store_admin?
 
@@ -28,7 +29,6 @@ module Authorization
 
     def update?
       return false if user.blank?
-
       return true if user.system_admin?
       return false if user.customer?
 

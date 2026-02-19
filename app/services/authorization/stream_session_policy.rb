@@ -5,10 +5,16 @@ module Authorization
     def publish_token?
       return false unless user.present?
 
-      # cast/system_admin の基本条件
-      return false unless BoothPolicy.new(user, record.booth).cast_operate?
-
       booth = record.booth
+
+      # 上位（store_admin/system_admin）は、所属 store の booth なら publisher token を許可（cast兼務）
+      if user.at_least?(:store_admin)
+        return true if user.system_admin?
+        return user.admin_of_store?(booth.store_id)
+      end
+
+      # cast の基本条件
+      return false unless BoothPolicy.new(user, booth).cast_operate?
 
       # フェーズ1: 担当cast（primary）が設定されている場合は、その1人だけ許可
       primary_cast_user_id = booth.primary_cast_user_id
@@ -17,7 +23,6 @@ module Authorization
       end
 
       # 担当未設定の暫定措置：
-      # booth.cast_users の整備前でも、セッション開始者本人は publisher token を取得できるようにする
       booth.cast_users.exists?(id: user.id) ||
         record.started_by_cast_user_id == user.id
     end
