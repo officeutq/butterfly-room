@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_15_051559) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_19_074224) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -118,6 +118,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_15_051559) do
     t.index ["store_id"], name: "index_drink_orders_on_store_id"
     t.index ["stream_session_id", "status", "created_at", "id"], name: "idx_drink_orders_fifo"
     t.index ["stream_session_id"], name: "index_drink_orders_on_stream_session_id"
+  end
+
+  create_table "favorite_booths", force: :cascade do |t|
+    t.bigint "booth_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["booth_id"], name: "index_favorite_booths_on_booth_id"
+    t.index ["user_id", "booth_id"], name: "index_favorite_booths_on_user_id_and_booth_id", unique: true
+    t.index ["user_id"], name: "index_favorite_booths_on_user_id"
+  end
+
+  create_table "favorite_stores", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "store_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["store_id"], name: "index_favorite_stores_on_store_id"
+    t.index ["user_id", "store_id"], name: "index_favorite_stores_on_user_id_and_store_id", unique: true
+    t.index ["user_id"], name: "index_favorite_stores_on_user_id"
   end
 
   create_table "presences", force: :cascade do |t|
@@ -296,6 +316,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_15_051559) do
   add_foreign_key "drink_orders", "stores"
   add_foreign_key "drink_orders", "stream_sessions"
   add_foreign_key "drink_orders", "users", column: "customer_user_id"
+  add_foreign_key "favorite_booths", "booths"
+  add_foreign_key "favorite_booths", "users"
+  add_foreign_key "favorite_stores", "stores"
+  add_foreign_key "favorite_stores", "users"
   add_foreign_key "presences", "stream_sessions"
   add_foreign_key "presences", "users", column: "customer_user_id"
   add_foreign_key "store_bans", "stores"
