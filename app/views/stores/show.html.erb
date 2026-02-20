@@ -5,9 +5,8 @@
       <p class="text-muted mb-0">店舗詳細</p>
     </div>
 
-    <%# #176 で Turbo 置換する前提の “置き場” だけ用意 %>
     <div id="store_favorite_button">
-      <span class="badge text-bg-secondary">お気に入り（準備中）</span>
+      <%= render "favorites/stores/button", store: @store, favorited: @store_favorited %>
     </div>
   </div>
 

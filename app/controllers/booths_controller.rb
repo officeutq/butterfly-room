@@ -27,6 +27,9 @@ class BoothsController < ApplicationController
       else
         []
       end
+
+    @booth_favorited =
+      user_signed_in? && current_user.favorite_booths.exists?(booth_id: @booth.id)
   end
 
   private
