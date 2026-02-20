@@ -7,6 +7,50 @@
       </div>
     </div>
 
+    <%# --- Search (minimal / GET) --- %>
+    <div class="card mb-3">
+      <div class="card-body">
+        <%= form_with url: root_path, method: :get, scope: nil do |f| %>
+          <div class="row g-2 align-items-center">
+            <div class="col-12 col-md-7">
+              <%= f.text_field :q,
+                    value: @q,
+                    class: "form-control",
+                    placeholder: "ブース名 / ストア名で検索（部分一致）",
+                    autocomplete: "off" %>
+            </div>
+
+            <div class="col-12 col-md-auto">
+              <div class="form-check">
+                <%= f.check_box :online,
+                      { class: "form-check-input", checked: @online_only, include_hidden: false },
+                      "1" %>
+                <%= f.label :online, "配信中のみ", class: "form-check-label" %>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-auto">
+              <%= f.submit "検索", class: "btn btn-primary w-100" %>
+            </div>
+
+            <div class="col-12 col-md-auto">
+              <%= link_to "クリア", root_path, class: "btn btn-outline-secondary w-100" %>
+            </div>
+          </div>
+        <% end %>
+
+        <% if @q.present? || @online_only %>
+          <div class="mt-2 text-muted small">
+            <% labels = [] %>
+            <% labels << "“#{@q}”" if @q.present? %>
+            <% labels << "配信中のみ" if @online_only %>
+            <span><%= labels.join(" / ") %> の検索結果</span>
+            <span class="ms-2">（<%= @booths.size %> 件）</span>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
     <% if @booths.present? %>
       <div class="row row-cols-1 row-cols-md-3 g-3">
         <% @booths.each do |booth| %>
