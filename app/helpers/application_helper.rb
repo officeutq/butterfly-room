@@ -4,17 +4,10 @@ module ApplicationHelper
   def booth_status_badge(booth)
     return "" if booth.blank?
 
-    label, klass =
-      case booth.status&.to_sym
-      when :live
-        [ "配信中", "text-bg-danger" ]
-      when :standby
-        [ "スタンバイ", "text-bg-info" ]
-      when :away
-        [ "離席中", "text-bg-warning" ]
-      else
-        [ "オフライン", "text-bg-secondary" ]
-      end
+    live_like = booth.live? || booth.away?
+
+    label = live_like ? "配信中" : "オフライン"
+    klass = live_like ? "text-bg-danger" : "text-bg-secondary"
 
     content_tag(:span, label, class: "badge #{klass}")
   end
