@@ -1,0 +1,43 @@
+<div class="container mt-4" style="max-width: 960px;">
+  <div class="d-flex justify-content-between align-items-start gap-3">
+    <div>
+      <h1 class="mb-1">お気に入りブース</h1>
+      <p class="text-muted mb-0">新しい順</p>
+    </div>
+
+    <div class="d-flex gap-2">
+      <%= link_to "店舗のお気に入り", favorites_stores_path, class: "btn btn-outline-secondary btn-sm" %>
+      <%= link_to "戻る", root_path, class: "btn btn-outline-secondary btn-sm" %>
+    </div>
+  </div>
+
+  <hr class="my-4">
+
+  <% if @favorite_booths.blank? %>
+    <div class="alert alert-secondary" role="alert">
+      お気に入りブースはありません。
+    </div>
+  <% else %>
+    <div class="list-group">
+      <% @favorite_booths.each do |favorite| %>
+        <% booth = favorite.booth %>
+        <div class="list-group-item">
+          <div class="d-flex justify-content-between align-items-center gap-3">
+            <div class="flex-grow-1">
+              <div class="fw-semibold">
+                <%= link_to booth.name, booth_path(booth), class: "text-decoration-none" %>
+              </div>
+              <div class="text-muted small">
+                store: <%= booth.store&.name %>
+              </div>
+            </div>
+
+            <div class="text-end">
+              <%= link_to "開く", booth_path(booth), class: "btn btn-outline-primary btn-sm" %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>

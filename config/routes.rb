@@ -15,6 +15,12 @@ Rails.application.routes.draw do
     post :registrations,    to: "registrations#create"
   end
 
+  # --- Favorites (login required) ---
+  namespace :favorites do
+    resources :booths, only: %i[index]
+    resources :stores, only: %i[index]
+  end
+
   # --- Customer (login required) ---
   resources :stores, only: %i[show] do
     resource :favorite, only: %i[create destroy], controller: "favorites/stores"
@@ -89,7 +95,6 @@ Rails.application.routes.draw do
   # --- System Admin ---
   namespace :system_admin do
     root "dashboard#show"
-
     resources :referral_codes, only: %i[index new create edit update]
   end
 end

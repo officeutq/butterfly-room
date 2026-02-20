@@ -3,7 +3,25 @@
 module Favorites
   class BoothsController < ApplicationController
     before_action -> { require_at_least!(:customer) }
-    before_action :set_booth
+    before_action :set_booth, only: %i[create destroy]
+
+    def index
+      scope =
+        current_user
+          .favorite_booths
+          .joins(:booth)
+          .merge(Booth.active)
+          .includes(booth: :store)
+          .order(created_at: :desc, id: :desc)
+
+      # Home と同じ「可能な範囲で予防」：customer のみ BAN store を除外
+      if current_user.customer?
+        banned_store_ids = StoreBan.where(customer_user_id: current_user.id).select(:store_id)
+        scope = scope.where.not(booths: { store_id: banned_store_ids })
+      end
+
+      @favorite_booths = scope
+    end
 
     def create
       current_user.favorite_booths.find_or_create_by!(booth: @booth)
