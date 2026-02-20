@@ -1,18 +1,74 @@
 <% if user_signed_in? %>
-  <h1>home (stub)</h1>
+  <div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="h4 mb-0">ブース一覧</h1>
+      <div class="text-muted small">
+        ログイン中: <%= current_user.email %>（role: <%= current_user.role %>）
+      </div>
+    </div>
 
-  <ul>
-    <li><%= link_to "Public booth show (id=7)", booth_path(7) %></li>
-    <li><%= link_to "Cast booths", cast_booths_path %></li>
-    <li><%= link_to "Store Admin Dashboard", admin_root_path %></li>
-    <li><%= link_to "System Admin Dashboard", system_admin_root_path %></li>
-    <li><%= link_to "店舗として登録（ref=TEST）", stores_new_registration_path(ref: "TEST") %></li>
-  </ul>
+    <%# --- Booth grid (watch entry) --- %>
+    <% if @booths.present? %>
+      <div class="row row-cols-1 row-cols-md-3 g-3">
+        <% @booths.each do |booth| %>
+          <% primary_cast = booth.booth_casts.max_by { |bc| [bc.created_at, bc.id] }&.cast_user %>
 
-  <hr>
+          <div class="col">
+            <%= link_to booth_path(booth), class: "text-decoration-none text-reset" do %>
+              <div class="card h-100">
+                <% if booth.thumbnail_image.attached? %>
+                  <%= image_tag booth.thumbnail_image,
+                        class: "card-img-top",
+                        style: "aspect-ratio: 16 / 9; object-fit: cover;" %>
+                <% else %>
+                  <div class="bg-light d-flex align-items-center justify-content-center"
+                       style="aspect-ratio: 16 / 9;">
+                    <span class="text-muted small">no thumbnail</span>
+                  </div>
+                <% end %>
 
-  <p>ログイン中: <%= current_user.email %>（role: <%= current_user.role %>）</p>
-  <%= button_to "ログアウト", destroy_user_session_path, method: :delete %>
+                <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div class="fw-semibold"><%= booth.name %></div>
+                    <div><%= booth_status_badge(booth) %></div>
+                  </div>
+
+                  <div class="mt-2 text-muted small">
+                    <% if primary_cast.present? %>
+                      cast: <%= display_name_or_email(primary_cast) %>
+                    <% else %>
+                      cast: <span class="text-muted">（未設定）</span>
+                    <% end %>
+                  </div>
+
+                  <div class="text-muted small">
+                    store: <%= booth.store&.name %>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="alert alert-secondary" role="alert">
+        表示できるブースがありません。
+      </div>
+    <% end %>
+
+    <hr class="my-4">
+
+    <%# --- Dev / role entry links (暫定) --- %>
+    <h2 class="h6">導線（暫定）</h2>
+    <ul class="mb-3">
+      <li><%= link_to "Cast booths", cast_booths_path %></li>
+      <li><%= link_to "Store Admin Dashboard", admin_root_path %></li>
+      <li><%= link_to "System Admin Dashboard", system_admin_root_path %></li>
+      <li><%= link_to "店舗として登録（ref=TEST）", stores_new_registration_path(ref: "TEST") %></li>
+    </ul>
+
+    <%= button_to "ログアウト", destroy_user_session_path, method: :delete, class: "btn btn-outline-secondary" %>
+  </div>
 <% else %>
   <div class="container mt-4" style="max-width: 720px;">
     <h1 class="mb-3">ようこそ</h1>
