@@ -1,0 +1,48 @@
+<h1>ユーザー管理</h1>
+
+<div class="mb-3 d-flex gap-2">
+  <%= link_to "新規作成", new_system_admin_user_path, class: "btn btn-primary" %>
+  <%= link_to "ダッシュボードへ戻る", system_admin_root_path, class: "btn btn-outline-secondary" %>
+</div>
+
+<table class="table table-sm align-middle">
+  <thead>
+    <tr>
+      <th>Email</th>
+      <th>Role</th>
+      <th>Created</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @users.each do |u| %>
+      <tr class="<%= "text-muted" if u.deleted? %>">
+        <td class="fw-semibold"><%= u.email %></td>
+        <td><%= u.role %></td>
+        <td class="text-muted small"><%= l(u.created_at) %></td>
+
+        <td>
+          <% if u.deleted? %>
+            <span class="badge text-bg-secondary">stopped</span>
+          <% else %>
+            <span class="badge text-bg-success">active</span>
+          <% end %>
+        </td>
+
+        <td class="d-flex justify-content-end gap-2">
+          <%= link_to "編集", edit_system_admin_user_path(u), class: "btn btn-outline-secondary btn-sm" %>
+
+          <% unless u.deleted? %>
+            <%= button_to "停止",
+                  system_admin_user_path(u),
+                  method: :delete,
+                  class: "btn btn-outline-danger btn-sm",
+                  data: { turbo_confirm: "このユーザーを停止します。よろしいですか？" } %>
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

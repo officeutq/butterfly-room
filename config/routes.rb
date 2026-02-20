@@ -96,5 +96,6 @@ Rails.application.routes.draw do
   namespace :system_admin do
     root "dashboard#show"
     resources :referral_codes, only: %i[index new create edit update]
+    resources :users, only: %i[index new create edit update destroy]
   end
 end
