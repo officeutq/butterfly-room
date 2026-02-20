@@ -79,6 +79,7 @@ app/
       base_controller.rb
       dashboard_controller.rb
       referral_codes_controller.rb
+      users_controller.rb
     wallet/
       purchases_controller.rb
     webhooks/
@@ -250,6 +251,11 @@ app/
       dashboard/
         show.html.erb
       referral_codes/
+        _form.html.erb
+        edit.html.erb
+        index.html.erb
+        new.html.erb
+      users/
         _form.html.erb
         edit.html.erb
         index.html.erb
