@@ -220,8 +220,10 @@ app/
     favorites/
       booths/
         _button.html.erb
+        index.html.erb
       stores/
         _button.html.erb
+        index.html.erb
     home/
       show.html.erb
     layouts/
