@@ -2,14 +2,32 @@
 
 class HomeController < ApplicationController
   def show
+    @q = params[:q].to_s.strip
+    @online_only = (params[:online] == "1")
+
     booths = Booth.active
-                 .includes(
-                   :store,
-                   { booth_casts: :cast_user },
-                   thumbnail_image_attachment: :blob
-                 )
-                 .order(updated_at: :desc, id: :desc)
-                 .limit(60)
+
+    if @q.present?
+      escaped = ActiveRecord::Base.sanitize_sql_like(@q)
+      pattern = "%#{escaped}%"
+
+      booths =
+        booths
+          .joins(:store)
+          .where("booths.name ILIKE :q OR stores.name ILIKE :q", q: pattern)
+    end
+
+    booths = booths.where(status: %i[live away]) if @online_only
+
+    booths =
+      booths
+        .includes(
+          :store,
+          { booth_casts: :cast_user },
+          thumbnail_image_attachment: :blob
+        )
+        .order(updated_at: :desc, id: :desc)
+        .limit(60)
 
     # 可能な範囲で予防（ただし最終防衛は BoothsController#show の StoreBanGuard が担保）
     if user_signed_in? && current_user.customer?
