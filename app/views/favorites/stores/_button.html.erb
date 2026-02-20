@@ -1,0 +1,13 @@
+<%# locals: store:, favorited: %>
+
+<% if favorited %>
+  <%= button_to "お気に入り解除",
+        store_favorite_path(store),
+        method: :delete,
+        class: "btn btn-sm btn-outline-secondary" %>
+<% else %>
+  <%= button_to "お気に入り",
+        store_favorite_path(store),
+        method: :post,
+        class: "btn btn-sm btn-outline-primary" %>
+<% end %>

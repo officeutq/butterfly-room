@@ -16,10 +16,14 @@ Rails.application.routes.draw do
   end
 
   # --- Customer (login required) ---
-  resources :stores, only: %i[show]
+  resources :stores, only: %i[show] do
+    resource :favorite, only: %i[create destroy], controller: "favorites/stores"
+  end
 
   # --- Public (customer) ---
-  resources :booths, only: %i[show]
+  resources :booths, only: %i[show] do
+    resource :favorite, only: %i[create destroy], controller: "favorites/booths"
+  end
 
   resources :stream_sessions, only: [] do
     resources :comments, only: %i[create], module: :stream_sessions

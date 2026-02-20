@@ -6,6 +6,13 @@
 
 <p>booth_id: <%= @booth.id %></p>
 
+<%# ★お気に入りボタン（stream_state とは分離して固定DOM） %>
+<% if user_signed_in? %>
+  <div id="booth_favorite_button" class="mb-3">
+    <%= render "favorites/booths/button", booth: @booth, favorited: @booth_favorited %>
+  </div>
+<% end %>
+
 <%# ★booth単位で常時購読（開始/終了/状態変化を自動反映） %>
 <%= turbo_stream_from [@booth, :stream_state] %>
 

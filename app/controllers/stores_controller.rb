@@ -14,6 +14,8 @@ class StoresController < ApplicationController
         .active
         .includes(:cast_users)
         .order(:id)
+
+    @store_favorited = current_user.favorite_stores.exists?(store_id: @store.id)
   end
 
   private

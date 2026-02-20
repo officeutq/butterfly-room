@@ -7,15 +7,15 @@
       </div>
     </div>
 
-    <%# --- Booth grid (watch entry) --- %>
     <% if @booths.present? %>
       <div class="row row-cols-1 row-cols-md-3 g-3">
         <% @booths.each do |booth| %>
           <% primary_cast = booth.booth_casts.max_by { |bc| [bc.created_at, bc.id] }&.cast_user %>
+          <% favorited = @favorite_booth_ids.include?(booth.id) %>
 
           <div class="col">
-            <%= link_to booth_path(booth), class: "text-decoration-none text-reset" do %>
-              <div class="card h-100">
+            <div class="card h-100">
+              <%= link_to booth_path(booth), class: "text-decoration-none text-reset" do %>
                 <% if booth.thumbnail_image.attached? %>
                   <%= image_tag booth.thumbnail_image,
                         class: "card-img-top",
@@ -26,33 +26,69 @@
                     <span class="text-muted small">no thumbnail</span>
                   </div>
                 <% end %>
+              <% end %>
 
-                <div class="card-body">
-                  <div class="d-flex justify-content-between align-items-start gap-2">
-                    <div class="fw-semibold"><%= booth.name %></div>
-                    <div><%= booth_status_badge(booth) %></div>
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                  <div class="fw-semibold">
+                    <%= link_to booth.name, booth_path(booth), class: "text-decoration-none text-reset" %>
                   </div>
+                  <div><%= booth_status_badge(booth) %></div>
+                </div>
 
-                  <div class="mt-2 text-muted small">
-                    <% if primary_cast.present? %>
-                      cast: <%= display_name_or_email(primary_cast) %>
-                    <% else %>
-                      cast: <span class="text-muted">（未設定）</span>
-                    <% end %>
-                  </div>
+                <div class="mt-2 text-muted small">
+                  <% if primary_cast.present? %>
+                    cast: <%= display_name_or_email(primary_cast) %>
+                  <% else %>
+                    cast: <span class="text-muted">（未設定）</span>
+                  <% end %>
+                </div>
 
-                  <div class="text-muted small">
-                    store: <%= booth.store&.name %>
-                  </div>
+                <div class="text-muted small">
+                  store: <%= booth.store&.name %>
                 </div>
               </div>
-            <% end %>
+
+              <div class="card-footer bg-white border-0 pt-0">
+                <div id="booth_<%= booth.id %>_favorite_button">
+                  <%= render "favorites/booths/button", booth: booth, favorited: favorited %>
+                </div>
+              </div>
+            </div>
           </div>
         <% end %>
       </div>
     <% else %>
       <div class="alert alert-secondary" role="alert">
         表示できるブースがありません。
+      </div>
+    <% end %>
+
+    <hr class="my-4">
+
+    <h2 class="h5 mb-3">店舗一覧</h2>
+
+    <% if @stores.present? %>
+      <div class="list-group mb-4">
+        <% @stores.each do |store| %>
+          <% favorited = @favorite_store_ids.include?(store.id) %>
+
+          <div class="list-group-item">
+            <div class="d-flex justify-content-between align-items-center gap-3">
+              <div class="flex-grow-1">
+                <%= link_to store.name, store_path(store), class: "text-decoration-none" %>
+              </div>
+
+              <div id="store_<%= store.id %>_favorite_button">
+                <%= render "favorites/stores/button", store: store, favorited: favorited %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="alert alert-secondary" role="alert">
+        表示できる店舗がありません。
       </div>
     <% end %>
 
