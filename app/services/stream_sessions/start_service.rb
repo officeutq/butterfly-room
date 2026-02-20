@@ -50,9 +50,21 @@ module StreamSessions
     private
 
     def authorize!
-      policy = Authorization::BoothPolicy.new(@actor, @booth)
-      allowed = policy.cast_operate? # これがあるなら
-      raise NotAuthorized unless allowed
+      actor = @actor
+      booth = @booth
+
+      allowed =
+        if actor.blank?
+          false
+        elsif actor.system_admin?
+          true
+        elsif actor.at_least?(:store_admin)
+          actor.admin_of_store?(booth.store_id)
+        else
+          BoothCast.exists?(cast_user_id: actor.id, booth_id: booth.id)
+        end
+
+      raise NotAuthorized, "選択できないブースです" unless allowed
     end
   end
 end
