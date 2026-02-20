@@ -326,23 +326,29 @@ Phase1では以下の安全側設計を採用する。
 
 ---
 
-## 4. データ設計
+以下、**`03_基本設計_Phase1.md` の「4. データ設計」だけを最新 `db/schema.rb`（2026-02-19 時点）に合わせて置き換えできる**形でまとめました。
+そのままコピペして差し替え可能です。 
+
+---
+
+## 4. データ設計（最新版：schema.rb 2026-02-19）
 
 ### 4.1 設計方針
 
-Phase1のデータ設計は、以下の原則に基づく。
+Phase1 のデータ設計は、以下の原則に基づく。
 
-1. 売上整合性を最優先とする
-2. 履歴は物理削除せず保持する
-3. 将来拡張（Phase2）を妨げない構造にする
-4. 冪等性と二重計上防止を明示的に保証する
+1. **売上整合性を最優先**とする
+2. 履歴は原則として保持し、参照可能とする（例：Booth の `archived_at`）
+3. **二重計上・二重処理をDB制約で抑止**する（例：`store_ledger_entries.drink_order_id UNIQUE`、`stripe_webhook_events.event_id UNIQUE`）
+4. 表示・集計の「正」を明確にする
 
-売上の正は store_ledger_entries とし、
-ドリンク消化確定時にのみ売上が計上される構造とする。
+   * **売上の正：`store_ledger_entries`**（消化確定のみ記録）
+   * **ポイントの正：`wallets`（残高）+ `wallet_transactions`（台帳）**
+   * 外部連携ログ（Stripe webhook）は **`stripe_webhook_events`** に隔離する
 
-### 4.2 ER図（Phase1）
+---
 
-以下は Phase1 の主要エンティティ関係図である。
+### 4.2 ER図（Phase1 / 最新）
 
 ```mermaid
 erDiagram
@@ -354,6 +360,7 @@ erDiagram
     STORES ||--o{ DRINK_ORDERS : has
     STORES ||--o{ STORE_LEDGER_ENTRIES : has
     STORES ||--o{ STORE_BANS : has
+    STORES ||--o{ FAVORITE_STORES : favorited_by
 
     USERS ||--o{ STORE_MEMBERSHIPS : member
     USERS ||--o{ BOOTH_CASTS : cast
@@ -361,8 +368,10 @@ erDiagram
     USERS ||--o{ PRESENCES : joins
     USERS ||--o{ COMMENTS : writes
     USERS ||--|| WALLETS : owns
-    USERS ||--o{ STORE_BANS : creates
     USERS ||--o{ STORE_BANS : banned
+    USERS ||--o{ STORE_BANS : creates
+    USERS ||--o{ FAVORITE_STORES : favorites
+    USERS ||--o{ FAVORITE_BOOTHS : favorites
 
     %% Referral Codes (store registration)
     REFERRAL_CODES ||--o{ STORES : used_by
@@ -371,8 +380,9 @@ erDiagram
     BOOTHS ||--o{ STREAM_SESSIONS : runs
     BOOTHS ||--o{ DRINK_ORDERS : receives
     BOOTHS ||--o{ COMMENTS : has
-    BOOTHS ||--o| BOOTH_CASTS : assigned
-    BOOTHS ||--o| STREAM_SESSIONS : current
+    BOOTHS ||--o{ FAVORITE_BOOTHS : favorited_by
+    BOOTHS ||--o{ BOOTH_CASTS : assigned
+    BOOTHS }o--o| STREAM_SESSIONS : current
 
     STREAM_SESSIONS ||--o{ DRINK_ORDERS : includes
     STREAM_SESSIONS ||--o{ PRESENCES : tracks
@@ -388,7 +398,7 @@ erDiagram
     WALLETS ||--o{ WALLET_PURCHASES : purchases
     BOOTHS ||--o{ WALLET_PURCHASES : context
 
-    %% Stripe Webhook
+    %% Stripe Webhook Log
     STRIPE_WEBHOOK_EVENTS
 
     %% ActiveStorage (Rails標準)
@@ -398,242 +408,244 @@ erDiagram
     ACTIVE_STORAGE_VARIANT_RECORDS }o--|| ACTIVE_STORAGE_BLOBS : blob
 ```
 
-* ※ `active_storage_*` は Rails 標準の添付機構（ドメイン外）であり、ER図には参考として掲載している。
-* ※ `stripe_webhook_events` は Stripe Webhook 受信ログ（外部連携ログ）で、業務ドメインの正規データは別テーブル（wallet_purchases / wallet_transactions 等）に保持する。
+**注記**
 
+* `favorite_booths / favorite_stores` を追加（お気に入り機能）
+* `stripe_webhook_events` は **外部連携の受信ログ**（正規データは `wallet_purchases / wallet_transactions` 等）
+* `active_storage_*` は Rails 標準の添付機構（ドメイン外、参考掲載）
 
-### 4.3 主要テーブルと役割（Phase1抜粋）
+---
 
-#### stores
+### 4.3 主要テーブルと役割（Phase1 / 最新）
 
-店舗（売上・配信の管理主体）。
+#### stores（店舗）
+
+店舗（配信・売上の管理主体）。
 
 * `name`（必須）
-* `referral_code_id`（店舗登録で使用した紹介コード、FK。登録フローでは必須扱い）
+* `referral_code_id`（任意 / FK：紹介コード由来の流入紐づけ）
 
-#### users
+#### users（ユーザー）
 
-ユーザー（customer / cast / store_admin 等）。
+ユーザー本体（customer / cast / store_admin / system_admin）。
 
-* `role`（必須・indexあり）
 * `email`（必須・unique）
+* `role`（必須・index）
+* `display_name`（任意）
 
-#### store_memberships
+#### store_memberships（店舗所属）
 
-ユーザーの店舗所属（店舗管理者などの権限付与）。
+ユーザーの店舗所属（管理者・キャスト所属など）。
 
-* `store_id` / `user_id` / `membership_role`（必須）
-* `store_id, user_id, membership_role` に **unique**（同一ロールの二重所属防止）
+* `store_id` / `user_id`（必須）
+* `membership_role`（必須）
+* `store_id, user_id, membership_role` unique（同一ロールの二重所属防止）
 
-#### booths
+#### booths（ブース）
 
-配信ルーム（店舗内の配信・売上・履歴の単位）。
+店舗内の配信ルーム（配信・売上・履歴の単位）。
 
 * `store_id`（必須）
+* `name`（必須）
+* `description`（任意）
 * `status`（必須・default: 0）
-* `archived_at`（NULL=現役 / NOT NULL=アーカイブ、indexあり）
-* `current_stream_session_id`（現在の配信を参照、FKあり）
-* `ivs_stage_arn`（IVS Stage ARN、indexあり）
+* `archived_at`（任意 / NULL=現役, NOT NULL=アーカイブ、indexあり）
+* `current_stream_session_id`（任意 / FK：現在セッション参照、indexあり）
+* `ivs_stage_arn`（任意 / indexあり）
 
-#### booth_casts
+> `archived_at` は「履歴保持しつつ非表示化」のための論理削除軸。
+> `status` は「配信状態のUI/制御」に利用（実際の確定売上は `store_ledger_entries` が正）。
 
-ブースとキャストの紐づけ（Phase1では実質 1ブース=1キャスト運用）。
+#### booth_casts（ブース×キャスト紐づけ）
+
+ブースに所属するキャストの紐づけ。
 
 * `booth_id` / `cast_user_id`（必須）
-* `booth_id, cast_user_id` に **unique**（同一ペアの重複作成防止）
-* **注意**：DB制約として「booth_id 単体の unique」は無いため、  
-  “1ブース1キャスト” は **アプリケーション側（UI/モデル）で保証**する（将来、DB制約追加の余地あり）。
+* `booth_id, cast_user_id` unique（同一ペアの重複作成防止）
 
-#### stream_sessions
+> Phase1 運用の “1ブース1キャスト” は **UI/モデルで保証**（DBとして `booth_id UNIQUE` はまだ置かない）。
 
-配信セッション（開始〜終了の単位）。視聴・コメント・注文の紐づけ先。
+#### stream_sessions（配信セッション）
+
+開始〜終了の単位。視聴・コメント・注文の紐づけ先。
 
 * `store_id` / `booth_id`（必須）
-* `started_at`（必須） / `ended_at`（任意・indexあり）
+* `started_at`（必須）
+* `ended_at`（任意 / index）
 * `status`（必須）
 * `started_by_cast_user_id`（必須）
-* `ivs_stage_arn`（任意・indexあり）
+* `ivs_stage_arn`（任意 / index）
 
-#### presences
+#### presences（在室）
 
-在室情報（視聴者の入室〜退出／最終ping）。
+視聴者の入室〜退出、最終ping。
 
 * `stream_session_id` / `customer_user_id`（必須）
 * `joined_at`（必須）
-* `last_seen_at`（必須・indexあり）
-* `left_at`（任意・indexあり）
-* `stream_session_id, customer_user_id, joined_at` に **unique**
+* `last_seen_at`（必須）
+* `left_at`（任意）
+* `stream_session_id, customer_user_id, joined_at` unique（同一入室の重複防止）
 
-#### comments
+#### comments（コメント）
 
-コメント（配信セッション単位で蓄積、論理削除あり）。
+配信セッション単位のコメント。論理削除あり。
 
 * `stream_session_id` / `booth_id` / `user_id`（必須）
 * `body`（必須）
-* `deleted_at`（任意・論理削除）
-* `stream_session_id, created_at` / `booth_id, created_at` の index（時系列表示を想定）
+* `deleted_at`（任意：論理削除）
+* `stream_session_id, created_at` / `booth_id, created_at` index（時系列表示向け）
 
-#### drink_items
+#### drink_items（ドリンクメニュー）
 
-ドリンクメニュー（店舗が定義するポイント商品）。
+店舗が定義するポイント商品。
 
 * `store_id`（必須）
 * `name`（必須）
-* `price_points`（必須、**DB制約: `price_points > 0`**）
+* `price_points`（必須 / **check: `> 0`**）
 * `enabled`（必須・default: true）
 * `position`（必須・default: 0）
-* `store_id, enabled, position` の index（表示用）
+* `store_id, enabled, position` index（表示用）
 
-#### drink_orders
+#### drink_orders（ドリンク注文）
 
-ドリンク注文（顧客→配信への送信イベント）。
+顧客→配信への送信イベント。消化/返却の状態を持つ。
 
 * `store_id` / `booth_id` / `stream_session_id`（必須）
-* `customer_user_id`（必須） / `drink_item_id`（必須）
+* `customer_user_id`（必須）
+* `drink_item_id`（必須）
 * `status`（必須）
-* `consumed_at`（消化確定） / `refunded_at`（返却、いずれも任意）
-* `idx_drink_orders_fifo`（`stream_session_id, status, created_at, id`）を持ち、FIFO処理をDB indexで支える
+* `consumed_at`（任意：消化確定時刻）
+* `refunded_at`（任意：返却時刻）
+* `idx_drink_orders_fifo`（`stream_session_id, status, created_at, id`）
+  → FIFO消化（先頭pending判定）をDB indexで支える
 
-#### store_ledger_entries
+#### store_ledger_entries（店舗売上台帳）
 
-店舗売上台帳（売上の正）。**消化確定時のみ**作成される。
+**売上の正（Single Source of Truth）**。消化確定時のみ作成される。
 
 * `store_id` / `stream_session_id`（必須）
-* `drink_order_id`（必須、**unique**：二重計上防止）
-* `occurred_at`（必須、`store_id, occurred_at` に index）
-* `points`（必須、**DB制約: `points > 0`**）
+* `drink_order_id`（必須 / **unique：二重計上防止**）
+* `occurred_at`（必須 / `store_id, occurred_at desc` index）
+* `points`（必須 / **check: `> 0`**）
 
-#### store_bans
-
-店舗BAN（店舗ごとの顧客利用制限）。
-
-* `store_id` / `customer_user_id` / `created_by_store_admin_user_id`（必須）
-* `store_id, customer_user_id` に **unique**（同一店舗での重複BAN防止）
-
-#### wallets
+#### wallets（ウォレット）
 
 顧客のポイント残高（1 customer = 1 wallet）。
 
-* `customer_user_id`（必須、**unique**）
-* `available_points`（必須・default: 0、**DB制約: `>= 0`**）
-* `reserved_points`（必須・default: 0、**DB制約: `>= 0`**）
+* `customer_user_id`（必須 / unique）
+* `available_points`（必須 / default: 0 / **check: `>= 0`**）
+* `reserved_points`（必須 / default: 0 / **check: `>= 0`**）
 
-#### wallet_transactions
+#### wallet_transactions（ポイント台帳）
 
-ポイント台帳（増減イベント履歴）。参照元を多態で保持する。
+ポイント増減履歴（多態参照あり）。
 
 * `wallet_id`（必須）
 * `kind`（必須）
-* `occurred_at`（必須、`wallet_id, occurred_at desc` に index）
-* `ref_type` / `ref_id`（任意、indexあり）
+* `occurred_at`（必須 / `wallet_id, occurred_at desc` index）
+* `ref_type` / `ref_id`（任意 / index）
+  → 参照元（例：購入・ドリンク注文など）を紐づけ可能
 
-#### wallet_purchases
+#### wallet_purchases（ポイント購入）
 
-ポイント購入（Stripe決済）イベント。
+Stripe決済の購入イベント（状態遷移を保持）。
 
 * `wallet_id`（必須）
 * `points`（必須）
-* `status`（必須・default: 0）
+* `status`（必須 / default: 0）
 * `paid_at` / `credited_at`（任意）
-* `stripe_checkout_session_id`（任意・unique）
-* `booth_id`（任意）
+* `stripe_checkout_session_id`（任意 / unique）
+* `stripe_customer_id` / `stripe_payment_intent_id`（任意）
+* `booth_id`（任意：購入導線のコンテキスト）
 
-#### referral_codes
+#### store_bans（店舗BAN）
 
-店舗登録の入口制御・流入計測のための「許可リスト」（共通コード）。
+店舗ごとの顧客制限。
 
-* `code`（必須・unique）
-* `label`（任意：運用上の識別）
-* `enabled`（必須・default: true）
-* `expires_at`（任意：期限）
+* `store_id`（必須）
+* `customer_user_id`（必須）
+* `created_by_store_admin_user_id`（必須）
+* `reason`（任意）
+* `store_id, customer_user_id` unique（重複BAN防止）
 
-#### stripe_webhook_events
+#### referral_codes（紹介コード）
 
-Stripe Webhook 受信ログ（冪等性・検証用）。
+店舗登録の入口制御・流入計測のための「許可リスト」。
 
-* `event_id`（必須・unique）
+* `code`（必須 / unique）
+* `label`（任意）
+* `enabled`（必須 / default: true）
+* `expires_at`（任意）
+* `enabled` / `expires_at` に index（運用・検索向け）
+
+#### favorite_booths / favorite_stores（お気に入り）
+
+顧客の回遊・再訪動機づけ用。
+
+* `favorite_booths`
+
+  * `user_id` / `booth_id`（必須）
+  * `user_id, booth_id` unique（重複防止）
+* `favorite_stores`
+
+  * `user_id` / `store_id`（必須）
+  * `user_id, store_id` unique（重複防止）
+
+#### stripe_webhook_events（Stripe受信ログ）
+
+Stripe Webhook の受信ログ（冪等性・検証用）。
+
+* `event_id`（必須 / unique）
 * `event_type`（必須）
 * `received_at`（必須）
 * `payload`（jsonb）
+* `livemode`（任意）
 
-#### （注記）ActiveStorage 系
+> **受信ログはあくまでログ**。業務ドメインの正規データは
+> `wallet_purchases / wallet_transactions / wallets` 側に保持する。
 
-`active_storage_blobs / active_storage_attachments / active_storage_variant_records` は Rails 標準機構（ファイル添付）として存在する
+#### ActiveStorage（Rails標準）
+
+* `active_storage_blobs / active_storage_attachments / active_storage_variant_records`
+  Rails標準の添付機構として存在（業務ドメイン外）
+
+---
 
 ### 4.4 ブースアーカイブ設計（archived_at）
 
-booths テーブルに archived_at を追加する。
-
-* archived_at が NULL → 現役
-* archived_at が NOT NULL → アーカイブ
+* `booths.archived_at IS NULL`：現役
+* `booths.archived_at IS NOT NULL`：アーカイブ
 
 アーカイブされたブースは：
 
-* 顧客向け一覧から除外
-* 管理画面ではデフォルト非表示
-* 配信開始不可
-* 売上履歴は保持
+* 顧客向けの一覧・導線から除外
+* 管理画面ではデフォルト非表示（必要なら切替で表示）
+* 配信開始不可（状態遷移・認可で抑止）
+* 過去の売上・コメント等の履歴は保持（集計の正は `store_ledger_entries`）
 
-物理削除は行わない。
+---
 
-### 4.5 売上確定のデータフロー
+### 4.5 売上確定のデータフロー（正：store_ledger_entries）
 
-1. 顧客がドリンク送信 → drink_orders 作成（未確定）
-2. キャストが消化 → consumed_at 設定
-3. store_ledger_entries 作成（drink_order_id unique）
-4. WalletTransaction によりポイント移動を確定
+1. 顧客がドリンク送信 → `drink_orders` 作成（未確定）
+2. キャストが消化 → `drink_orders.consumed_at` 設定
+3. **`store_ledger_entries` 作成（`drink_order_id UNIQUE` で二重計上防止）**
+4. `wallet_transactions` によりポイント移動を記録し、`wallets` の残高整合を保つ
 
-売上は store_ledger_entries を基準に集計する。
+売上表示・集計は原則として **`store_ledger_entries` を正**とする。
 
-### 4.6 ロール設計（Phase1）
+---
 
-#### ■ ロール階層
+### 4.6 Stripe購入のデータフロー（ログと正規データの分離）
 
-Phase1では以下の階層ロールを持つ：
+* Webhook受信
 
-```
-system_admin > store_admin > cast > customer
-```
+  * `stripe_webhook_events` に保存（`event_id UNIQUE` で冪等性担保）
+* 決済確定・ポイント反映
 
-上位ロールは下位ロールの権限を包含する。
-
-#### ■ 判定方法
-
-ロール判定は `User#at_least?` を利用する。
-
-```ruby
-user.at_least?(:cast)
-```
-
-のように「最低ロール」で判定する。
-
-role の直接比較（`user.cast?` など）は原則禁止。
-
-#### ■ 名前空間ガード
-
-* Admin → at_least?(:store_admin)
-* Cast → at_least?(:cast)
-* SystemAdmin → at_least?(:system_admin)
-
-#### ■ sales の扱い
-
-sales は階層ロールに含めない。
-
-* `users.role` には追加しない
-* 別軸（boolean等）で管理する
-* sales用 controller 名前空間を分離する
-
-### 4.7 将来拡張の余地（Phase2への布石）
-
-Phase2以降で以下の拡張を想定する。
-
-* drink_orders.cast_user_id の追加
-* キャスト売上台帳の導入
-* 複数キャスト運用
-* ランキング（日次／イベント）
-
-Phase1ではこれらを実装しないが、
-拡張可能な構造を維持する。
+  * `wallet_purchases` の状態更新（paid/credited 等）
+  * `wallet_transactions` 記録
+  * `wallets.available_points` 反映
 
 ---
 
