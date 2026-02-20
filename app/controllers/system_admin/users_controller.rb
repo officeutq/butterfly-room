@@ -19,11 +19,21 @@ module SystemAdmin
       @role_options = role_options
       @role_editable = true
 
-      if store_admin_role_requested?(@user.role)
+      role_value = params.dig(:user, :role).to_s
+
+      unless @role_options.include?(role_value)
+        @user.errors.add(:role, "選択できません")
+        render :new, status: :unprocessable_entity
+        return
+      end
+
+      if store_admin_role_requested?(role_value)
         @user.errors.add(:role, "store_admin は選択できません")
         render :new, status: :unprocessable_entity
         return
       end
+
+      @user.role = role_value
 
       if @user.save
         redirect_to system_admin_users_path, notice: "ユーザーを作成しました"
@@ -41,16 +51,23 @@ module SystemAdmin
       @role_options = role_options
       @role_editable = role_editable?(@user)
 
-      # パスワード欄が空なら更新対象から外す（Devise validatableと相性が良い）
       attrs = update_user_params.to_h
       if attrs["password"].blank?
         attrs.delete("password")
         attrs.delete("password_confirmation")
       end
 
-      requested_role = attrs["role"]
+      requested_role = params.dig(:user, :role)
 
       if requested_role.present?
+        requested_role = requested_role.to_s
+
+        unless @role_options.include?(requested_role)
+          @user.errors.add(:role, "選択できません")
+          render :edit, status: :unprocessable_entity
+          return
+        end
+
         if store_admin_role_requested?(requested_role)
           @user.errors.add(:role, "store_admin は選択できません")
           render :edit, status: :unprocessable_entity
@@ -68,6 +85,15 @@ module SystemAdmin
           render :edit, status: :unprocessable_entity
           return
         end
+
+        # UI側で disabled でも、サーバ側で最終的に抑止（安全側）
+        if !@role_editable
+          @user.errors.add(:base, "このユーザーの role は変更できません")
+          render :edit, status: :unprocessable_entity
+          return
+        end
+
+        @user.role = requested_role
       end
 
       if @user.update(attrs)
@@ -103,11 +129,11 @@ module SystemAdmin
     end
 
     def create_user_params
-      params.require(:user).permit(:email, :password, :password_confirmation, :role)
+      params.require(:user).permit(:email, :password, :password_confirmation)
     end
 
     def update_user_params
-      params.require(:user).permit(:email, :password, :password_confirmation, :role)
+      params.require(:user).permit(:email, :password, :password_confirmation)
     end
 
     def role_options
