@@ -65,6 +65,9 @@ app/
       store_ban_guard.rb
     customers/
       registrations_controller.rb
+    favorites/
+      booths_controller.rb
+      stores_controller.rb
     stores/
       registrations_controller.rb
     stream_sessions/
@@ -214,6 +217,11 @@ app/
     customers/
       registrations/
         new.html.erb
+    favorites/
+      booths/
+        _button.html.erb
+      stores/
+        _button.html.erb
     home/
       show.html.erb
     layouts/
