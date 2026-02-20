@@ -3,7 +3,24 @@
 module Favorites
   class StoresController < ApplicationController
     before_action -> { require_at_least!(:customer) }
-    before_action :set_store
+    before_action :set_store, only: %i[create destroy]
+
+    def index
+      scope =
+        current_user
+          .favorite_stores
+          .joins(:store)
+          .includes(:store)
+          .order(created_at: :desc, id: :desc)
+
+      # customer のみ BAN store を除外（Home と同じ思想）
+      if current_user.customer?
+        banned_store_ids = StoreBan.where(customer_user_id: current_user.id).select(:store_id)
+        scope = scope.where.not(stores: { id: banned_store_ids })
+      end
+
+      @favorite_stores = scope
+    end
 
     def create
       current_user.favorite_stores.find_or_create_by!(store: @store)
