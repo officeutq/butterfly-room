@@ -20,7 +20,7 @@ class StoreShowTest < ActionDispatch::IntegrationTest
     BoothCast.create!(booth: active_booth, cast_user: cast)
 
     customer = User.create!(email: "customer@example.com", password: "password", role: :customer)
-    sign_in customer
+    sign_in customer, scope: :user
 
     get store_path(store)
     assert_response :success

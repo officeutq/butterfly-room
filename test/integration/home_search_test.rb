@@ -34,7 +34,7 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     create_booth!(store: store1, name: "Archived Booth", status: :live, archived_at: Time.current)
 
     customer = create_user!(email: "customer@example.com", role: :customer)
-    login_as(customer, scope: :user)
+    sign_in customer, scope: :user
 
     get root_path
     assert_response :success
@@ -50,7 +50,7 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     booth2 = create_booth!(store: store, name: "Tulip Booth", status: :offline)
 
     customer = create_user!(email: "customer2@example.com", role: :customer)
-    login_as(customer, scope: :user)
+    sign_in customer, scope: :user
 
     get root_path, params: { q: "Ros" }
     assert_response :success
