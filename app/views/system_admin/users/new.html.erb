@@ -1,0 +1,7 @@
+<h1>ユーザー作成</h1>
+
+<%= render "form", user: @user, role_options: @role_options, role_editable: @role_editable %>
+
+<div class="mt-3">
+  <%= link_to "戻る", system_admin_users_path, class: "btn btn-outline-secondary" %>
+</div>

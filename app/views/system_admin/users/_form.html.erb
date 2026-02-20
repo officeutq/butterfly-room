@@ -1,0 +1,47 @@
+<%= form_with model: [:system_admin, user] do |f| %>
+  <% if user.errors.any? %>
+    <div class="alert alert-danger">
+      <ul class="mb-0">
+        <% user.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="mb-3">
+    <%= f.label :email, "email", class: "form-label" %>
+    <%= f.email_field :email, class: "form-control", required: true, autocomplete: "off" %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :role, "role", class: "form-label" %>
+    <%= f.select :role,
+          role_options.map { |r| [r, r] },
+          {},
+          class: "form-select",
+          disabled: !role_editable %>
+
+    <% unless role_editable %>
+      <div class="form-text text-muted">
+        このユーザーの role は変更できません（自己/最後のsystem_admin保護）。
+      </div>
+    <% end %>
+    <div class="form-text">store_admin はこの画面から作成・変更できません</div>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :password, "password（作成時は必須 / 編集時は任意）", class: "form-label" %>
+    <%= f.password_field :password, class: "form-control", autocomplete: "new-password" %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :password_confirmation, "password_confirmation", class: "form-label" %>
+    <%= f.password_field :password_confirmation, class: "form-control", autocomplete: "new-password" %>
+  </div>
+
+  <div class="d-flex gap-2">
+    <%= f.submit user.persisted? ? "更新する" : "作成する", class: "btn btn-primary" %>
+    <%= link_to "キャンセル", system_admin_users_path, class: "btn btn-outline-secondary" %>
+  </div>
+<% end %>

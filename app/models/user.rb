@@ -16,6 +16,16 @@ class User < ApplicationRecord
   has_many :favorite_booths, dependent: :destroy
   has_many :favorite_stores, dependent: :destroy
 
+  # --- Soft delete ---
+  def deleted?
+    deleted_at.present?
+  end
+
+  # Devise: 停止ユーザーはログイン不可
+  def active_for_authentication?
+    super && !deleted?
+  end
+
   def role_level
     ROLE_LEVELS.fetch(role.to_sym)
   rescue KeyError, NoMethodError
