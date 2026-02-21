@@ -83,8 +83,10 @@ Rails.application.routes.draw do
       member do
         get :watch
         patch :archive
+        post :force_end
       end
     end
+
     resources :drink_items, only: %i[index create update destroy]
     resources :store_bans, only: %i[index create destroy]
     resources :casts, only: %i[index create destroy]

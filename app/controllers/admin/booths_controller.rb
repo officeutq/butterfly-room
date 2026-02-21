@@ -3,7 +3,7 @@
 module Admin
   class BoothsController < Admin::BaseController
     before_action :require_current_store!
-    before_action :set_booth, only: %i[show edit update watch archive]
+    before_action :set_booth, only: %i[show edit update watch archive force_end]
     before_action :authorize_update!, only: %i[edit update]
 
     def index
@@ -67,6 +67,27 @@ module Admin
       end
 
       redirect_to booth_path(@booth)
+    end
+
+    # 配信の強制終了
+    def force_end
+      policy = Authorization::BoothPolicy.new(current_user, @booth)
+      head :forbidden and return unless policy.admin_operate?
+
+      stream_session = StreamSession.find_by(id: @booth.current_stream_session_id)
+      if stream_session.blank?
+        redirect_to admin_booth_path(@booth), alert: "配信セッションが見つかりません（既に終了済みの可能性があります）"
+        return
+      end
+
+      StreamSessions::EndService.new(stream_session: stream_session, actor: current_user).call
+      redirect_to admin_booth_path(@booth), notice: "配信を強制終了しました"
+    rescue StreamSessions::EndService::AlreadyEnded
+      redirect_to admin_booth_path(@booth), alert: "既に配信は終了しています"
+    rescue StreamSessions::EndService::NotAuthorized
+      head :forbidden
+    rescue => e
+      redirect_to admin_booth_path(@booth), alert: e.message
     end
 
     def archive
