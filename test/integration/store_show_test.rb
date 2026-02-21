@@ -12,7 +12,20 @@ class StoreShowTest < ActionDispatch::IntegrationTest
   end
 
   test "customer can view store show and see active booths only" do
-    store = Store.create!(name: "store")
+    store = Store.create!(
+      name: "store",
+      description: "Store description",
+      area: "渋谷",
+      business_type: :girls_bar
+    )
+
+    # thumbnail attached
+    store.thumbnail.attach(
+      io: File.open(Rails.root.join("test/fixtures/files/thumb.png")),
+      filename: "thumb.png",
+      content_type: "image/png"
+    )
+
     active_booth = Booth.create!(store: store, name: "active", status: :offline)
     Booth.create!(store: store, name: "archived", status: :offline, archived_at: Time.current)
 
@@ -25,7 +38,16 @@ class StoreShowTest < ActionDispatch::IntegrationTest
     get store_path(store)
     assert_response :success
 
+    # store basic
     assert_includes @response.body, "store"
+
+    # profile
+    assert_includes @response.body, "Store description"
+    assert_includes @response.body, "渋谷"
+    assert_includes @response.body, "ガールズバー"
+    assert_includes @response.body, "<img"
+
+    # booths
     assert_includes @response.body, "active"
     assert_includes @response.body, "Cast A"
     assert_includes @response.body, booth_path(active_booth)
