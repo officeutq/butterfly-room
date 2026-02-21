@@ -197,6 +197,7 @@ app/
       store_bans/
         index.html.erb
       stores/
+        edit.html.erb
         index.html.erb
     booths/
       _drink_menu.html.erb
