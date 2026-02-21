@@ -12,6 +12,33 @@
 
   <hr class="my-4">
 
+  <h2 class="h5 mb-3">店舗プロフィール</h2>
+
+  <div class="mb-4">
+    <% if @store.thumbnail.attached? %>
+      <div class="mb-3">
+        <%= image_tag @store.thumbnail, style: "max-width: 240px; height: auto;" %>
+      </div>
+    <% end %>
+
+    <dl class="row mb-0">
+      <dt class="col-sm-3 text-muted">概要</dt>
+      <dd class="col-sm-9"><%= @store.description.presence || "-" %></dd>
+
+      <dt class="col-sm-3 text-muted">地域</dt>
+      <dd class="col-sm-9"><%= @store.area.presence || "-" %></dd>
+
+      <dt class="col-sm-3 text-muted">業態</dt>
+      <dd class="col-sm-9">
+        <% if @store.business_type.present? %>
+          <%= Store::BUSINESS_TYPE_LABELS[@store.business_type.to_sym] || @store.business_type %>
+        <% else %>
+          -
+        <% end %>
+      </dd>
+    </dl>
+  </div>
+
   <h2 class="h5 mb-3">ブース一覧</h2>
 
   <% if @booths.blank? %>
