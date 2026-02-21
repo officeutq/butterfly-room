@@ -8,9 +8,7 @@
 
 <%# ★お気に入りボタン（stream_state とは分離して固定DOM） %>
 <% if user_signed_in? %>
-  <div id="booth_favorite_button" class="mb-3">
-    <%= render "favorites/booths/button", booth: @booth, favorited: @booth_favorited %>
-  </div>
+  <%= render "favorites/booths/button_booth_show", booth: @booth, favorited: @booth_favorited %>
 <% end %>
 
 <%# ★booth単位で常時購読（開始/終了/状態変化を自動反映） %>
