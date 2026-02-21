@@ -221,9 +221,13 @@ app/
     favorites/
       booths/
         _button.html.erb
+        _button_booth_show.html.erb
+        _button_home.html.erb
         index.html.erb
       stores/
         _button.html.erb
+        _button_home.html.erb
+        _button_store_show.html.erb
         index.html.erb
     home/
       show.html.erb
