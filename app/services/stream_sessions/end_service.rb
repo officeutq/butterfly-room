@@ -52,7 +52,23 @@ module StreamSessions
     private
 
     def authorize!
-      raise NotAuthorized unless @actor.at_least?(:cast)
+      raise NotAuthorized if @actor.blank?
+
+      # system_admin は常にOK
+      return if @actor.system_admin?
+
+      # cast は従来どおりOK
+      return if @actor.cast?
+
+      # store_admin は「対象storeのadminであること」が必須
+      if @actor.store_admin?
+        booth = Booth.find_by(id: @stream_session.booth_id)
+        raise NotAuthorized if booth.blank?
+
+        return if @actor.admin_of_store?(booth.store_id)
+      end
+
+      raise NotAuthorized
     end
   end
 end
