@@ -50,13 +50,13 @@ module Favorites
           streams = [
             turbo_stream.replace(
               "booth_favorite_button",
-              partial: "favorites/booths/button",
+              partial: "favorites/booths/button_booth_show",
               formats: [ :html ],
               locals: { booth: @booth, favorited: favorited }
             ),
             turbo_stream.replace(
               "booth_#{@booth.id}_favorite_button",
-              partial: "favorites/booths/button",
+              partial: "favorites/booths/button_home",
               formats: [ :html ],
               locals: { booth: @booth, favorited: favorited }
             )

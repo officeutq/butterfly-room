@@ -94,9 +94,7 @@
               </div>
 
               <div class="card-footer bg-white border-0 pt-0">
-                <div id="booth_<%= booth.id %>_favorite_button">
-                  <%= render "favorites/booths/button", booth: booth, favorited: favorited %>
-                </div>
+                <%= render "favorites/booths/button_home", booth: booth, favorited: favorited %>
               </div>
             </div>
           </div>
@@ -123,9 +121,7 @@
                 <%= link_to store.name, store_path(store), class: "text-decoration-none" %>
               </div>
 
-              <div id="store_<%= store.id %>_favorite_button">
-                <%= render "favorites/stores/button", store: store, favorited: favorited %>
-              </div>
+              <%= render "favorites/stores/button_home", store: store, favorited: favorited %>
             </div>
           </div>
         <% end %>
