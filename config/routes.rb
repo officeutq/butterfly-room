@@ -76,10 +76,9 @@ Rails.application.routes.draw do
     root "dashboard#show"
 
     # current_store selection
-    resources :stores, only: %i[index]
+    resources :stores, only: %i[index edit update]
     resource :current_store, only: %i[create]
 
-    resource :store, only: %i[show update]
     resources :booths, only: %i[index show new edit create update] do
       member do
         get :watch
