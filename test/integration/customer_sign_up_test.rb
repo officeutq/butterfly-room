@@ -32,6 +32,6 @@ class CustomerSignUpTest < ActionDispatch::IntegrationTest
     assert_response :redirect
     follow_redirect!
     assert_response :success
-    assert_includes @response.body, "ログイン中: #{email}"
+    assert_includes @response.body, email
   end
 end

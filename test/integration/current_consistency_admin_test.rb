@@ -41,8 +41,12 @@ class CurrentConsistencyAdminTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     assert_equal store2.id, @request.session[:current_store_id], "booth優先で store_id が補正される"
-    assert_includes response.body, "現在の店舗:"
+
+    # レイアウト統一後：ヘッダー表記に合わせて検証
+    assert_includes response.body, "store:"
     assert_includes response.body, store2.name
+    assert_includes response.body, "booth:"
+    assert_includes response.body, booth2.name
   end
 
   test "boothが無効（record不存在）なら current_booth_id はクリアされる" do
