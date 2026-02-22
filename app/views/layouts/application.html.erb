@@ -115,7 +115,19 @@
 
           <div>
             <% if user_signed_in? && current_user.at_least?(:cast) %>
-              <%= link_to "配信", cast_booths_path, class: "btn btn-sm btn-primary" %>
+              <% stream_path =
+                   if current_user.cast?
+                     booth = layout_current_booth
+                     if booth.present?
+                       booth.offline? ? cast_booth_path(booth) : live_cast_booth_path(booth)
+                     else
+                       cast_booths_path
+                     end
+                   else
+                     cast_booths_path
+                   end %>
+
+              <%= link_to "配信", stream_path, class: "btn btn-sm btn-primary" %>
             <% end %>
           </div>
 
