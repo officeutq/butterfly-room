@@ -5,7 +5,38 @@ module Admin
     private
 
     def current_store
-      return Store.first if current_user.system_admin?
+      # --- Current整合（booth優先）---
+      # session[:current_booth_id] が有効なら store は booth.store を優先し、
+      # session[:current_store_id] の不一致は補正する。
+      #
+      # 無効 booth（record不存在 / 権限的に無効）は session[:current_booth_id] をクリアする。
+      #
+      # ※ 07_モード導線設計.md の Current整合ルールに準拠
+      if session[:current_booth_id].present?
+        booth = Booth.find_by(id: session[:current_booth_id])
+
+        if booth.blank?
+          # record不存在
+          session.delete(:current_booth_id)
+        else
+          allowed =
+            if current_user.system_admin?
+              true
+            else
+              # store_admin: 自分が admin membership を持つ store の booth のみ有効
+              admin_membership_exists_for_store?(booth.store_id)
+            end
+
+          if allowed
+            # booth優先で store を確定し、session不一致は補正
+            session[:current_store_id] = booth.store_id if session[:current_store_id].to_i != booth.store_id
+            return booth.store
+          else
+            # 権限的に無効（脱退/改ざん等）
+            session.delete(:current_booth_id)
+          end
+        end
+      end
 
       # 1) session 優先
       if session[:current_store_id].present?
@@ -26,7 +57,10 @@ module Admin
           .order(:id)
           .first
 
-      membership&.store
+      return membership&.store unless current_user.system_admin?
+
+      # system_admin: session store が無い / 無効な場合の fallback
+      Store.first
     end
 
     helper_method :current_store
