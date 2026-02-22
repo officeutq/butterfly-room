@@ -46,20 +46,53 @@
                 <% store = layout_current_store %>
                 <span class="text-muted small">
                   store:
-                  <% if store.present? %>
-                    <strong><%= store.name.presence || "(no name)" %></strong>
+                  <% if current_user.at_least?(:store_admin) %>
+                    <%= link_to admin_stores_path,
+                          class: "link-secondary link-underline-opacity-0 link-underline-opacity-100-hover" do %>
+                      <% if store.present? %>
+                        <strong><%= store.name.presence || "(no name)" %></strong>
+                      <% else %>
+                        <span class="text-danger">未選択</span>
+                      <% end %>
+                    <% end %>
                   <% else %>
-                    <span class="text-danger">未選択</span>
+                    <%# cast: store は表示のみ（クリック不可） %>
+                    <% if store.present? %>
+                      <strong><%= store.name.presence || "(no name)" %></strong>
+                    <% else %>
+                      <span class="text-danger">未選択</span>
+                    <% end %>
                   <% end %>
                 </span>
 
                 <% booth = layout_current_booth %>
                 <span class="text-muted small">
                   booth:
-                  <% if booth.present? %>
-                    <strong><%= booth.name.presence || "(no name)" %></strong>
+                  <% if current_user.cast? %>
+                    <%= link_to cast_booths_path,
+                          class: "link-secondary link-underline-opacity-0 link-underline-opacity-100-hover" do %>
+                      <% if booth.present? %>
+                        <strong><%= booth.name.presence || "(no name)" %></strong>
+                      <% else %>
+                        <span class="text-danger">未選択</span>
+                      <% end %>
+                    <% end %>
+                  <% elsif current_user.at_least?(:store_admin) %>
+                    <%= link_to admin_booths_path,
+                          class: "link-secondary link-underline-opacity-0 link-underline-opacity-100-hover" do %>
+                      <% if booth.present? %>
+                        <strong><%= booth.name.presence || "(no name)" %></strong>
+                      <% else %>
+                        <span class="text-danger">未選択</span>
+                      <% end %>
+                    <% end %>
                   <% else %>
-                    <span class="text-danger">未選択</span>
+                    <%# 念のため（到達しない想定）：customer は外で除外済み %>
+                    <% if booth.present? %>
+                      <strong><%= booth.name.presence || "(no name)" %></strong>
+                    <% else %>
+                      <span class="text-danger">未選択</span>
+                    <% end %>
                   <% end %>
                 </span>
               <% end %>
