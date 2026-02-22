@@ -202,6 +202,7 @@ app/
     booths/
       _drink_menu.html.erb
       _stream_state.html.erb
+      enter.html.erb
       show.html.erb
     cast/
       booths/
