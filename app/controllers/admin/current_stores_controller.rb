@@ -17,6 +17,7 @@ module Admin
       end
 
       session[:current_store_id] = store_id
+      session.delete(:current_booth_id)
       redirect_to admin_root_path, notice: "店舗を切り替えました"
     rescue ActionController::ParameterMissing
       redirect_to admin_stores_path, alert: "店舗を選択してください"

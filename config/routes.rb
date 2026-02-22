@@ -28,6 +28,11 @@ Rails.application.routes.draw do
 
   # --- Public (customer) ---
   resources :booths, only: %i[show] do
+    member do
+      get :enter
+      post :enter_as_cast
+    end
+
     resource :favorite, only: %i[create destroy], controller: "favorites/booths"
   end
 

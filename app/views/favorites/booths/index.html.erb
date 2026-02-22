@@ -25,7 +25,7 @@
           <div class="d-flex justify-content-between align-items-center gap-3">
             <div class="flex-grow-1">
               <div class="fw-semibold">
-                <%= link_to booth.name, booth_path(booth), class: "text-decoration-none" %>
+                <%= link_to booth.name, enter_booth_path(booth), class: "text-decoration-none" %>
               </div>
               <div class="text-muted small">
                 store: <%= booth.store&.name %>
@@ -33,7 +33,7 @@
             </div>
 
             <div class="text-end">
-              <%= link_to "開く", booth_path(booth), class: "btn btn-outline-primary btn-sm" %>
+              <%= link_to "開く", enter_booth_path(booth), class: "btn btn-outline-primary btn-sm" %>
             </div>
           </div>
         </div>

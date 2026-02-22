@@ -50,7 +50,7 @@ class StoreShowTest < ActionDispatch::IntegrationTest
     # booths
     assert_includes @response.body, "active"
     assert_includes @response.body, "Cast A"
-    assert_includes @response.body, booth_path(active_booth)
+    assert_includes @response.body, enter_booth_path(active_booth)
 
     refute_includes @response.body, "archived"
   end
