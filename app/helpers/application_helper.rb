@@ -45,19 +45,21 @@ module ApplicationHelper
   def layout_current_store
     return nil unless user_signed_in?
 
-    # 管理画面では既存メソッドがあるのでそれを優先（整合ロジックも内包）
+    # admin配下では既存の整合ロジックを優先
     return current_store if respond_to?(:current_store)
 
+    # ★booth優先（07設計どおり）
+    booth = layout_current_booth
+    return booth.store if booth.present?
+
+    # fallback: session store（参照のみ）
     store_id = session[:current_store_id]
     return nil if store_id.blank?
 
     store = Store.find_by(id: store_id)
     return nil if store.blank?
 
-    # system_admin は参照のみOK
     return store if current_user.system_admin?
-
-    # store_admin は自分の admin membership がある store のみ参照OK
     return store if current_user.at_least?(:store_admin) && current_user.admin_of_store?(store.id)
 
     nil
