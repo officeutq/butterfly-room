@@ -5,7 +5,8 @@ class Wallet::PurchasesController < ApplicationController
     checkout_url = Wallets::CreateCheckoutService.new(
       customer_user: current_user,
       points: params.require(:points).to_i,
-      booth_id: params[:booth_id],
+      booth_id: nil, # 戻り先は return_to で管理
+      return_to: params[:return_to],
       base_url: request.base_url
     ).call!
 

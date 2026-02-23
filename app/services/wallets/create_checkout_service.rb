@@ -2,10 +2,11 @@ module Wallets
   class CreateCheckoutService
     PACK_POINTS = [ 1000, 3000, 5000 ].freeze
 
-    def initialize(customer_user:, points:, booth_id:, base_url:)
+    def initialize(customer_user:, points:, booth_id:, return_to:, base_url:)
       @customer_user = customer_user
       @points = points
       @booth_id = booth_id
+      @return_to = return_to
       @base_url = base_url
     end
 
@@ -36,8 +37,16 @@ module Wallets
             quantity: 1
           }
         ],
-        success_url: build_return_url(status: "success", purchase_id: purchase.id, booth_id: @booth_id),
-        cancel_url:  build_return_url(status: "cancel",  purchase_id: purchase.id, booth_id: @booth_id),
+        success_url: build_return_url(
+          status: "success",
+          purchase_id: purchase.id,
+          return_to: @return_to
+        ),
+        cancel_url: build_return_url(
+          status: "cancel",
+          purchase_id: purchase.id,
+          return_to: @return_to
+        ),
         metadata: {
           wallet_purchase_id: purchase.id,
           customer_user_id: @customer_user.id
@@ -51,11 +60,11 @@ module Wallets
 
     private
 
-    def build_return_url(status:, purchase_id:, booth_id:)
+    def build_return_url(status:, purchase_id:, return_to:)
       path = Rails.application.routes.url_helpers.checkout_return_path(
         status: status,
         purchase_id: purchase_id,
-        booth_id: booth_id
+        return_to: return_to
       )
       "#{@base_url}#{path}"
     end
