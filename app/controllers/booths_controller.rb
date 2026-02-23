@@ -60,7 +60,11 @@ class BoothsController < ApplicationController
     # store_admin（自店なら選択UI / 他店なら視聴）
     if current_user.store_admin?
       if current_user.admin_of_store?(@booth.store_id)
-        render :enter, status: :ok
+        if turbo_frame_request?
+          render partial: "booths/enter_modal", locals: { booth: @booth }, layout: false, status: :ok
+        else
+          render :enter, status: :ok
+        end
       else
         redirect_to booth_path(@booth)
       end
@@ -69,7 +73,11 @@ class BoothsController < ApplicationController
 
     # system_admin（常に選択UI）
     if current_user.system_admin?
-      render :enter, status: :ok
+      if turbo_frame_request?
+        render partial: "booths/enter_modal", locals: { booth: @booth }, layout: false, status: :ok
+      else
+        render :enter, status: :ok
+      end
       return
     end
 

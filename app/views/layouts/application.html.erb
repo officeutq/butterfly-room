@@ -188,5 +188,11 @@
         </div>
       </div>
     </footer>
+    <%# --- Global Modal Frame (common) --- %>
+    <turbo-frame
+      id="modal"
+      data-controller="modal"
+      data-action="turbo:frame-load->modal#open">
+    </turbo-frame>
   </body>
 </html>
