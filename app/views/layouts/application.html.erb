@@ -97,9 +97,13 @@
                 </span>
               <% end %>
 
-              <span class="text-muted small">
-                points: <strong><%= layout_wallet_points %>pt</strong>
-              </span>
+              <% if user_signed_in? %>
+                <%= turbo_stream_from [current_user, :wallet] %>
+
+                <span class="text-muted small" id="wallet_balance">
+                  <%= render "wallets/balance", wallet: current_user.wallet %>
+                </span>
+              <% end %>
             <% else %>
               <span class="text-muted small">未ログイン</span>
             <% end %>
@@ -165,7 +169,10 @@
             <%= button_to "購入(1000pt)",
                   wallet_purchases_path,
                   method: :post,
-                  params: { points: 1000 },
+                  params: {
+                    points: 1000,
+                    return_to: request.fullpath
+                  },
                   form: { data: { turbo: false } },
                   class: "btn btn-sm btn-outline-primary" %>
 

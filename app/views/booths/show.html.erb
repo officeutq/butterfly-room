@@ -25,38 +25,6 @@
 
 <hr>
 
-<h2>所持ポイント</h2>
-
-<% if user_signed_in? %>
-  <%# ★wallet（個人UI）は booth に混ぜず user(wallet) チャンネルで購読 %>
-  <%= turbo_stream_from [current_user, :wallet] %>
-
-  <%# ★箱（wrapper）は show 側に固定。idを絶対に消さない %>
-  <div id="wallet_balance">
-    <%= render "wallets/balance", wallet: @wallet %>
-  </div>
-
-  <div class="d-flex gap-2 mb-3">
-    <%= button_to "1000pt 購入",
-          wallet_purchases_path,
-          method: :post,
-          params: { points: 1000, booth_id: @booth.id },
-          form: { data: { turbo: false } },
-          class: "btn btn-sm btn-outline-primary" %>
-
-    <%= button_to "3000pt 購入",
-          wallet_purchases_path,
-          method: :post,
-          params: { points: 3000, booth_id: @booth.id },
-          form: { data: { turbo: false } },
-          class: "btn btn-sm btn-outline-primary" %>
-  </div>
-<% else %>
-  <p class="text-muted">ログインすると購入できます</p>
-<% end %>
-
-<hr>
-
 <div class="d-flex justify-content mb-3">
   <%= link_to "退室", root_path, class: "btn btn-outline-secondary" %>
 </div>
