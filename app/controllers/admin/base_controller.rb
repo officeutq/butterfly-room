@@ -55,6 +55,7 @@ module Admin
       end
 
       # 2) fallback: 従来通り「最初の admin membership」
+      # ※ store_admin の既存挙動を維持（system_admin の暗黙デフォルトは廃止）
       membership =
         StoreMembership
           .includes(:store)
@@ -64,14 +65,13 @@ module Admin
 
       return membership&.store unless current_user.system_admin?
 
-      # system_admin: session store が無い / 無効な場合の fallback
-      Store.first
+      # system_admin: session store が無い / 無効な場合は未選択扱い（暗黙デフォルトは廃止）
+      nil
     end
 
     helper_method :current_store
 
     def require_current_store!
-      return if current_user.system_admin?
       return if current_store.present?
 
       redirect_to admin_stores_path, alert: "操作対象の店舗を選択してください"
