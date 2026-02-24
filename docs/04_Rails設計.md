@@ -107,6 +107,7 @@ app/
       index.js
       ivs_publisher_controller.js
       ivs_viewer_controller.js
+      modal_controller.js
       presence_poll_controller.js
       stream_debug_controller.js
     application.js
@@ -201,6 +202,7 @@ app/
         index.html.erb
     booths/
       _drink_menu.html.erb
+      _enter_modal.html.erb
       _stream_state.html.erb
       enter.html.erb
       show.html.erb
