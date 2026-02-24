@@ -51,6 +51,16 @@ class RoleHierarchyAccessTest < ActionDispatch::IntegrationTest
     get cast_booths_path
     assert_response :success
 
+    # #206: 未選択の admin_root は /admin/stores に誘導される
+    get admin_root_path
+    assert_response :redirect
+    assert_redirected_to admin_stores_path
+
+    # 選択後は admin_root に入れる
+    post admin_current_store_path, params: { store_id: @store1.id }
+    assert_response :redirect
+    assert_redirected_to root_path
+
     get admin_root_path
     assert_response :success
   end
