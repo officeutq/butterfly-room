@@ -41,8 +41,13 @@ module Admin
       # 1) session 優先
       if session[:current_store_id].present?
         store = Store.find_by(id: session[:current_store_id])
-        if store.present? && admin_membership_exists_for_store?(store.id)
-          return store
+
+        if store.present?
+          # system_admin は membership を持たない運用なので、存在する store ならOK
+          return store if current_user.system_admin?
+
+          # store_admin は admin membership がある store のみ有効
+          return store if admin_membership_exists_for_store?(store.id)
         end
 
         # 改ざん/脱退/削除 への耐性：不正ならクリア

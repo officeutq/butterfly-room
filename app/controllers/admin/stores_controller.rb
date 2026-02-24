@@ -7,11 +7,15 @@ module Admin
 
     def index
       @stores =
-        Store
-          .joins(:store_memberships)
-          .where(store_memberships: { user_id: current_user.id, membership_role: StoreMembership.membership_roles[:admin] })
-          .distinct
-          .order(:id)
+        if current_user.system_admin?
+          Store.order(:id)
+        else
+          Store
+            .joins(:store_memberships)
+            .where(store_memberships: { user_id: current_user.id, membership_role: StoreMembership.membership_roles[:admin] })
+            .distinct
+            .order(:id)
+        end
 
       # 現在選択中があれば view で判定できるように
       @current_store_id = session[:current_store_id]
