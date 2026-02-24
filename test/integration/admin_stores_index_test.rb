@@ -45,7 +45,7 @@ class AdminStoresIndexTest < ActionDispatch::IntegrationTest
     # 選択確定（membershipあり）
     post admin_current_store_path, params: { store_id: @store1.id }
     assert_response :redirect
-    assert_redirected_to admin_root_path
+    assert_redirected_to root_path
 
     follow_redirect!
     assert_response :success
@@ -60,7 +60,7 @@ class AdminStoresIndexTest < ActionDispatch::IntegrationTest
     # 選択確定（system_admin は membership 不要）
     post admin_current_store_path, params: { store_id: @store2.id }
     assert_response :redirect
-    assert_redirected_to admin_root_path
+    assert_redirected_to root_path
 
     follow_redirect!
     assert_response :success
