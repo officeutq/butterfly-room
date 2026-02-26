@@ -13,7 +13,7 @@ module Stores
 
       if @form.save
         sign_in(@form.user) # Devise
-        redirect_to admin_root_path, notice: "店舗登録が完了しました"
+        redirect_to dashboard_path, notice: "店舗登録が完了しました"
       else
         render :new, status: :unprocessable_entity
       end

@@ -38,7 +38,8 @@ class RoleHierarchyAccessTest < ActionDispatch::IntegrationTest
   test "cast cannot access admin/system_admin (403)" do
     sign_in @cast, scope: :user
 
-    get admin_root_path
+    # admin namespace 入口
+    get admin_stores_path
     assert_response :forbidden
 
     get system_admin_referral_codes_path
@@ -51,17 +52,18 @@ class RoleHierarchyAccessTest < ActionDispatch::IntegrationTest
     get cast_booths_path
     assert_response :success
 
-    # #206: 未選択の admin_root は /admin/stores に誘導される
-    get admin_root_path
+    # 未選択の admin_booths は /admin/stores に誘導される
+    get admin_booths_path
     assert_response :redirect
     assert_redirected_to admin_stores_path
 
-    # 選択後は admin_root に入れる
+    # 選択後は dashboard に戻る
     post admin_current_store_path, params: { store_id: @store1.id }
     assert_response :redirect
-    assert_redirected_to root_path
+    assert_redirected_to dashboard_path
 
-    get admin_root_path
+    # 選択済みなら admin_booths に入れる
+    get admin_booths_path
     assert_response :success
   end
 
@@ -71,7 +73,7 @@ class RoleHierarchyAccessTest < ActionDispatch::IntegrationTest
     get cast_booths_path
     assert_response :forbidden
 
-    get admin_root_path
+    get admin_stores_path
     assert_response :forbidden
 
     get system_admin_referral_codes_path

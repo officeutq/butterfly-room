@@ -37,7 +37,7 @@ class CurrentConsistencyAdminTest < ActionDispatch::IntegrationTest
     assert_equal store1.id, @request.session[:current_store_id], "store_id は古いまま（不一致）"
 
     # admin_root で current_store が解決されるタイミングで、store が booth2.store に補正される
-    get admin_root_path
+    get admin_booths_path
     assert_response :success
 
     assert_equal store2.id, @request.session[:current_store_id], "booth優先で store_id が補正される"
@@ -68,7 +68,7 @@ class CurrentConsistencyAdminTest < ActionDispatch::IntegrationTest
     Booth.delete(booth.id)
 
     # admin_root で補正（booth不存在なので current_booth_id はクリアされる）
-    get admin_root_path
+    get admin_booths_path
     assert_response :success
 
     assert_nil @request.session[:current_booth_id]
@@ -103,7 +103,7 @@ class CurrentConsistencyAdminTest < ActionDispatch::IntegrationTest
     # membership を消して「権限的に無効（脱退）」を再現
     StoreMembership.delete(m2.id)
 
-    get admin_root_path
+    get admin_booths_path
     assert_response :success
 
     assert_nil @request.session[:current_booth_id], "権限的に無効なら booth はクリアされる"

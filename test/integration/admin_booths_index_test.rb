@@ -66,7 +66,7 @@ class AdminBoothsIndexTest < ActionDispatch::IntegrationTest
     # 選択（選択後は root にリダイレクト）
     post admin_current_store_path, params: { store_id: @store1.id }
     assert_response :redirect
-    assert_redirected_to root_path
+    assert_redirected_to dashboard_path
 
     # 選択後に index
     get admin_booths_path
@@ -92,7 +92,7 @@ class AdminBoothsIndexTest < ActionDispatch::IntegrationTest
 
     post admin_current_store_path, params: { store_id: @store1.id }
     assert_response :redirect
-    assert_redirected_to root_path
+    assert_redirected_to dashboard_path
 
     get admin_booths_path(archived: 1)
     assert_response :success

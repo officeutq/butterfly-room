@@ -62,7 +62,7 @@ class BoothEditAuthorizationTest < ActionDispatch::IntegrationTest
     # #206: admin配下は current_store 必須なので、先に選択する
     post admin_current_store_path, params: { store_id: @store1.id }
     assert_response :redirect
-    assert_redirected_to root_path
+    assert_redirected_to dashboard_path
 
     patch admin_booth_path(@booth1), params: { booth: { name: "x" } }
     assert_response :redirect
