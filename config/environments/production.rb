@@ -58,7 +58,7 @@ Rails.application.configure do
   # config.action_mailer.raise_delivery_errors = false
 
   # Set host to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: "d1qeq5amxvhfv3.cloudfront.net", protocol: "https" }
+  config.action_mailer.default_url_options = { host: "butterflyve.jp", protocol: "https" }
 
   # Specify outgoing SMTP server. Remember to add smtp/* credentials via bin/rails credentials:edit.
   # config.action_mailer.smtp_settings = {
@@ -87,6 +87,10 @@ Rails.application.configure do
 
   # Allow CloudFront host (暫定: いまの distribution を許可)
   config.hosts << "d1qeq5amxvhfv3.cloudfront.net"
+  # Allow apex domain (運用ドメイン)
+  config.hosts << "butterflyve.jp"
+  # Allow origin domain (ALB直アクセス用)
+  config.hosts << "origin.butterflyve.jp"
   # Allow ALB host (healthcheck)
   config.hosts << /.*\.elb\.amazonaws\.com/
   # Allow ALB healthcheck host (VPC内IPが Host になることがある)
