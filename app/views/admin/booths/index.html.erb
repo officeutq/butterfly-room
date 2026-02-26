@@ -26,30 +26,30 @@
         <td><%= booth.id %></td>
 
         <td>
-          <%= booth.name %>
-          <% if booth.archived? %>
-            <span class="badge text-bg-secondary ms-2">archived</span>
-          <% end %>
+          <%= link_to booth.name,
+                enter_booth_path(booth),
+                data: { turbo_frame: "modal" },
+                class: "text-decoration-none text-reset" %>
         </td>
 
         <td><%= booth.status %></td>
 
         <td class="text-muted small"><%= booth.ivs_stage_arn.presence || "-" %></td>
 
-        <td class="d-flex justify-content-end gap-2">
-          <%= link_to "詳細", admin_booth_path(booth), class: "btn btn-outline-secondary btn-sm" %>
-
-          <% if booth.archived? %>
-            <%# archived は操作なし %>
-          <% elsif booth.offline? && booth.current_stream_session_id.blank? %>
-            <%= button_to "アーカイブ",
-                  archive_admin_booth_path(booth),
-                  method: :patch,
-                  class: "btn btn-outline-danger btn-sm",
-                  data: { turbo_confirm: "このブースをアーカイブします。よろしいですか？" } %>
-          <% else %>
-            <span class="text-muted small">配信終了後にアーカイブ可</span>
-          <% end %>
+        <td>
+          <div class="d-flex justify-content-end gap-2 align-items-center">
+            <% if booth.archived? %>
+              <span class="badge text-bg-secondary">archived</span>
+            <% elsif booth.offline? && booth.current_stream_session_id.blank? %>
+              <%= button_to "アーカイブ",
+                    archive_admin_booth_path(booth),
+                    method: :patch,
+                    class: "btn btn-outline-danger btn-sm",
+                    data: { turbo_confirm: "このブースをアーカイブします。よろしいですか？" } %>
+            <% else %>
+              <span class="text-muted small">配信終了後にアーカイブ可</span>
+            <% end %>
+          </div>
         </td>
       </tr>
     <% end %>
