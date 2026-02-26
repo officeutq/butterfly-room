@@ -48,7 +48,6 @@ app/
       booths_controller.rb
       casts_controller.rb
       current_stores_controller.rb
-      dashboard_controller.rb
       drink_items_controller.rb
       metrics_controller.rb
       store_bans_controller.rb
@@ -77,7 +76,6 @@ app/
       presences_controller.rb
     system_admin/
       base_controller.rb
-      dashboard_controller.rb
       referral_codes_controller.rb
       users_controller.rb
     wallet/
@@ -87,6 +85,7 @@ app/
     application_controller.rb
     booths_controller.rb
     checkout_controller.rb
+    dashboard_controller.rb
     home_controller.rb
     stores_controller.rb
     stream_sessions_controller.rb
@@ -188,8 +187,6 @@ app/
         show.html.erb
       casts/
         index.html.erb
-      dashboard/
-        show.html.erb
       drink_items/
         _form.html.erb
         index.html.erb
@@ -222,6 +219,8 @@ app/
     customers/
       registrations/
         new.html.erb
+    dashboard/
+      show.html.erb
     favorites/
       booths/
         _button.html.erb
@@ -256,8 +255,6 @@ app/
       _pending_drink_orders.html.erb
       _viewer_ended.html.erb
     system_admin/
-      dashboard/
-        show.html.erb
       referral_codes/
         _form.html.erb
         edit.html.erb
