@@ -1,0 +1,100 @@
+<div style="max-width: 960px;">
+  <div class="d-flex justify-content-between align-items-start gap-3">
+    <div>
+      <h1 class="mb-1">ダッシュボード</h1>
+      <p class="text-muted mb-0">ロール別リンク</p>
+    </div>
+  </div>
+
+  <hr class="my-4">
+
+  <% store = layout_current_store %>
+
+  <% if current_user.system_admin? %>
+    <h2 class="h5 mb-3">system_admin</h2>
+
+    <ul class="list-group mb-4">
+      <li class="list-group-item">
+        <%= link_to "ユーザー管理", system_admin_users_path, class: "text-decoration-none" %>
+      </li>
+      <li class="list-group-item">
+        <%= link_to "紹介コード管理", system_admin_referral_codes_path, class: "text-decoration-none" %>
+      </li>
+
+      <li class="list-group-item">
+        <%= link_to "店舗一覧", admin_stores_path, class: "text-decoration-none" %>
+      </li>
+
+      <li class="list-group-item">
+        <% if store.present? %>
+          <%= link_to "店舗設定", edit_admin_store_path(store), class: "text-decoration-none" %>
+        <% else %>
+          <%= link_to "店舗設定（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+        <% end %>
+      </li>
+
+      <li class="list-group-item">
+        <% if store.present? %>
+          <%= link_to "ブース一覧", admin_booths_path, class: "text-decoration-none" %>
+        <% else %>
+          <%= link_to "ブース一覧（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+        <% end %>
+      </li>
+
+      <li class="list-group-item text-muted">
+        ユーザープロフィール編集（未実装）
+      </li>
+    </ul>
+
+  <% elsif current_user.store_admin? %>
+    <h2 class="h5 mb-3">store_admin</h2>
+
+    <ul class="list-group mb-4">
+      <li class="list-group-item">
+        <%= link_to "店舗一覧", admin_stores_path, class: "text-decoration-none" %>
+      </li>
+
+      <li class="list-group-item">
+        <% if store.present? %>
+          <%= link_to "店舗設定", edit_admin_store_path(store), class: "text-decoration-none" %>
+        <% else %>
+          <%= link_to "店舗設定（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+        <% end %>
+      </li>
+
+      <li class="list-group-item">
+        <% if store.present? %>
+          <%= link_to "ブース一覧", admin_booths_path, class: "text-decoration-none" %>
+        <% else %>
+          <%= link_to "ブース一覧（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+        <% end %>
+      </li>
+
+      <li class="list-group-item text-muted">
+        ユーザープロフィール編集（未実装）
+      </li>
+    </ul>
+
+  <% elsif current_user.cast? %>
+    <h2 class="h5 mb-3">cast</h2>
+
+    <ul class="list-group mb-4">
+      <li class="list-group-item">
+        <%= link_to "ブース一覧", cast_booths_path, class: "text-decoration-none" %>
+      </li>
+
+      <li class="list-group-item text-muted">
+        ユーザープロフィール編集（未実装）
+      </li>
+    </ul>
+
+  <% else %>
+    <h2 class="h5 mb-3">customer</h2>
+
+    <ul class="list-group mb-4">
+      <li class="list-group-item text-muted">
+        ユーザープロフィール編集（未実装）
+      </li>
+    </ul>
+  <% end %>
+</div>

@@ -27,18 +27,8 @@ module ApplicationHelper
     content_tag(:span, label, class: "badge text-bg-secondary")
   end
 
-  def dashboard_path_for(user)
-    return root_path if user.blank?
-
-    if user.system_admin?
-      system_admin_root_path
-    elsif user.store_admin?
-      admin_root_path
-    elsif user.cast?
-      cast_booths_path
-    else
-      root_path
-    end
+  def dashboard_path_for(_user)
+    dashboard_path
   end
 
   # 参照表示用：可能な範囲で current_store / current_booth を解決する（副作用なし）

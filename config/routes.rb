@@ -5,6 +5,9 @@ Rails.application.routes.draw do
 
   root "home#show"
 
+  # --- Common dashboard (login required) ---
+  get "/dashboard", to: "dashboard#show", as: :dashboard
+
   # --- Public (customer registration) ---
   get  "/sign_up", to: "customers/registrations#new",    as: :sign_up
   post "/sign_up", to: "customers/registrations#create"
@@ -78,8 +81,6 @@ Rails.application.routes.draw do
 
   # --- Store Admin ---
   namespace :admin do
-    root "dashboard#show"
-
     # current_store selection
     resources :stores, only: %i[index edit update]
     resource :current_store, only: %i[create]
@@ -100,7 +101,6 @@ Rails.application.routes.draw do
 
   # --- System Admin ---
   namespace :system_admin do
-    root "dashboard#show"
     resources :referral_codes, only: %i[index new create edit update]
     resources :users, only: %i[index new create edit update destroy]
   end
