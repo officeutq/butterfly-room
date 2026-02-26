@@ -1,9 +1,9 @@
-class Webhooks::StripeController < ActionController::Base
-  protect_from_forgery with: :null_session
+class Webhooks::StripeController < ApplicationController
+  skip_before_action :verify_authenticity_token
 
   def create
     payload = request.raw_post
-    sig = request.env["HTTP_STRIPE_SIGNATURE"]
+    sig     = request.env["HTTP_STRIPE_SIGNATURE"]
 
     secret =
       ENV["STRIPE_WEBHOOK_SECRET"].presence ||
@@ -13,7 +13,7 @@ class Webhooks::StripeController < ActionController::Base
 
     event = Stripe::Webhook.construct_event(payload, sig, secret)
 
-    # 冪等：同じ event_id は2回処理しない
+    # 先に「受け取った」ことを記録（冪等キー）
     StripeWebhookEvent.create!(
       event_id: event.id,
       event_type: event.type,
@@ -32,8 +32,9 @@ class Webhooks::StripeController < ActionController::Base
 
       Wallets::ApplyPurchaseFromStripeService.new(checkout_session: session).call!
     end
+
+    head :ok
   rescue ActiveRecord::RecordNotUnique
-    # 同一イベント再送：正常系として 200 を返す
     head :ok
   rescue Stripe::SignatureVerificationError
     head :bad_request
