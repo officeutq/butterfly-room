@@ -8,7 +8,8 @@ class Store < ApplicationRecord
   has_many :drink_items, dependent: :destroy
   has_many :store_bans, dependent: :destroy
   has_many :favorite_stores, dependent: :destroy
-
+  has_many :store_payout_accounts, dependent: :restrict_with_error
+  has_one :active_payout_account, -> { active }, class_name: "StorePayoutAccount"
   has_one_attached :thumbnail
 
   enum :business_type, {
