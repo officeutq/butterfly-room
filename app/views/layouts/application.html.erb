@@ -37,9 +37,27 @@
             </div>
 
             <% if user_signed_in? %>
-              <span class="text-muted small">
-                <%= display_name_or_email(current_user) %>
+              <span class="d-inline-flex align-items-center gap-2">
+                <% if current_user.avatar.attached? %>
+                  <%= image_tag current_user.avatar,
+                        class: "rounded-circle border",
+                        style: "width: 24px; height: 24px; object-fit: cover;",
+                        alt: "avatar" %>
+                <% else %>
+                  <span
+                    class="rounded-circle border text-muted d-inline-flex align-items-center justify-content-center"
+                    style="width: 24px; height: 24px; font-size: 10px; line-height: 1;"
+                    aria-label="No Image"
+                    title="No Image">
+                    No
+                  </span>
+                <% end %>
+
+                <span class="text-muted small">
+                  <%= display_name_or_email(current_user) %>
+                </span>
               </span>
+
               <%= role_badge(current_user) %>
 
               <% unless current_user.customer? %>

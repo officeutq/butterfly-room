@@ -12,6 +12,8 @@ class User < ApplicationRecord
     system_admin: 3
   }.freeze
 
+  has_one_attached :avatar
+
   has_one :wallet, foreign_key: :customer_user_id, dependent: :destroy, inverse_of: :customer_user
   has_many :store_memberships, dependent: :destroy
   has_many :stores, through: :store_memberships
