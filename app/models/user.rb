@@ -3,6 +3,8 @@ class User < ApplicationRecord
 
   enum :role, { customer: 0, cast: 1, store_admin: 2, system_admin: 3 }
 
+  validates :bio, length: { maximum: 500 }, allow_nil: true
+
   ROLE_LEVELS = {
     customer: 0,
     cast: 1,
