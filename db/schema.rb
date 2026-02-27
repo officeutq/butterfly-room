@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_27_044243) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_27_234419) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -223,6 +223,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_27_044243) do
     t.index ["user_id"], name: "index_store_memberships_on_user_id"
   end
 
+  create_table "store_payout_accounts", force: :cascade do |t|
+    t.string "account_holder_kana", limit: 64
+    t.string "account_number", limit: 7
+    t.integer "account_type"
+    t.string "bank_code", limit: 4
+    t.string "branch_code", limit: 3
+    t.datetime "created_at", null: false
+    t.integer "payout_method", null: false
+    t.integer "status", default: 0, null: false
+    t.bigint "store_id", null: false
+    t.string "stripe_account_id"
+    t.datetime "updated_at", null: false
+    t.bigint "updated_by_user_id"
+    t.index ["payout_method"], name: "index_store_payout_accounts_on_payout_method"
+    t.index ["status"], name: "index_store_payout_accounts_on_status"
+    t.index ["store_id"], name: "index_store_payout_accounts_on_store_id"
+    t.index ["store_id"], name: "uniq_store_payout_accounts_active_on_store_id", unique: true, where: "(status = 0)"
+  end
+
   create_table "stores", force: :cascade do |t|
     t.string "area"
     t.integer "business_type"
@@ -356,6 +375,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_27_044243) do
   add_foreign_key "store_ledger_entries", "stream_sessions"
   add_foreign_key "store_memberships", "stores"
   add_foreign_key "store_memberships", "users"
+  add_foreign_key "store_payout_accounts", "stores"
+  add_foreign_key "store_payout_accounts", "users", column: "updated_by_user_id"
   add_foreign_key "stores", "referral_codes"
   add_foreign_key "stream_sessions", "booths"
   add_foreign_key "stream_sessions", "stores"
