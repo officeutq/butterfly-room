@@ -60,6 +60,8 @@ app/
       current_booths_controller.rb
       drink_orders_controller.rb
       stream_sessions_controller.rb
+    casts/
+      registrations_controller.rb
     concerns/
       store_ban_guard.rb
     customers/
@@ -84,12 +86,15 @@ app/
       stripe_controller.rb
     application_controller.rb
     booths_controller.rb
+    cast_invitations_controller.rb
     checkout_controller.rb
     dashboard_controller.rb
     home_controller.rb
     stores_controller.rb
     stream_sessions_controller.rb
   forms/
+    casts/
+      registration_form.rb
     customers/
       registration_form.rb
     stores/
@@ -128,6 +133,7 @@ app/
     referral_code.rb
     store.rb
     store_ban.rb
+    store_cast_invitation.rb
     store_ledger_entry.rb
     store_membership.rb
     stream_session.rb
@@ -151,6 +157,8 @@ app/
       stream_session_policy.rb
     booths/
       provision_ivs_stage_service.rb
+    casts/
+      register_cast.rb
     customers/
       register_customer.rb
     drink_orders/
@@ -164,6 +172,9 @@ app/
     presences/
       ping_service.rb
       summary_service.rb
+    store_cast_invitations/
+      accept_invitation.rb
+      issue_invitation.rb
     stores/
       register_store_admin.rb
     stream_sessions/
@@ -212,6 +223,11 @@ app/
       stream_sessions/
         _ended.html.erb
         _pending_drink_orders.html.erb
+    cast_invitations/
+      show.html.erb
+    casts/
+      registrations/
+        new.html.erb
     checkout/
       return.html.erb
     comments/
@@ -221,6 +237,9 @@ app/
         new.html.erb
     dashboard/
       show.html.erb
+    devise/
+      sessions/
+        new.html.erb
     favorites/
       booths/
         _button.html.erb
