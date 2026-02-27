@@ -27,23 +27,67 @@
   </tbody>
 </table>
 
-<h2 class="h5 mt-4">キャストを追加</h2>
+<hr class="my-4">
 
-<% if @candidate_cast_users.any? %>
-  <%= form_with model: @store_membership, url: admin_casts_path, scope: :store_membership do |f| %>
-    <div class="row g-2 align-items-end">
-      <div class="col-auto">
-        <%= f.label :user_id, "追加するキャスト", class: "form-label" %>
-        <%= f.select :user_id,
-                     options_from_collection_for_select(@candidate_cast_users, :id, :email),
-                     {},
-                     class: "form-select" %>
+<h2 class="h5 mt-4">キャスト招待（ワンタイム / 24時間）</h2>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <p class="text-muted mb-3">
+      招待URLを発行し、cast ロールのユーザーが承認した場合のみ、キャスト所属（store_memberships: cast）が作成されます。
+    </p>
+
+    <%= form_with model: @new_invitation, url: invite_admin_casts_path, scope: :store_cast_invitation do |f| %>
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-md-8">
+          <%= f.label :note, "メモ（任意）", class: "form-label" %>
+          <%= f.text_area :note, class: "form-control", rows: 2, placeholder: "例）◯◯さん用 / SNSのアカウント名など" %>
+        </div>
+        <div class="col-12 col-md-auto">
+          <%= f.submit "招待URLを発行", class: "btn btn-primary" %>
+        </div>
       </div>
-      <div class="col-auto">
-        <%= f.submit "追加", class: "btn btn-primary" %>
-      </div>
+    <% end %>
+
+    <div class="mt-3 text-muted small">
+      ※発行後のURLは「お知らせ（notice）」にも表示されます。必要に応じてコピペしてください。
     </div>
-  <% end %>
-<% else %>
-  <p class="text-muted">追加できる cast ユーザーがいません。</p>
-<% end %>
+  </div>
+</div>
+
+<h3 class="h6 mt-4">招待一覧</h3>
+
+<table class="table table-sm">
+  <thead>
+    <tr>
+      <th>状態</th>
+      <th>期限</th>
+      <th>メモ</th>
+      <th>発行者</th>
+      <th>承認者</th>
+      <th>URL</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @store_cast_invitations.each do |inv| %>
+      <tr>
+        <td><%= inv.status_label %></td>
+        <td><%= inv.expires_at.strftime("%Y-%m-%d %H:%M") %></td>
+        <td><%= inv.note.presence || "-" %></td>
+        <td><%= display_name_or_email(inv.invited_by_user) %></td>
+        <td>
+          <% if inv.accepted_by_user.present? %>
+            <%= display_name_or_email(inv.accepted_by_user) %>
+          <% else %>
+            -
+          <% end %>
+        </td>
+        <td class="text-nowrap">
+          <%# token は保持していないので、ここでは直接URLを再生成できない（仕様通り：生tokenは発行時のみ） %>
+          <span class="text-muted small">（発行時に控えてください）</span>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

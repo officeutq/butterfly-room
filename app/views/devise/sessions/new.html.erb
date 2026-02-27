@@ -1,0 +1,40 @@
+<div style="max-width: 720px;">
+  <h1 class="h4 mb-3">ログイン</h1>
+
+  <% if params[:invite_token].present? %>
+    <div class="alert alert-info" role="alert">
+      キャスト招待を承認するには cast でログインしてください。<br>
+      cast アカウントが無い場合は、招待経由で新規作成できます。
+    </div>
+
+    <div class="mb-3">
+      <%= link_to "招待経由で cast 新規作成",
+            cast_sign_up_path(token: params[:invite_token]),
+            class: "btn btn-outline-primary" %>
+    </div>
+  <% end %>
+
+  <%= form_for(resource, as: resource_name, url: session_path(resource_name)) do |f| %>
+    <div class="mb-3">
+      <%= f.label :email, class: "form-label" %>
+      <%= f.email_field :email, autofocus: true, autocomplete: "email", class: "form-control" %>
+    </div>
+
+    <div class="mb-3">
+      <%= f.label :password, class: "form-label" %>
+      <%= f.password_field :password, autocomplete: "current-password", class: "form-control" %>
+    </div>
+
+    <% if devise_mapping.rememberable? %>
+      <div class="form-check mb-3">
+        <%= f.check_box :remember_me, class: "form-check-input" %>
+        <%= f.label :remember_me, class: "form-check-label" %>
+      </div>
+    <% end %>
+
+    <div class="d-flex gap-2">
+      <%= f.submit "ログイン", class: "btn btn-primary" %>
+      <%= link_to "ホーム", root_path, class: "btn btn-outline-secondary" %>
+    </div>
+  <% end %>
+</div>
