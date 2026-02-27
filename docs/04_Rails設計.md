@@ -277,6 +277,7 @@ config/
     assets.rb
     content_security_policy.rb
     dartsass.rb
+    default_url_options.rb
     devise.rb
     filter_parameter_logging.rb
     inflections.rb
