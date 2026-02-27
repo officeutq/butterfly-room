@@ -8,6 +8,9 @@ Rails.application.routes.draw do
   # --- Common dashboard (login required) ---
   get "/dashboard", to: "dashboard#show", as: :dashboard
 
+  # --- Common profile (login required) ---
+  resource :profile, only: %i[edit update]
+
   # --- Public (customer registration) ---
   get  "/sign_up", to: "customers/registrations#new",    as: :sign_up
   post "/sign_up", to: "customers/registrations#create"
