@@ -90,8 +90,10 @@ app/
     checkout_controller.rb
     dashboard_controller.rb
     home_controller.rb
+    profiles_controller.rb
     stores_controller.rb
     stream_sessions_controller.rb
+    users_controller.rb
   forms/
     casts/
       registration_form.rb
@@ -257,6 +259,8 @@ app/
       application.html.erb
       mailer.html.erb
       mailer.text.erb
+    profiles/
+      edit.html.erb
     pwa/
       manifest.json.erb
       service-worker.js
@@ -284,6 +288,8 @@ app/
         edit.html.erb
         index.html.erb
         new.html.erb
+    users/
+      show.html.erb
     wallets/
       _balance.html.erb
 
