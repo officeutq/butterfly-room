@@ -12,11 +12,19 @@ Rails.application.routes.draw do
   get  "/sign_up", to: "customers/registrations#new",    as: :sign_up
   post "/sign_up", to: "customers/registrations#create"
 
+  # --- Cast registration (invite only) ---
+  get  "/cast/sign_up", to: "casts/registrations#new",    as: :cast_sign_up
+  post "/cast/sign_up", to: "casts/registrations#create"
+
   # --- Public (store registration) ---
   namespace :stores do
     get  :new_registration, to: "registrations#new"
     post :registrations,    to: "registrations#create"
   end
+
+  # --- Public (cast invitation) ---
+  get  "/cast_invitations/:token", to: "cast_invitations#show",   as: :cast_invitation
+  post "/cast_invitations/:token/accept", to: "cast_invitations#accept", as: :accept_cast_invitation
 
   # --- Favorites (login required) ---
   namespace :favorites do
@@ -83,7 +91,7 @@ Rails.application.routes.draw do
   namespace :admin do
     # current_store selection
     resources :stores, only: %i[index edit update]
-    resource :current_store, only: %i[create]
+    resource :current_store, only: %i[create], controller: "current_stores"
 
     resources :booths, only: %i[index show new edit create update] do
       member do
@@ -95,7 +103,13 @@ Rails.application.routes.draw do
 
     resources :drink_items, only: %i[index create update destroy]
     resources :store_bans, only: %i[index create destroy]
-    resources :casts, only: %i[index create destroy]
+
+    resources :casts, only: %i[index destroy] do
+      collection do
+        post :invite
+      end
+    end
+
     get "/cast_metrics", to: "metrics#cast"
   end
 

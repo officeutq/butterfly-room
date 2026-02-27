@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_21_044833) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_27_010503) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -179,6 +179,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_21_044833) do
     t.index ["store_id"], name: "index_store_bans_on_store_id"
   end
 
+  create_table "store_cast_invitations", force: :cascade do |t|
+    t.bigint "accepted_by_user_id"
+    t.datetime "created_at", null: false
+    t.datetime "expires_at", null: false
+    t.bigint "invited_by_user_id", null: false
+    t.text "note"
+    t.bigint "store_id", null: false
+    t.string "token_digest", null: false
+    t.datetime "updated_at", null: false
+    t.datetime "used_at"
+    t.index ["expires_at"], name: "index_store_cast_invitations_on_expires_at"
+    t.index ["store_id", "created_at"], name: "index_store_cast_invitations_on_store_id_and_created_at"
+    t.index ["store_id"], name: "index_store_cast_invitations_on_store_id"
+    t.index ["token_digest"], name: "index_store_cast_invitations_on_token_digest", unique: true
+    t.index ["used_at"], name: "index_store_cast_invitations_on_used_at"
+  end
+
   create_table "store_ledger_entries", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "drink_order_id", null: false
@@ -330,6 +347,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_21_044833) do
   add_foreign_key "store_bans", "stores"
   add_foreign_key "store_bans", "users", column: "created_by_store_admin_user_id"
   add_foreign_key "store_bans", "users", column: "customer_user_id"
+  add_foreign_key "store_cast_invitations", "stores"
+  add_foreign_key "store_cast_invitations", "users", column: "accepted_by_user_id"
+  add_foreign_key "store_cast_invitations", "users", column: "invited_by_user_id"
   add_foreign_key "store_ledger_entries", "drink_orders"
   add_foreign_key "store_ledger_entries", "stores"
   add_foreign_key "store_ledger_entries", "stream_sessions"

@@ -11,39 +11,35 @@ module Admin
           .where(store_id: current_store.id, membership_role: :cast)
           .order(:id)
 
-      existing_user_ids = @cast_memberships.map(&:user_id)
+      @store_cast_invitations =
+        StoreCastInvitation
+          .includes(:invited_by_user, :accepted_by_user)
+          .where(store_id: current_store.id)
+          .recent_first
 
-      @candidate_cast_users =
-        User
-          .where(role: User.roles[:cast])
-          .where.not(id: existing_user_ids)
-          .order(:id)
-
-      @store_membership = StoreMembership.new
+      @new_invitation = StoreCastInvitation.new
     end
 
-    def create
-      user_id = params.require(:store_membership).permit(:user_id)[:user_id]
-      user = User.find(user_id)
+    # 招待発行（note 任意）
+    def invite
+      note = params.require(:store_cast_invitation).permit(:note)[:note]
 
-      unless user.cast?
-        redirect_to admin_casts_path, alert: "castユーザーのみ追加できます"
-        return
-      end
+      result =
+        StoreCastInvitations::IssueInvitation.call!(
+          store: current_store,
+          invited_by_user: current_user,
+          note: note
+        )
 
-      StoreMembership.create!(
-        store_id: current_store.id,
-        user_id: user.id,
-        membership_role: :cast
-      )
+      token = result.token
+      url = cast_invitation_url(token)
 
-      redirect_to admin_casts_path, notice: "キャストを登録しました"
-    rescue ActiveRecord::RecordNotFound
-      redirect_to admin_casts_path, alert: "ユーザーが見つかりません"
+      redirect_to admin_casts_path,
+                  notice: "招待を発行しました: #{url}"
+    rescue ActionController::ParameterMissing
+      redirect_to admin_casts_path, alert: "パラメータが不正です"
     rescue ActiveRecord::RecordInvalid => e
       redirect_to admin_casts_path, alert: e.record.errors.full_messages.join(", ")
-    rescue ActiveRecord::RecordNotUnique
-      redirect_to admin_casts_path, alert: "すでに登録されています"
     end
 
     def destroy

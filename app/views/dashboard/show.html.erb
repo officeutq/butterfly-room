@@ -41,6 +41,14 @@
         <% end %>
       </li>
 
+      <li class="list-group-item">
+        <% if store.present? %>
+          <%= link_to "キャスト管理", admin_casts_path, class: "text-decoration-none" %>
+        <% else %>
+          <%= link_to "キャスト管理（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+        <% end %>
+      </li>
+
       <li class="list-group-item text-muted">
         ユーザープロフィール編集（未実装）
       </li>
@@ -67,6 +75,14 @@
           <%= link_to "ブース一覧", admin_booths_path, class: "text-decoration-none" %>
         <% else %>
           <%= link_to "ブース一覧（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+        <% end %>
+      </li>
+
+      <li class="list-group-item">
+        <% if store.present? %>
+          <%= link_to "キャスト管理", admin_casts_path, class: "text-decoration-none" %>
+        <% else %>
+          <%= link_to "キャスト管理（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
         <% end %>
       </li>
 
