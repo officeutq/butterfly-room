@@ -43,7 +43,7 @@ class StoreCastInvitationFlowTest < ActionDispatch::IntegrationTest
     result = StoreCastInvitations::IssueInvitation.call!(store: store, invited_by_user: inviter, note: nil)
     token = result.token
 
-    sign_in cast_user
+    sign_in cast_user, scope: :user
 
     post accept_cast_invitation_path(token)
     assert_response :redirect
@@ -73,7 +73,7 @@ class StoreCastInvitationFlowTest < ActionDispatch::IntegrationTest
     result = StoreCastInvitations::IssueInvitation.call!(store: store, invited_by_user: inviter, note: nil)
     token = result.token
 
-    sign_in customer
+    sign_in customer, scope: :user
 
     get cast_invitation_path(token)
     assert_response :ok
@@ -99,7 +99,7 @@ class StoreCastInvitationFlowTest < ActionDispatch::IntegrationTest
     invitation = StoreCastInvitation.find_by_token(token)
     invitation.update!(expires_at: 1.minute.ago)
 
-    sign_in cast_user
+    sign_in cast_user, scope: :user
 
     post accept_cast_invitation_path(token)
     assert_response :redirect

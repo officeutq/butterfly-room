@@ -11,6 +11,9 @@ Rails.application.routes.draw do
   # --- Common profile (login required) ---
   resource :profile, only: %i[edit update]
 
+  # --- Public user profiles (login required) ---
+  resources :users, only: %i[show]
+
   # --- Public (customer registration) ---
   get  "/sign_up", to: "customers/registrations#new",    as: :sign_up
   post "/sign_up", to: "customers/registrations#create"
