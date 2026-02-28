@@ -138,6 +138,7 @@ app/
     store_cast_invitation.rb
     store_ledger_entry.rb
     store_membership.rb
+    store_payout_account.rb
     stream_session.rb
     stripe_webhook_event.rb
     user.rb
