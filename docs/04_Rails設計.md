@@ -133,6 +133,7 @@ app/
     favorite_store.rb
     presence.rb
     referral_code.rb
+    settlement.rb
     store.rb
     store_ban.rb
     store_cast_invitation.rb
