@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_28_001025) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_28_010157) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -166,6 +166,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_28_001025) do
     t.index ["code"], name: "index_referral_codes_on_code", unique: true
     t.index ["enabled"], name: "index_referral_codes_on_enabled"
     t.index ["expires_at"], name: "index_referral_codes_on_expires_at"
+  end
+
+  create_table "settlement_carryovers", force: :cascade do |t|
+    t.bigint "amount_yen", null: false
+    t.bigint "applied_settlement_id"
+    t.datetime "created_at", null: false
+    t.text "note"
+    t.datetime "period_from"
+    t.datetime "period_to"
+    t.integer "reason", null: false
+    t.bigint "source_settlement_id"
+    t.bigint "store_id", null: false
+    t.index ["applied_settlement_id"], name: "index_settlement_carryovers_on_applied_settlement_id"
+    t.index ["source_settlement_id"], name: "index_settlement_carryovers_on_source_settlement_id"
+    t.index ["store_id", "created_at"], name: "index_settlement_carryovers_on_store_id_created_at"
+    t.index ["store_id", "reason", "period_from", "period_to"], name: "uniq_settlement_carryovers_min_payout_store_period", unique: true, where: "(reason = 0)"
+    t.index ["store_id"], name: "index_settlement_carryovers_on_store_id"
+    t.check_constraint "amount_yen <> 0", name: "settlement_carryovers_amount_non_zero"
   end
 
   create_table "settlements", force: :cascade do |t|
@@ -395,6 +413,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_28_001025) do
   add_foreign_key "favorite_stores", "users"
   add_foreign_key "presences", "stream_sessions"
   add_foreign_key "presences", "users", column: "customer_user_id"
+  add_foreign_key "settlement_carryovers", "settlements", column: "applied_settlement_id"
+  add_foreign_key "settlement_carryovers", "settlements", column: "source_settlement_id"
+  add_foreign_key "settlement_carryovers", "stores"
   add_foreign_key "settlements", "stores"
   add_foreign_key "settlements", "users", column: "exported_by_user_id"
   add_foreign_key "store_bans", "stores"
