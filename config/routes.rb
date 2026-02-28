@@ -123,5 +123,13 @@ Rails.application.routes.draw do
   namespace :system_admin do
     resources :referral_codes, only: %i[index new create edit update]
     resources :users, only: %i[index new create edit update destroy]
+
+    resources :settlements, only: [] do
+      collection do
+        get  "manual/new",     to: "settlements#new_manual",     as: :new_manual
+        post "manual/preview", to: "settlements#preview_manual", as: :preview_manual
+        post "manual",         to: "settlements#create_manual",  as: :create_manual
+      end
+    end
   end
 end
