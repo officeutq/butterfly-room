@@ -10,8 +10,9 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_27_234419) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_28_001025) do
   # These are extensions that must be enabled in order to support this database
+  enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
 
   create_table "active_storage_attachments", force: :cascade do |t|
@@ -165,6 +166,36 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_27_234419) do
     t.index ["code"], name: "index_referral_codes_on_code", unique: true
     t.index ["enabled"], name: "index_referral_codes_on_enabled"
     t.index ["expires_at"], name: "index_referral_codes_on_expires_at"
+  end
+
+  create_table "settlements", force: :cascade do |t|
+    t.datetime "confirmed_at"
+    t.datetime "created_at", null: false
+    t.string "export_file_key"
+    t.string "export_format"
+    t.datetime "exported_at"
+    t.bigint "exported_by_user_id"
+    t.bigint "gross_yen", default: 0, null: false
+    t.integer "kind", null: false
+    t.string "payout_account_holder_kana"
+    t.string "payout_account_number", limit: 7
+    t.integer "payout_account_type"
+    t.string "payout_bank_code", limit: 4
+    t.string "payout_branch_code", limit: 3
+    t.datetime "period_from", null: false
+    t.datetime "period_to", null: false
+    t.bigint "platform_fee_yen", default: 0, null: false
+    t.integer "status", default: 0, null: false
+    t.bigint "store_id", null: false
+    t.bigint "store_share_yen", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.index ["kind"], name: "index_settlements_on_kind"
+    t.index ["period_from", "period_to"], name: "index_settlements_on_period_from_and_period_to"
+    t.index ["status"], name: "index_settlements_on_status"
+    t.index ["store_id", "period_from", "period_to"], name: "uniq_settlements_store_period_exact", unique: true
+    t.index ["store_id"], name: "index_settlements_on_store_id"
+    t.check_constraint "period_from < period_to", name: "settlements_period_from_before_period_to"
+    t.exclusion_constraint "store_id WITH =, tsrange(period_from, period_to) WITH &&", using: :gist, name: "excl_settlements_store_period_no_overlap"
   end
 
   create_table "store_bans", force: :cascade do |t|
@@ -364,6 +395,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_27_234419) do
   add_foreign_key "favorite_stores", "users"
   add_foreign_key "presences", "stream_sessions"
   add_foreign_key "presences", "users", column: "customer_user_id"
+  add_foreign_key "settlements", "stores"
+  add_foreign_key "settlements", "users", column: "exported_by_user_id"
   add_foreign_key "store_bans", "stores"
   add_foreign_key "store_bans", "users", column: "created_by_store_admin_user_id"
   add_foreign_key "store_bans", "users", column: "customer_user_id"
