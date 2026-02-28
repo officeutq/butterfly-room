@@ -69,6 +69,10 @@
       <li class="list-group-item">
         <%= link_to "マニュアル精算（テスト）", "/system_admin/settlements/manual/new", class: "text-decoration-none" %>
       </li>
+
+      <li class="list-group-item">
+        <%= link_to "振込CSV（住信SBI）", system_admin_settlement_exports_path, class: "text-decoration-none" %>
+      </li>
     </ul>
 
   <% elsif current_user.store_admin? %>
