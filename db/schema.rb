@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_28_010157) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_28_073551) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -184,6 +184,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_28_010157) do
     t.index ["store_id", "reason", "period_from", "period_to"], name: "uniq_settlement_carryovers_min_payout_store_period", unique: true, where: "(reason = 0)"
     t.index ["store_id"], name: "index_settlement_carryovers_on_store_id"
     t.check_constraint "amount_yen <> 0", name: "settlement_carryovers_amount_non_zero"
+  end
+
+  create_table "settlement_exports", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "file_seq", default: 1, null: false
+    t.integer "format", default: 0, null: false
+    t.bigint "generated_by_user_id", null: false
+    t.datetime "period_from"
+    t.datetime "period_to"
+    t.integer "record_count", default: 0, null: false
+    t.bigint "total_amount_yen", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_settlement_exports_on_created_at"
+    t.index ["format"], name: "index_settlement_exports_on_format"
   end
 
   create_table "settlements", force: :cascade do |t|
@@ -416,6 +430,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_28_010157) do
   add_foreign_key "settlement_carryovers", "settlements", column: "applied_settlement_id"
   add_foreign_key "settlement_carryovers", "settlements", column: "source_settlement_id"
   add_foreign_key "settlement_carryovers", "stores"
+  add_foreign_key "settlement_exports", "users", column: "generated_by_user_id"
   add_foreign_key "settlements", "stores"
   add_foreign_key "settlements", "users", column: "exported_by_user_id"
   add_foreign_key "store_bans", "stores"

@@ -133,5 +133,7 @@ Rails.application.routes.draw do
         post "manual",         to: "settlements#create_manual",  as: :create_manual
       end
     end
+
+    resources :settlement_exports, only: %i[index show create]
   end
 end

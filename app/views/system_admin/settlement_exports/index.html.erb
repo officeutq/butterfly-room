@@ -1,0 +1,46 @@
+<h1>振込CSV（住信SBI）</h1>
+
+<div class="alert alert-secondary" role="alert">
+  confirmed の精算から振込CSVを生成します（1ファイル最大 9,999 件。超えたら分割）。
+  生成したCSVはActiveStorageに保存され、ここからダウンロードできます。
+</div>
+
+<div class="mb-3 d-flex gap-2">
+  <%= button_to "CSVを生成する",
+        system_admin_settlement_exports_path,
+        method: :post,
+        class: "btn btn-primary",
+        data: { turbo_confirm: "confirmed の精算を対象にCSVを生成します。よろしいですか？" } %>
+
+  <%= link_to "ダッシュボードへ戻る", dashboard_path, class: "btn btn-outline-secondary" %>
+</div>
+
+<table class="table table-sm align-middle">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Format</th>
+      <th>Seq</th>
+      <th>Records</th>
+      <th>Total</th>
+      <th>Generated</th>
+      <th></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @exports.each do |e| %>
+      <tr>
+        <td class="fw-semibold"><%= e.id %></td>
+        <td><%= e.format %></td>
+        <td><%= e.file_seq %></td>
+        <td><%= e.record_count %></td>
+        <td><%= e.total_amount_yen %></td>
+        <td class="text-muted small"><%= l(e.created_at) %></td>
+        <td class="d-flex justify-content-end gap-2">
+          <%= link_to "詳細", system_admin_settlement_export_path(e), class: "btn btn-outline-secondary btn-sm" %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
