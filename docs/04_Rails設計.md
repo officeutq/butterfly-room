@@ -51,6 +51,7 @@ app/
       drink_items_controller.rb
       metrics_controller.rb
       store_bans_controller.rb
+      store_payout_accounts_controller.rb
       stores_controller.rb
     cast/
       booths/
@@ -218,6 +219,8 @@ app/
         cast.html.erb
       store_bans/
         index.html.erb
+      store_payout_accounts/
+        edit.html.erb
       stores/
         edit.html.erb
         index.html.erb
