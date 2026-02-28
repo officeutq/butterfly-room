@@ -79,6 +79,7 @@ app/
     system_admin/
       base_controller.rb
       referral_codes_controller.rb
+      settlements_controller.rb
       users_controller.rb
     wallet/
       purchases_controller.rb
@@ -101,6 +102,8 @@ app/
       registration_form.rb
     stores/
       registration_form.rb
+    system_admin/
+      manual_settlement_form.rb
   helpers/
     admin/
       metrics_helper.rb
@@ -178,6 +181,8 @@ app/
       ping_service.rb
       summary_service.rb
     settlements/
+      manual_create_service.rb
+      manual_preview_service.rb
       month_period.rb
       monthly_generate_service.rb
     store_cast_invitations/
@@ -289,6 +294,8 @@ app/
         edit.html.erb
         index.html.erb
         new.html.erb
+      settlements/
+        new_manual.html.erb
       users/
         _form.html.erb
         edit.html.erb
