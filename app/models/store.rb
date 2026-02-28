@@ -42,6 +42,35 @@ class Store < ApplicationRecord
     business_types.keys.map { |k| [ BUSINESS_TYPE_LABELS[k.to_sym] || k.to_s, k ] }
   end
 
+  def payout_account_configured?
+    pa = active_payout_account
+    return false if pa.blank?
+
+    if pa.manual_bank?
+      pa.bank_code.present? &&
+        pa.branch_code.present? &&
+        pa.account_type.present? &&
+        pa.account_number.present? &&
+        pa.account_holder_kana.present?
+    elsif pa.stripe_connect?
+      pa.stripe_account_id.present?
+    else
+      false
+    end
+  end
+
+  def payout_account_unconfigured?
+    !payout_account_configured?
+  end
+
+  def payout_account_last4
+    pa = active_payout_account
+    return nil if pa.blank?
+    return nil if pa.account_number.blank?
+
+    pa.account_number.to_s.last(4)
+  end
+
   private
 
   def thumbnail_validation
