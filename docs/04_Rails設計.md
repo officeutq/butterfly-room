@@ -134,6 +134,7 @@ app/
     presence.rb
     referral_code.rb
     settlement.rb
+    settlement_carryover.rb
     store.rb
     store_ban.rb
     store_cast_invitation.rb
@@ -176,6 +177,9 @@ app/
     presences/
       ping_service.rb
       summary_service.rb
+    settlements/
+      month_period.rb
+      monthly_generate_service.rb
     store_cast_invitations/
       accept_invitation.rb
       issue_invitation.rb
