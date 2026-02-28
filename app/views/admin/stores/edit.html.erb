@@ -57,3 +57,29 @@
     <%= link_to "戻る", dashboard_path, class: "btn btn-outline-secondary" %>
   </div>
 <% end %>
+
+<hr class="my-4">
+
+<div class="card mb-4" style="max-width: 720px;">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div>
+      精算・振込設定
+      <% if @store.payout_account_unconfigured? %>
+        <span class="badge text-bg-warning ms-2">未設定</span>
+      <% end %>
+    </div>
+
+    <%= link_to "設定する", edit_admin_store_payout_account_path(@store), class: "btn btn-sm btn-outline-primary" %>
+  </div>
+
+  <div class="card-body">
+    <% if @store.payout_account_configured? %>
+      <% last4 = @store.payout_account_last4 %>
+      <div class="text-muted">
+        口座番号（下4桁）：<strong><%= last4.presence || "-" %></strong>
+      </div>
+    <% else %>
+      <div class="text-muted">振込先口座が未設定です。精算の前に設定してください。</div>
+    <% end %>
+  </div>
+</div>
