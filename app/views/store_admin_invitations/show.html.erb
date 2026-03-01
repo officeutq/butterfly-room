@@ -1,0 +1,81 @@
+<div style="max-width: 720px;">
+  <h1 class="h4 mb-3">store_admin 招待</h1>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="mb-2">
+        <span class="text-muted">店舗：</span>
+        <strong><%= @invitation.store.name %></strong>
+      </div>
+
+      <div class="mb-2">
+        <span class="text-muted">期限：</span>
+        <span><%= @invitation.expires_at.strftime("%Y-%m-%d %H:%M") %></span>
+      </div>
+
+      <div class="mb-0">
+        <span class="text-muted">状態：</span>
+        <span><%= @invitation.status_label %></span>
+      </div>
+    </div>
+  </div>
+
+  <% if !user_signed_in? %>
+    <%# show では未ログイン時はログインへリダイレクト（基本到達しない想定） %>
+    <div class="alert alert-secondary" role="alert">
+      招待の承認には store_admin でログインしてください。
+    </div>
+
+  <% elsif !current_user.store_admin? %>
+    <div class="alert alert-warning" role="alert">
+      この招待は <strong>store_admin アカウント</strong>でのみ承認できます。<br>
+      現在は store_admin 以外でログインしています。ログアウトして store_admin でログインし直してください。
+    </div>
+
+    <div class="d-flex gap-2 flex-wrap">
+      <%= button_to "ログアウト",
+            destroy_user_session_path,
+            method: :delete,
+            class: "btn btn-outline-secondary" %>
+
+      <%= link_to "ログイン（store_admin）",
+            new_user_session_path(invite_token: params[:token], invite_kind: "store_admin"),
+            class: "btn btn-primary" %>
+
+      <%= link_to "招待経由で store_admin 新規作成",
+            store_admin_sign_up_path(token: params[:token]),
+            class: "btn btn-outline-primary" %>
+    </div>
+
+  <% else %>
+    <% if @already_member %>
+      <div class="alert alert-success" role="alert">
+        この店舗にはすでに store_admin として登録されています。
+      </div>
+
+      <div class="d-flex gap-2">
+        <%= link_to "ダッシュボードへ", dashboard_path, class: "btn btn-outline-secondary" %>
+      </div>
+
+    <% elsif !@invitation.usable? %>
+      <div class="alert alert-danger" role="alert">
+        この招待は使用できません（期限切れ / 使用済み）。
+      </div>
+
+    <% else %>
+      <div class="alert alert-info" role="alert">
+        上記の店舗を管理する store_admin として参加します。よろしければ承認してください。
+      </div>
+
+      <div class="d-flex gap-2">
+        <%= button_to "承認する",
+              accept_store_admin_invitation_path(params[:token]),
+              method: :post,
+              class: "btn btn-primary",
+              data: { turbo_confirm: "この店舗（#{@invitation.store.name}）の store_admin 招待を承認しますか？" } %>
+
+        <%= link_to "キャンセル", dashboard_path, class: "btn btn-outline-secondary" %>
+      </div>
+    <% end %>
+  <% end %>
+</div>

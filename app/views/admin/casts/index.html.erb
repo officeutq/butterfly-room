@@ -91,3 +91,60 @@
     <% end %>
   </tbody>
 </table>
+
+<hr class="my-4">
+
+<h2 class="h5 mt-4">store_admin 招待（ワンタイム / 24時間）</h2>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <p class="text-muted mb-3">
+      招待URLを発行し、store_admin ロールのユーザーが承認した場合のみ、
+      店舗管理者所属（store_memberships: admin）が作成されます（ロール付け替えは行いません）。
+    </p>
+
+    <%= button_to "招待URLを発行",
+          invite_store_admin_admin_casts_path,
+          method: :post,
+          class: "btn btn-primary" %>
+
+    <div class="mt-3 text-muted small">
+      ※発行後のURLは「お知らせ（notice）」にも表示されます。必要に応じてコピペしてください。
+    </div>
+  </div>
+</div>
+
+<h3 class="h6 mt-4">招待一覧</h3>
+
+<table class="table table-sm">
+  <thead>
+    <tr>
+      <th>状態</th>
+      <th>期限</th>
+      <th>発行者</th>
+      <th>承認者</th>
+      <th>URL</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @store_admin_invitations.each do |inv| %>
+      <tr>
+        <td><%= inv.status_label %></td>
+        <td><%= inv.expires_at.strftime("%Y-%m-%d %H:%M") %></td>
+        <td><%= display_name_or_email(inv.invited_by_user) %></td>
+        <td>
+          <% if inv.accepted_by_user.present? %>
+            <%= display_name_or_email(inv.accepted_by_user) %>
+          <% else %>
+            -
+          <% end %>
+        </td>
+        <td class="text-nowrap">
+          <%# token は保持していないので、ここでは直接URLを再生成できない（仕様通り：生tokenは発行時のみ） %>
+          <span class="text-muted small">（発行時に控えてください）</span>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

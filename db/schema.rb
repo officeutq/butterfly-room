@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_01_071209) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_01_213718) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -243,6 +243,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_01_071209) do
     t.exclusion_constraint "store_id WITH =, tsrange(period_from, period_to) WITH &&", using: :gist, name: "excl_settlements_store_period_no_overlap"
   end
 
+  create_table "store_admin_invitations", force: :cascade do |t|
+    t.bigint "accepted_by_user_id"
+    t.datetime "created_at", null: false
+    t.datetime "expires_at", null: false
+    t.bigint "invited_by_user_id", null: false
+    t.bigint "store_id", null: false
+    t.string "token_digest", null: false
+    t.datetime "updated_at", null: false
+    t.datetime "used_at"
+    t.index ["accepted_by_user_id"], name: "index_store_admin_invitations_on_accepted_by_user_id"
+    t.index ["expires_at"], name: "index_store_admin_invitations_on_expires_at"
+    t.index ["invited_by_user_id"], name: "index_store_admin_invitations_on_invited_by_user_id"
+    t.index ["store_id", "created_at"], name: "index_store_admin_invitations_on_store_id_and_created_at"
+    t.index ["store_id"], name: "index_store_admin_invitations_on_store_id"
+    t.index ["token_digest"], name: "index_store_admin_invitations_on_token_digest", unique: true
+    t.index ["used_at"], name: "index_store_admin_invitations_on_used_at"
+  end
+
   create_table "store_bans", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "created_by_store_admin_user_id", null: false
@@ -448,6 +466,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_01_071209) do
   add_foreign_key "settlement_exports", "users", column: "generated_by_user_id"
   add_foreign_key "settlements", "stores"
   add_foreign_key "settlements", "users", column: "exported_by_user_id"
+  add_foreign_key "store_admin_invitations", "stores"
+  add_foreign_key "store_admin_invitations", "users", column: "accepted_by_user_id"
+  add_foreign_key "store_admin_invitations", "users", column: "invited_by_user_id"
   add_foreign_key "store_bans", "stores"
   add_foreign_key "store_bans", "users", column: "created_by_store_admin_user_id"
   add_foreign_key "store_bans", "users", column: "customer_user_id"

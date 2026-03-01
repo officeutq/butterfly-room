@@ -2,16 +2,31 @@
   <h1 class="h4 mb-3">ログイン</h1>
 
   <% if params[:invite_token].present? %>
-    <div class="alert alert-info" role="alert">
-      キャスト招待を承認するには cast でログインしてください。<br>
-      cast アカウントが無い場合は、招待経由で新規作成できます。
-    </div>
+    <% invite_kind = params[:invite_kind].to_s.presence || "cast" %>
 
-    <div class="mb-3">
-      <%= link_to "招待経由で cast 新規作成",
-            cast_sign_up_path(token: params[:invite_token]),
-            class: "btn btn-outline-primary" %>
-    </div>
+    <% if invite_kind == "store_admin" %>
+      <div class="alert alert-info" role="alert">
+        store_admin 招待を承認するには store_admin でログインしてください。<br>
+        store_admin アカウントが無い場合は、招待経由で新規作成できます。
+      </div>
+
+      <div class="mb-3">
+        <%= link_to "招待経由で store_admin 新規作成",
+              store_admin_sign_up_path(token: params[:invite_token]),
+              class: "btn btn-outline-primary" %>
+      </div>
+    <% else %>
+      <div class="alert alert-info" role="alert">
+        キャスト招待を承認するには cast でログインしてください。<br>
+        cast アカウントが無い場合は、招待経由で新規作成できます。
+      </div>
+
+      <div class="mb-3">
+        <%= link_to "招待経由で cast 新規作成",
+              cast_sign_up_path(token: params[:invite_token]),
+              class: "btn btn-outline-primary" %>
+      </div>
+    <% end %>
   <% end %>
 
   <%= form_for(resource, as: resource_name, url: session_path(resource_name)) do |f| %>
