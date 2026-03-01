@@ -126,14 +126,25 @@ Rails.application.routes.draw do
     resources :referral_codes, only: %i[index new create edit update]
     resources :users, only: %i[index new create edit update destroy]
 
-    resources :settlements, only: [] do
+    resources :settlements, only: %i[index show] do
       collection do
+        # --- manual settlement (existing) ---
         get  "manual/new",     to: "settlements#new_manual",     as: :new_manual
         post "manual/preview", to: "settlements#preview_manual", as: :preview_manual
         post "manual",         to: "settlements#create_manual",  as: :create_manual
+
+        # --- #260 bulk export (selected confirmed -> 1 file) ---
+        post :export_csv
+      end
+
+      member do
+        # --- #260 transitions ---
+        post :confirm
+        post :mark_paid
       end
     end
 
+    # 生成済みCSVの閲覧・DL（生成ボタンは別途無効化）
     resources :settlement_exports, only: %i[index show create]
   end
 end
