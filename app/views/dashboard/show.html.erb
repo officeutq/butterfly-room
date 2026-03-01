@@ -23,6 +23,20 @@
       </li>
 
       <li class="list-group-item">
+        <%= link_to "マニュアル精算（テスト）", "/system_admin/settlements/manual/new", class: "text-decoration-none" %>
+      </li>
+
+      <li class="list-group-item">
+        <%= link_to "振込CSV（住信SBI）", system_admin_settlement_exports_path, class: "text-decoration-none" %>
+      </li>
+
+      <li class="list-group-item">
+        <%= link_to "精算一覧", system_admin_settlements_path, class: "text-decoration-none" %>
+      </li>
+    </ul>
+
+    <ul class="list-group mb-4">
+      <li class="list-group-item">
         <%= link_to "店舗一覧", admin_stores_path, class: "text-decoration-none" %>
       </li>
 
@@ -52,6 +66,30 @@
 
       <li class="list-group-item">
         <% if store.present? %>
+          <%= link_to "キャスト別数値一覧（直近30日）", admin_cast_metrics_path, class: "text-decoration-none" %>
+        <% else %>
+          <%= link_to "キャスト別数値一覧（直近30日）（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+        <% end %>
+      </li>
+
+      <li class="list-group-item">
+        <% if store.present? %>
+          <%= link_to "ドリンクメニュー", admin_drink_items_path, class: "text-decoration-none" %>
+        <% else %>
+          <%= link_to "ドリンクメニュー（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+        <% end %>
+      </li>
+
+      <li class="list-group-item">
+        <% if store.present? %>
+          <%= link_to "店舗BAN", admin_store_bans_path, class: "text-decoration-none" %>
+        <% else %>
+          <%= link_to "店舗BAN（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+        <% end %>
+      </li>
+
+      <li class="list-group-item">
+        <% if store.present? %>
           <%= link_to edit_admin_store_payout_account_path(store), class: "text-decoration-none" do %>
             精算・振込設定
             <% if store.payout_account_unconfigured? %>
@@ -70,21 +108,11 @@
           <%= link_to "精算（予定・履歴）（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
         <% end %>
       </li>
+    </ul>
 
+    <ul class="list-group mb-4">
       <li class="list-group-item">
         <%= link_to "プロフィール編集", edit_profile_path, class: "text-decoration-none" %>
-      </li>
-
-      <li class="list-group-item">
-        <%= link_to "マニュアル精算（テスト）", "/system_admin/settlements/manual/new", class: "text-decoration-none" %>
-      </li>
-
-      <li class="list-group-item">
-        <%= link_to "振込CSV（住信SBI）", system_admin_settlement_exports_path, class: "text-decoration-none" %>
-      </li>
-
-      <li class="list-group-item">
-        <%= link_to "精算一覧", system_admin_settlements_path, class: "text-decoration-none" %>
       </li>
     </ul>
 
@@ -123,6 +151,30 @@
 
       <li class="list-group-item">
         <% if store.present? %>
+          <%= link_to "キャスト別数値一覧（直近30日）", admin_cast_metrics_path, class: "text-decoration-none" %>
+        <% else %>
+          <%= link_to "キャスト別数値一覧（直近30日）（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+        <% end %>
+      </li>
+
+      <li class="list-group-item">
+        <% if store.present? %>
+          <%= link_to "ドリンクメニュー", admin_drink_items_path, class: "text-decoration-none" %>
+        <% else %>
+          <%= link_to "ドリンクメニュー（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+        <% end %>
+      </li>
+
+      <li class="list-group-item">
+        <% if store.present? %>
+          <%= link_to "店舗BAN", admin_store_bans_path, class: "text-decoration-none" %>
+        <% else %>
+          <%= link_to "店舗BAN（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+        <% end %>
+      </li>
+
+      <li class="list-group-item">
+        <% if store.present? %>
           <%= link_to edit_admin_store_payout_account_path(store), class: "text-decoration-none" do %>
             精算・振込設定
             <% if store.payout_account_unconfigured? %>
@@ -141,7 +193,9 @@
           <%= link_to "精算（予定・履歴）（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
         <% end %>
       </li>
+    </ul>
 
+    <ul class="list-group mb-4">
       <li class="list-group-item">
         <%= link_to "プロフィール編集", edit_profile_path, class: "text-decoration-none" %>
       </li>
