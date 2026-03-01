@@ -109,6 +109,9 @@ Rails.application.routes.draw do
       end
     end
 
+    # --- Booth casts management (Phase1: 1 booth = 1 cast) ---
+    resources :booth_casts, only: %i[index create]
+
     resources :drink_items, only: %i[index create update destroy]
     resources :store_bans, only: %i[index create destroy]
 
