@@ -1,0 +1,28 @@
+<div style="max-width: 960px;">
+  <h1 class="mb-3">精算履歴（詳細）</h1>
+
+  <div class="alert alert-secondary" role="alert">
+    <div class="small">
+      ・本ページは精算履歴の表示のみです。<br>
+      ・※表示金額は概算ではなく、確定済みの精算情報です（ただし運営側の処理により調整が入る場合があります）。
+    </div>
+  </div>
+
+  <table class="table table-sm" style="max-width: 860px;">
+    <tbody>
+      <tr><th style="width: 220px;">対象期間（JST）</th><td><%= l(@settlement.period_from) %>〜<%= l(@settlement.period_to) %></td></tr>
+      <tr><th>ステータス</th><td><%= @settlement.status %></td></tr>
+
+      <tr><th class="pt-3">支払予定額</th><td class="pt-3"><%= number_with_delimiter(@settlement.store_share_yen) %> 円</td></tr>
+      <tr><th>合計（参考）</th><td><%= number_with_delimiter(@settlement.gross_yen) %> 円</td></tr>
+
+      <tr><th>確定日</th><td><%= @settlement.confirmed_at.present? ? l(@settlement.confirmed_at) : "-" %></td></tr>
+      <tr><th>CSV生成日</th><td><%= @settlement.exported_at.present? ? l(@settlement.exported_at) : "-" %></td></tr>
+    </tbody>
+  </table>
+
+  <div class="d-flex gap-2">
+    <%= link_to "一覧へ戻る", admin_settlements_path, class: "btn btn-outline-secondary" %>
+    <%= link_to "ダッシュボードへ戻る", dashboard_path, class: "btn btn-outline-secondary" %>
+  </div>
+</div>

@@ -119,6 +119,9 @@ Rails.application.routes.draw do
     end
 
     get "/cast_metrics", to: "metrics#cast"
+
+    # --- #261 store-facing settlements (view only) ---
+    resources :settlements, only: %i[index show]
   end
 
   # --- System Admin ---
