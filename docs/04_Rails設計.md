@@ -45,6 +45,7 @@ app/
   controllers/
     admin/
       base_controller.rb
+      booth_casts_controller.rb
       booths_controller.rb
       casts_controller.rb
       current_stores_controller.rb
@@ -210,6 +211,8 @@ app/
       release_service.rb
   views/
     admin/
+      booth_casts/
+        index.html.erb
       booths/
         edit.html.erb
         index.html.erb
