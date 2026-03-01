@@ -1,0 +1,74 @@
+<h1>ブースにキャストを紐づける</h1>
+
+<p class="text-muted">
+  Phase1では <strong>1ブースにつきキャストは1名のみ</strong> です。差し替えはできません（変更が必要な場合は新規ブース作成＋旧ブースアーカイブ）。
+</p>
+
+<table class="table table-sm align-middle">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>ブース</th>
+      <th>Status</th>
+      <th>アーカイブ</th>
+      <th>現在のキャスト</th>
+      <th class="text-end">操作</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @booths.each do |booth| %>
+      <% booth_cast = booth.booth_casts.first %>
+
+      <tr class="<%= "text-muted" if booth.archived? %>">
+        <td><%= booth.id %></td>
+
+        <td>
+          <%= booth.name %>
+        </td>
+
+        <td><%= booth.status %></td>
+
+        <td>
+          <% if booth.archived? %>
+            <span class="badge text-bg-secondary">archived</span>
+          <% else %>
+            <span class="text-muted small">-</span>
+          <% end %>
+        </td>
+
+        <td>
+          <% if booth_cast.present? %>
+            <%= display_name_or_email(booth_cast.cast_user) %>
+            <span class="badge text-bg-secondary ms-2">設定済み</span>
+          <% else %>
+            <span class="text-muted">未設定</span>
+          <% end %>
+        </td>
+
+        <td class="text-end">
+          <% if booth.archived? %>
+            <span class="text-muted small">アーカイブ済み</span>
+          <% elsif booth_cast.present? %>
+            <span class="text-muted small">Phase1は変更不可</span>
+          <% else %>
+            <%= form_with model: BoothCast.new, url: admin_booth_casts_path, method: :post, class: "d-inline" do |f| %>
+              <%= f.hidden_field :booth_id, value: booth.id %>
+
+              <div class="d-flex justify-content-end gap-2 align-items-center">
+                <%= f.select :cast_user_id,
+                      @cast_memberships.map { |m| [ display_name_or_email(m.user), m.user.id ] },
+                      { include_blank: "キャストを選択" },
+                      class: "form-select form-select-sm",
+                      required: true %>
+
+                <%= f.submit "紐づけ",
+                      class: "btn btn-primary btn-sm",
+                      data: { turbo_confirm: "このブースにキャストを紐づけます。Phase1では変更できません。よろしいですか？" } %>
+              </div>
+            <% end %>
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

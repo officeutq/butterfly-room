@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_01_001408) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_01_071209) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -49,7 +49,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_01_001408) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["booth_id", "cast_user_id"], name: "index_booth_casts_on_booth_id_and_cast_user_id", unique: true
-    t.index ["booth_id"], name: "index_booth_casts_on_booth_id"
+    t.index ["booth_id"], name: "index_booth_casts_on_booth_id", unique: true
     t.index ["cast_user_id"], name: "index_booth_casts_on_cast_user_id"
   end
 
