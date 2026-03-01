@@ -198,4 +198,188 @@ class Settlements::MonthlyGenerateServiceTest < ActiveSupport::TestCase
       end
     end
   end
+
+  test "split: one overlapped settlement in the middle -> 2 monthly settlements for gaps" do
+    Time.use_zone("Asia/Tokyo") do
+      travel_to Time.zone.local(2026, 4, 15, 12, 0, 0) do
+        store = Store.create!(name: "S6")
+        booth = Booth.create!(store:, name: "B6", status: :offline, ivs_stage_arn: "arn:aws:ivs:ap-northeast-1:123:stage/pqr")
+        cast = User.create!(email: "cast6@example.com", password: "password", role: :cast)
+        customer = User.create!(email: "c6@example.com", password: "password", role: :customer)
+        drink_item = DrinkItem.create!(store:, name: "D6", price_points: 1000, position: 1, enabled: true)
+
+        month_from = Time.zone.local(2026, 3, 1, 0, 0, 0)
+        month_to   = Time.zone.local(2026, 4, 1, 0, 0, 0)
+
+        ss = StreamSession.create!(store:, booth:, started_by_cast_user: cast, status: :live, started_at: month_from, ivs_stage_arn: booth.ivs_stage_arn)
+
+        # existing (manual) covers [3/10, 3/20)
+        Settlement.create!(
+          store: store,
+          kind: :manual,
+          status: :confirmed,
+          confirmed_at: Time.zone.parse("2026-03-20 00:00"),
+          period_from: Time.zone.parse("2026-03-10 00:00"),
+          period_to: Time.zone.parse("2026-03-20 00:00"),
+          gross_yen: 0,
+          store_share_yen: 0,
+          platform_fee_yen: 0
+        )
+
+        # gap1: [3/1, 3/10) gross 12_000
+        o1 = DrinkOrder.create!(store:, booth:, stream_session: ss, customer_user: customer, drink_item:, status: :consumed, consumed_at: Time.zone.parse("2026-03-05 12:00"))
+        StoreLedgerEntry.create!(store:, stream_session: ss, drink_order: o1, points: 12_000, occurred_at: Time.zone.parse("2026-03-05 12:00"))
+
+        # overlap area: [3/10,3/20) gross 50_000 (should be excluded)
+        o2 = DrinkOrder.create!(store:, booth:, stream_session: ss, customer_user: customer, drink_item:, status: :consumed, consumed_at: Time.zone.parse("2026-03-15 12:00"))
+        StoreLedgerEntry.create!(store:, stream_session: ss, drink_order: o2, points: 50_000, occurred_at: Time.zone.parse("2026-03-15 12:00"))
+
+        # gap2: [3/20, 4/1) gross 8_000
+        o3 = DrinkOrder.create!(store:, booth:, stream_session: ss, customer_user: customer, drink_item:, status: :consumed, consumed_at: Time.zone.parse("2026-03-25 12:00"))
+        StoreLedgerEntry.create!(store:, stream_session: ss, drink_order: o3, points: 8_000, occurred_at: Time.zone.parse("2026-03-25 12:00"))
+
+        result = Settlements::MonthlyGenerateService.new.call
+        assert_equal 2, result.created_count
+
+        settlements = Settlement.where(store_id: store.id, kind: :monthly).order(:period_from).to_a
+        assert_equal 2, settlements.size
+
+        s1, s2 = settlements
+
+        assert_equal Time.zone.parse("2026-03-01 00:00"), s1.period_from
+        assert_equal Time.zone.parse("2026-03-10 00:00"), s1.period_to
+        assert_equal 12_000, s1.gross_yen
+        assert_equal 8_400, s1.store_share_yen # 12_000 * 0.7
+        assert_equal 3_600, s1.platform_fee_yen
+
+        assert_equal Time.zone.parse("2026-03-20 00:00"), s2.period_from
+        assert_equal Time.zone.parse("2026-04-01 00:00"), s2.period_to
+        assert_equal 8_000, s2.gross_yen
+        assert_equal 5_600, s2.store_share_yen # 8_000 * 0.7
+        assert_equal 2_400, s2.platform_fee_yen
+
+        # re-run should not create more (gaps are now covered)
+        result2 = Settlements::MonthlyGenerateService.new.call
+        assert_equal 0, result2.created_count
+        assert_equal 2, Settlement.where(store_id: store.id, kind: :monthly).count
+      end
+    end
+  end
+
+  test "split: fully covered by existing settlements -> 0 monthly settlements and carryover untouched" do
+    Time.use_zone("Asia/Tokyo") do
+      travel_to Time.zone.local(2026, 4, 15, 12, 0, 0) do
+        store = Store.create!(name: "S7")
+        booth = Booth.create!(store:, name: "B7", status: :offline, ivs_stage_arn: "arn:aws:ivs:ap-northeast-1:123:stage/stu")
+        cast = User.create!(email: "cast7@example.com", password: "password", role: :cast)
+        customer = User.create!(email: "c7@example.com", password: "password", role: :customer)
+        drink_item = DrinkItem.create!(store:, name: "D7", price_points: 1000, position: 1, enabled: true)
+
+        month_from = Time.zone.local(2026, 3, 1, 0, 0, 0)
+        month_to   = Time.zone.local(2026, 4, 1, 0, 0, 0)
+
+        ss = StreamSession.create!(store:, booth:, started_by_cast_user: cast, status: :live, started_at: month_from, ivs_stage_arn: booth.ivs_stage_arn)
+
+        # whole month covered by existing manual
+        Settlement.create!(
+          store: store,
+          kind: :manual,
+          status: :confirmed,
+          confirmed_at: Time.zone.parse("2026-04-01 00:00"),
+          period_from: month_from,
+          period_to: month_to,
+          gross_yen: 0,
+          store_share_yen: 0,
+          platform_fee_yen: 0
+        )
+
+        # ledger exists in month but should be excluded due to full coverage
+        o1 = DrinkOrder.create!(store:, booth:, stream_session: ss, customer_user: customer, drink_item:, status: :consumed, consumed_at: Time.zone.parse("2026-03-10 12:00"))
+        StoreLedgerEntry.create!(store:, stream_session: ss, drink_order: o1, points: 20_000, occurred_at: Time.zone.parse("2026-03-10 12:00"))
+
+        # existing carryover should remain untouched (because gaps empty)
+        SettlementCarryover.create!(
+          store: store,
+          amount_yen: 5_000,
+          reason: :min_payout_carryover,
+          period_from: Time.zone.local(2026, 2, 1),
+          period_to: Time.zone.local(2026, 3, 1),
+          created_at: Time.zone.now
+        )
+
+        before_sum = SettlementCarryover.where(store_id: store.id).sum(:amount_yen)
+
+        result = Settlements::MonthlyGenerateService.new.call
+        assert_equal 0, result.created_count
+        assert_equal 0, Settlement.where(store_id: store.id, kind: :monthly).count
+
+        after_sum = SettlementCarryover.where(store_id: store.id).sum(:amount_yen)
+        assert_equal before_sum, after_sum
+      end
+    end
+  end
+
+  test "split: carryover is applied only to the first gap settlement and cleared once" do
+    Time.use_zone("Asia/Tokyo") do
+      travel_to Time.zone.local(2026, 4, 15, 12, 0, 0) do
+        store = Store.create!(name: "S8")
+        booth = Booth.create!(store:, name: "B8", status: :offline, ivs_stage_arn: "arn:aws:ivs:ap-northeast-1:123:stage/vwx")
+        cast = User.create!(email: "cast8@example.com", password: "password", role: :cast)
+        customer = User.create!(email: "c8@example.com", password: "password", role: :customer)
+        drink_item = DrinkItem.create!(store:, name: "D8", price_points: 1000, position: 1, enabled: true)
+
+        month_from = Time.zone.local(2026, 3, 1, 0, 0, 0)
+        ss = StreamSession.create!(store:, booth:, started_by_cast_user: cast, status: :live, started_at: month_from, ivs_stage_arn: booth.ivs_stage_arn)
+
+        # carryover 5,000
+        SettlementCarryover.create!(
+          store: store,
+          amount_yen: 5_000,
+          reason: :min_payout_carryover,
+          period_from: Time.zone.local(2026, 2, 1),
+          period_to: Time.zone.local(2026, 3, 1),
+          created_at: Time.zone.now
+        )
+
+        # existing (manual) covers [3/10, 3/20)
+        Settlement.create!(
+          store: store,
+          kind: :manual,
+          status: :confirmed,
+          confirmed_at: Time.zone.parse("2026-03-20 00:00"),
+          period_from: Time.zone.parse("2026-03-10 00:00"),
+          period_to: Time.zone.parse("2026-03-20 00:00"),
+          gross_yen: 0,
+          store_share_yen: 0,
+          platform_fee_yen: 0
+        )
+
+        # gap1 gross 10_000 -> share 7_000
+        o1 = DrinkOrder.create!(store:, booth:, stream_session: ss, customer_user: customer, drink_item:, status: :consumed, consumed_at: Time.zone.parse("2026-03-05 12:00"))
+        StoreLedgerEntry.create!(store:, stream_session: ss, drink_order: o1, points: 10_000, occurred_at: Time.zone.parse("2026-03-05 12:00"))
+
+        # gap2 gross 10_000 -> share 7_000
+        o2 = DrinkOrder.create!(store:, booth:, stream_session: ss, customer_user: customer, drink_item:, status: :consumed, consumed_at: Time.zone.parse("2026-03-25 12:00"))
+        StoreLedgerEntry.create!(store:, stream_session: ss, drink_order: o2, points: 10_000, occurred_at: Time.zone.parse("2026-03-25 12:00"))
+
+        # total share 14_000 + carryover 5_000 => 19_000 >= min payout => settlements created
+        result = Settlements::MonthlyGenerateService.new.call
+        assert_equal 2, result.created_count
+
+        settlements = Settlement.where(store_id: store.id, kind: :monthly).order(:period_from).to_a
+        assert_equal 2, settlements.size
+
+        s1, s2 = settlements
+        assert_equal 12_000, s1.store_share_yen # 7_000 + 5_000 carryover
+        assert_equal 7_000, s2.store_share_yen  # carryover not applied
+
+        assert_equal 0, SettlementCarryover.where(store_id: store.id).sum(:amount_yen)
+
+        applied = SettlementCarryover.where(store_id: store.id, reason: :applied_to_settlement)
+        assert_equal 1, applied.count
+        assert_equal(-5_000, applied.first.amount_yen)
+        assert_equal s1.id, applied.first.applied_settlement_id
+      end
+    end
+  end
 end
