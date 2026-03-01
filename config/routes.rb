@@ -22,6 +22,10 @@ Rails.application.routes.draw do
   get  "/cast/sign_up", to: "casts/registrations#new",    as: :cast_sign_up
   post "/cast/sign_up", to: "casts/registrations#create"
 
+  # --- StoreAdmin registration (invite only) ---
+  get  "/store_admin/sign_up", to: "store_admins/registrations#new",    as: :store_admin_sign_up
+  post "/store_admin/sign_up", to: "store_admins/registrations#create"
+
   # --- Public (store registration) ---
   namespace :stores do
     get  :new_registration, to: "registrations#new"
@@ -31,6 +35,10 @@ Rails.application.routes.draw do
   # --- Public (cast invitation) ---
   get  "/cast_invitations/:token", to: "cast_invitations#show",   as: :cast_invitation
   post "/cast_invitations/:token/accept", to: "cast_invitations#accept", as: :accept_cast_invitation
+
+  # --- Public (store_admin invitation) ---
+  get  "/store_admin_invitations/:token", to: "store_admin_invitations#show",   as: :store_admin_invitation
+  post "/store_admin_invitations/:token/accept", to: "store_admin_invitations#accept", as: :accept_store_admin_invitation
 
   # --- Favorites (login required) ---
   namespace :favorites do
@@ -118,6 +126,7 @@ Rails.application.routes.draw do
     resources :casts, only: %i[index destroy] do
       collection do
         post :invite
+        post :invite_store_admin
       end
     end
 
