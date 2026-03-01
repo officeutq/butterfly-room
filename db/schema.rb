@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_28_073551) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_01_001408) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -184,6 +184,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_28_073551) do
     t.index ["store_id", "reason", "period_from", "period_to"], name: "uniq_settlement_carryovers_min_payout_store_period", unique: true, where: "(reason = 0)"
     t.index ["store_id"], name: "index_settlement_carryovers_on_store_id"
     t.check_constraint "amount_yen <> 0", name: "settlement_carryovers_amount_non_zero"
+  end
+
+  create_table "settlement_events", force: :cascade do |t|
+    t.integer "action", null: false
+    t.bigint "actor_user_id", null: false
+    t.datetime "created_at", null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.bigint "settlement_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["action"], name: "index_settlement_events_on_action"
+    t.index ["actor_user_id"], name: "index_settlement_events_on_actor_user_id"
+    t.index ["created_at"], name: "index_settlement_events_on_created_at"
+    t.index ["settlement_id"], name: "index_settlement_events_on_settlement_id"
   end
 
   create_table "settlement_exports", force: :cascade do |t|
@@ -430,6 +443,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_28_073551) do
   add_foreign_key "settlement_carryovers", "settlements", column: "applied_settlement_id"
   add_foreign_key "settlement_carryovers", "settlements", column: "source_settlement_id"
   add_foreign_key "settlement_carryovers", "stores"
+  add_foreign_key "settlement_events", "settlements"
+  add_foreign_key "settlement_events", "users", column: "actor_user_id"
   add_foreign_key "settlement_exports", "users", column: "generated_by_user_id"
   add_foreign_key "settlements", "stores"
   add_foreign_key "settlements", "users", column: "exported_by_user_id"

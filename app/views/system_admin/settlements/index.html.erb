@@ -1,0 +1,119 @@
+<h1>精算一覧</h1>
+
+<div class="alert alert-secondary" role="alert">
+  状態遷移：draft → confirmed → exported → paid<br>
+  CSV生成は「confirmed を複数選択 → 1ファイル生成」です（partial成功禁止）。
+</div>
+
+<div class="mb-3 d-flex gap-2">
+  <%= link_to "ダッシュボードへ戻る", dashboard_path, class: "btn btn-outline-secondary" %>
+</div>
+
+<%= form_with url: export_csv_system_admin_settlements_path, method: :post do %>
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label">status（複数可）</label>
+          <select name="statuses[]" class="form-select" multiple size="4">
+            <% @status_options.each do |st| %>
+              <option value="<%= st %>" <%= "selected" if Array(params[:statuses]).presence&.include?(st) || (params[:statuses].blank? && %w[draft confirmed exported].include?(st)) %>><%= st %></option>
+            <% end %>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">kind（任意）</label>
+          <select name="kinds[]" class="form-select" multiple size="2">
+            <% @kind_options.each do |k| %>
+              <option value="<%= k %>" <%= "selected" if Array(params[:kinds]).include?(k) %>><%= k %></option>
+            <% end %>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">store（任意）</label>
+          <select name="store_id" class="form-select">
+            <option value=""></option>
+            <% @stores.each do |s| %>
+              <option value="<%= s.id %>" <%= "selected" if params[:store_id].to_s == s.id.to_s %>><%= s.name %></option>
+            <% end %>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">month（任意）</label>
+          <input type="month" name="month" value="<%= params[:month] %>" class="form-control">
+        </div>
+
+        <div class="col-12 mt-2 d-flex gap-2">
+          <%= button_tag "絞り込む", type: "submit", formaction: system_admin_settlements_path, formmethod: :get, class: "btn btn-outline-primary" %>
+          <%= link_to "リセット", system_admin_settlements_path, class: "btn btn-outline-secondary" %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <table class="table table-sm align-middle">
+    <thead>
+      <tr>
+        <th style="width: 36px;"></th>
+        <th>期間</th>
+        <th>store</th>
+        <th>kind</th>
+        <th>status</th>
+        <th class="text-end">gross</th>
+        <th class="text-end">share</th>
+        <th class="text-end">fee</th>
+        <th class="text-muted small">confirmed/exported</th>
+        <th></th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <% @settlements.each do |s| %>
+        <tr>
+          <td>
+            <% if s.confirmed? %>
+              <%= check_box_tag "settlement_ids[]", s.id, false %>
+            <% end %>
+          </td>
+
+          <td class="text-muted small">
+            <%= l(s.period_from) %>〜<%= l(s.period_to) %>
+          </td>
+
+          <td class="fw-semibold"><%= s.store.name %></td>
+          <td><%= s.kind %></td>
+          <td><%= s.status %></td>
+
+          <td class="text-end"><%= s.gross_yen %></td>
+          <td class="text-end"><%= s.store_share_yen %></td>
+          <td class="text-end"><%= s.platform_fee_yen %></td>
+
+          <td class="text-muted small">
+            <% if s.confirmed_at.present? %>
+              c:<%= l(s.confirmed_at) %>
+            <% end %>
+            <% if s.exported_at.present? %>
+              <br>e:<%= l(s.exported_at) %>
+            <% end %>
+          </td>
+
+          <td class="d-flex justify-content-end gap-2">
+            <%= link_to "詳細", system_admin_settlement_path(s), class: "btn btn-outline-secondary btn-sm" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <div class="d-flex gap-2">
+    <%= button_to "選択したconfirmedをCSV生成（1ファイル）",
+          export_csv_system_admin_settlements_path,
+          method: :post,
+          params: {},
+          class: "btn btn-primary",
+          data: { turbo_confirm: "選択した confirmed を対象に、振込CSVを1ファイル生成します。よろしいですか？" } %>
+  </div>
+<% end %>

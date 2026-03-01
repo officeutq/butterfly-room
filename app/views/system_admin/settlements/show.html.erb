@@ -1,0 +1,85 @@
+<h1>精算詳細</h1>
+
+<table class="table table-sm" style="max-width: 860px;">
+  <tbody>
+    <tr><th style="width: 220px;">ID</th><td><%= @settlement.id %></td></tr>
+    <tr><th>store</th><td><%= @settlement.store.name %></td></tr>
+    <tr><th>period（JST）</th><td><%= l(@settlement.period_from) %>〜<%= l(@settlement.period_to) %></td></tr>
+    <tr><th>kind</th><td><%= @settlement.kind %></td></tr>
+    <tr><th>status</th><td><%= @settlement.status %></td></tr>
+
+    <tr><th>gross_yen</th><td><%= @settlement.gross_yen %></td></tr>
+    <tr><th>store_share_yen</th><td><%= @settlement.store_share_yen %></td></tr>
+    <tr><th>platform_fee_yen</th><td><%= @settlement.platform_fee_yen %></td></tr>
+
+    <tr><th>confirmed_at</th><td><%= @settlement.confirmed_at.present? ? l(@settlement.confirmed_at) : "-" %></td></tr>
+    <tr><th>exported_at</th><td><%= @settlement.exported_at.present? ? l(@settlement.exported_at) : "-" %></td></tr>
+    <tr><th>export_format</th><td><%= @settlement.export_format.presence || "-" %></td></tr>
+    <tr><th>export_file_key</th><td class="text-muted small"><%= @settlement.export_file_key.presence || "-" %></td></tr>
+
+    <tr><th>振込先口座（スナップショット）</th>
+      <td>
+        <div class="text-muted small">
+          bank: <%= @settlement.payout_bank_code.presence || "-" %> /
+          branch: <%= @settlement.payout_branch_code.presence || "-" %><br>
+          type: <%= @settlement.payout_account_type.presence || "-" %><br>
+          number: <%=
+            if @settlement.payout_account_number.present?
+              "****" + @settlement.payout_account_number.to_s.last(4)
+            else
+              "-"
+            end
+          %><br>
+          holder: <%= @settlement.payout_account_holder_kana.presence || "-" %>
+        </div>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="d-flex flex-wrap gap-2 mb-4">
+  <%= link_to "一覧へ戻る", system_admin_settlements_path, class: "btn btn-outline-secondary" %>
+
+  <% if @settlement.draft? %>
+    <%= button_to "confirmed にする",
+          confirm_system_admin_settlement_path(@settlement),
+          method: :post,
+          class: "btn btn-primary",
+          data: { turbo_confirm: "この精算を confirmed にします。よろしいですか？" } %>
+  <% end %>
+
+  <% if @settlement.exported? %>
+    <%= form_with url: mark_paid_system_admin_settlement_path(@settlement), method: :post, class: "d-flex gap-2 align-items-center" do %>
+      <div class="form-check">
+        <%= check_box_tag :paid_confirm, "1", false, class: "form-check-input", id: "paid_confirm" %>
+        <%= label_tag :paid_confirm, "銀行アップロード/支払実行を確認した", class: "form-check-label" %>
+      </div>
+
+      <%= submit_tag "paid にする",
+            class: "btn btn-success",
+            data: { turbo_confirm: "支払済みに更新します。よろしいですか？" } %>
+    <% end %>
+  <% end %>
+</div>
+
+<h2 class="h6">操作履歴</h2>
+<table class="table table-sm" style="max-width: 860px;">
+  <thead>
+    <tr>
+      <th>action</th>
+      <th>actor</th>
+      <th>at</th>
+      <th>metadata</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @events.each do |e| %>
+      <tr>
+        <td><%= e.action %></td>
+        <td class="text-muted small"><%= e.actor_user.email %></td>
+        <td class="text-muted small"><%= l(e.created_at) %></td>
+        <td class="text-muted small"><%= e.metadata.presence || {} %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

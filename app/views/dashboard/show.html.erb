@@ -10,6 +10,7 @@
 
   <% store = layout_current_store %>
 
+  <%#=== system_admin ===%>
   <% if current_user.system_admin? %>
     <h2 class="h5 mb-3">system_admin</h2>
 
@@ -73,8 +74,13 @@
       <li class="list-group-item">
         <%= link_to "振込CSV（住信SBI）", system_admin_settlement_exports_path, class: "text-decoration-none" %>
       </li>
+
+      <li class="list-group-item">
+        <%= link_to "精算一覧", system_admin_settlements_path, class: "text-decoration-none" %>
+      </li>
     </ul>
 
+  <%#=== store_admin ===%>
   <% elsif current_user.store_admin? %>
     <h2 class="h5 mb-3">store_admin</h2>
 
@@ -125,6 +131,7 @@
       </li>
     </ul>
 
+  <%#=== cast ===%>
   <% elsif current_user.cast? %>
     <h2 class="h5 mb-3">cast</h2>
 
@@ -138,6 +145,7 @@
       </li>
     </ul>
 
+  <%#=== customer ===%>
   <% else %>
     <h2 class="h5 mb-3">customer</h2>
 

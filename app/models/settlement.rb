@@ -3,6 +3,7 @@
 class Settlement < ApplicationRecord
   belongs_to :store
   belongs_to :exported_by_user, class_name: "User", optional: true
+  has_many :settlement_events, dependent: :destroy
 
   enum :kind, { monthly: 0, manual: 1 }
   enum :status, { draft: 0, confirmed: 1, exported: 2, paid: 3 }

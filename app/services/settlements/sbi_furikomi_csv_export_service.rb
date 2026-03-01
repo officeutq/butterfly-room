@@ -23,37 +23,33 @@ module Settlements
     #   SOUTOKU_FURIKOMI_ACCOUNT_TYPE=1         (1:普通)
     #   SOUTOKU_FURIKOMI_ACCOUNT_NUMBER=1234567
     #
-    def initialize(actor_user:, logger: Rails.logger)
+    def initialize(actor_user:, settlements:, logger: Rails.logger)
       @actor_user = actor_user
+      @settlements = Array(settlements)
       @logger = logger
     end
 
     def call
-      scope = Settlement.where(status: Settlement.statuses[:confirmed])
+      return { ok: false, message: "対象の精算がありません" } if @settlements.empty?
 
-      # manual_bank の絞り込み（可能なら）
-      scope = filter_manual_bank_only(scope)
+      # guard: confirmed only
+      not_confirmed = @settlements.reject(&:confirmed?)
+      return { ok: false, message: "confirmed 以外が含まれています（id=#{not_confirmed.map(&:id).join(',')}）" } if not_confirmed.any?
 
-      settlements = scope.order(:id).to_a
-      return { ok: false, message: "対象の精算（confirmed）がありません" } if settlements.empty?
-
-      # payout口座がない settlement はスキップ（exported移行しない）
-      exportable, skipped = partition_exportable(settlements)
-      return { ok: false, message: "振込先口座が設定済みの対象がありません" } if exportable.empty?
-
-      created_exports = []
-      exportable.each_slice(MAX_RECORDS_PER_FILE).with_index(1) do |slice, seq|
-        created_exports << create_one_file!(slice, seq: seq)
+      # guard: 1 file only
+      if @settlements.size > MAX_RECORDS_PER_FILE
+        return { ok: false, message: "1ファイル最大#{MAX_RECORDS_PER_FILE}件です（選択=#{@settlements.size}件）" }
       end
 
-      msg =
-        if skipped.empty?
-          "ok"
-        else
-          "skipped=#{skipped.size}"
-        end
+      # manual_bank only & must have active payout account
+      accounts_by_store_id = fetch_active_manual_bank_accounts(@settlements.map(&:store_id).uniq)
 
-      { ok: true, created_exports: created_exports, message: msg }
+      missing = @settlements.select { |s| accounts_by_store_id[s.store_id].blank? }
+      return { ok: false, message: "振込先口座（manual_bank）が未設定の精算が含まれています（id=#{missing.map(&:id).join(',')}）" } if missing.any?
+
+      export = create_one_file!(@settlements, accounts_by_store_id: accounts_by_store_id)
+
+      { ok: true, created_exports: [ export ], message: "ok" }
     rescue => e
       @logger.error("[SbiFurikomiCsvExport] failed #{e.class}: #{e.message}")
       raise
@@ -68,43 +64,22 @@ module Settlements
     def to_hankaku(str, max_len: nil)
       s = str.to_s
       s = s.tr("　", " ")
-      s = NKF.nkf("-w -x -Z1 -Z4", s) # ← -x を足す
+      s = NKF.nkf("-w -x -Z1 -Z4", s)
       s = s.strip.gsub(/[ ]+/, " ")
       max_len ? s.byteslice(0, max_len) : s
     end
 
-    def filter_manual_bank_only(scope)
-      return scope unless defined?(StorePayoutAccount)
+    def fetch_active_manual_bank_accounts(store_ids)
+      return {} unless defined?(StorePayoutAccount)
 
-      if StorePayoutAccount.respond_to?(:payout_methods) && StorePayoutAccount.payout_methods.key?("manual_bank")
-        scope
-          .joins("INNER JOIN store_payout_accounts spa ON spa.store_id = settlements.store_id")
-          .where("spa.status = 0") # active想定（uniq partial index の where (status = 0) に合わせる）
-          .where("spa.payout_method = ?", StorePayoutAccount.payout_methods[:manual_bank])
-          .distinct
-      else
-        scope
-      end
+      StorePayoutAccount
+        .where(store_id: store_ids, status: StorePayoutAccount.statuses[:active], payout_method: StorePayoutAccount.payout_methods[:manual_bank])
+        .order(id: :desc)
+        .group_by(&:store_id)
+        .transform_values { |arr| arr.first }
     end
 
-    def partition_exportable(settlements)
-      exportable = []
-      skipped = []
-
-      settlements.each do |s|
-        account = active_payout_account_for(s.store_id)
-        if account.blank?
-          skipped << { settlement_id: s.id, reason: "no_payout_account" }
-          next
-        end
-
-        exportable << s
-      end
-
-      [ exportable, skipped ]
-    end
-
-    def create_one_file!(settlements, seq:)
+    def create_one_file!(settlements, accounts_by_store_id:)
       Time.use_zone(ZONE) do
         today = Time.zone.today
         mmdd = today.strftime("%m%d")
@@ -113,17 +88,24 @@ module Settlements
         total_amount = settlements.sum(&:store_share_yen)
         record_count = settlements.size
 
-        csv_string = build_csv_string(mmdd:, payer:, settlements:, total_amount:, record_count:)
+        csv_string = build_csv_string(
+          mmdd: mmdd,
+          payer: payer,
+          settlements: settlements,
+          accounts_by_store_id: accounts_by_store_id,
+          total_amount: total_amount,
+          record_count: record_count
+        )
 
         export = SettlementExport.create!(
           format: :sbi_furikomi_csv,
           generated_by_user: @actor_user,
-          file_seq: seq,
+          file_seq: 1,
           record_count: record_count,
           total_amount_yen: total_amount
         )
 
-        filename = "furikomi_#{today.strftime('%Y%m%d')}_#{seq.to_s.rjust(2, '0')}.csv"
+        filename = "furikomi_#{today.strftime('%Y%m%d')}_01.csv"
         export.file.attach(
           io: StringIO.new(csv_string.encode(Encoding::Shift_JIS, invalid: :replace, undef: :replace, replace: "?")),
           filename: filename,
@@ -132,10 +114,15 @@ module Settlements
 
         blob_key = export.file.blob.key
 
-        # settlement を exported に更新（スナップショットも埋める）
         ApplicationRecord.transaction do
           settlements.each do |s|
-            apply_export_snapshot!(s, export:, blob_key:)
+            acct = accounts_by_store_id.fetch(s.store_id)
+            apply_export_snapshot!(s, acct: acct, blob_key: blob_key)
+            s.settlement_events.create!(
+              actor_user: @actor_user,
+              action: :exported,
+              metadata: { export_id: export.id, export_blob_key: blob_key }
+            )
           end
         end
 
@@ -143,71 +130,54 @@ module Settlements
       end
     end
 
-    def build_csv_string(mmdd:, payer:, settlements:, total_amount:, record_count:)
+    def build_csv_string(mmdd:, payer:, settlements:, accounts_by_store_id:, total_amount:, record_count:)
       CSV.generate(force_quotes: false) do |csv|
-        # 1) ヘッダ
         csv << [
-          "1",                 # データ区分
-          "21",                # 種別コード（総合振込）
-          "0",                 # コード区分（0:JIS）※省略可だが明示
-          payer[:client_code], # 振込依頼人コード（10桁）
-          to_hankaku(payer[:client_name]), # 振込依頼人名（カナ推奨）
-          mmdd,                # 取組日
-          payer[:bank_code],   # 仕向銀行番号（0038）
-          to_hankaku(payer[:bank_name]),   # 仕向銀行名
-          payer[:branch_code], # 仕向支店番号
-          to_hankaku(payer[:branch_name]), # 仕向支店名
-          payer[:account_type], # 預金種目（依頼人） 1:普通
-          payer[:account_number], # 口座番号（依頼人）
-          ""                   # ダミー（省略可）
+          "1",
+          "21",
+          "0",
+          payer[:client_code],
+          to_hankaku(payer[:client_name]),
+          mmdd,
+          payer[:bank_code],
+          to_hankaku(payer[:bank_name]),
+          payer[:branch_code],
+          to_hankaku(payer[:branch_name]),
+          payer[:account_type],
+          payer[:account_number],
+          ""
         ]
 
-        # 2) データ
         settlements.each do |s|
-          acct = active_payout_account_for(s.store_id)
-          # 受取人名は「口座名義カナ」を優先（なければ store.name をカナ化せずそのまま）
-          payee_name = acct&.account_holder_kana.to_s.presence || s.store.name.to_s
+          acct = accounts_by_store_id.fetch(s.store_id)
+          payee_name = acct.account_holder_kana.to_s.presence || s.store.name.to_s
 
           csv << [
-            "2",                     # データ区分
-            acct.bank_code.to_s,     # 被仕向銀行番号
-            "",                      # 被仕向銀行名（省略可）
-            acct.branch_code.to_s,   # 被仕向支店番号
-            "",                      # 被仕向支店名（省略可）
-            "0000",                  # 統一手形交換所番号（未使用）
-            normalize_account_type(acct.account_type), # 預金種目
-            acct.account_number.to_s, # 口座番号
-            to_hankaku(payee_name, max_len: 40),  # 受取人名
-            s.store_share_yen.to_i,  # 振込金額
-            "1",                     # 新規コード（1固定：第1回扱い）
-            "",                      # 顧客コード1（省略可）
-            "",                      # 顧客コード2（省略可）
-            "7",                     # 振込指定区分（7:テレ振込）
-            "",                      # 識別表示（省略=スペース扱い）
-            ""                       # ダミー（省略可）
+            "2",
+            acct.bank_code.to_s,
+            "",
+            acct.branch_code.to_s,
+            "",
+            "0000",
+            normalize_account_type(acct.account_type),
+            acct.account_number.to_s,
+            to_hankaku(payee_name, max_len: 40),
+            s.store_share_yen.to_i,
+            "1",
+            "",
+            "",
+            "7",
+            "",
+            ""
           ]
         end
 
-        # 3) トレーラ
-        csv << [
-          "8",
-          record_count.to_i,
-          total_amount.to_i,
-          "" # ダミー（省略可）
-        ]
-
-        # 4) エンド
-        csv << [
-          "9",
-          "" # ダミー（省略可）
-        ]
+        csv << [ "8", record_count.to_i, total_amount.to_i, "" ]
+        csv << [ "9", "" ]
       end
     end
 
-    def apply_export_snapshot!(settlement, export:, blob_key:)
-      acct = active_payout_account_for(settlement.store_id)
-      raise "no payout account store_id=#{settlement.store_id}" if acct.blank?
-
+    def apply_export_snapshot!(settlement, acct:, blob_key:)
       settlement.update!(
         status: :exported,
         exported_at: Time.use_zone(ZONE) { Time.zone.now },
@@ -221,13 +191,6 @@ module Settlements
         payout_account_number: acct.account_number,
         payout_account_holder_kana: acct.account_holder_kana
       )
-    end
-
-    def active_payout_account_for(store_id)
-      return nil unless defined?(StorePayoutAccount)
-
-      # schema.rb の uniq partial index: where (status = 0) に合わせる（0=active想定）
-      StorePayoutAccount.where(store_id: store_id, status: 0).order(id: :desc).first
     end
 
     def payer_info!
@@ -245,15 +208,16 @@ module Settlements
 
     def normalize_account_type(value)
       # 住信SBI仕様: 1(普通) / 2(当座) / 4(貯蓄) / 9(その他)
+      # StorePayoutAccount enum は ordinary/current なので 1/2 に寄せる
       v = value.to_s
       return v if %w[1 2 4 9].include?(v)
       "1"
     end
 
     def map_account_type_to_settlement(value)
-      # Settlement enum :payout_account_type, { ordinary: 0, current: 1 }
+      # StorePayoutAccount enum :account_type, { ordinary: 0, current: 1 }
       v = value.to_s
-      return Settlement.payout_account_types[:current] if v == "2"
+      return Settlement.payout_account_types[:current] if v == "current" || v == "2" || v == StorePayoutAccount.account_types[:current].to_s
       Settlement.payout_account_types[:ordinary]
     end
   end

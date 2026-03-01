@@ -6,12 +6,7 @@
 </div>
 
 <div class="mb-3 d-flex gap-2">
-  <%= button_to "CSVを生成する",
-        system_admin_settlement_exports_path,
-        method: :post,
-        class: "btn btn-primary",
-        data: { turbo_confirm: "confirmed の精算を対象にCSVを生成します。よろしいですか？" } %>
-
+  <%= link_to "精算一覧へ", system_admin_settlements_path, class: "btn btn-primary" %>
   <%= link_to "ダッシュボードへ戻る", dashboard_path, class: "btn btn-outline-secondary" %>
 </div>
 
