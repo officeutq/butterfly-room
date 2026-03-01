@@ -64,6 +64,14 @@
       </li>
 
       <li class="list-group-item">
+        <% if store.present? %>
+          <%= link_to "精算（予定・履歴）", admin_settlements_path, class: "text-decoration-none" %>
+        <% else %>
+          <%= link_to "精算（予定・履歴）（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+        <% end %>
+      </li>
+
+      <li class="list-group-item">
         <%= link_to "プロフィール編集", edit_profile_path, class: "text-decoration-none" %>
       </li>
 
@@ -123,6 +131,14 @@
           <% end %>
         <% else %>
           <%= link_to "精算・振込設定（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+        <% end %>
+      </li>
+
+      <li class="list-group-item">
+        <% if store.present? %>
+          <%= link_to "精算（予定・履歴）", admin_settlements_path, class: "text-decoration-none" %>
+        <% else %>
+          <%= link_to "精算（予定・履歴）（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
         <% end %>
       </li>
 

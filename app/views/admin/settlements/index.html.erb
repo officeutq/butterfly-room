@@ -1,0 +1,118 @@
+<div style="max-width: 960px;">
+  <div class="d-flex justify-content-between align-items-start gap-3">
+    <div>
+      <h1 class="mb-1">精算</h1>
+      <p class="text-muted mb-0">
+        精算予定（概算）と精算履歴を確認できます。
+      </p>
+    </div>
+  </div>
+
+  <hr class="my-4">
+
+  <div class="alert alert-secondary" role="alert">
+    <div class="fw-semibold mb-1">表示について</div>
+    <div class="small">
+      ・精算は月次で行われます（翌月10日）。<br>
+      ・1万円未満は翌月へ繰越されます。<br>
+      ・※表示金額は概算です。精算確定（運営側処理）により変動することがあります。
+      <% if current_user.system_admin? %>
+        <br>・運営の精算操作は system_admin の「精算一覧」から行ってください。
+      <% end %>
+    </div>
+  </div>
+
+  <div class="mb-3 d-flex gap-2">
+    <%= link_to "ダッシュボードへ戻る", dashboard_path, class: "btn btn-outline-secondary" %>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-start gap-3">
+        <div>
+          <h2 class="h6 mb-1">次回精算予定額（概算）</h2>
+          <div class="text-muted small">
+            対象期間：<%= l(@month_from) %>〜<%= l(@month_to) %>
+          </div>
+        </div>
+
+        <div class="text-end">
+          <% if @below_min_payout %>
+            <div class="fw-semibold">次回精算は繰越予定</div>
+            <div class="text-muted small">（1万円未満のため）</div>
+            <div class="mt-1 text-muted small">
+              参考：<%= number_with_delimiter(@estimated_payable_yen) %> 円
+            </div>
+          <% else %>
+            <div class="display-6 mb-0">
+              <%= number_with_delimiter(@estimated_payable_yen) %> 円
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <hr class="my-3">
+
+      <div class="row g-2 small text-muted">
+        <div class="col-md-4">
+          当月合計（1pt=1円）：<span class="fw-semibold"><%= number_with_delimiter(@month_gross_yen) %></span> 円
+        </div>
+        <div class="col-md-4">
+          店舗取り分（70%・概算）：<span class="fw-semibold"><%= number_with_delimiter(@month_share_yen) %></span> 円
+        </div>
+        <div class="col-md-4">
+          繰越：<span class="fw-semibold"><%= number_with_delimiter(@carryover_yen) %></span> 円
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="h6 mb-2">精算履歴</h2>
+
+  <% if @settlements.any? %>
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th>対象期間（JST）</th>
+          <th>ステータス</th>
+          <th class="text-end">支払予定額</th>
+          <th class="text-muted small">確定/CSV</th>
+          <th></th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <% @settlements.each do |s| %>
+          <tr>
+            <td class="text-muted small">
+              <%= l(s.period_from) %>〜<%= l(s.period_to) %>
+            </td>
+
+            <td><%= s.status %></td>
+
+            <td class="text-end">
+              <%= number_with_delimiter(s.store_share_yen) %> 円
+            </td>
+
+            <td class="text-muted small">
+              <% if s.confirmed_at.present? %>
+                c:<%= l(s.confirmed_at) %>
+              <% end %>
+              <% if s.exported_at.present? %>
+                <br>e:<%= l(s.exported_at) %>
+              <% end %>
+            </td>
+
+            <td class="d-flex justify-content-end">
+              <%= link_to "詳細", admin_settlement_path(s), class: "btn btn-outline-secondary btn-sm" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <div class="text-muted small">
+      精算履歴はまだありません。
+    </div>
+  <% end %>
+</div>
