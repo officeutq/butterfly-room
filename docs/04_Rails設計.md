@@ -140,6 +140,7 @@ app/
     referral_code.rb
     settlement.rb
     settlement_carryover.rb
+    settlement_event.rb
     settlement_export.rb
     store.rb
     store_ban.rb
@@ -304,7 +305,9 @@ app/
         index.html.erb
         show.html.erb
       settlements/
+        index.html.erb
         new_manual.html.erb
+        show.html.erb
       users/
         _form.html.erb
         edit.html.erb
