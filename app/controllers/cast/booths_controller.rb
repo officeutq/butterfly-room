@@ -74,9 +74,26 @@ module Cast
 
       StreamSessionNotifier.broadcast_stream_state(booth: booth)
 
+      stream_session = booth.current_stream_session
+      comments =
+        if stream_session
+          Comment.alive.where(stream_session: stream_session)
+                .order(created_at: :desc).limit(50).reverse
+        else
+          []
+        end
+
       respond_to do |format|
         format.html { redirect_to live_cast_booth_path(@booth), notice: "状態更新: #{params[:to]}" }
-        format.turbo_stream { head :no_content }
+
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.replace(
+            "cast_comment_section",
+            partial: "cast/booths/comment_section",
+            locals: { booth: booth, stream_session: stream_session, comments: comments }
+          )
+        end
+
         format.json { render json: { ok: true }, status: :ok }
         format.any { head :no_content }
       end

@@ -136,11 +136,12 @@
 
 <%= turbo_stream_from [@stream_session, :comments] %>
 
-<div id="comments">
-  <%= render partial: "comments/comment", collection: @comments, as: :comment %>
+<div id="cast_comment_section">
+  <%= render "cast/booths/comment_section",
+             booth: @booth,
+             stream_session: @stream_session,
+             comments: @comments %>
 </div>
-
-<%= render "stream_sessions/comments/form", stream_session: @stream_session %>
 
 <hr>
 

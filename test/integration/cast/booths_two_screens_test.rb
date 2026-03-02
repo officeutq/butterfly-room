@@ -77,4 +77,34 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
     assert_response :redirect
     assert_redirected_to live_cast_booth_path(@booth)
   end
+
+  test "standby: live subscribes comments but does not render comments UI" do
+    StreamSessions::StartService.new(booth: @booth, actor: @cast).call
+    assert @booth.reload.standby?
+
+    get live_cast_booth_path(@booth)
+    assert_response :success
+
+    # 購読は維持される（turbo_stream_fromが生成するタグが含まれる）
+    assert_includes response.body, "turbo-cable-stream-source"
+
+    # append先の空コンテナは存在する
+    assert_includes response.body, 'id="comments"'
+
+    # フォーム（turbo-frame）は表示しない
+    refute_includes response.body, 'id="comment_form"'
+  end
+
+  test "standby: cannot create comment (turbo_stream) and returns 409" do
+    session = StreamSessions::StartService.new(booth: @booth, actor: @cast).call
+    assert @booth.reload.standby?
+
+    assert_no_difference "Comment.count" do
+      post stream_session_comments_path(session),
+           params: { comment: { body: "hello" } },
+           headers: { "Accept" => "text/vnd.turbo-stream.html" }
+    end
+
+    assert_response :conflict
+  end
 end

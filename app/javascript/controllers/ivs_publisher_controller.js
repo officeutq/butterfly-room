@@ -357,6 +357,7 @@ export default class extends Controller {
   async _patchBoothStatus(to) {
     console.log("[ivs-publisher] statusUrlValue=", this.statusUrlValue, "to=", to)
     if (!this.statusUrlValue) return
+
     const url = new URL(this.statusUrlValue, window.location.origin)
     url.searchParams.set("to", to)
 
@@ -365,16 +366,21 @@ export default class extends Controller {
       redirect: "manual",
       credentials: "same-origin",
       headers: {
-        "Accept": "application/json",
+        "Accept": "text/vnd.turbo-stream.html",
         "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content
       },
     })
 
     if (resp.status >= 300 && resp.status < 400) {
-      // 念のため：redirectは無視（controllerを直していれば基本来ない）
       return
     }
     if (!resp.ok) throw new Error(`booth_status_failed(${resp.status})`)
+
+    // Turbo Stream を手動適用
+    const html = await resp.text()
+    if (html && window.Turbo?.renderStreamMessage) {
+      window.Turbo.renderStreamMessage(html)
+    }
   }
 
   async _postFinish() {
