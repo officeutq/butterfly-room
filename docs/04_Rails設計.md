@@ -255,6 +255,7 @@ app/
       show.html.erb
     cast/
       booths/
+        _comment_section.html.erb
         edit.html.erb
         index.html.erb
         live.html.erb
