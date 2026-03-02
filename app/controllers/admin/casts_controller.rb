@@ -40,6 +40,9 @@ module Admin
       token = result.token
       url = cast_invitation_url(token)
 
+      # issued_url を保存（段階導入：既存レコードは nil のまま）
+      result.invitation.update!(issued_url: url)
+
       redirect_to admin_casts_path,
                   notice: "招待を発行しました: #{url}"
     rescue ActionController::ParameterMissing
@@ -58,6 +61,9 @@ module Admin
 
       token = result.token
       url = store_admin_invitation_url(token)
+
+      # issued_url を保存（段階導入：既存レコードは nil のまま）
+      result.invitation.update!(issued_url: url)
 
       redirect_to admin_casts_path,
                   notice: "招待を発行しました: #{url}"
