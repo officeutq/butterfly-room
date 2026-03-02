@@ -40,10 +40,9 @@ export default class extends Controller {
     this._boothStatus = this.initialBoothStatusValue || "offline" // 画面の初期
     this._broadcasting = false // stage join 済みか
 
-    // ★復帰候補判定（live/away かつ resumeKeyあり）
+    // ★ boothが live/away なら常に復帰候補
     this._resumable =
-      (this._boothStatus === "live" || this._boothStatus === "away") &&
-      sessionStorage.getItem(this._resumeKey()) === "1"
+      (this._boothStatus === "live" || this._boothStatus === "away")
     this._syncUI()
   }
 
@@ -138,8 +137,6 @@ export default class extends Controller {
       this._cleanupStage()
       this._cleanupMediaAndCanvas()
     }
-    sessionStorage.removeItem(this._resumeKey())
-    this._resumable = false
     this._syncUI()
   }
 
