@@ -72,6 +72,8 @@ app/
     favorites/
       booths_controller.rb
       stores_controller.rb
+    store_admins/
+      registrations_controller.rb
     stores/
       registrations_controller.rb
     stream_sessions/
@@ -96,6 +98,7 @@ app/
     dashboard_controller.rb
     home_controller.rb
     profiles_controller.rb
+    store_admin_invitations_controller.rb
     stores_controller.rb
     stream_sessions_controller.rb
     users_controller.rb
@@ -103,6 +106,8 @@ app/
     casts/
       registration_form.rb
     customers/
+      registration_form.rb
+    store_admins/
       registration_form.rb
     stores/
       registration_form.rb
@@ -145,6 +150,7 @@ app/
     settlement_event.rb
     settlement_export.rb
     store.rb
+    store_admin_invitation.rb
     store_ban.rb
     store_cast_invitation.rb
     store_ledger_entry.rb
@@ -192,6 +198,11 @@ app/
       month_period.rb
       monthly_generate_service.rb
       sbi_furikomi_csv_export_service.rb
+    store_admin_invitations/
+      accept_invitation.rb
+      issue_invitation.rb
+    store_admins/
+      register_store_admin.rb
     store_cast_invitations/
       accept_invitation.rb
       issue_invitation.rb
@@ -291,6 +302,11 @@ app/
       service-worker.js
     shared/
       _flash_message.html.erb
+    store_admin_invitations/
+      show.html.erb
+    store_admins/
+      registrations/
+        new.html.erb
     stores/
       registrations/
         new.html.erb
