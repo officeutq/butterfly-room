@@ -84,8 +84,25 @@
           <% end %>
         </td>
         <td class="text-nowrap">
-          <%# token は保持していないので、ここでは直接URLを再生成できない（仕様通り：生tokenは発行時のみ） %>
-          <span class="text-muted small">（発行時に控えてください）</span>
+          <% if inv.issued_url.present? %>
+            <div class="d-flex align-items-center gap-2">
+              <span class="small text-break" style="max-width: 360px;">
+                <%= inv.issued_url %>
+              </span>
+
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary"
+                data-controller="clipboard"
+                data-clipboard-text="<%= inv.issued_url %>"
+                data-action="click->clipboard#copy">
+                コピー
+              </button>
+            </div>
+          <% else %>
+            <%# 旧レコード：token を保持していないのでURLを再生成できない（仕様通り） %>
+            <span class="text-muted small">（発行時に控えてください）</span>
+          <% end %>
         </td>
       </tr>
     <% end %>
@@ -141,8 +158,25 @@
           <% end %>
         </td>
         <td class="text-nowrap">
-          <%# token は保持していないので、ここでは直接URLを再生成できない（仕様通り：生tokenは発行時のみ） %>
-          <span class="text-muted small">（発行時に控えてください）</span>
+          <% if inv.issued_url.present? %>
+            <div class="d-flex align-items-center gap-2">
+              <span class="small text-break" style="max-width: 360px;">
+                <%= inv.issued_url %>
+              </span>
+
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary"
+                data-controller="clipboard"
+                data-clipboard-text="<%= inv.issued_url %>"
+                data-action="click->clipboard#copy">
+                コピー
+              </button>
+            </div>
+          <% else %>
+            <%# 旧レコード：token を保持していないのでURLを再生成できない（仕様通り） %>
+            <span class="text-muted small">（発行時に控えてください）</span>
+          <% end %>
         </td>
       </tr>
     <% end %>
