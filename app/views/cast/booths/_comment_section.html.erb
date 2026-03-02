@@ -1,0 +1,10 @@
+<%# standbyでも Turbo append の target が必要なので、#comments は常に置く %>
+<div id="comments">
+  <% if booth.live? || booth.away? %>
+    <%= render partial: "comments/comment", collection: comments, as: :comment %>
+  <% end %>
+</div>
+
+<% if booth.live? || booth.away? %>
+  <%= render "stream_sessions/comments/form", stream_session: stream_session %>
+<% end %>
