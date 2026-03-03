@@ -9,6 +9,18 @@
     data-presence-poll-summary-url-value="<%= presence_summary_stream_session_path(stream_session) %>"
     data-presence-poll-interval-ms-value="20000"
   >
+    <% title_display = stream_session.title.presence || booth.name %>
+
+    <%# 配信タイトル・説明 %>
+    <div class="mb-2">
+      <div class="fw-semibold"><%= title_display %></div>
+      <% if stream_session.description.present? %>
+        <div class="text-muted small"><%= stream_session.description %></div>
+      <% end %>
+    </div>
+
+    <hr>
+
     viewers: <span data-presence-poll-target="count">-</span>
   </div>
 

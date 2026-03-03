@@ -24,6 +24,9 @@
 
     <p>booth: <strong>#<%= @booth.id %> <%= @booth.name %></strong></p>
     <p>status: <strong><%= @booth.status %></strong></p>
+    <%= render "cast/booths/stream_meta",
+               booth: @booth,
+               stream_session: @stream_session %>
 
     <div class="card">
       <div class="card-header">
