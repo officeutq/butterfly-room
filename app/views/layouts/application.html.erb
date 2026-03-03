@@ -65,7 +65,14 @@
                 <span class="text-muted small">
                   store:
                   <% if current_user.at_least?(:store_admin) %>
-                    <%= link_to admin_stores_path,
+                    <% stores_link_params =
+                        if request.get? && request.path != "/admin/stores"
+                          { return_to: request.fullpath }
+                        else
+                          {}
+                        end %>
+
+                    <%= link_to admin_stores_path(stores_link_params),
                           class: "link-secondary link-underline-opacity-0 link-underline-opacity-100-hover" do %>
                       <% if store.present? %>
                         <strong><%= store.name.presence || "(no name)" %></strong>
