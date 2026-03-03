@@ -1,0 +1,56 @@
+<%# locals: booth:, stream_session: %>
+<turbo-frame id="cast_stream_meta">
+  <% title_display = stream_session.title.presence || booth.name %>
+
+  <div class="card mb-3">
+    <div class="card-header">
+      配信タイトル / 説明
+      <% if booth.standby? %>
+        <span class="ms-2 text-muted small">スタンバイ中は編集できます</span>
+      <% else %>
+        <span class="ms-2 text-muted small">配信中は参照のみ</span>
+      <% end %>
+    </div>
+
+    <div class="card-body">
+      <% if booth.standby? %>
+        <%= form_with model: stream_session,
+                      url: metadata_cast_stream_session_path(stream_session),
+                      method: :patch do |f| %>
+
+          <div class="mb-3">
+            <%= f.label :title, "タイトル", class: "form-label" %>
+            <%= f.text_field :title,
+                             class: "form-control",
+                             maxlength: 64,
+                             placeholder: "未入力ならブース名が表示されます" %>
+            <div class="form-text">最大64文字</div>
+          </div>
+
+          <div class="mb-3">
+            <%= f.label :description, "説明", class: "form-label" %>
+            <%= f.text_area :description,
+                            class: "form-control",
+                            maxlength: 256,
+                            rows: 3 %>
+            <div class="form-text">最大256文字（未入力なら非表示）</div>
+          </div>
+
+          <%= f.submit "設定する", class: "btn btn-primary" %>
+        <% end %>
+      <% else %>
+        <div class="mb-2">
+          <div class="text-muted small">タイトル</div>
+          <div class="fw-semibold"><%= title_display %></div>
+        </div>
+
+        <% if stream_session.description.present? %>
+          <div class="mb-2">
+            <div class="text-muted small">説明</div>
+            <div><%= simple_format(stream_session.description) %></div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</turbo-frame>

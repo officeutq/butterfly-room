@@ -87,11 +87,18 @@ module Cast
         format.html { redirect_to live_cast_booth_path(@booth), notice: "状態更新: #{params[:to]}" }
 
         format.turbo_stream do
-          render turbo_stream: turbo_stream.replace(
-            "cast_comment_section",
-            partial: "cast/booths/comment_section",
-            locals: { booth: booth, stream_session: stream_session, comments: comments }
-          )
+          render turbo_stream: [
+            turbo_stream.replace(
+              "cast_stream_meta",
+              partial: "cast/booths/stream_meta",
+              locals: { booth: booth, stream_session: stream_session }
+            ),
+            turbo_stream.replace(
+              "cast_comment_section",
+              partial: "cast/booths/comment_section",
+              locals: { booth: booth, stream_session: stream_session, comments: comments }
+            )
+          ]
         end
 
         format.json { render json: { ok: true }, status: :ok }
