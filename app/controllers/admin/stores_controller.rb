@@ -19,6 +19,10 @@ module Admin
 
       # 現在選択中があれば view で判定できるように
       @current_store_id = session[:current_store_id]
+
+      # Issue #270: return_to / return_to_key を view へ渡す（POSTに引き継ぐ）
+      @return_to = params[:return_to].presence
+      @return_to_key = params[:return_to_key].presence
     end
 
     def edit

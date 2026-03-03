@@ -44,7 +44,9 @@
         <% if store.present? %>
           <%= link_to "店舗設定", edit_admin_store_path(store), class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "店舗設定（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+          <%= link_to "店舗設定（先に店舗を選択）",
+                admin_stores_path(return_to_key: "store_edit"),
+                class: "text-decoration-none" %>
         <% end %>
       </li>
 
@@ -52,7 +54,9 @@
         <% if store.present? %>
           <%= link_to "ブース一覧", admin_booths_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "ブース一覧（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+          <%= link_to "ブース一覧（先に店舗を選択）",
+                admin_stores_path(return_to: admin_booths_path),
+                class: "text-decoration-none" %>
         <% end %>
       </li>
 
@@ -60,7 +64,9 @@
         <% if store.present? %>
           <%= link_to "キャスト管理", admin_casts_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "キャスト管理（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+          <%= link_to "キャスト管理（先に店舗を選択）",
+                admin_stores_path(return_to: admin_casts_path),
+                class: "text-decoration-none" %>
         <% end %>
       </li>
 
@@ -68,7 +74,9 @@
         <% if store.present? %>
           <%= link_to "ブースにキャストを紐づける", admin_booth_casts_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "ブースにキャストを紐づける（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+          <%= link_to "ブースにキャストを紐づける（先に店舗を選択）",
+                admin_stores_path(return_to: admin_booth_casts_path),
+                class: "text-decoration-none" %>
         <% end %>
       </li>
 
@@ -76,7 +84,9 @@
         <% if store.present? %>
           <%= link_to "キャスト別数値一覧（直近30日）", admin_cast_metrics_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "キャスト別数値一覧（直近30日）（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+          <%= link_to "キャスト別数値一覧（直近30日）（先に店舗を選択）",
+                admin_stores_path(return_to: admin_cast_metrics_path),
+                class: "text-decoration-none" %>
         <% end %>
       </li>
 
@@ -84,7 +94,9 @@
         <% if store.present? %>
           <%= link_to "ドリンクメニュー", admin_drink_items_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "ドリンクメニュー（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+          <%= link_to "ドリンクメニュー（先に店舗を選択）",
+                admin_stores_path(return_to: admin_drink_items_path),
+                class: "text-decoration-none" %>
         <% end %>
       </li>
 
@@ -92,7 +104,9 @@
         <% if store.present? %>
           <%= link_to "店舗BAN", admin_store_bans_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "店舗BAN（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+          <%= link_to "店舗BAN（先に店舗を選択）",
+                admin_stores_path(return_to: admin_store_bans_path),
+                class: "text-decoration-none" %>
         <% end %>
       </li>
 
@@ -105,7 +119,9 @@
             <% end %>
           <% end %>
         <% else %>
-          <%= link_to "精算・振込設定（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+          <%= link_to "精算・振込設定（先に店舗を選択）",
+                admin_stores_path(return_to_key: "payout_account_edit"),
+                class: "text-decoration-none" %>
         <% end %>
       </li>
 
@@ -113,7 +129,9 @@
         <% if store.present? %>
           <%= link_to "精算（予定・履歴）", admin_settlements_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "精算（予定・履歴）（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+          <%= link_to "精算（予定・履歴）（先に店舗を選択）",
+                admin_stores_path(return_to: admin_settlements_path),
+                class: "text-decoration-none" %>
         <% end %>
       </li>
     </ul>
@@ -137,7 +155,9 @@
         <% if store.present? %>
           <%= link_to "店舗設定", edit_admin_store_path(store), class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "店舗設定（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+          <%= link_to "店舗設定（先に店舗を選択）",
+                admin_stores_path(return_to_key: "store_edit"),
+                class: "text-decoration-none" %>
         <% end %>
       </li>
 
@@ -145,7 +165,9 @@
         <% if store.present? %>
           <%= link_to "ブース一覧", admin_booths_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "ブース一覧（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+          <%= link_to "ブース一覧（先に店舗を選択）",
+                admin_stores_path(return_to: admin_booths_path),
+                class: "text-decoration-none" %>
         <% end %>
       </li>
 
@@ -153,7 +175,9 @@
         <% if store.present? %>
           <%= link_to "キャスト管理", admin_casts_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "キャスト管理（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+          <%= link_to "キャスト管理（先に店舗を選択）",
+                admin_stores_path(return_to: admin_casts_path),
+                class: "text-decoration-none" %>
         <% end %>
       </li>
 
@@ -161,7 +185,9 @@
         <% if store.present? %>
           <%= link_to "ブースにキャストを紐づける", admin_booth_casts_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "ブースにキャストを紐づける（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+          <%= link_to "ブースにキャストを紐づける（先に店舗を選択）",
+                admin_stores_path(return_to: admin_booth_casts_path),
+                class: "text-decoration-none" %>
         <% end %>
       </li>
 
@@ -169,7 +195,9 @@
         <% if store.present? %>
           <%= link_to "キャスト別数値一覧（直近30日）", admin_cast_metrics_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "キャスト別数値一覧（直近30日）（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+          <%= link_to "キャスト別数値一覧（直近30日）（先に店舗を選択）",
+                admin_stores_path(return_to: admin_cast_metrics_path),
+                class: "text-decoration-none" %>
         <% end %>
       </li>
 
@@ -177,7 +205,9 @@
         <% if store.present? %>
           <%= link_to "ドリンクメニュー", admin_drink_items_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "ドリンクメニュー（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+          <%= link_to "ドリンクメニュー（先に店舗を選択）",
+                admin_stores_path(return_to: admin_drink_items_path),
+                class: "text-decoration-none" %>
         <% end %>
       </li>
 
@@ -185,7 +215,9 @@
         <% if store.present? %>
           <%= link_to "店舗BAN", admin_store_bans_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "店舗BAN（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+          <%= link_to "店舗BAN（先に店舗を選択）",
+                admin_stores_path(return_to: admin_store_bans_path),
+                class: "text-decoration-none" %>
         <% end %>
       </li>
 
@@ -198,7 +230,9 @@
             <% end %>
           <% end %>
         <% else %>
-          <%= link_to "精算・振込設定（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+          <%= link_to "精算・振込設定（先に店舗を選択）",
+                admin_stores_path(return_to_key: "payout_account_edit"),
+                class: "text-decoration-none" %>
         <% end %>
       </li>
 
@@ -206,7 +240,9 @@
         <% if store.present? %>
           <%= link_to "精算（予定・履歴）", admin_settlements_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "精算（予定・履歴）（先に店舗を選択）", admin_stores_path, class: "text-decoration-none" %>
+          <%= link_to "精算（予定・履歴）（先に店舗を選択）",
+                admin_stores_path(return_to: admin_settlements_path),
+                class: "text-decoration-none" %>
         <% end %>
       </li>
     </ul>

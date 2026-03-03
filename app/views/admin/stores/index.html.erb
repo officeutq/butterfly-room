@@ -20,8 +20,13 @@
           <td><%= store.name.presence || "(no name)" %></td>
           <td class="text-end">
             <%= button_to "この店舗を開く",
-                  admin_current_store_path(store_id: store.id),
+                  admin_current_store_path,
                   method: :post,
+                  params: {
+                    store_id: store.id,
+                    return_to: @return_to,
+                    return_to_key: @return_to_key
+                  },
                   class: "btn btn-primary btn-sm" %>
           </td>
         </tr>
