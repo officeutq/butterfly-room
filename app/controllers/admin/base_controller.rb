@@ -12,7 +12,7 @@ module Admin
     # - /admin/stores（選択画面）と /admin/current_store（選択POST）では保存しない
     # - 保存値は /admin/ で始まる相対パスのみ（安全側）
     def store_admin_return_to
-      return unless request.get?
+      return unless request.get? || request.head?
       return unless request.format.html?
       return unless response.status == 200
       return unless request.fullpath.start_with?("/admin/")
