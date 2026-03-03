@@ -120,7 +120,6 @@ app/
   javascript/
     controllers/
       application.js
-      camera_preview_controller.js
       clipboard_controller.js
       hello_controller.js
       index.js
