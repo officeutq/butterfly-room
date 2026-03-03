@@ -29,17 +29,6 @@
   <% end %>
 <% end %>
 
-<% if @booth.archived? %>
-  <button class="btn btn-primary" disabled>スタンバイ開始</button>
-<% else %>
-  <%= button_to "スタンバイ開始",
-        cast_booth_stream_sessions_path(@booth),
-        method: :post,
-        class: "btn btn-primary" %>
-<% end %>
-
-<hr>
-
 <p>
   <%= link_to "戻る", cast_booths_path %> |
   <%= link_to "home", root_path %>
