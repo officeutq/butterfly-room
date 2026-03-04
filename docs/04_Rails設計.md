@@ -340,6 +340,9 @@ app/
         new.html.erb
     users/
       show.html.erb
+    wallet/
+      purchases/
+        new.html.erb
     wallets/
       _balance.html.erb
 
