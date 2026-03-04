@@ -18,6 +18,30 @@ module ApplicationHelper
     user.display_name.presence || user.email
   end
 
+  def user_avatar_badge(user, size: 24, klass: "")
+    return "" if user.blank?
+
+    if user.avatar.attached?
+      image_tag(
+        user.avatar,
+        class: [ "rounded-circle border", klass ].join(" ").strip,
+        style: "width: #{size}px; height: #{size}px; object-fit: cover;",
+        alt: "avatar"
+      )
+    else
+      label = display_name_or_email(user).to_s
+      initial = label.strip.presence ? label.strip[0] : "?"
+      content_tag(
+        :span,
+        initial,
+        class: [ "rounded-circle border text-muted d-inline-flex align-items-center justify-content-center", klass ].join(" ").strip,
+        style: "width: #{size}px; height: #{size}px; font-size: #{(size * 0.45).round}px; line-height: 1;",
+        aria: { label: "avatar" },
+        title: label
+      )
+    end
+  end
+
   # --- Layout helpers (Issue #212) ---
 
   def role_badge(user)
