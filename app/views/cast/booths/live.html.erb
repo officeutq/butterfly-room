@@ -146,12 +146,6 @@
       </div>
 
       <div class="d-flex gap-2 align-items-center">
-        <%= button_to "購入(1000pt)",
-              wallet_purchases_path,
-              method: :post,
-              params: { points: 1000, return_to: request.fullpath },
-              form: { data: { turbo: false } },
-              class: "btn btn-sm btn-outline-primary" %>
 
         <%= link_to "ダッシュボード",
               dashboard_path_for(current_user),
