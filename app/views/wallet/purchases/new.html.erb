@@ -1,0 +1,47 @@
+<turbo-frame id="modal">
+  <div class="modal fade" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title h5">ポイント購入</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+        </div>
+
+        <div class="modal-body">
+          <p class="text-muted small mb-3">
+            購入プランを選択してください（表示金額は税込）。
+          </p>
+
+          <%= form_with url: wallet_purchases_path,
+                method: :post,
+                data: { turbo: false } do |f| %>
+
+            <%= hidden_field_tag :return_to, @return_to %>
+
+            <div class="vstack gap-2">
+              <% plans = [
+                ["p1000",   "1,000pt / 1,100円"],
+                ["p5000",   "5,000pt / 5,500円"],
+                ["p10000",  "10,000pt / 11,000円"],
+                ["p50000",  "50,000pt / 55,000円"],
+                ["p100000", "100,000pt / 110,000円"]
+              ] %>
+
+              <% plans.each do |key, label| %>
+                <div class="form-check">
+                  <%= radio_button_tag :plan_key, key, (key == "p1000"), class: "form-check-input", id: "plan_#{key}" %>
+                  <%= label_tag "plan_#{key}", label, class: "form-check-label" %>
+                </div>
+              <% end %>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">キャンセル</button>
+              <%= f.submit "購入する", class: "btn btn-primary" %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</turbo-frame>
