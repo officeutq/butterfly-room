@@ -74,7 +74,7 @@ Rails.application.routes.draw do
   end
 
   namespace :wallet do
-    resources :purchases, only: %i[create]
+    resources :purchases, only: %i[new create]
   end
 
   get  "/checkout/return", to: "checkout#return"
