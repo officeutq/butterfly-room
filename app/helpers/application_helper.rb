@@ -12,6 +12,12 @@ module ApplicationHelper
     content_tag(:span, label, class: "badge #{klass}")
   end
 
+  def display_name_or_anonymous(user)
+    return "" if user.blank?
+
+    user.display_name.presence || "ななしさん"
+  end
+
   def display_name_or_email(user)
     return "" if user.blank?
 
@@ -29,7 +35,7 @@ module ApplicationHelper
         alt: "avatar"
       )
     else
-      label = display_name_or_email(user).to_s
+      label = display_name_or_anonymous(user).to_s
       initial = label.strip.presence ? label.strip[0] : "?"
       content_tag(
         :span,
