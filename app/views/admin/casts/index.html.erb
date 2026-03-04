@@ -75,10 +75,10 @@
         <td><%= inv.status_label %></td>
         <td><%= inv.expires_at.strftime("%Y-%m-%d %H:%M") %></td>
         <td><%= inv.note.presence || "-" %></td>
-        <td><%= display_name_or_email(inv.invited_by_user) %></td>
+        <td><%= display_name_or_anonymous(inv.invited_by_user) %></td>
         <td>
           <% if inv.accepted_by_user.present? %>
-            <%= display_name_or_email(inv.accepted_by_user) %>
+            <%= display_name_or_anonymous(inv.accepted_by_user) %>
           <% else %>
             -
           <% end %>
@@ -149,10 +149,10 @@
       <tr>
         <td><%= inv.status_label %></td>
         <td><%= inv.expires_at.strftime("%Y-%m-%d %H:%M") %></td>
-        <td><%= display_name_or_email(inv.invited_by_user) %></td>
+        <td><%= display_name_or_anonymous(inv.invited_by_user) %></td>
         <td>
           <% if inv.accepted_by_user.present? %>
-            <%= display_name_or_email(inv.accepted_by_user) %>
+            <%= display_name_or_anonymous(inv.accepted_by_user) %>
           <% else %>
             -
           <% end %>

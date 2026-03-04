@@ -88,7 +88,7 @@
 
               <div class="mt-2 text-muted small">
                 <% if primary_cast.present? %>
-                  cast: <%= display_name_or_email(primary_cast) %>
+                  cast: <%= display_name_or_anonymous(primary_cast) %>
                 <% else %>
                   cast: <span class="text-muted">（未設定）</span>
                 <% end %>
