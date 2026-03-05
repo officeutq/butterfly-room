@@ -1,5 +1,5 @@
 <div
-  data-controller="ivs-publisher"
+  data-controller="ivs-publisher live-stage"
   data-ivs-publisher-token-url-value="<%= stream_session_ivs_participant_tokens_path(@stream_session) %>"
   data-ivs-publisher-finish-url-value="<%= finish_cast_stream_session_path(@stream_session) %>"
   data-ivs-publisher-status-url-value="<%= status_cast_booth_path(@booth) %>"
@@ -7,7 +7,8 @@
   data-ivs-publisher-initial-mode-value="<%= @booth.away? ? "away" : "normal" %>"
   data-ivs-publisher-initial-booth-status-value="<%= @booth.status %>"
 >
-<main class="flex-grow-1 pb-5">
+<div id="live_stage">
+<main class="flex-grow-1">
   <div class="container mt-3">
     <div id="flash_inner">
       <% if notice.present? %>
@@ -114,6 +115,7 @@
     </div>
   </div>
 </main>
+</div>
 
 <footer id="app_footer" class="border-top bg-white fixed-bottom">
   <div class="container py-2">

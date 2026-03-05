@@ -1,5 +1,15 @@
 @use "bootstrap/scss/bootstrap" as *;
 
+:root {
+  --live-stage-h: 0px;
+}
+
+#live_stage {
+  height: var(--live-stage-h);
+  overflow: hidden;
+  position: relative;
+}
+
 .header-logo {
   height: 24px;
   width: auto;
