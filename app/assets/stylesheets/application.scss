@@ -19,6 +19,33 @@
   inset: 0;
 }
 
+/* Overlay レイヤー（映像上にDOMを重ねる） */
+#live_overlay {
+  position: absolute;
+  inset: 0;
+
+  /* 映像より前面 */
+  z-index: 10;
+
+  /* 映像操作を邪魔しない：操作したい要素だけ auto にする */
+  pointer-events: none;
+}
+
+/* 実UIコンテナだけ操作可能にする */
+#live_overlay .live-overlay-ui {
+  pointer-events: auto;
+
+  /* 暫定：全体を使えるようにしつつ、最低限の余白 */
+  padding: 12px;
+
+  /* 画面いっぱいに広げる（配置は次Issueで詰める） */
+  width: 100%;
+  height: 100%;
+
+  /* たくさん出すと溢れるので暫定で内部スクロール可（次Issueで“ページスクロール無し”へ寄せる） */
+  overflow: auto;
+}
+
 /* video は Stage に contain */
 #live_media video {
   position: absolute;
