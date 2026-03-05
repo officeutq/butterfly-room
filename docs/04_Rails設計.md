@@ -125,6 +125,7 @@ app/
       index.js
       ivs_publisher_controller.js
       ivs_viewer_controller.js
+      live_stage_controller.js
       modal_controller.js
       presence_poll_controller.js
       stream_debug_controller.js
