@@ -1,141 +1,138 @@
 <% if user_signed_in? %>
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="h4 mb-0">ブース一覧</h1>
+  <%# --- Search (Input group / GET) --- %>
+  <div class="mb-3">
+    <%= form_with url: root_path, method: :get, scope: nil do |f| %>
+      <%= f.hidden_field :mode, value: @mode %>
+
+      <div class="input-group">
+        <div class="btn-group">
+          <button
+            class="btn btn-outline-secondary dropdown-toggle"
+            type="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false">
+            <%= @mode == "stores" ? "店舗" : "ブース" %>
+          </button>
+
+          <ul class="dropdown-menu">
+            <li>
+              <%= link_to "ブース",
+                    root_path(mode: "booths", q: @q.presence),
+                    class: "dropdown-item" %>
+            </li>
+            <li>
+              <%= link_to "店舗",
+                    root_path(mode: "stores", q: @q.presence),
+                    class: "dropdown-item" %>
+            </li>
+          </ul>
+        </div>
+
+        <%= f.text_field :q,
+              value: @q,
+              class: "form-control",
+              placeholder: "ブース名 / ストア名で検索（部分一致）",
+              autocomplete: "off" %>
+
+        <button class="btn btn-primary" type="submit" aria-label="検索">
+          <i class="bi bi-search"></i>
+        </button>
+      </div>
+    <% end %>
   </div>
 
-  <%# --- Search (minimal / GET) --- %>
-  <div class="card mb-3">
-    <div class="card-body">
-      <%= form_with url: root_path, method: :get, scope: nil do |f| %>
-        <div class="row g-2 align-items-center">
-          <div class="col-12 col-md-7">
-            <%= f.text_field :q,
-                  value: @q,
-                  class: "form-control",
-                  placeholder: "ブース名 / ストア名で検索（部分一致）",
-                  autocomplete: "off" %>
-          </div>
+  <%# --- Results (cards) --- %>
+  <% if @mode == "stores" %>
+    <% if @stores.present? %>
+      <div class="row row-cols-1 row-cols-md-3 g-3">
+        <% @stores.each do |store| %>
+          <% favorited = @favorite_store_ids.include?(store.id) %>
 
-          <div class="col-12 col-md-auto">
-            <div class="form-check">
-              <%= f.check_box :online,
-                    { class: "form-check-input", checked: @online_only, include_hidden: false },
-                    "1" %>
-              <%= f.label :online, "配信中のみ", class: "form-check-label" %>
-            </div>
-          </div>
-
-          <div class="col-12 col-md-auto">
-            <%= f.submit "検索", class: "btn btn-primary w-100" %>
-          </div>
-
-          <div class="col-12 col-md-auto">
-            <%= link_to "クリア", root_path, class: "btn btn-outline-secondary w-100" %>
-          </div>
-        </div>
-      <% end %>
-
-      <% if @q.present? || @online_only %>
-        <div class="mt-2 text-muted small">
-          <% labels = [] %>
-          <% labels << "“#{@q}”" if @q.present? %>
-          <% labels << "配信中のみ" if @online_only %>
-          <span><%= labels.join(" / ") %> の検索結果</span>
-          <span class="ms-2">（<%= @booths.size %> 件）</span>
-        </div>
-      <% end %>
-    </div>
-  </div>
-
-  <% if @booths.present? %>
-    <div class="row row-cols-1 row-cols-md-3 g-3">
-      <% @booths.each do |booth| %>
-        <% open_in_modal =
-             user_signed_in? && (
-               current_user.system_admin? ||
-               (current_user.store_admin? && current_user.admin_of_store?(booth.store_id))
-             ) %>
-        <% primary_cast = booth.booth_casts.max_by { |bc| [bc.created_at, bc.id] }&.cast_user %>
-        <% favorited = @favorite_booth_ids.include?(booth.id) %>
-
-        <div class="col">
-          <div class="card h-100">
-            <%= link_to enter_booth_path(booth),
-                  data: (open_in_modal ? { turbo_frame: "modal" } : {}),
-                  class: "text-decoration-none text-reset" do %>
-              <% if booth.thumbnail_image.attached? %>
-                <%= image_tag booth.thumbnail_image,
-                      class: "card-img-top",
-                      style: "aspect-ratio: 16 / 9; object-fit: cover;" %>
-              <% else %>
-                <div class="bg-light d-flex align-items-center justify-content-center"
-                     style="aspect-ratio: 16 / 9;">
-                  <span class="text-muted small">no thumbnail</span>
-                </div>
-              <% end %>
-            <% end %>
-
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-start gap-2">
+          <div class="col">
+            <div class="card h-100">
+              <div class="card-body">
                 <div class="fw-semibold">
-                  <%= link_to booth.name,
-                        enter_booth_path(booth),
-                        data: (open_in_modal ? { turbo_frame: "modal" } : {}),
-                        class: "text-decoration-none text-reset" %>
+                  <%= link_to store.name, store_path(store), class: "text-decoration-none text-reset" %>
                 </div>
-                <div><%= booth_status_badge(booth) %></div>
               </div>
 
-              <div class="mt-2 text-muted small">
-                <% if primary_cast.present? %>
-                  cast: <%= display_name_or_anonymous(primary_cast) %>
+              <div class="card-footer bg-white border-0 pt-0">
+                <%= render "favorites/stores/button_home", store: store, favorited: favorited %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="alert alert-secondary" role="alert">
+        表示できる店舗がありません。
+      </div>
+    <% end %>
+  <% else %>
+    <% if @booths.present? %>
+      <div class="row row-cols-1 row-cols-md-3 g-3">
+        <% @booths.each do |booth| %>
+          <% open_in_modal =
+               user_signed_in? && (
+                 current_user.system_admin? ||
+                 (current_user.store_admin? && current_user.admin_of_store?(booth.store_id))
+               ) %>
+          <% primary_cast = booth.booth_casts.max_by { |bc| [bc.created_at, bc.id] }&.cast_user %>
+          <% favorited = @favorite_booth_ids.include?(booth.id) %>
+
+          <div class="col">
+            <div class="card h-100">
+              <%= link_to enter_booth_path(booth),
+                    data: (open_in_modal ? { turbo_frame: "modal" } : {}),
+                    class: "text-decoration-none text-reset" do %>
+                <% if booth.thumbnail_image.attached? %>
+                  <%= image_tag booth.thumbnail_image,
+                        class: "card-img-top",
+                        style: "aspect-ratio: 16 / 9; object-fit: cover;" %>
                 <% else %>
-                  cast: <span class="text-muted">（未設定）</span>
+                  <div class="bg-light d-flex align-items-center justify-content-center"
+                       style="aspect-ratio: 16 / 9;">
+                    <span class="text-muted small">no thumbnail</span>
+                  </div>
                 <% end %>
+              <% end %>
+
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                  <div class="fw-semibold">
+                    <%= link_to booth.name,
+                          enter_booth_path(booth),
+                          data: (open_in_modal ? { turbo_frame: "modal" } : {}),
+                          class: "text-decoration-none text-reset" %>
+                  </div>
+                  <div><%= booth_status_badge(booth) %></div>
+                </div>
+
+                <div class="mt-2 text-muted small">
+                  <% if primary_cast.present? %>
+                    cast: <%= display_name_or_anonymous(primary_cast) %>
+                  <% else %>
+                    cast: <span class="text-muted">（未設定）</span>
+                  <% end %>
+                </div>
+
+                <div class="text-muted small">
+                  store: <%= booth.store&.name %>
+                </div>
               </div>
 
-              <div class="text-muted small">
-                store: <%= booth.store&.name %>
+              <div class="card-footer bg-white border-0 pt-0">
+                <%= render "favorites/booths/button_home", booth: booth, favorited: favorited %>
               </div>
             </div>
-
-            <div class="card-footer bg-white border-0 pt-0">
-              <%= render "favorites/booths/button_home", booth: booth, favorited: favorited %>
-            </div>
           </div>
-        </div>
-      <% end %>
-    </div>
-  <% else %>
-    <div class="alert alert-secondary" role="alert">
-      表示できるブースがありません。
-    </div>
-  <% end %>
-
-  <hr class="my-4">
-
-  <h2 class="h5 mb-3">店舗一覧</h2>
-
-  <% if @stores.present? %>
-    <div class="list-group mb-4">
-      <% @stores.each do |store| %>
-        <% favorited = @favorite_store_ids.include?(store.id) %>
-
-        <div class="list-group-item">
-          <div class="d-flex justify-content-between align-items-center gap-3">
-            <div class="flex-grow-1">
-              <%= link_to store.name, store_path(store), class: "text-decoration-none" %>
-            </div>
-
-            <%= render "favorites/stores/button_home", store: store, favorited: favorited %>
-          </div>
-        </div>
-      <% end %>
-    </div>
-  <% else %>
-    <div class="alert alert-secondary" role="alert">
-      表示できる店舗がありません。
-    </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="alert alert-secondary" role="alert">
+        表示できるブースがありません。
+      </div>
+    <% end %>
   <% end %>
 <% else %>
   <div style="max-width: 720px;">
