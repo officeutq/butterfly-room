@@ -265,6 +265,7 @@ app/
         show.html.erb
       stream_sessions/
         _ended.html.erb
+        _meta_modal.html.erb
         _pending_drink_orders.html.erb
     cast_invitations/
       show.html.erb
