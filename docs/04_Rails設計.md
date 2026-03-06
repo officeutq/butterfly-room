@@ -121,6 +121,7 @@ app/
     controllers/
       application.js
       clipboard_controller.js
+      comment_panel_controller.js
       hello_controller.js
       index.js
       ivs_publisher_controller.js
