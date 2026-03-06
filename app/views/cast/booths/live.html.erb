@@ -32,7 +32,11 @@
     <div id="live_overlay">
       <div class="live-overlay-ui" data-live-grid-debug="1">
         <div class="live-overlay-meta-slot">
-          <div class="live-slot-label">meta slot</div>
+          <div class="live-meta-panel d-none" data-ivs-publisher-target="metaPanel">
+            <%= render "cast/booths/stream_meta_display",
+                      booth: @booth,
+                      stream_session: @stream_session %>
+          </div>
         </div>
 
         <div class="live-overlay-main-row">
