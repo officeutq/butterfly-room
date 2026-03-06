@@ -187,6 +187,76 @@
   outline: none;
 }
 
+/* ------------------------------------------------------------
+   live comment panel (#320)
+------------------------------------------------------------ */
+.live-overlay-comment-slot {
+  display: flex;
+  align-items: flex-end;
+}
+
+.live-comment-panel {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+  padding: 10px;
+
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.45);
+
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* コメント一覧：固定高さ＋内部スクロール（7行相当） */
+.live-comment-list {
+  flex: 0 0 auto;
+  height: clamp(140px, 28vh, 260px);
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+
+  min-width: 0;
+  min-height: 0;
+
+  padding-right: 4px;
+}
+
+/* コメント行：最低限の見た目 */
+.live-comment-list .comment {
+  font-size: 0.875rem;
+  line-height: 1.3;
+  padding: 4px 0;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.live-comment-list .comment-body {
+  word-break: break-word;
+}
+
+/* フォーム（常に見える） */
+.live-comment-form {
+  flex: 0 0 auto;
+}
+
+/* フォーム内部の最低限のレイアウト */
+.live-comment-panel #comment_form form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.live-comment-panel #comment_form input[type="text"] {
+  min-width: 0;
+}
+
 /* video は Stage に contain */
 #live_media video {
   position: absolute;

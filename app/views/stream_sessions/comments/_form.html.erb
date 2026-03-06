@@ -4,7 +4,14 @@
   <% end %>
 
   <%= form_with url: stream_session_comments_path(stream_session), scope: :comment do |f| %>
-    <%= f.text_field :body, maxlength: 200, required: true, autocomplete: "off", autofocus: true %>
-    <%= f.submit "送信" %>
+    <%= f.text_field :body,
+          maxlength: 200,
+          required: true,
+          autocomplete: "off",
+          autofocus: true,
+          class: "form-control form-control-sm",
+          placeholder: "コメント…" %>
+
+    <%= f.submit "送信", class: "btn btn-primary btn-sm" %>
   <% end %>
 </turbo-frame>
