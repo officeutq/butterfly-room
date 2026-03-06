@@ -39,7 +39,17 @@
           <div class="live-overlay-main-spacer"></div>
 
           <div class="live-overlay-drink-slot">
-            <div class="live-slot-label">drink slot</div>
+            <%= turbo_stream_from [@stream_session, :cast_pending_drink_orders] %>
+
+            <div class="live-drink-panel d-none" data-ivs-publisher-target="drinkPanel">
+              <div class="live-drink-panel-header">ドリンク</div>
+
+              <div class="live-drink-panel-body">
+                <div id="cast-pending-drink-orders-container">
+                  <%= render "cast/stream_sessions/pending_drink_orders", stream_session: @stream_session %>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -138,14 +148,9 @@
             </div>
           </div>
 
-          <%= turbo_stream_from [@stream_session, :cast_pending_drink_orders] %>
-          <div id="cast-pending-drink-orders-container">
-            <%= render "cast/stream_sessions/pending_drink_orders", stream_session: @stream_session %>
-          </div>
-
           <hr>
 
-          <%# comments は Overlay 側へ移動したので、offscreen からは撤去（重複IDを避ける） %>
+          <%# comments / drink は Overlay 側へ移動したので、offscreen からは撤去（重複IDを避ける） %>
         </div>
       </div>
     </div>

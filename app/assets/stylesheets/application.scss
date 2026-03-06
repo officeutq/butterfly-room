@@ -188,6 +188,71 @@
 }
 
 /* ------------------------------------------------------------
+   live drink panel (#321)
+------------------------------------------------------------ */
+.live-overlay-drink-slot {
+  display: flex;
+  align-items: flex-start;
+}
+
+.live-drink-panel {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+  padding: 10px;
+
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.45);
+
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+}
+
+.live-drink-panel-header {
+  flex: 0 0 auto;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.live-drink-panel-body {
+  flex: 1 1 auto;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+
+  min-width: 0;
+  min-height: 0;
+
+  padding-right: 4px;
+}
+
+#cast_pending_drink_orders {
+  min-width: 0;
+  min-height: 0;
+}
+
+#cast_pending_drink_orders .card {
+  border: 0;
+}
+
+#cast_pending_drink_orders .card-body {
+  min-width: 0;
+}
+
+#cast_pending_drink_orders .fw-semibold {
+  word-break: break-word;
+}
+
+/* ------------------------------------------------------------
    live comment panel (#320)
 ------------------------------------------------------------ */
 .live-overlay-comment-slot {
