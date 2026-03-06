@@ -66,7 +66,44 @@
           </div>
 
           <div class="live-overlay-ops-slot">
-            <div class="live-slot-label">ops slot</div>
+            <div class="live-ops-panel d-none" data-ivs-publisher-target="opsPanel">
+              <div class="live-ops-buttons">
+                <%= form_with url: status_cast_booth_path(@booth, to: :away),
+                              method: :patch,
+                              class: "live-ops-form",
+                              data: { action: "turbo:submit-end->ivs-publisher#onBoothStatusPatched" } do %>
+                  <button type="submit"
+                          class="live-ops-btn"
+                          data-ivs-publisher-target="cameraOffBtn"
+                          aria-label="カメラをオフにする"
+                          title="カメラON">
+                    <i class="bi bi-camera-video-fill" aria-hidden="true"></i>
+                  </button>
+                <% end %>
+
+                <%= form_with url: status_cast_booth_path(@booth, to: :live),
+                              method: :patch,
+                              class: "live-ops-form",
+                              data: { action: "turbo:submit-end->ivs-publisher#onBoothStatusPatched" } do %>
+                  <button type="submit"
+                          class="live-ops-btn"
+                          data-ivs-publisher-target="cameraOnBtn"
+                          aria-label="カメラをオンにする"
+                          title="カメラOFF">
+                    <i class="bi bi-camera-video-off-fill" aria-hidden="true"></i>
+                  </button>
+                <% end %>
+
+                <button type="button"
+                        class="live-ops-btn"
+                        data-action="ivs-publisher#toggleMic"
+                        data-ivs-publisher-target="micBtn"
+                        aria-label="マイクを切り替える"
+                        title="マイク切替">
+                  <i class="bi bi-mic-fill" data-ivs-publisher-target="micIcon" aria-hidden="true"></i>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -110,47 +147,9 @@
           <div class="mt-2 text-danger small"
                data-ivs-publisher-target="error"></div>
 
-          <div class="mt-2 d-flex gap-2 flex-wrap">
-            <!-- 離席 -->
-            <%= form_with url: status_cast_booth_path(@booth, to: :away),
-                          method: :patch,
-                          data: { action: "turbo:submit-end->ivs-publisher#onBoothStatusPatched" } do %>
-              <button type="submit"
-                      class="btn btn-warning btn-sm"
-                      data-ivs-publisher-target="awayBtn">
-                離席
-              </button>
-            <% end %>
-
-            <!-- 復帰 -->
-            <%= form_with url: status_cast_booth_path(@booth, to: :live),
-                          method: :patch,
-                          data: { action: "turbo:submit-end->ivs-publisher#onBoothStatusPatched" } do %>
-              <button type="submit"
-                      class="btn btn-success btn-sm"
-                      data-ivs-publisher-target="backBtn">
-                復帰
-              </button>
-            <% end %>
-
-            <!-- 離席中音声 -->
-            <div class="form-check form-switch mt-3">
-              <input class="form-check-input"
-                     type="checkbox"
-                     role="switch"
-                     id="away-audio"
-                     data-ivs-publisher-target="awayAudio"
-                     data-action="change->ivs-publisher#toggleAwayAudio"
-                     disabled>
-              <label class="form-check-label" for="away-audio">
-                離席中も音声を送る
-              </label>
-            </div>
-          </div>
-
           <hr>
 
-          <%# comments / drink は Overlay 側へ移動したので、offscreen からは撤去（重複IDを避ける） %>
+          <%# comments / drink / ops は Overlay 側へ移動したので、offscreen からは撤去（重複IDを避ける） %>
         </div>
       </div>
     </div>
