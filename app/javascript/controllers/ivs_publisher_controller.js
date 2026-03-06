@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["preview", "canvas", "error", "state", "awayAudio", "startBtn", "endBtn", "awayBtn", "backBtn", "summaryBtn"]
+  static targets = ["preview", "canvas", "error", "state", "awayAudio", "startBtn", "endBtn", "awayBtn", "backBtn", "summaryBtn", "drinkPanel"]
   static values = {
     tokenUrl: String,
     finishUrl: String,
@@ -257,6 +257,15 @@ export default class extends Controller {
       const normal = this.startBtnTarget.dataset.labelNormal || "配信開始"
       const resume = this.startBtnTarget.dataset.labelResume || "配信に戻る"
       this.startBtnTarget.textContent = this._resumable ? resume : normal
+    }
+    // 右上ドリンクパネル
+    if (this.hasDrinkPanelTarget) {
+      const visible =
+        this._broadcasting ||
+        this._boothStatus === "live" ||
+        this._boothStatus === "away"
+
+      this.drinkPanelTarget.classList.toggle("d-none", !visible)
     }
   }
 
