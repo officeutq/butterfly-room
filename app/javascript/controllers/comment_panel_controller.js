@@ -6,6 +6,7 @@ export default class extends Controller {
   connect() {
     this._thresholdPx = 24
     this._nearBottom = true
+    this._rafId = null
 
     this._onScroll = () => {
       this._nearBottom = this._isNearBottom()
@@ -13,12 +14,12 @@ export default class extends Controller {
 
     this.listTarget.addEventListener("scroll", this._onScroll)
 
-    // 初期表示：最新に寄せる（コメント0でもOK）
-    this._scrollToBottom()
+    // 初期表示：レイアウト確定後に最下部へ
+    this._scheduleScrollToBottom()
 
     this._observer = new MutationObserver(() => {
-      // 直前の状態（ユーザーが下付近にいるか）に基づいて追従
-      if (this._nearBottom) this._scrollToBottom()
+      if (!this._nearBottom) return
+      this._scheduleScrollToBottom()
     })
 
     this._observer.observe(this.listTarget, { childList: true })
@@ -28,6 +29,11 @@ export default class extends Controller {
     if (this._observer) {
       this._observer.disconnect()
       this._observer = null
+    }
+
+    if (this._rafId) {
+      cancelAnimationFrame(this._rafId)
+      this._rafId = null
     }
 
     if (this._onScroll) {
@@ -40,6 +46,21 @@ export default class extends Controller {
     const el = this.listTarget
     const distance = el.scrollHeight - (el.scrollTop + el.clientHeight)
     return distance < this._thresholdPx
+  }
+
+  _scheduleScrollToBottom() {
+    if (this._rafId) cancelAnimationFrame(this._rafId)
+
+    this._rafId = requestAnimationFrame(() => {
+      this._scrollToBottom()
+
+      // 1フレーム後にさらに高さが変わるケースに備えてもう1回
+      this._rafId = requestAnimationFrame(() => {
+        this._scrollToBottom()
+        this._nearBottom = true
+        this._rafId = null
+      })
+    })
   }
 
   _scrollToBottom() {

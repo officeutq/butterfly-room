@@ -1,14 +1,16 @@
-<div class="live-comment-panel" data-controller="comment-panel">
-  <%# standbyでも Turbo append の target が必要なので、#comments は常に置く %>
-  <div id="comments" class="live-comment-list" data-comment-panel-target="list">
+<div id="cast_comment_section">
+  <div class="live-comment-panel" data-controller="comment-panel">
+    <%# standbyでも Turbo append の target が必要なので、#comments は常に置く %>
+    <div id="comments" class="live-comment-list" data-comment-panel-target="list">
+      <% if booth.live? || booth.away? %>
+        <%= render partial: "comments/comment", collection: comments, as: :comment %>
+      <% end %>
+    </div>
+
     <% if booth.live? || booth.away? %>
-      <%= render partial: "comments/comment", collection: comments, as: :comment %>
+      <div class="live-comment-form">
+        <%= render "stream_sessions/comments/form", stream_session: stream_session %>
+      </div>
     <% end %>
   </div>
-
-  <% if booth.live? || booth.away? %>
-    <div class="live-comment-form">
-      <%= render "stream_sessions/comments/form", stream_session: stream_session %>
-    </div>
-  <% end %>
 </div>
