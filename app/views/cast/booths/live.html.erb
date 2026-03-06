@@ -7,6 +7,16 @@
   data-ivs-publisher-initial-mode-value="<%= @booth.away? ? "away" : "normal" %>"
   data-ivs-publisher-initial-booth-status-value="<%= @booth.status %>"
 >
+  <%# live は layout の Main が無いので、flash の箱だけはページ側に常設しておく %>
+  <div id="flash_inner">
+    <% if notice.present? %>
+      <div class="alert alert-success" role="alert"><%= notice %></div>
+    <% end %>
+    <% if alert.present? %>
+      <div class="alert alert-danger" role="alert"><%= alert %></div>
+    <% end %>
+  </div>
+
   <%# ------------------------------------------------------------
       Stage（映像 + Overlay）
       ------------------------------------------------------------ %>
@@ -30,7 +40,7 @@
         - 実UIは .live-overlay-ui で pointer-events:auto
         ------------------------------------------------------------ %>
     <div id="live_overlay">
-      <div class="live-overlay-ui" data-live-grid-debug="1">
+      <div class="live-overlay-ui" data-live-grid-debug="<%= Rails.env.development? ? "1" : "0" %>">
         <div class="live-overlay-meta-slot">
           <div class="live-standby-actions-panel d-none" data-ivs-publisher-target="summaryPanel">
             <div class="live-standby-actions-buttons">
@@ -125,43 +135,6 @@
               </div>
             </div>
           </div>
-        </div>
-
-        <%# --------------------------------------------------------
-            既存UIは DOM を残したまま画面外へ退避
-            -------------------------------------------------------- %>
-        <div class="live-offscreen">
-          <%# live は layout の Main が無いので、flash の箱だけはページ側に常設しておく %>
-          <div id="flash_inner">
-            <% if notice.present? %>
-              <div class="alert alert-success" role="alert"><%= notice %></div>
-            <% end %>
-            <% if alert.present? %>
-              <div class="alert alert-danger" role="alert"><%= alert %></div>
-            <% end %>
-          </div>
-
-          <%# ---- 開発用テキスト（#317では残す） ---- %>
-          <h1>Cast Booth（Live）</h1>
-
-          <p>booth: <strong>#<%= @booth.id %> <%= @booth.name %></strong></p>
-          <p>status: <strong><%= @booth.status %></strong></p>
-
-          <%= render "cast/booths/stream_meta",
-                     booth: @booth,
-                     stream_session: @stream_session %>
-
-          <div class="d-flex align-items-center gap-2 flex-wrap">
-            <div class="fw-semibold">配信（Real-Time Stage）</div>
-            <span class="text-muted small" data-ivs-publisher-target="state">idle</span>
-          </div>
-
-          <div class="mt-2 text-danger small"
-               data-ivs-publisher-target="error"></div>
-
-          <hr>
-
-          <%# comments / drink / ops は Overlay 側へ移動したので、offscreen からは撤去（重複IDを避ける） %>
         </div>
       </div>
     </div>
