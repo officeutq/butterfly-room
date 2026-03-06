@@ -258,6 +258,7 @@ app/
       booths/
         _comment_section.html.erb
         _stream_meta.html.erb
+        _stream_meta_display.html.erb
         edit.html.erb
         index.html.erb
         live.html.erb
