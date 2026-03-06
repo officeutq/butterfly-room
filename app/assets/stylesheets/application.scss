@@ -195,9 +195,12 @@
   align-items: flex-end;
 }
 
+.live-overlay-comment-slot > #cast_comment_section {
+  width: 100%;
+}
+
 .live-comment-panel {
   width: 100%;
-  height: 100%;
   display: flex;
   flex-direction: column;
 
@@ -215,7 +218,7 @@
 /* コメント一覧：固定高さ＋内部スクロール（7行相当） */
 .live-comment-list {
   flex: 0 0 auto;
-  height: clamp(140px, 28vh, 260px);
+  height: clamp(140px, 25vh, 260px);
 
   overflow-y: auto;
   overflow-x: hidden;
