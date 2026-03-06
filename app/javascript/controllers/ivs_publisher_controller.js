@@ -1,7 +1,22 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["preview", "canvas", "error", "state", "awayAudio", "startBtn", "endBtn", "awayBtn", "backBtn", "summaryBtn", "drinkPanel"]
+  static targets = [
+    "preview",
+    "canvas",
+    "error",
+    "state",
+    "startBtn",
+    "endBtn",
+    "summaryBtn",
+    "drinkPanel",
+    "opsPanel",
+    "cameraOnBtn",
+    "cameraOffBtn",
+    "micBtn",
+    "micIcon",
+  ]
+
   static values = {
     tokenUrl: String,
     finishUrl: String,
@@ -23,6 +38,9 @@ export default class extends Controller {
     // standby preview-only のフラグ
     this._previewOnly = false
 
+    // mic の論理状態（camera away/live とは独立）
+    this._micEnabled = true
+
     // before-cache でフラグを立ててから片付ける
     this._beforeCache = () => {
       // 配信中（=join済み）だったら「復帰候補」を残す
@@ -38,7 +56,6 @@ export default class extends Controller {
     }
 
     // 初期状態に合わせてUI
-    this._syncAwayAudioUI()
     this._setState("idle")
     this._boothStatus = this.initialBoothStatusValue || "offline" // 画面の初期
     this._broadcasting = false // stage join 済みか
@@ -117,6 +134,7 @@ export default class extends Controller {
       this._canvasStream = this.canvasTarget.captureStream(30)
       const canvasVideoTrack = this._canvasStream.getVideoTracks()[0]
       this._audioTrack = this._media.getAudioTracks()[0] || null
+      this._applyMicState()
 
       const streamsToPublish = []
       if (canvasVideoTrack) streamsToPublish.push(new LocalStageStream(canvasVideoTrack))
@@ -147,11 +165,11 @@ export default class extends Controller {
       // 5) Rails側を live に揃える（standby -> live）
       await this._patchBoothStatus("live")
       this._boothStatus = "live"
+      this._mode = "normal"
       this._syncUI()
 
-      // 6) 現在モードに応じて away の音声デフォルトミュート
-      if (this._mode === "away") this._applyAwayMode()
-      else this._applyNormalMode()
+      // 6) 現在モードを適用（audioは独立）
+      this._applyCurrentMode()
     } catch (e) {
       this._setState("error")
       this._setError(this._humanizeError(e))
@@ -187,28 +205,84 @@ export default class extends Controller {
       if (!skipFinish && this.finishUrlValue) {
         // Rails: stream_session finish（booth.offline + current_session解除 + ended broadcast）
         await this._postFinish()
-        // Turbo Driveのままならページはそのままなので、UIはボタン側がサマリーに寄る
-        // （必要なら location.reload() でもOK）
         window.location.reload()
       }
     }
   }
 
-  setAway() {
-    this._mode = "away"
-    this._applyAwayMode()
+  toggleMic() {
+    this._micEnabled = !this._micEnabled
+    this._applyMicState()
+    this._syncMicUI()
   }
 
-  setLive() {
-    this._mode = "normal"
-    this._applyNormalMode()
+  onBoothStatusPatched(event) {
+    if (!event?.detail?.success) return
+
+    // どっちが押されたかは form の action から判定できる
+    const form = event.target
+    const action = form?.getAttribute("action") || ""
+    if (action.includes("to=away")) {
+      this._boothStatus = "away"
+      this._mode = "away"
+    }
+    if (action.includes("to=live")) {
+      this._boothStatus = "live"
+      this._mode = "normal"
+    }
+
+    this._applyCurrentMode()
+    this._syncUI()
   }
 
-  toggleAwayAudio() {
-    if (!this._audioTrack) return
-    // checked=true なら音声ON、falseならOFF
-    const enabled = !!this.awayAudioTarget.checked
-    this._audioTrack.enabled = enabled
+  // -------------------------
+  // internal: mode apply
+  // -------------------------
+  _applyCurrentMode() {
+    if (this._mode === "away") {
+      this._applyAwayMode()
+    } else {
+      this._applyNormalMode()
+    }
+  }
+
+  _applyAwayMode() {
+    // away は映像のみ切替。audio は独立して維持
+    if (this.hasPreviewTarget) this.previewTarget.classList.add("d-none")
+    if (this.hasCanvasTarget) this.canvasTarget.classList.remove("d-none")
+    this._applyMicState()
+  }
+
+  _applyNormalMode() {
+    // normal は映像のみ切替。audio は独立して維持
+    if (this.hasCanvasTarget) this.canvasTarget.classList.add("d-none")
+    if (this.hasPreviewTarget) this.previewTarget.classList.remove("d-none")
+    this._applyMicState()
+  }
+
+  _applyMicState() {
+    if (this._audioTrack) {
+      this._audioTrack.enabled = !!this._micEnabled
+    }
+  }
+
+  _syncMicUI() {
+    if (!this.hasMicBtnTarget || !this.hasMicIconTarget) return
+
+    this.micBtnTarget.disabled = !this._broadcasting
+    this.micBtnTarget.classList.toggle("is-off", !this._micEnabled)
+    this.micBtnTarget.setAttribute(
+      "aria-label",
+      this._micEnabled ? "マイクをオフにする" : "マイクをオンにする"
+    )
+    this.micBtnTarget.setAttribute(
+      "title",
+      this._micEnabled ? "マイクON" : "マイクOFF"
+    )
+
+    this.micIconTarget.className = this._micEnabled
+      ? "bi bi-mic-fill"
+      : "bi bi-mic-mute-fill"
   }
 
   _syncUI() {
@@ -223,42 +297,37 @@ export default class extends Controller {
       }
     }
 
-    // 2) 席外し/復帰ボタンの活性
-    const canToggleAway = this._broadcasting
+    // 2) カメラON/OFFボタン
+    const canToggleCamera = this._broadcasting
 
-    if (this.hasAwayBtnTarget) {
-      this.awayBtnTarget.disabled = !canToggleAway || this._boothStatus === "away"
-    }
-    if (this.hasBackBtnTarget) {
-      this.backBtnTarget.disabled = !canToggleAway || this._boothStatus !== "away"
-    }
-    if (this.hasAwayBtnTarget && this.hasBackBtnTarget) {
-      if (this._boothStatus === "away") {
-        this.awayBtnTarget.classList.add("d-none")
-        this.backBtnTarget.classList.remove("d-none")
-      } else {
-        this.awayBtnTarget.classList.remove("d-none")
-        this.backBtnTarget.classList.add("d-none")
-      }
+    if (this.hasCameraOffBtnTarget) {
+      this.cameraOffBtnTarget.disabled = !canToggleCamera || this._boothStatus === "away"
+      this.cameraOffBtnTarget.classList.toggle("d-none", this._boothStatus === "away")
     }
 
-    // 3) 席外し中 音声トグル
-    this._syncAwayAudioUI()
+    if (this.hasCameraOnBtnTarget) {
+      this.cameraOnBtnTarget.disabled = !canToggleCamera || this._boothStatus !== "away"
+      this.cameraOnBtnTarget.classList.toggle("d-none", this._boothStatus !== "away")
+    }
 
-    // サマリーへ戻る
+    // 3) mic トグル
+    this._syncMicUI()
+
+    // 4) サマリーへ戻る
     if (this.hasSummaryBtnTarget) {
       const visible = (this._boothStatus === "standby") && !this._broadcasting
       this.summaryBtnTarget.classList.toggle("d-none", !visible)
       this.summaryBtnTarget.disabled = !visible
     }
 
-    // ★startボタンのラベル切替（復帰候補なら「配信に戻る」）
+    // 5) startボタンのラベル切替（復帰候補なら「配信に戻る」）
     if (this.hasStartBtnTarget) {
       const normal = this.startBtnTarget.dataset.labelNormal || "配信開始"
       const resume = this.startBtnTarget.dataset.labelResume || "配信に戻る"
       this.startBtnTarget.textContent = this._resumable ? resume : normal
     }
-    // 右上ドリンクパネル
+
+    // 6) 右上ドリンクパネル
     if (this.hasDrinkPanelTarget) {
       const visible =
         this._broadcasting ||
@@ -267,56 +336,12 @@ export default class extends Controller {
 
       this.drinkPanelTarget.classList.toggle("d-none", !visible)
     }
-  }
 
-  onBoothStatusPatched(event) {
-    if (!event?.detail?.success) return
-
-    // どっちが押されたかは form の action から判定できる
-    const form = event.target
-    const action = form?.getAttribute("action") || ""
-    if (action.includes("to=away")) this._boothStatus = "away"
-    if (action.includes("to=live")) this._boothStatus = "live"
-
-    if (this._boothStatus === "away") this.setAway()
-    else this.setLive()
-
-    this._syncUI()
-  }
-
-  // -------------------------
-  // internal: mode apply
-  // -------------------------
-  _applyAwayMode() {
-    // away はデフォルトミュート
-    if (this._audioTrack) this._audioTrack.enabled = false
-
-    // ★ 送出（canvas）を見せる
-    if (this.hasPreviewTarget) this.previewTarget.classList.add("d-none")
-    if (this.hasCanvasTarget) this.canvasTarget.classList.remove("d-none")
-
-    this._syncAwayAudioUI()
-  }
-
-  _applyNormalMode() {
-    // normal は音声ON
-    if (this._audioTrack) this._audioTrack.enabled = true
-
-    // ★ カメラプレビューを見せる
-    if (this.hasCanvasTarget) this.canvasTarget.classList.add("d-none")
-    if (this.hasPreviewTarget) this.previewTarget.classList.remove("d-none")
-
-    this._syncAwayAudioUI()
-  }
-
-  _syncAwayAudioUI() {
-    if (!this.hasAwayAudioTarget) return
-    const inAway = this._mode === "away"
-    this.awayAudioTarget.disabled = !inAway
-
-    // awayのときはデフォルトOFFに見せる
-    if (inAway) this.awayAudioTarget.checked = false
-    else this.awayAudioTarget.checked = false
+    // 7) 右下操作パネル
+    if (this.hasOpsPanelTarget) {
+      const visible = this._broadcasting
+      this.opsPanelTarget.classList.toggle("d-none", !visible)
+    }
   }
 
   // -------------------------
