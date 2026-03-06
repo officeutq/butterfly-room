@@ -95,6 +95,7 @@ Rails.application.routes.draw do
       post :finish, on: :member
       get  :pending_drink_orders, on: :member
       get  :meta_modal, on: :member
+      get  :meta_display, on: :member
 
       patch :metadata, on: :member
     end

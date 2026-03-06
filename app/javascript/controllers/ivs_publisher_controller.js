@@ -23,6 +23,7 @@ export default class extends Controller {
     tokenUrl: String,
     finishUrl: String,
     statusUrl: String,
+    metaDisplayUrl: String,
     mirror: { type: Boolean, default: true },
     initialMode: { type: String, default: "normal" },
     initialBoothStatus: String, // "offline" | "live" | "away" | "standby" etc
@@ -170,7 +171,10 @@ export default class extends Controller {
       this._mode = "normal"
       this._syncUI()
 
-      // 6) 現在モードを適用（audioは独立）
+      // 6) live開始時に meta 表示を最新化
+      await this._reloadMetaDisplay()
+
+      // 7) 現在モードを適用（audioは独立）
       this._applyCurrentMode()
     } catch (e) {
       this._setState("error")
@@ -494,6 +498,26 @@ export default class extends Controller {
     if (html && window.Turbo?.renderStreamMessage) {
       window.Turbo.renderStreamMessage(html)
     }
+  }
+
+  async _reloadMetaDisplay() {
+    if (!this.hasMetaDisplayUrlValue) return
+
+    const frame = document.getElementById("stream_meta_display")
+    if (!frame) return
+
+    const currentSrc = frame.getAttribute("src")
+    if (currentSrc === this.metaDisplayUrlValue) {
+      if (typeof frame.reload === "function") {
+        await frame.reload()
+      } else {
+        frame.removeAttribute("src")
+        frame.setAttribute("src", this.metaDisplayUrlValue)
+      }
+      return
+    }
+
+    frame.setAttribute("src", this.metaDisplayUrlValue)
   }
 
   async _postFinish() {

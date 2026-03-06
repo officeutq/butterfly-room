@@ -89,11 +89,6 @@ module Cast
         format.turbo_stream do
           render turbo_stream: [
             turbo_stream.replace(
-              "cast_stream_meta",
-              partial: "cast/booths/stream_meta",
-              locals: { booth: booth, stream_session: stream_session }
-            ),
-            turbo_stream.replace(
               "cast_comment_section",
               partial: "cast/booths/comment_section",
               locals: { booth: booth, stream_session: stream_session, comments: comments }

@@ -44,6 +44,22 @@ module Cast
       head :not_found
     end
 
+    def meta_display
+      stream_session = StreamSession.find(params[:id])
+      booth = stream_session.booth
+
+      unless booth.current_stream_session_id == stream_session.id
+        return head :forbidden
+      end
+
+      unless operable_booth_for_stream_session?(booth)
+        return head :forbidden
+      end
+
+      @booth = booth
+      @stream_session = stream_session
+    end
+
     # PATCH /cast/stream_sessions/:id/metadata
     def metadata
       stream_session = StreamSession.find(params[:id])
