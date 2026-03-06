@@ -266,7 +266,7 @@
 }
 
 /* ------------------------------------------------------------
-   live standby actions (#346)
+   live standby actions (#346, #347)
 ------------------------------------------------------------ */
 .live-standby-actions-panel {
   width: 100%;
@@ -286,17 +286,20 @@
 
 .live-standby-actions-buttons {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
   width: 100%;
 }
 
-.live-standby-action-form {
+.live-standby-action-form,
+.live-standby-action-link {
+  flex: 1 1 0;
+  min-width: 0;
   margin: 0;
-  flex: 1 1 100%;
 }
 
-.live-standby-action-btn {
+.live-standby-action-btn,
+.live-standby-action-link {
   width: 100%;
   min-height: 44px;
   display: inline-flex;
@@ -309,18 +312,26 @@
 
   background: rgba(255, 255, 255, 0.14);
   color: rgba(255, 255, 255, 0.96);
+  text-decoration: none;
 
   transition:
     background-color 0.15s ease,
     opacity 0.15s ease,
     transform 0.15s ease;
+
+  min-width: 0;
+  white-space: nowrap;
 }
 
-.live-standby-action-btn:hover:not(:disabled) {
+.live-standby-action-btn:hover:not(:disabled),
+.live-standby-action-link:hover {
   background: rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.96);
+  text-decoration: none;
 }
 
-.live-standby-action-btn:active:not(:disabled) {
+.live-standby-action-btn:active:not(:disabled),
+.live-standby-action-link:active {
   transform: scale(0.98);
 }
 

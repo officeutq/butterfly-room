@@ -22,6 +22,28 @@ module Cast
              locals: { stream_session: stream_session }
     end
 
+    def meta_modal
+      stream_session = StreamSession.find(params[:id])
+      booth = stream_session.booth
+
+      unless booth.current_stream_session_id == stream_session.id
+        return head :forbidden
+      end
+
+      unless operable_booth_for_stream_session?(booth)
+        return head :forbidden
+      end
+
+      unless booth.standby?
+        return head :conflict
+      end
+
+      render partial: "cast/stream_sessions/meta_modal",
+             locals: { booth: booth, stream_session: stream_session }
+    rescue ActiveRecord::RecordNotFound
+      head :not_found
+    end
+
     # PATCH /cast/stream_sessions/:id/metadata
     def metadata
       stream_session = StreamSession.find(params[:id])
@@ -54,11 +76,6 @@ module Cast
 
         format.turbo_stream do
           render turbo_stream: [
-            turbo_stream.replace(
-              "cast_stream_meta",
-              partial: "cast/booths/stream_meta",
-              locals: { booth: booth, stream_session: stream_session }
-            ),
             turbo_stream.append(
               "flash_inner",
               partial: "shared/flash_message",
@@ -76,11 +93,18 @@ module Cast
       respond_to do |format|
         format.html { redirect_to live_cast_booth_path(booth), alert: message }
         format.turbo_stream do
-          render turbo_stream: turbo_stream.append(
-            "flash_inner",
-            partial: "shared/flash_message",
-            locals: { level: "danger", message: message }
-          ), status: :unprocessable_entity
+          render turbo_stream: [
+            turbo_stream.replace(
+              "modal",
+              partial: "cast/stream_sessions/meta_modal",
+              locals: { booth: booth, stream_session: e.record }
+            ),
+            turbo_stream.append(
+              "flash_inner",
+              partial: "shared/flash_message",
+              locals: { level: "danger", message: message }
+            )
+          ], status: :unprocessable_entity
         end
         format.json { render json: { error: message }, status: :unprocessable_entity }
         format.any { render plain: message, status: :unprocessable_entity }

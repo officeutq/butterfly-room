@@ -40,6 +40,11 @@
                     class: "live-standby-action-btn",
                     form_class: "live-standby-action-form",
                     data: { ivs_publisher_target: "summaryBtn" } %>
+
+              <%= link_to "配信設定",
+                    meta_modal_cast_stream_session_path(@stream_session),
+                    class: "live-standby-action-btn live-standby-action-link",
+                    data: { turbo_frame: "modal" } %>
             </div>
           </div>
 
