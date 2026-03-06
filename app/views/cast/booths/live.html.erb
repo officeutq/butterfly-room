@@ -7,18 +7,8 @@
   data-ivs-publisher-initial-mode-value="<%= @booth.away? ? "away" : "normal" %>"
   data-ivs-publisher-initial-booth-status-value="<%= @booth.status %>"
 >
-  <%# live は layout の Main が無いので、flash の箱だけはページ側に常設しておく %>
-  <div id="flash_inner">
-    <% if notice.present? %>
-      <div class="alert alert-success" role="alert"><%= notice %></div>
-    <% end %>
-    <% if alert.present? %>
-      <div class="alert alert-danger" role="alert"><%= alert %></div>
-    <% end %>
-  </div>
-
   <%# ------------------------------------------------------------
-      Stage（映像 + Overlay）
+      Stage（映像 + Overlay + Flash layer）
       ------------------------------------------------------------ %>
   <div id="live_stage">
     <div id="live_media">
@@ -32,6 +22,23 @@
         class="d-none"
         width="1280" height="720"
         data-ivs-publisher-target="canvas"></canvas>
+    </div>
+
+    <%# ------------------------------------------------------------
+        Flash layer（Overlayとは別の最前面通知レイヤー）
+        - レイヤー自体は pointer-events:none
+        - 各 alert のみ pointer-events:auto
+        ------------------------------------------------------------ %>
+    <div id="live_flash_layer">
+      <div id="flash_inner">
+        <% if notice.present? %>
+          <%= render "shared/flash_message", level: "success", message: notice %>
+        <% end %>
+
+        <% if alert.present? %>
+          <%= render "shared/flash_message", level: "danger", message: alert %>
+        <% end %>
+      </div>
     </div>
 
     <%# ------------------------------------------------------------

@@ -173,11 +173,11 @@
           <%# ★常時存在する flash の箱（StoreBanGuard の turbo_stream target） %>
           <div id="flash_inner">
             <% if notice.present? %>
-              <div class="alert alert-success" role="alert"><%= notice %></div>
+              <%= render "shared/flash_message", level: "success", message: notice %>
             <% end %>
 
             <% if alert.present? %>
-              <div class="alert alert-danger" role="alert"><%= alert %></div>
+              <%= render "shared/flash_message", level: "danger", message: alert %>
             <% end %>
           </div>
         </div>
