@@ -10,7 +10,7 @@ module Cast
         actor: current_user
       ).call
 
-      redirect_to cast_booth_path(session.booth_id), notice: "配信終了"
+      redirect_to cast_booth_path(session.booth_id), notice: "スタンバイを終了しました"
     rescue => e
       redirect_to cast_booth_path(session.booth_id), alert: e.message
     end

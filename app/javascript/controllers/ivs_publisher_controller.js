@@ -9,6 +9,7 @@ export default class extends Controller {
     "startBtn",
     "endBtn",
     "summaryBtn",
+    "summaryPanel",
     "metaPanel",
     "drinkPanel",
     "opsPanel",
@@ -314,7 +315,12 @@ export default class extends Controller {
     // 3) mic トグル
     this._syncMicUI()
 
-    // 4) サマリーへ戻る
+    // 4) standby 上部アクション
+    if (this.hasSummaryPanelTarget) {
+      const visible = (this._boothStatus === "standby") && !this._broadcasting
+      this.summaryPanelTarget.classList.toggle("d-none", !visible)
+    }
+
     if (this.hasSummaryBtnTarget) {
       const visible = (this._boothStatus === "standby") && !this._broadcasting
       this.summaryBtnTarget.classList.toggle("d-none", !visible)
