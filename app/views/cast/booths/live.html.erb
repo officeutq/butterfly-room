@@ -32,6 +32,17 @@
     <div id="live_overlay">
       <div class="live-overlay-ui" data-live-grid-debug="1">
         <div class="live-overlay-meta-slot">
+          <div class="live-standby-actions-panel d-none" data-ivs-publisher-target="summaryPanel">
+            <div class="live-standby-actions-buttons">
+              <%= button_to "スタンバイをやめて戻る",
+                    finish_cast_stream_session_path(@stream_session),
+                    method: :post,
+                    class: "live-standby-action-btn",
+                    form_class: "live-standby-action-form",
+                    data: { ivs_publisher_target: "summaryBtn" } %>
+            </div>
+          </div>
+
           <div class="live-meta-panel d-none" data-ivs-publisher-target="metaPanel">
             <%= render "cast/booths/stream_meta_display",
                       booth: @booth,
@@ -138,14 +149,6 @@
           <div class="d-flex align-items-center gap-2 flex-wrap">
             <div class="fw-semibold">配信（Real-Time Stage）</div>
             <span class="text-muted small" data-ivs-publisher-target="state">idle</span>
-
-            <% if @booth.standby? %>
-              <%= button_to "サマリーへ戻る",
-                    finish_cast_stream_session_path(@stream_session),
-                    method: :post,
-                    class: "btn btn-outline-secondary btn-sm",
-                    data: { ivs_publisher_target: "summaryBtn" } %>
-            <% end %>
           </div>
 
           <div class="mt-2 text-danger small"
