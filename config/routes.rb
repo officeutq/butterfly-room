@@ -94,6 +94,7 @@ Rails.application.routes.draw do
     resources :stream_sessions, only: [] do
       post :finish, on: :member
       get  :pending_drink_orders, on: :member
+      get  :meta_modal, on: :member
 
       patch :metadata, on: :member
     end
