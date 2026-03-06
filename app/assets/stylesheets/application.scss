@@ -4,6 +4,39 @@
   --live-stage-h: 0px;
 }
 
+/* ------------------------------------------------------------
+   レイアウト調整メモ（live overlay）
+
+   このファイルの clamp() を変更すると、Overlay UI のサイズを調整できる。
+
+   ■ bottom row の高さ
+     grid-template-rows の clamp(...) を変更する
+     MIN   : 小画面でも最低限確保する高さ
+     IDEAL : 画面高に応じた目標（vh）
+     MAX   : PCなどで大きくなりすぎない上限
+
+   ■ drink slot の幅（右カラム / main row）
+     .live-overlay-main-row の
+     grid-template-columns: minmax(0,1fr) clamp(...)
+     の clamp を変更する
+
+     MIN   : 小画面で潰れない最低幅
+     IDEAL : 画面幅に応じた目標（vw）
+     MAX   : PCで太りすぎない上限
+
+   ■ ops slot の幅（右カラム / bottom row）
+     .live-overlay-bottom-row の
+     grid-template-columns: minmax(0,1fr) clamp(...)
+     の clamp を変更する
+
+     MIN   : ボタンが折り返さない最低幅
+     IDEAL : 画面幅に応じた目標（vw）
+     MAX   : PCで太りすぎない上限
+
+   調整の目安
+     ・iPhone縦で右カラムが細い → MIN / IDEAL を上げる
+     ・PCで右カラムが太い     → MAX を下げる
+------------------------------------------------------------ */
 #live_stage {
   height: var(--live-stage-h);
   overflow: hidden;
@@ -29,21 +62,129 @@
 
   /* 映像操作を邪魔しない：操作したい要素だけ auto にする */
   pointer-events: none;
+
+  /* Overlay全体ではスクロールさせない */
+  overflow: hidden;
 }
 
 /* 実UIコンテナだけ操作可能にする */
 #live_overlay .live-overlay-ui {
   pointer-events: auto;
 
-  /* 暫定：全体を使えるようにしつつ、最低限の余白 */
-  padding: 12px;
-
-  /* 画面いっぱいに広げる（配置は次Issueで詰める） */
   width: 100%;
   height: 100%;
+  padding: 12px;
 
-  /* たくさん出すと溢れるので暫定で内部スクロール可（次Issueで“ページスクロール無し”へ寄せる） */
-  overflow: auto;
+  /* #339: 骨格のみ */
+  display: grid;
+  grid-template-rows:
+    minmax(0, auto)
+    minmax(0, 1fr)
+    clamp(220px, 34vh, 320px);
+
+  gap: 12px;
+
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* 各rowの崩れ防止 */
+.live-overlay-main-row,
+.live-overlay-bottom-row {
+  min-width: 0;
+  min-height: 0;
+}
+
+.live-overlay-main-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(150px, 20vw, 280px);
+  gap: 12px;
+}
+
+.live-overlay-bottom-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(80px, 10vw, 100px);
+  gap: 12px;
+}
+
+/* slot共通 */
+.live-overlay-meta-slot,
+.live-overlay-main-spacer,
+.live-overlay-drink-slot,
+.live-overlay-comment-slot,
+.live-overlay-ops-slot {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+/* metaは内容可変だが上限あり */
+.live-overlay-meta-slot {
+  max-height: clamp(120px, 24vh, 240px);
+}
+
+/* このIssueでは枠だけなので、空でも見えるように最低高さを持たせる */
+.live-overlay-meta-slot,
+.live-overlay-drink-slot,
+.live-overlay-comment-slot,
+.live-overlay-ops-slot {
+  min-height: 48px;
+}
+
+/* ラベル */
+.live-slot-label {
+  display: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 8px 10px;
+  color: #fff;
+}
+
+/* debug ON で色付け表示 */
+.live-overlay-ui[data-live-grid-debug="1"] .live-overlay-meta-slot,
+.live-overlay-ui[data-live-grid-debug="1"] .live-overlay-main-spacer,
+.live-overlay-ui[data-live-grid-debug="1"] .live-overlay-drink-slot,
+.live-overlay-ui[data-live-grid-debug="1"] .live-overlay-comment-slot,
+.live-overlay-ui[data-live-grid-debug="1"] .live-overlay-ops-slot {
+  outline: 1px solid rgba(255, 255, 255, 0.7);
+  outline-offset: -1px;
+}
+
+.live-overlay-ui[data-live-grid-debug="1"] .live-overlay-meta-slot {
+  background: rgba(13, 110, 253, 0.22);
+}
+
+.live-overlay-ui[data-live-grid-debug="1"] .live-overlay-main-spacer {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.live-overlay-ui[data-live-grid-debug="1"] .live-overlay-drink-slot {
+  background: rgba(255, 193, 7, 0.22);
+}
+
+.live-overlay-ui[data-live-grid-debug="1"] .live-overlay-comment-slot {
+  background: rgba(25, 135, 84, 0.22);
+}
+
+.live-overlay-ui[data-live-grid-debug="1"] .live-overlay-ops-slot {
+  background: rgba(220, 53, 69, 0.22);
+}
+
+.live-overlay-ui[data-live-grid-debug="1"] .live-slot-label {
+  display: inline-block;
+}
+
+/* debug OFF では完全に枠表示を消す */
+.live-overlay-ui[data-live-grid-debug="0"] .live-overlay-meta-slot,
+.live-overlay-ui[data-live-grid-debug="0"] .live-overlay-main-spacer,
+.live-overlay-ui[data-live-grid-debug="0"] .live-overlay-drink-slot,
+.live-overlay-ui[data-live-grid-debug="0"] .live-overlay-comment-slot,
+.live-overlay-ui[data-live-grid-debug="0"] .live-overlay-ops-slot {
+  background: transparent;
+  outline: none;
 }
 
 /* video は Stage に contain */
