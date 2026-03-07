@@ -29,8 +29,8 @@
   <body class="d-flex flex-column min-vh-100">
     <%# --- Header (common) --- %>
     <header id="app_header" class="border-bottom bg-body sticky-top">
-      <div class="container py-2">
-        <div class="d-flex justify-content-between align-items-center gap-3">
+      <div class="container app-header">
+        <div class="d-flex justify-content-between align-items-center gap-3 app-header-inner">
           <div class="d-flex align-items-center gap-2 flex-wrap">
             <%# 1) アプリ名（ロゴ） %>
             <div class="fw-semibold">
@@ -61,6 +61,13 @@
                 </button>
 
                 <ul class="dropdown-menu dropdown-menu-end">
+                  <%# ロールバッジ（常に表示） %>
+                  <li>
+                    <span class="dropdown-item-text text-muted small">
+                    <%= role_badge(current_user) %>
+                    </span>
+                  </li>
+
                   <%# e-mail（常に表示） %>
                   <li>
                     <span class="dropdown-item-text text-muted small">
@@ -147,9 +154,6 @@
                   </li>
                 </ul>
               </div>
-
-              <%# 5) ロールバッジ %>
-              <%= role_badge(current_user) %>
             <% else %>
               <span class="text-muted small">未ログイン</span>
             <% end %>
