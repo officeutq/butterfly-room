@@ -9,6 +9,8 @@ export default class extends Controller {
   connect() {
     this._stage = null
     this._lastJoinable = null
+    this._remoteMediaStream = null
+    this._remoteTrackMap = new Map()
 
     this._beforeCache = () => this.stop()
     document.addEventListener("turbo:before-cache", this._beforeCache)
@@ -26,7 +28,7 @@ export default class extends Controller {
     this._setState("idle")
     this._syncMuteUI({ hint: false })
 
-    // ★YouTube寄せ：表示されたら自動で視聴開始を試みる
+    // YouTube寄せ：表示されたら自動で視聴開始を試みる
     queueMicrotask(() => this.start())
   }
 
@@ -69,11 +71,17 @@ export default class extends Controller {
       const evtAdded = StageEvents?.STAGE_PARTICIPANT_STREAMS_ADDED
       if (evtAdded) {
         this._stage.on(evtAdded, (_participant, streams) => {
-          const tracks = streams.flatMap((s) => (s.mediaStreamTrack ? [s.mediaStreamTrack] : []))
-          this._attachTracks(tracks)
+          this._addStreams(streams)
         })
       } else {
         console.warn("[ivs-viewer] StageEvents.STAGE_PARTICIPANT_STREAMS_ADDED is missing")
+      }
+
+      const evtRemoved = StageEvents?.STAGE_PARTICIPANT_STREAMS_REMOVED
+      if (evtRemoved) {
+        this._stage.on(evtRemoved, (_participant, streams) => {
+          this._removeStreams(streams)
+        })
       }
 
       await this._stage.join()
@@ -116,6 +124,8 @@ export default class extends Controller {
       // noop
     } finally {
       this._stage = null
+      this._remoteTrackMap.clear()
+      this._remoteMediaStream = null
       if (this.hasVideoTarget) this.videoTarget.srcObject = null
       this._setState("idle")
       this._syncMuteUI({ hint: false })
@@ -141,20 +151,38 @@ export default class extends Controller {
     return body.participant_token
   }
 
-  async _attachTracks(tracks) {
-    if (!tracks.length) return
+  async _addStreams(streams) {
+    if (!streams?.length) return
     if (!this.hasVideoTarget) return
 
-    const ms = new MediaStream()
-    tracks.forEach((t) => ms.addTrack(t))
+    if (!this._remoteMediaStream) {
+      this._remoteMediaStream = new MediaStream()
+    }
+
+    let changed = false
+
+    streams.forEach((stream) => {
+      const track = stream?.mediaStreamTrack
+      if (!track) return
+
+      const key = this._streamKey(stream, track)
+      if (this._remoteTrackMap.has(key)) return
+
+      this._remoteTrackMap.set(key, track)
+      this._remoteMediaStream.addTrack(track)
+      changed = true
+    })
+
+    if (!changed) return
 
     const v = this.videoTarget
-    v.srcObject = ms
+    const currentMuted = v.muted
+    v.srcObject = this._remoteMediaStream
 
     // 1) まず音あり（unmuted autoplay）を試す
     // 2) 失敗したら muted autoplay にフォールバック（映像優先）
     try {
-      v.muted = false
+      v.muted = currentMuted ? true : false
       await v.play?.()
       this._syncMuteUI({ hint: false })
     } catch (_) {
@@ -163,6 +191,30 @@ export default class extends Controller {
       // 音が出ない状態を明示（ユーザー操作で解除できる）
       this._syncMuteUI({ hint: true })
     }
+  }
+
+  _removeStreams(streams) {
+    if (!streams?.length) return
+    if (!this._remoteMediaStream) return
+
+    streams.forEach((stream) => {
+      const track = stream?.mediaStreamTrack
+      if (!track) return
+
+      const key = this._streamKey(stream, track)
+      const existingTrack = this._remoteTrackMap.get(key)
+      if (!existingTrack) return
+
+      try {
+        this._remoteMediaStream.removeTrack(existingTrack)
+      } catch (_) {}
+
+      this._remoteTrackMap.delete(key)
+    })
+  }
+
+  _streamKey(stream, track) {
+    return String(stream?.id || track?.id || Math.random())
   }
 
   _syncMuteUI(opts = {}) {
