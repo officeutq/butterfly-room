@@ -642,3 +642,47 @@
   object-fit: contain;
   background: #000;
 }
+
+/* ------------------------------------------------------------
+   viewer stage space prep (#377)
+------------------------------------------------------------ */
+.viewer-page,
+.viewer-stream-state {
+  min-width: 0;
+  min-height: 0;
+}
+
+.viewer-stage-shell {
+  width: 100%;
+  min-width: 0;
+  min-height: clamp(240px, 56vw, 720px);
+}
+
+.viewer-stage-shell-empty {
+  border-radius: 12px;
+  background: #000;
+  overflow: hidden;
+}
+
+.viewer-stage-shell > #viewer_stage {
+  min-width: 0;
+  min-height: inherit;
+}
+
+.viewer-stage-shell-empty > #viewer_stage {
+  min-height: inherit;
+}
+
+/* DOMは残すが、visible領域からは退避する */
+.viewer-legacy-offscreen {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
