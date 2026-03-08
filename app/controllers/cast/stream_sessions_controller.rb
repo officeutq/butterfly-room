@@ -92,6 +92,11 @@ module Cast
 
         format.turbo_stream do
           render turbo_stream: [
+            turbo_stream.replace(
+              "stream_meta_display",
+              partial: "cast/stream_sessions/meta_display_frame",
+              locals: { booth: booth, stream_session: stream_session }
+            ),
             turbo_stream.append(
               "flash_inner",
               partial: "shared/flash_message",
