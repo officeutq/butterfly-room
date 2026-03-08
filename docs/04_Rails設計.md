@@ -299,6 +299,10 @@ app/
     home/
       show.html.erb
     layouts/
+      _cast_live_main.html.erb
+      _default_main.html.erb
+      _header.html.erb
+      _viewer_main.html.erb
       application.html.erb
       mailer.html.erb
       mailer.text.erb
