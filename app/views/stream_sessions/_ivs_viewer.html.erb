@@ -10,6 +10,45 @@
     data-ivs-viewer-target="video"
   ></video>
 
+  <%# ------------------------------------------------------------
+      Overlay（映像上にDOMを重ねる）
+      - Overlay自体は pointer-events:none
+      - 実UIは .viewer-overlay-ui で pointer-events:auto
+      ------------------------------------------------------------ %>
+  <div id="viewer_overlay">
+    <div class="viewer-overlay-ui" data-viewer-grid-debug="<%= Rails.env.development? ? "1" : "0" %>">
+      <div class="viewer-overlay-meta-slot">
+        <span class="viewer-slot-label">meta</span>
+      </div>
+
+      <div class="viewer-overlay-main-row">
+        <div class="viewer-overlay-main-spacer">
+          <span class="viewer-slot-label">main spacer</span>
+        </div>
+
+        <div class="viewer-overlay-drink-slot">
+          <span class="viewer-slot-label">drink</span>
+        </div>
+      </div>
+
+      <div class="viewer-overlay-bottom-row">
+        <div class="viewer-overlay-comment-slot">
+          <span class="viewer-slot-label">comment</span>
+        </div>
+
+        <div class="viewer-overlay-ops-slot">
+          <span class="viewer-slot-label">ops</span>
+        </div>
+      </div>
+
+      <div class="viewer-overlay-drink-action-row">
+        <div class="viewer-overlay-drink-action-slot">
+          <span class="viewer-slot-label">drink action</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="viewer-legacy-offscreen" aria-hidden="true">
     <div class="card">
       <div class="card-header">
