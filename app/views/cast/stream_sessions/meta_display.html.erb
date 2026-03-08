@@ -1,5 +1,3 @@
-<turbo-frame id="stream_meta_display">
-  <%= render "cast/booths/stream_meta_display",
-            booth: @booth,
-            stream_session: @stream_session %>
-</turbo-frame>
+<%= render "cast/stream_sessions/meta_display_frame",
+          booth: @booth,
+          stream_session: @stream_session %>

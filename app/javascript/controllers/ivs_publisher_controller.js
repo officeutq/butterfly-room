@@ -341,9 +341,10 @@ export default class extends Controller {
     // 6) 上部metaパネル
     if (this.hasMetaPanelTarget) {
       const visible =
-        this._broadcasting ||
+        this._boothStatus === "standby" ||
         this._boothStatus === "live" ||
-        this._boothStatus === "away"
+        this._boothStatus === "away" ||
+        this._broadcasting
 
       this.metaPanelTarget.classList.toggle("d-none", !visible)
     }

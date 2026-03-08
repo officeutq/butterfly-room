@@ -143,6 +143,11 @@
   border-radius: 12px;
 }
 
+.live-overlay-main-spacer {
+  display: flex;
+  align-items: flex-start;
+}
+
 /* metaは内容可変だが上限あり */
 .live-overlay-meta-slot {
   max-height: clamp(120px, 24vh, 240px);
@@ -289,10 +294,10 @@
 }
 
 /* ------------------------------------------------------------
-   live standby actions (#346, #347)
+   live standby actions (#346, #347, #365)
 ------------------------------------------------------------ */
 .live-standby-actions-panel {
-  width: 100%;
+  width: min(100%, 360px);
   display: flex;
   flex-direction: column;
 

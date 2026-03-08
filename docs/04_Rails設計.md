@@ -257,7 +257,6 @@ app/
     cast/
       booths/
         _comment_section.html.erb
-        _stream_meta.html.erb
         _stream_meta_display.html.erb
         edit.html.erb
         index.html.erb
@@ -267,6 +266,7 @@ app/
         _ended.html.erb
         _meta_modal.html.erb
         _pending_drink_orders.html.erb
+        meta_display.html.erb
     cast_invitations/
       show.html.erb
     casts/
