@@ -1,45 +1,45 @@
 <div
-  class="card"
+  class="ivs-viewer-root"
   data-controller="ivs-viewer"
   data-ivs-viewer-token-url-value="<%= stream_session_ivs_participant_tokens_path(stream_session) %>"
 >
-  <div class="card-header">
-    視聴
-    <span class="ms-2 text-muted small" data-ivs-viewer-target="state">idle</span>
-  </div>
+  <video
+    class="ivs-viewer-video"
+    playsinline
+    autoplay
+    data-ivs-viewer-target="video"
+  ></video>
 
-  <div class="card-body">
-    <div class="ivs-viewer-stage position-relative">
-      <video
-        class="ivs-viewer-video rounded"
-        playsinline
-        autoplay
-        data-ivs-viewer-target="video"
-      ></video>
+  <div class="viewer-legacy-offscreen" aria-hidden="true">
+    <div class="card">
+      <div class="card-header">
+        視聴
+        <span class="ms-2 text-muted small" data-ivs-viewer-target="state">idle</span>
+      </div>
 
-      <%# ★常時表示：ミュートトグル（🔇/🔊） %>
-      <div class="position-absolute top-0 start-0 m-2">
-        <button
-          type="button"
-          class="btn btn-dark btn-sm"
-          data-action="ivs-viewer#toggleMute"
-          data-ivs-viewer-target="muteButton"
-          aria-label="ミュート切替"
-        >
-          🔇
-        </button>
+      <div class="card-body">
+        <div class="position-absolute top-0 start-0 m-2">
+          <button
+            type="button"
+            class="btn btn-dark btn-sm"
+            data-action="ivs-viewer#toggleMute"
+            data-ivs-viewer-target="muteButton"
+            aria-label="ミュート切替"
+          >
+            🔇
+          </button>
 
-        <%# 音が出ない等のときだけ出す補助文 %>
-        <div
-          class="small mt-1 text-white-50"
-          data-ivs-viewer-target="muteHint"
-          style="display: none;"
-        >
-          タップで音を出せます
+          <div
+            class="small mt-1 text-white-50"
+            data-ivs-viewer-target="muteHint"
+            style="display: none;"
+          >
+            タップで音を出せます
+          </div>
         </div>
+
+        <div class="mt-2 text-danger small" data-ivs-viewer-target="error"></div>
       </div>
     </div>
-
-    <div class="mt-2 text-danger small" data-ivs-viewer-target="error"></div>
   </div>
 </div>

@@ -11,6 +11,18 @@
     <div class="viewer-stage-shell">
       <div id="viewer_stage">
         <%= render "stream_sessions/ivs_viewer", stream_session: stream_session %>
+
+        <div id="viewer_flash_layer">
+          <div id="flash_inner">
+            <% if notice.present? %>
+              <%= render "shared/flash_message", level: "success", message: notice %>
+            <% end %>
+
+            <% if alert.present? %>
+              <%= render "shared/flash_message", level: "danger", message: alert %>
+            <% end %>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -23,7 +35,6 @@
       >
         <% title_display = stream_session.title.presence || booth.name %>
 
-        <%# 配信タイトル・説明 %>
         <div class="mb-2">
           <div class="fw-semibold"><%= title_display %></div>
           <% if stream_session.description.present? %>
@@ -58,7 +69,19 @@
 
   <% else %>
     <div class="viewer-stage-shell viewer-stage-shell-empty">
-      <div id="viewer_stage"></div>
+      <div id="viewer_stage">
+        <div id="viewer_flash_layer">
+          <div id="flash_inner">
+            <% if notice.present? %>
+              <%= render "shared/flash_message", level: "success", message: notice %>
+            <% end %>
+
+            <% if alert.present? %>
+              <%= render "shared/flash_message", level: "danger", message: alert %>
+            <% end %>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="viewer-legacy-offscreen" aria-hidden="true">
