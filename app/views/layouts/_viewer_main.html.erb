@@ -1,20 +1,5 @@
-<main class="flex-grow-1 pb-5">
-  <div class="container mt-3">
-    <%# ★常時存在する flash の箱（StoreBanGuard の turbo_stream target） %>
-    <div id="flash_inner">
-      <% if notice.present? %>
-        <%= render "shared/flash_message", level: "success", message: notice %>
-      <% end %>
-
-      <% if alert.present? %>
-        <%= render "shared/flash_message", level: "danger", message: alert %>
-      <% end %>
-    </div>
-  </div>
-
-  <div class="container my-4">
-    <%= yield %>
-  </div>
+<main class="flex-grow-1 viewer-main" data-controller="live-stage">
+  <%= yield %>
 </main>
 
 <%# --- Footer (viewer main) --- %>
