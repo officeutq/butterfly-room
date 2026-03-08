@@ -2,77 +2,82 @@
 
 <% live_like = booth.live? || booth.away? %>
 
-<% if stream_session.present? && live_like %>
-  <div
-    data-controller="presence-poll"
-    data-presence-poll-ping-url-value="<%= ping_stream_session_presence_path(stream_session) %>"
-    data-presence-poll-summary-url-value="<%= presence_summary_stream_session_path(stream_session) %>"
-    data-presence-poll-interval-ms-value="20000"
-  >
-    <% title_display = stream_session.title.presence || booth.name %>
+<div class="viewer-stream-state">
+  <% if stream_session.present? && live_like %>
+    <%= turbo_stream_from [stream_session, :pending_drink_orders] %>
+    <%= turbo_stream_from [stream_session, :comments] %>
+    <%= turbo_stream_from [stream_session, :viewer_stage] %>
 
-    <%# 配信タイトル・説明 %>
-    <div class="mb-2">
-      <div class="fw-semibold"><%= title_display %></div>
-      <% if stream_session.description.present? %>
-        <div class="text-muted small"><%= stream_session.description %></div>
-      <% end %>
+    <div class="viewer-stage-shell">
+      <div id="viewer_stage">
+        <%= render "stream_sessions/ivs_viewer", stream_session: stream_session %>
+      </div>
     </div>
 
-    <hr>
+    <div class="viewer-legacy-offscreen" aria-hidden="true">
+      <div
+        data-controller="presence-poll"
+        data-presence-poll-ping-url-value="<%= ping_stream_session_presence_path(stream_session) %>"
+        data-presence-poll-summary-url-value="<%= presence_summary_stream_session_path(stream_session) %>"
+        data-presence-poll-interval-ms-value="20000"
+      >
+        <% title_display = stream_session.title.presence || booth.name %>
 
-    viewers: <span data-presence-poll-target="count">-</span>
-  </div>
+        <%# 配信タイトル・説明 %>
+        <div class="mb-2">
+          <div class="fw-semibold"><%= title_display %></div>
+          <% if stream_session.description.present? %>
+            <div class="text-muted small"><%= stream_session.description %></div>
+          <% end %>
+        </div>
 
-  <hr>
+        <hr>
 
-  <%= render "booths/drink_menu",
-        booth: booth,
-        stream_session: stream_session,
-        drink_items: drink_items %>
+        viewers: <span data-presence-poll-target="count">-</span>
+      </div>
 
-  <hr>
+      <hr>
 
-  <%= turbo_stream_from [stream_session, :pending_drink_orders] %>
-  <%= render "stream_sessions/pending_drink_orders", stream_session: stream_session %>
+      <%= render "booths/drink_menu",
+            booth: booth,
+            stream_session: stream_session,
+            drink_items: drink_items %>
 
-  <hr>
+      <hr>
 
-  <%= turbo_stream_from [stream_session, :comments] %>
+      <%= render "stream_sessions/pending_drink_orders", stream_session: stream_session %>
 
-  <div id="comments">
-    <%= render partial: "comments/comment", collection: (comments || []), as: :comment %>
-  </div>
+      <hr>
 
-  <%= render "stream_sessions/comments/form", stream_session: stream_session %>
+      <div id="comments">
+        <%= render partial: "comments/comment", collection: (comments || []), as: :comment %>
+      </div>
 
-  <hr>
+      <%= render "stream_sessions/comments/form", stream_session: stream_session %>
+    </div>
 
-  <%= turbo_stream_from [stream_session, :viewer_stage] %>
+  <% else %>
+    <div class="viewer-stage-shell viewer-stage-shell-empty">
+      <div id="viewer_stage"></div>
+    </div>
 
-  <div id="viewer_stage">
-    <%= render "stream_sessions/ivs_viewer", stream_session: stream_session %>
-  </div>
+    <div class="viewer-legacy-offscreen" aria-hidden="true">
+      <div class="text-muted">現在配信していません</div>
 
-<% else %>
-  <div class="text-muted">現在配信していません</div>
+      <hr>
 
-  <hr>
+      <%= render "booths/drink_menu",
+            booth: booth,
+            stream_session: stream_session,
+            drink_items: drink_items %>
 
-  <%= render "booths/drink_menu",
-        booth: booth,
-        stream_session: stream_session,
-        drink_items: drink_items %>
+      <hr>
 
-  <hr>
+      <div class="text-muted">配信中のみ表示されます</div>
 
-  <div class="text-muted">配信中のみ表示されます</div>
+      <hr>
 
-  <hr>
-
-  <p>配信中のみコメントできます</p>
-
-  <hr>
-
-  <div id="viewer_stage"></div>
-<% end %>
+      <p>配信中のみコメントできます</p>
+    </div>
+  <% end %>
+</div>

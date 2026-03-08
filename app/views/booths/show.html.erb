@@ -2,29 +2,35 @@
   <meta name="turbo-cache-control" content="no-cache">
 <% end %>
 
-<h1>Public Booth#show (stub)</h1>
+<div class="viewer-page">
+  <div class="viewer-legacy-offscreen" aria-hidden="true">
+    <h1>Public Booth#show (stub)</h1>
 
-<p>booth_id: <%= @booth.id %></p>
+    <p>booth_id: <%= @booth.id %></p>
 
-<%# ★お気に入りボタン（stream_state とは分離して固定DOM） %>
-<% if user_signed_in? %>
-  <%= render "favorites/booths/button_booth_show", booth: @booth, favorited: @booth_favorited %>
-<% end %>
+    <%# ★お気に入りボタン（stream_state とは分離して固定DOM） %>
+    <% if user_signed_in? %>
+      <%= render "favorites/booths/button_booth_show", booth: @booth, favorited: @booth_favorited %>
+    <% end %>
+  </div>
 
-<%# ★booth単位で常時購読（開始/終了/状態変化を自動反映） %>
-<%= turbo_stream_from [@booth, :stream_state] %>
+  <%# ★booth単位で常時購読（開始/終了/状態変化を自動反映） %>
+  <%= turbo_stream_from [@booth, :stream_state] %>
 
-<%# ★箱（wrapper）は show 側に固定。idを絶対に消さない %>
-<div id="stream_state">
-  <%= render "booths/stream_state",
-        booth: @booth,
-        stream_session: @stream_session,
-        comments: @comments,
-        drink_items: @drink_items %>
-</div>
+  <%# ★箱（wrapper）は show 側に固定。idを絶対に消さない %>
+  <div id="stream_state">
+    <%= render "booths/stream_state",
+          booth: @booth,
+          stream_session: @stream_session,
+          comments: @comments,
+          drink_items: @drink_items %>
+  </div>
 
-<hr>
+  <div class="viewer-legacy-offscreen" aria-hidden="true">
+    <hr>
 
-<div class="d-flex justify-content mb-3">
-  <%= link_to "退室", root_path, class: "btn btn-outline-secondary" %>
+    <div class="d-flex justify-content mb-3">
+      <%= link_to "退室", root_path, class: "btn btn-outline-secondary" %>
+    </div>
+  </div>
 </div>
