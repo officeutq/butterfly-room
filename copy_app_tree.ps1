@@ -48,7 +48,7 @@ $Root = (Get-Location).Path
 $Targets = @("app", "config")
 
 # 出力したい拡張子（必要に応じて追加）
-$Extensions = @(".rb", ".js", ".erb", ".yml")
+$Extensions = @(".rb", ".js", ".erb", ".yml", ".scss")
 
 # 深さ制限（0=無制限）
 $MaxDepth = 6

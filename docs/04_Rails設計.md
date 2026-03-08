@@ -42,6 +42,11 @@ app/
         fonts/
     images/
     stylesheets/
+      components/
+        _layout.scss
+        _live.scss
+        _viewer.scss
+      application.scss
   controllers/
     admin/
       base_controller.rb
