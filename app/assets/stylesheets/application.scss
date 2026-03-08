@@ -623,3 +623,22 @@
 .app-header-inner {
   margin: 0 auto;
 }
+
+/* ------------------------------------------------------------
+   ivs viewer (#336)
+------------------------------------------------------------ */
+.ivs-viewer-stage {
+  position: relative;
+  width: 100%;
+  height: clamp(240px, 56vw, 720px);
+  overflow: hidden;
+  background: #000;
+}
+
+.ivs-viewer-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
