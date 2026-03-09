@@ -18,7 +18,36 @@
   <div id="viewer_overlay">
     <div class="viewer-overlay-ui" data-viewer-grid-debug="<%= Rails.env.development? ? "1" : "0" %>">
       <div class="viewer-overlay-meta-slot">
-        <span class="viewer-slot-label">meta</span>
+        <% title_display = stream_session.title.presence || stream_session.booth.name %>
+
+        <div
+          class="viewer-meta-panel"
+          data-controller="presence-poll"
+          data-presence-poll-ping-url-value="<%= ping_stream_session_presence_path(stream_session) %>"
+          data-presence-poll-summary-url-value="<%= presence_summary_stream_session_path(stream_session) %>"
+          data-presence-poll-interval-ms-value="20000"
+        >
+          <div class="viewer-meta-layout">
+            <div class="viewer-meta-main">
+              <div class="viewer-meta-main-row">
+                <div class="viewer-meta-title"><%= title_display %></div>
+              </div>
+
+              <% if stream_session.description.present? %>
+                <div class="viewer-meta-description">
+                  <%= simple_format(stream_session.description) %>
+                </div>
+              <% end %>
+            </div>
+
+            <div class="viewer-meta-side">
+              <div class="viewer-meta-viewer-count">
+                <i class="bi bi-people-fill" aria-hidden="true"></i>
+                <span data-presence-poll-target="count">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="viewer-overlay-main-row">
