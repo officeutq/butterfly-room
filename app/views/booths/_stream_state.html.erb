@@ -8,6 +8,13 @@
     <%= turbo_stream_from [stream_session, :comments] %>
     <%= turbo_stream_from [stream_session, :viewer_stage] %>
 
+    <% content_for :viewer_overlay_comment do %>
+      <%= render "booths/comment_section",
+            booth: booth,
+            stream_session: stream_session,
+            comments: comments %>
+    <% end %>
+
     <div class="viewer-stage-shell">
       <div id="viewer_stage">
         <%= render "stream_sessions/ivs_viewer", stream_session: stream_session %>
@@ -57,14 +64,6 @@
       <hr>
 
       <%= render "stream_sessions/pending_drink_orders", stream_session: stream_session %>
-
-      <hr>
-
-      <div id="comments">
-        <%= render partial: "comments/comment", collection: (comments || []), as: :comment %>
-      </div>
-
-      <%= render "stream_sessions/comments/form", stream_session: stream_session %>
     </div>
 
   <% else %>

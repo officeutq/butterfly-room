@@ -1,0 +1,11 @@
+<div id="viewer_comment_section">
+  <div class="viewer-comment-panel" data-controller="comment-panel">
+    <div id="comments" class="viewer-comment-list" data-comment-panel-target="list">
+      <%= render partial: "comments/comment", collection: (comments || []), as: :comment %>
+    </div>
+
+    <div class="viewer-comment-form">
+      <%= render "stream_sessions/comments/form", stream_session: stream_session %>
+    </div>
+  </div>
+</div>
