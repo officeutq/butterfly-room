@@ -70,7 +70,7 @@
 
       <div class="viewer-overlay-drink-action-row">
         <div class="viewer-overlay-drink-action-slot">
-          <span class="viewer-slot-label">drink action</span>
+          <%= yield :viewer_overlay_drink_action if content_for?(:viewer_overlay_drink_action) %>
         </div>
       </div>
     </div>
