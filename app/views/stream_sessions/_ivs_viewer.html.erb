@@ -33,7 +33,7 @@
 
       <div class="viewer-overlay-bottom-row">
         <div class="viewer-overlay-comment-slot">
-          <span class="viewer-slot-label">comment</span>
+          <%= yield :viewer_overlay_comment if content_for?(:viewer_overlay_comment) %>
         </div>
 
         <div class="viewer-overlay-ops-slot">
