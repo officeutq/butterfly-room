@@ -49,12 +49,29 @@
     <div id="live_overlay">
       <div class="live-overlay-ui" data-live-grid-debug="<%= Rails.env.development? ? "1" : "0" %>">
         <div class="live-overlay-meta-slot">
-          <div class="live-meta-panel d-none" data-ivs-publisher-target="metaPanel">
-            <turbo-frame id="stream_meta_display">
-              <%= render "cast/booths/stream_meta_display",
-                        booth: @booth,
-                        stream_session: @stream_session %>
-            </turbo-frame>
+          <div
+            class="live-meta-panel d-none"
+            data-controller="presence-poll"
+            data-ivs-publisher-target="metaPanel"
+            data-presence-poll-summary-url-value="<%= presence_summary_stream_session_path(@stream_session) %>"
+            data-presence-poll-interval-ms-value="20000"
+          >
+            <div class="live-meta-layout">
+              <div class="live-meta-main">
+                <turbo-frame id="stream_meta_display">
+                  <%= render "cast/booths/stream_meta_display",
+                            booth: @booth,
+                            stream_session: @stream_session %>
+                </turbo-frame>
+              </div>
+
+              <div class="live-meta-side">
+                <div class="live-meta-viewer-count">
+                  <i class="bi bi-people-fill" aria-hidden="true"></i>
+                  <span data-presence-poll-target="count">-</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
