@@ -27,7 +27,7 @@
         </div>
 
         <div class="viewer-overlay-drink-slot">
-          <span class="viewer-slot-label">drink</span>
+          <%= yield :viewer_overlay_drink if content_for?(:viewer_overlay_drink) %>
         </div>
       </div>
 
