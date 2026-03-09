@@ -25,6 +25,13 @@
       </div>
     <% end %>
 
+    <% content_for :viewer_overlay_drink_action do %>
+      <%= render "booths/drink_menu",
+            booth: booth,
+            stream_session: stream_session,
+            drink_items: drink_items %>
+    <% end %>
+
     <div class="viewer-stage-shell">
       <div id="viewer_stage">
         <%= render "stream_sessions/ivs_viewer", stream_session: stream_session %>
@@ -66,13 +73,6 @@
 
       <hr>
 
-      <%= render "booths/drink_menu",
-            booth: booth,
-            stream_session: stream_session,
-            drink_items: drink_items %>
-
-      <hr>
-
       <%= render "stream_sessions/pending_drink_orders", stream_session: stream_session %>
     </div>
 
@@ -95,13 +95,6 @@
 
     <div class="viewer-legacy-offscreen" aria-hidden="true">
       <div class="text-muted">現在配信していません</div>
-
-      <hr>
-
-      <%= render "booths/drink_menu",
-            booth: booth,
-            stream_session: stream_session,
-            drink_items: drink_items %>
 
       <hr>
 

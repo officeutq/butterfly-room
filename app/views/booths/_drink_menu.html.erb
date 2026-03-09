@@ -1,35 +1,33 @@
 <%# locals: booth:, stream_session:, drink_items:, error_message: (optional) %>
 
 <turbo-frame id="drink_menu">
-  <% if local_assigns[:error_message].present? %>
-    <div class="alert alert-danger py-1 mb-2"><%= error_message %></div>
-  <% end %>
-
-  <h2>ドリンクメニュー（enabledのみ）</h2>
-
   <% live_like = booth.live? || booth.away? %>
 
-  <% if stream_session.present? && live_like %>
-    <% if (drink_items || []).any? %>
-      <ul class="mb-0">
-        <% (drink_items || []).each do |item| %>
-          <li class="mb-2">
-            <%= item.name %>（<%= item.price_points %>pt）
+  <% if stream_session.present? && live_like && (drink_items || []).any? %>
+    <div class="viewer-drink-action-bar">
+      <% if local_assigns[:error_message].present? %>
+        <div class="viewer-drink-action-error" role="alert">
+          <%= error_message %>
+        </div>
+      <% end %>
 
-            <%= form_with url: stream_session_drink_orders_path(stream_session),
-                          scope: :drink_order,
-                          method: :post,
-                          class: "d-inline" do |f| %>
-              <%= f.hidden_field :drink_item_id, value: item.id %>
-              <%= f.submit "送信", class: "btn btn-sm btn-primary ms-2" %>
-            <% end %>
-          </li>
+      <div class="viewer-drink-action-list" role="group" aria-label="ドリンク送信">
+        <% (drink_items || []).each do |item| %>
+          <%= form_with url: stream_session_drink_orders_path(stream_session),
+                        scope: :drink_order,
+                        method: :post,
+                        class: "viewer-drink-action-form" do |f| %>
+            <%= f.hidden_field :drink_item_id, value: item.id %>
+            <%= f.submit "#{item.name}(#{item.price_points}pt)", class: "viewer-drink-action-btn" %>
+          <% end %>
         <% end %>
-      </ul>
-    <% else %>
-      <p class="mb-0">現在、表示できるドリンクがありません</p>
-    <% end %>
-  <% else %>
-    <p class="mb-0">配信中のみドリンク送信できます</p>
+      </div>
+    </div>
+  <% elsif local_assigns[:error_message].present? %>
+    <div class="viewer-drink-action-bar">
+      <div class="viewer-drink-action-error" role="alert">
+        <%= error_message %>
+      </div>
+    </div>
   <% end %>
 </turbo-frame>
