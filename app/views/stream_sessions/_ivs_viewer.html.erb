@@ -37,7 +37,34 @@
         </div>
 
         <div class="viewer-overlay-ops-slot">
-          <span class="viewer-slot-label">ops</span>
+          <div class="viewer-ops-panel">
+            <div class="viewer-ops-buttons">
+              <button
+                type="button"
+                class="viewer-ops-btn"
+                data-action="ivs-viewer#toggleMute"
+                data-ivs-viewer-target="muteButton"
+                aria-label="ミュートを切り替える"
+                title="ミュート切替"
+              >
+                <i
+                  class="bi bi-volume-mute-fill"
+                  data-ivs-viewer-target="muteIcon"
+                  aria-hidden="true"
+                ></i>
+              </button>
+
+              <div
+                class="viewer-mute-hint"
+                data-ivs-viewer-target="muteHint"
+                style="display: none;"
+              >
+                タップで音を出せます
+              </div>
+
+              <div class="viewer-error-text" data-ivs-viewer-target="error"></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -56,29 +83,7 @@
         <span class="ms-2 text-muted small" data-ivs-viewer-target="state">idle</span>
       </div>
 
-      <div class="card-body">
-        <div class="position-absolute top-0 start-0 m-2">
-          <button
-            type="button"
-            class="btn btn-dark btn-sm"
-            data-action="ivs-viewer#toggleMute"
-            data-ivs-viewer-target="muteButton"
-            aria-label="ミュート切替"
-          >
-            🔇
-          </button>
-
-          <div
-            class="small mt-1 text-white-50"
-            data-ivs-viewer-target="muteHint"
-            style="display: none;"
-          >
-            タップで音を出せます
-          </div>
-        </div>
-
-        <div class="mt-2 text-danger small" data-ivs-viewer-target="error"></div>
-      </div>
+      <div class="card-body"></div>
     </div>
   </div>
 </div>
