@@ -1,18 +1,12 @@
 <%# locals: booth:, stream_session: %>
 <% title_display = stream_session.title.presence || booth.name %>
 
-<div class="live-meta-panel-header">配信タイトル / 説明</div>
-
-<div class="live-meta-panel-body">
-  <div class="live-meta-block">
-    <div class="live-meta-label">タイトル</div>
-    <div class="live-meta-title"><%= title_display %></div>
-  </div>
-
-  <% if stream_session.description.present? %>
-    <div class="live-meta-block">
-      <div class="live-meta-label">説明</div>
-      <div class="live-meta-description"><%= simple_format(stream_session.description) %></div>
-    </div>
-  <% end %>
+<div class="live-meta-main-row">
+  <div class="live-meta-title"><%= title_display %></div>
 </div>
+
+<% if stream_session.description.present? %>
+  <div class="live-meta-description">
+    <%= simple_format(stream_session.description) %>
+  </div>
+<% end %>
