@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["video", "error", "state", "muteButton", "muteHint"]
+  static targets = ["video", "error", "state", "muteButton", "muteIcon", "muteHint"]
   static values = {
     tokenUrl: String, // /stream_sessions/:id/ivs_participant_tokens
   }
@@ -93,7 +93,6 @@ export default class extends Controller {
     }
   }
 
-  // 🔇/🔊 トグル（常時表示）
   async toggleMute() {
     if (!this.hasVideoTarget) return
     const v = this.videoTarget
@@ -223,8 +222,21 @@ export default class extends Controller {
     const v = this.videoTarget
 
     if (this.hasMuteButtonTarget) {
-      // muted=true なら「🔇」、muted=false なら「🔊」
-      this.muteButtonTarget.textContent = v.muted ? "🔇" : "🔊"
+      this.muteButtonTarget.setAttribute(
+        "aria-label",
+        v.muted ? "ミュートを解除する" : "ミュートにする"
+      )
+      this.muteButtonTarget.setAttribute(
+        "title",
+        v.muted ? "音声OFF" : "音声ON"
+      )
+      this.muteButtonTarget.classList.toggle("is-off", v.muted)
+    }
+
+    if (this.hasMuteIconTarget) {
+      this.muteIconTarget.className = v.muted
+        ? "bi bi-volume-mute-fill"
+        : "bi bi-volume-off-fill"
     }
 
     if (this.hasMuteHintTarget) {
