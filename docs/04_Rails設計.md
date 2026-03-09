@@ -254,6 +254,7 @@ app/
         edit.html.erb
         index.html.erb
     booths/
+      _comment_section.html.erb
       _drink_menu.html.erb
       _enter_modal.html.erb
       _stream_state.html.erb
