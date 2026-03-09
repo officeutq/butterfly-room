@@ -50,32 +50,7 @@
       </div>
     </div>
 
-    <div class="viewer-legacy-offscreen" aria-hidden="true">
-      <div
-        data-controller="presence-poll"
-        data-presence-poll-ping-url-value="<%= ping_stream_session_presence_path(stream_session) %>"
-        data-presence-poll-summary-url-value="<%= presence_summary_stream_session_path(stream_session) %>"
-        data-presence-poll-interval-ms-value="20000"
-      >
-        <% title_display = stream_session.title.presence || booth.name %>
-
-        <div class="mb-2">
-          <div class="fw-semibold"><%= title_display %></div>
-          <% if stream_session.description.present? %>
-            <div class="text-muted small"><%= stream_session.description %></div>
-          <% end %>
-        </div>
-
-        <hr>
-
-        viewers: <span data-presence-poll-target="count">-</span>
-      </div>
-
-      <hr>
-
-      <%= render "stream_sessions/pending_drink_orders", stream_session: stream_session %>
-    </div>
-
+    <div class="viewer-legacy-offscreen" aria-hidden="true"></div>
   <% else %>
     <div class="viewer-stage-shell viewer-stage-shell-empty">
       <div id="viewer_stage">
