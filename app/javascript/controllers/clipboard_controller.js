@@ -7,14 +7,15 @@ export default class extends Controller {
     const text = this.element.dataset.clipboardText
     if (!text) return
 
-    const original = this.element.textContent
+    const successMessage = this.element.dataset.clipboardSuccessMessage || "コピーしました"
+    const failureMessage = this.element.dataset.clipboardFailureMessage || "コピー失敗"
+
     this.element.disabled = true
 
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(text)
       } else {
-        // Fallback: older browsers / insecure context
         const ta = document.createElement("textarea")
         ta.value = text
         ta.setAttribute("readonly", "")
@@ -26,14 +27,35 @@ export default class extends Controller {
         document.body.removeChild(ta)
       }
 
-      this.element.textContent = "コピーしました"
+      this.showFlash("success", successMessage)
     } catch (_e) {
-      this.element.textContent = "コピー失敗"
+      this.showFlash("danger", failureMessage)
     } finally {
       window.setTimeout(() => {
-        this.element.textContent = original
         this.element.disabled = false
-      }, 1500)
+      }, 300)
     }
+  }
+
+  showFlash(level, message) {
+    const flashInner = document.getElementById("flash_inner")
+    if (!flashInner) return
+
+    const wrapper = document.createElement("div")
+    wrapper.innerHTML = `
+      <div class="alert alert-${level} alert-dismissible fade show" role="alert">
+        ${this.escapeHtml(message)}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="閉じる"></button>
+      </div>
+    `.trim()
+
+    const flashElement = wrapper.firstElementChild
+    flashInner.replaceChildren(flashElement)
+  }
+
+  escapeHtml(value) {
+    const div = document.createElement("div")
+    div.textContent = value
+    return div.innerHTML
   }
 }
