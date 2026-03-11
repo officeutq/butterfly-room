@@ -47,13 +47,13 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  test "standby: finish ends session and redirects to summary" do
+  test "standby: finish ends session and redirects to result" do
     session = StreamSessions::StartService.new(booth: @booth, actor: @cast).call
     assert @booth.reload.standby?
 
     post finish_cast_stream_session_path(session)
     assert_response :redirect
-    assert_redirected_to cast_booth_path(@booth)
+    assert_redirected_to cast_stream_session_path(session)
 
     @booth.reload
     assert @booth.offline?

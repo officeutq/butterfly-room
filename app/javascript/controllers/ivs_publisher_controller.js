@@ -258,8 +258,17 @@ export default class extends Controller {
       this._syncUI()
 
       if (!skipFinish && this.finishUrlValue) {
-        await this._postFinish()
-        window.location.reload()
+        const redirectUrl = await this._postFinish()
+
+        if (redirectUrl) {
+          if (window.Turbo?.visit) {
+            window.Turbo.visit(redirectUrl)
+          } else {
+            window.location.assign(redirectUrl)
+          }
+        } else {
+          window.location.reload()
+        }
       }
     }
   }
@@ -845,6 +854,8 @@ export default class extends Controller {
     })
 
     if (!resp.ok) throw new Error(`finish_failed(${resp.status})`)
+
+    return resp.url
   }
 
   // -------------------------
