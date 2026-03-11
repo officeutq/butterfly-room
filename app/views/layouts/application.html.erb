@@ -26,11 +26,11 @@
     ></script>
   </head>
 
-  <body class="d-flex flex-column min-vh-100">
-    <%= render "layouts/header" %>
+  <% cast_live_layout = (controller_path == "cast/booths" && action_name == "live") %>
+  <% viewer_layout = (controller_path == "booths" && action_name == "show") %>
 
-    <% cast_live_layout = (controller_path == "cast/booths" && action_name == "live") %>
-    <% viewer_layout = (controller_path == "booths" && action_name == "show") %>
+  <body class="<%= [ "d-flex", "flex-column", "min-vh-100", ("cast-live-layout" if cast_live_layout), ("viewer-layout" if viewer_layout) ].compact.join(" ") %>">
+    <%= render "layouts/header" %>
 
     <% if cast_live_layout %>
       <%= render "layouts/cast_live_main" %>
