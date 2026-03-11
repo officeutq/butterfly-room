@@ -1,0 +1,82 @@
+<h1>配信リザルト</h1>
+
+<div class="row g-4">
+  <div class="col-12 col-lg-6">
+    <div class="card h-100" data-bs-theme="light">
+      <div class="card-header">
+        配信情報
+      </div>
+      <div class="card-body">
+        <div class="d-flex flex-column gap-2">
+          <div><span class="text-body-secondary">配信名：</span><%= @stream_session.title.presence || @booth.name %></div>
+          <div><span class="text-body-secondary">配信開始：</span><%= l(@started_at, format: :long) if @started_at.present? %></div>
+          <div><span class="text-body-secondary">配信終了：</span><%= l(@ended_at, format: :long) if @ended_at.present? %></div>
+          <div>
+            <span class="text-body-secondary">配信時間：</span>
+            <% hours = @duration_seconds / 3600 %>
+            <% minutes = (@duration_seconds % 3600) / 60 %>
+            <% seconds = @duration_seconds % 60 %>
+            <%= format("%02d:%02d:%02d", hours, minutes, seconds) %>
+          </div>
+          <div><span class="text-body-secondary">コメント数：</span><%= @comment_count %></div>
+          <div><span class="text-body-secondary">ユニーク視聴者：</span><%= @viewer_count %></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card h-100" data-bs-theme="light">
+      <div class="card-header">
+        ドリンク情報
+      </div>
+
+      <ul class="list-group list-group-flush">
+
+        <li class="list-group-item">
+          <h5 class="card-title">総数</h5>
+          <% total_points = @consumed_points + @refunded_points %>
+          <% total_avg_points =
+              if @drink_order_count.positive?
+                (total_points.to_f / @drink_order_count).round(1)
+              else
+                0
+              end %>
+
+          <div class="d-flex flex-column gap-2">
+            <div><span class="text-body-secondary">ドリンク数：</span><%= @drink_order_count %></div>
+            <div><span class="text-body-secondary">ポイント：</span><%= number_with_delimiter(total_points) %>pt</div>
+            <div>
+              <span class="text-body-secondary">平均：</span>
+              <%= number_with_precision(total_avg_points, precision: 1, strip_insignificant_zeros: true) %>pt
+            </div>
+          </div>
+        </li>
+
+        <li class="list-group-item">
+          <h5 class="card-title">消化</h5>
+          <div class="d-flex flex-column gap-2">
+            <div><span class="text-body-secondary">ドリンク数：</span><%= @consumed_drink_count %></div>
+            <div><span class="text-body-secondary">ポイント：</span><%= number_with_delimiter(@consumed_points) %>pt</div>
+            <div>
+              <span class="text-body-secondary">平均：</span>
+              <%= number_with_precision(@avg_consumed_points, precision: 1, strip_insignificant_zeros: true) %>pt
+            </div>
+          </div>
+        </li>
+
+        <li class="list-group-item">
+          <h5 class="card-title">返却</h5>
+          <div class="d-flex flex-column gap-2">
+            <div><span class="text-body-secondary">ドリンク数：</span><%= @consumed_drink_count %></div>
+            <div><span class="text-body-secondary">ポイント：</span><%= number_with_delimiter(@consumed_points) %>pt</div>
+            <div>
+              <span class="text-body-secondary">平均：</span>
+              <%= number_with_precision(@avg_consumed_points, precision: 1, strip_insignificant_zeros: true) %>pt
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
