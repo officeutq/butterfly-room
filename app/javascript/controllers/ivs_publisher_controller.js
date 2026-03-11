@@ -131,8 +131,6 @@ export default class extends Controller {
     this._setState("starting")
 
     try {
-      this._logOrientationInputs("broadcast:start")
-
       // standby preview-only が動いていたら必ず止めてから取り直す
       if (this._previewOnly && this._media) {
         try {
@@ -145,13 +143,6 @@ export default class extends Controller {
 
       // 1) getUserMedia（preview用 + audio用）
       const videoConstraints = this._buildCameraVideoConstraints()
-      console.log("[ivs-publisher] camera constraints", {
-        label: "broadcast",
-        portraitByViewport: this._isPortraitViewport(),
-        forcedLandscape: true,
-        requestedConstraints: videoConstraints,
-      })
-
       this._media = await navigator.mediaDevices.getUserMedia({
         video: videoConstraints,
         audio: true,
@@ -161,13 +152,11 @@ export default class extends Controller {
       this._audioTrack = this._media.getAudioTracks()[0] || null
 
       this._captureMeasuredVideoTrack(this._cameraVideoTrack)
-      this._logMeasuredVideoTrack("broadcast", this._cameraVideoTrack, videoConstraints)
       this._syncCanvasResolutionToMeasured()
 
       // preview（ミラーは video 要素だけ）
       this.previewTarget.srcObject = this._media
       try { await this.previewTarget.play() } catch (_) {}
-      this._logPreviewMetrics("broadcast")
 
       // 2) publisher token
       const token = await this._fetchParticipantToken("publisher")
@@ -194,8 +183,6 @@ export default class extends Controller {
         this._publishedVideoTrack = this._cameraVideoTrack
         this._publishedVideoSource = this._cameraVideoTrack ? "camera" : null
       }
-
-      this._logPublishSourceTrack("broadcast:before-join")
 
       this._strategy = {
         stageStreamsToPublish: () => {
@@ -427,7 +414,6 @@ export default class extends Controller {
       this._currentVideoStageStream = this._canvasStageStream
       this._publishedVideoTrack = this._canvasVideoTrack
       this._publishedVideoSource = "canvas"
-      this._logPublishSourceTrack("switch:canvas")
       await this._refreshStageStrategy()
       return
     }
@@ -440,7 +426,6 @@ export default class extends Controller {
       this._currentVideoStageStream = this._cameraStageStream
       this._publishedVideoTrack = this._cameraVideoTrack
       this._publishedVideoSource = "camera"
-      this._logPublishSourceTrack("switch:camera")
       await this._refreshStageStrategy()
       this._stopCanvasRenderLoop()
       return
@@ -480,13 +465,6 @@ export default class extends Controller {
 
     const { LocalStageStream } = window.IVSBroadcastClient || {}
     this._canvasStageStream = (track && LocalStageStream) ? new LocalStageStream(track) : null
-
-    console.log("[ivs-publisher] canvas publish track prepared", {
-      canvasWidth: this.canvasTarget?.width ?? null,
-      canvasHeight: this.canvasTarget?.height ?? null,
-      canvasTrackSettings: this._safeTrackSettings(track),
-      measuredVideo: this._measuredVideo,
-    })
   }
 
   _captureMeasuredVideoTrack(track) {
@@ -525,12 +503,6 @@ export default class extends Controller {
 
     if (this.canvasTarget.width !== width) this.canvasTarget.width = width
     if (this.canvasTarget.height !== height) this.canvasTarget.height = height
-
-    console.log("[ivs-publisher] canvas resolution synced", {
-      canvasWidth: this.canvasTarget.width,
-      canvasHeight: this.canvasTarget.height,
-      measuredVideo: this._measuredVideo,
-    })
   }
 
   _applyMicTrackEnabled() {
@@ -646,16 +618,7 @@ export default class extends Controller {
     this._clearError()
 
     try {
-      this._logOrientationInputs("preview-only:start")
-
       const videoConstraints = this._buildCameraVideoConstraints()
-      console.log("[ivs-publisher] camera constraints", {
-        label: "preview-only",
-        portraitByViewport: this._isPortraitViewport(),
-        forcedLandscape: true,
-        requestedConstraints: videoConstraints,
-      })
-
       const stream = await navigator.mediaDevices.getUserMedia({
         video: videoConstraints,
         audio: false,
@@ -663,7 +626,6 @@ export default class extends Controller {
 
       const previewTrack = stream.getVideoTracks()[0] || null
       this._captureMeasuredVideoTrack(previewTrack)
-      this._logMeasuredVideoTrack("preview-only", previewTrack, videoConstraints)
       this._syncCanvasResolutionToMeasured()
 
       this._media = stream
@@ -671,7 +633,6 @@ export default class extends Controller {
 
       this.previewTarget.srcObject = stream
       try { await this.previewTarget.play() } catch (_) {}
-      this._logPreviewMetrics("preview-only")
     } catch (e) {
       this._setError(this._humanizeError(e))
       try {
@@ -703,126 +664,6 @@ export default class extends Controller {
         ideal: maxHeight,
         max: maxHeight,
       },
-    }
-  }
-
-  _isPortraitViewport() {
-    const vv = window.visualViewport
-    const width = vv?.width || window.innerWidth || screen?.width || 0
-    const height = vv?.height || window.innerHeight || screen?.height || 0
-    return height >= width
-  }
-
-  _logMeasuredVideoTrack(label, track, requestedConstraints) {
-    if (!track) {
-      console.warn(`[ivs-publisher] ${label}: video track is not available`, {
-        requestedConstraints,
-      })
-      return
-    }
-
-    const settings = typeof track.getSettings === "function" ? track.getSettings() : {}
-    const constraints = typeof track.getConstraints === "function" ? track.getConstraints() : {}
-
-    console.log(`[ivs-publisher] ${label}: camera video acquired`, {
-      requestedConstraints,
-      appliedConstraints: constraints,
-      measured: {
-        width: settings.width ?? null,
-        height: settings.height ?? null,
-        aspectRatio: settings.aspectRatio ?? null,
-        facingMode: settings.facingMode ?? null,
-        deviceId: settings.deviceId ?? null,
-      },
-    })
-  }
-
-  _logOrientationInputs(label) {
-    const vv = window.visualViewport
-    const orientation = window.screen?.orientation || null
-
-    console.log("[ivs-publisher] orientation inputs", {
-      label,
-      portraitByViewport: this._isPortraitViewport(),
-      visualViewport: {
-        width: vv?.width ?? null,
-        height: vv?.height ?? null,
-        scale: vv?.scale ?? null,
-        offsetTop: vv?.offsetTop ?? null,
-        offsetLeft: vv?.offsetLeft ?? null,
-      },
-      windowMetrics: {
-        innerWidth: window.innerWidth ?? null,
-        innerHeight: window.innerHeight ?? null,
-        outerWidth: window.outerWidth ?? null,
-        outerHeight: window.outerHeight ?? null,
-      },
-      screenMetrics: {
-        width: window.screen?.width ?? null,
-        height: window.screen?.height ?? null,
-        availWidth: window.screen?.availWidth ?? null,
-        availHeight: window.screen?.availHeight ?? null,
-      },
-      screenOrientation: {
-        type: orientation?.type ?? null,
-        angle: orientation?.angle ?? null,
-      },
-    })
-  }
-
-  _logPreviewMetrics(label) {
-    if (!this.hasPreviewTarget) return
-
-    const rect = this.previewTarget.getBoundingClientRect()
-
-    console.log("[ivs-publisher] preview video metrics", {
-      label,
-      video: {
-        videoWidth: this.previewTarget.videoWidth ?? null,
-        videoHeight: this.previewTarget.videoHeight ?? null,
-        readyState: this.previewTarget.readyState ?? null,
-      },
-      layout: {
-        clientWidth: this.previewTarget.clientWidth ?? null,
-        clientHeight: this.previewTarget.clientHeight ?? null,
-        rectWidth: rect?.width ?? null,
-        rectHeight: rect?.height ?? null,
-        rectTop: rect?.top ?? null,
-        rectLeft: rect?.left ?? null,
-      },
-      measuredVideo: this._measuredVideo,
-      publishedVideoSource: this._publishedVideoSource,
-    })
-  }
-
-  _logPublishSourceTrack(label) {
-    console.log("[ivs-publisher] publish source track", {
-      label,
-      publishedVideoSource: this._publishedVideoSource,
-      currentVideoTrack: this._safeTrackSettings(this._publishedVideoTrack),
-      cameraVideoTrack: this._safeTrackSettings(this._cameraVideoTrack),
-      canvasVideoTrack: this._safeTrackSettings(this._canvasVideoTrack),
-      measuredVideo: this._measuredVideo,
-      canvasSize: this.hasCanvasTarget
-        ? {
-            width: this.canvasTarget.width ?? null,
-            height: this.canvasTarget.height ?? null,
-          }
-        : null,
-    })
-  }
-
-  _safeTrackSettings(track) {
-    if (!track || typeof track.getSettings !== "function") return null
-
-    const settings = track.getSettings() || {}
-    return {
-      width: settings.width ?? null,
-      height: settings.height ?? null,
-      aspectRatio: settings.aspectRatio ?? null,
-      facingMode: settings.facingMode ?? null,
-      deviceId: settings.deviceId ?? null,
-      frameRate: settings.frameRate ?? null,
     }
   }
 
