@@ -274,6 +274,7 @@ app/
         _meta_modal.html.erb
         _pending_drink_orders.html.erb
         meta_display.html.erb
+        show.html.erb
     cast_invitations/
       show.html.erb
     casts/
