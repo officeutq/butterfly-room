@@ -1,65 +1,102 @@
 <h1>紹介コード管理</h1>
 
-<div class="mb-3 d-flex gap-2">
-  <%= link_to "新規作成", new_system_admin_referral_code_path, class: "btn btn-primary" %>
-  <%= link_to "ダッシュボードへ戻る", dashboard_path, class: "btn btn-outline-secondary" %>
-</div>
-
-<table class="table table-sm align-middle">
-  <thead>
-    <tr>
-      <th>Code</th>
-      <th>Label</th>
-      <th>Expires</th>
-      <th>Status</th>
-      <th></th>
-    </tr>
-  </thead>
-
-  <tbody>
+<% if @referral_codes.any? %>
+  <div class="referral-codes-list">
     <% @referral_codes.each do |rc| %>
-      <tr class="<%= "text-muted" if !rc.enabled? || rc.expired? %>">
-        <td class="fw-semibold"><%= rc.code %></td>
-        <td><%= rc.label.presence || "-" %></td>
-        <td class="text-muted small">
-          <%= rc.expires_at.present? ? l(rc.expires_at) : "-" %>
-        </td>
+      <% referral_url = stores_new_registration_url(ref: rc.code) %>
 
-        <td>
-          <% if rc.expired? %>
-            <span class="badge text-bg-warning">expired</span>
-          <% end %>
+      <div class="card referral-code-card <%= "text-muted" if !rc.enabled? || rc.expired? %>">
+        <div class="card-body">
+          <div class="referral-code-row">
+            <div class="referral-code-label">code</div>
+            <div class="referral-code-value fw-semibold"><%= rc.code %></div>
 
-          <% if rc.enabled? %>
-            <span class="badge text-bg-success">enabled</span>
-          <% else %>
-            <span class="badge text-bg-secondary">disabled</span>
-          <% end %>
+            <div class="referral-code-inline-actions">
+              <%= link_to "編集", edit_system_admin_referral_code_path(rc), class: "btn btn-outline-secondary btn-sm" %>
 
-          <% unless rc.usable? %>
-            <span class="badge text-bg-danger ms-1">登録不可</span>
-          <% end %>
-        </td>
+              <% if rc.enabled? %>
+                <%= button_to "無効化",
+                      system_admin_referral_code_path(rc),
+                      method: :patch,
+                      params: { referral_code: { enabled: false } },
+                      class: "btn btn-outline-danger btn-sm",
+                      data: { turbo_confirm: "この紹介コードを無効化します。よろしいですか？" } %>
+              <% else %>
+                <%= button_to "有効化",
+                      system_admin_referral_code_path(rc),
+                      method: :patch,
+                      params: { referral_code: { enabled: true } },
+                      class: "btn btn-outline-success btn-sm" %>
+              <% end %>
+            </div>
+          </div>
 
-        <td class="d-flex justify-content-end gap-2">
-          <%= link_to "編集", edit_system_admin_referral_code_path(rc), class: "btn btn-outline-secondary btn-sm" %>
+          <div class="referral-code-row">
+            <div class="referral-code-label">label</div>
+            <div class="referral-code-value"><%= rc.label.presence || "-" %></div>
+          </div>
 
-          <% if rc.enabled? %>
-            <%= button_to "無効化",
-                  system_admin_referral_code_path(rc),
-                  method: :patch,
-                  params: { referral_code: { enabled: false } },
-                  class: "btn btn-outline-danger btn-sm",
-                  data: { turbo_confirm: "この紹介コードを無効化します。よろしいですか？" } %>
-          <% else %>
-            <%= button_to "有効化",
-                  system_admin_referral_code_path(rc),
-                  method: :patch,
-                  params: { referral_code: { enabled: true } },
-                  class: "btn btn-outline-success btn-sm" %>
-          <% end %>
-        </td>
-      </tr>
+          <div class="referral-code-row">
+            <div class="referral-code-label">紹介URL</div>
+
+            <div class="referral-code-value">
+              <div class="referral-code-url-group">
+                <code class="referral-code-url-inline"><%= referral_url %></code>
+
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary btn-sm referral-code-copy-btn"
+                  data-controller="clipboard"
+                  data-action="click->clipboard#copy"
+                  data-clipboard-text="<%= referral_url %>"
+                  data-clipboard-success-message="紹介URLをコピーしました"
+                  data-clipboard-failure-message="URLのコピーに失敗しました"
+                  aria-label="紹介URLをコピー"
+                  title="紹介URLをコピー"
+                >
+                  <i class="bi bi-copy" aria-hidden="true"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">status</div>
+            <div class="referral-code-value">
+              <div class="d-flex flex-wrap gap-2">
+                <% if rc.expired? %>
+                  <span class="badge text-bg-warning">expired</span>
+                <% end %>
+
+                <% if rc.enabled? %>
+                  <span class="badge text-bg-success">enabled</span>
+                <% else %>
+                  <span class="badge text-bg-secondary">disabled</span>
+                <% end %>
+
+                <% unless rc.usable? %>
+                  <span class="badge text-bg-danger">登録不可</span>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">expires_at</div>
+            <div class="referral-code-value">
+              <%= rc.expires_at.present? ? l(rc.expires_at) : "-" %>
+            </div>
+          </div>
+        </div>
+      </div>
     <% end %>
-  </tbody>
-</table>
+  </div>
+<% else %>
+  <div class="alert alert-secondary">
+    紹介コードはまだ作成されていません。
+  </div>
+<% end %>
+
+<div class="mt-3">
+  <%= link_to "新規作成", new_system_admin_referral_code_path, class: "btn btn-primary" %>
+</div>
