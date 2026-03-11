@@ -1,16 +1,10 @@
-<%# locals: booth:, stream_session:, drink_items:, error_message: (optional) %>
+<%# locals: booth:, stream_session:, drink_items: %>
 
 <turbo-frame id="drink_menu">
   <% live_like = booth.live? || booth.away? %>
 
   <% if stream_session.present? && live_like && (drink_items || []).any? %>
     <div class="viewer-drink-action-bar">
-      <% if local_assigns[:error_message].present? %>
-        <div class="viewer-drink-action-error" role="alert">
-          <%= error_message %>
-        </div>
-      <% end %>
-
       <div class="viewer-drink-action-list" role="group" aria-label="ドリンク送信">
         <% (drink_items || []).each do |item| %>
           <%= form_with url: stream_session_drink_orders_path(stream_session),
@@ -21,12 +15,6 @@
             <%= f.submit "#{item.name}(#{item.price_points}pt)", class: "viewer-drink-action-btn" %>
           <% end %>
         <% end %>
-      </div>
-    </div>
-  <% elsif local_assigns[:error_message].present? %>
-    <div class="viewer-drink-action-bar">
-      <div class="viewer-drink-action-error" role="alert">
-        <%= error_message %>
       </div>
     </div>
   <% end %>
