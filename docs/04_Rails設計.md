@@ -45,6 +45,11 @@ app/
       components/
         _layout.scss
         _live.scss
+        _live_comment.scss
+        _live_drink.scss
+        _live_layout.scss
+        _live_meta.scss
+        _live_ops.scss
         _viewer.scss
       application.scss
   controllers/
