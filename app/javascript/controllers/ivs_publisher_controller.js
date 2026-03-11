@@ -148,6 +148,7 @@ export default class extends Controller {
       console.log("[ivs-publisher] camera constraints", {
         label: "broadcast",
         portraitByViewport: this._isPortraitViewport(),
+        forcedLandscape: true,
         requestedConstraints: videoConstraints,
       })
 
@@ -651,6 +652,7 @@ export default class extends Controller {
       console.log("[ivs-publisher] camera constraints", {
         label: "preview-only",
         portraitByViewport: this._isPortraitViewport(),
+        forcedLandscape: true,
         requestedConstraints: videoConstraints,
       })
 
@@ -688,10 +690,8 @@ export default class extends Controller {
   }
 
   _buildCameraVideoConstraints() {
-    const portrait = this._isPortraitViewport()
-
-    const maxWidth = portrait ? 1080 : 1920
-    const maxHeight = portrait ? 1920 : 1080
+    const maxWidth = 1920
+    const maxHeight = 1080
 
     return {
       facingMode: "user",
