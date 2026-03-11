@@ -2,35 +2,88 @@
 
 module Cast
   class StreamSessionsController < Cast::BaseController
-    def finish
-      session = StreamSession.find(params[:id])
+    before_action :set_stream_session, only: %i[show finish pending_drink_orders meta_modal meta_display metadata]
+    before_action :authorize_stream_session_access!, only: %i[show finish pending_drink_orders meta_modal meta_display metadata]
 
-      StreamSessions::EndService.new(
-        stream_session: session,
+    def show
+      booth = @stream_session.booth
+
+      unless @stream_session.ended?
+        redirect_to live_cast_booth_path(booth), alert: "終了済み配信のリザルトのみ表示できます"
+        return
+      end
+
+      comments_scope = Comment.alive.where(stream_session_id: @stream_session.id)
+      drink_orders_scope = DrinkOrder.where(stream_session_id: @stream_session.id)
+      consumed_orders_scope = drink_orders_scope.consumed
+      refunded_orders_scope = drink_orders_scope.refunded
+      presences_scope = Presence.where(stream_session_id: @stream_session.id)
+      ledger_scope = StoreLedgerEntry.where(stream_session_id: @stream_session.id)
+
+      refunded_order_ids = refunded_orders_scope.pluck(:id)
+      refund_points_scope =
+        WalletTransaction.where(
+          kind: :release,
+          ref_type: "DrinkOrder",
+          ref_id: refunded_order_ids
+        )
+
+      @booth = booth
+
+      @comment_count = comments_scope.count
+      @viewer_count = presences_scope.distinct.count(:customer_user_id)
+
+      @drink_order_count = drink_orders_scope.count
+      @consumed_drink_count = consumed_orders_scope.count
+      @refunded_drink_count = refunded_orders_scope.count
+
+      @consumed_points = ledger_scope.sum(:points)
+      @refunded_points = refund_points_scope.sum(:points)
+
+      @avg_consumed_points =
+        if @consumed_drink_count.positive?
+          (@consumed_points.to_f / @consumed_drink_count).round(1)
+        else
+          0
+        end
+
+      @avg_refunded_points =
+        if @refunded_drink_count.positive?
+          (@refunded_points.to_f / @refunded_drink_count).round(1)
+        else
+          0
+        end
+
+      @started_at = @stream_session.started_at
+      @ended_at = @stream_session.ended_at
+      @duration_seconds =
+        if @started_at.present? && @ended_at.present? && @ended_at >= @started_at
+          (@ended_at - @started_at).to_i
+        else
+          0
+        end
+    end
+
+    def finish
+      ended_session = StreamSessions::EndService.new(
+        stream_session: @stream_session,
         actor: current_user
       ).call
 
-      redirect_to cast_booth_path(session.booth_id), notice: "スタンバイを終了しました"
+      redirect_to cast_booth_path(ended_session.booth_id), notice: "スタンバイを終了しました"
     rescue => e
-      redirect_to cast_booth_path(session.booth_id), alert: e.message
+      redirect_to cast_booth_path(@stream_session.booth_id), alert: e.message
     end
 
     def pending_drink_orders
-      stream_session = StreamSession.find(params[:id])
-
       render partial: "cast/stream_sessions/pending_drink_orders",
-             locals: { stream_session: stream_session }
+             locals: { stream_session: @stream_session }
     end
 
     def meta_modal
-      stream_session = StreamSession.find(params[:id])
-      booth = stream_session.booth
+      booth = @stream_session.booth
 
-      unless booth.current_stream_session_id == stream_session.id
-        return head :forbidden
-      end
-
-      unless operable_booth_for_stream_session?(booth)
+      unless booth.current_stream_session_id == @stream_session.id
         return head :forbidden
       end
 
@@ -39,50 +92,35 @@ module Cast
       end
 
       render partial: "cast/stream_sessions/meta_modal",
-             locals: { booth: booth, stream_session: stream_session }
+             locals: { booth: booth, stream_session: @stream_session }
     rescue ActiveRecord::RecordNotFound
       head :not_found
     end
 
     def meta_display
-      stream_session = StreamSession.find(params[:id])
-      booth = stream_session.booth
+      booth = @stream_session.booth
 
-      unless booth.current_stream_session_id == stream_session.id
-        return head :forbidden
-      end
-
-      unless operable_booth_for_stream_session?(booth)
+      unless booth.current_stream_session_id == @stream_session.id
         return head :forbidden
       end
 
       @booth = booth
-      @stream_session = stream_session
     end
 
     # PATCH /cast/stream_sessions/:id/metadata
     def metadata
-      stream_session = StreamSession.find(params[:id])
-      booth = stream_session.booth
+      booth = @stream_session.booth
 
-      # 必須: current session 一致
-      unless booth.current_stream_session_id == stream_session.id
+      unless booth.current_stream_session_id == @stream_session.id
         return head :forbidden
       end
 
-      # 認可: StartService と同等
-      unless operable_booth_for_stream_session?(booth)
-        return head :forbidden
-      end
-
-      # 状態ガード: standby のみ許可
       unless booth.standby?
         return respond_conflict(booth, "スタンバイ中のみ編集できます")
       end
 
-      stream_session.update!(metadata_params)
+      @stream_session.update!(metadata_params)
 
-      # viewer 側に即反映（booth:stream_state 購読に乗せる）
       StreamSessionNotifier.broadcast_stream_state(booth: booth)
 
       respond_to do |format|
@@ -95,7 +133,7 @@ module Cast
             turbo_stream.replace(
               "stream_meta_display",
               partial: "cast/stream_sessions/meta_display_frame",
-              locals: { booth: booth, stream_session: stream_session }
+              locals: { booth: booth, stream_session: @stream_session }
             ),
             turbo_stream.append(
               "flash_inner",
@@ -135,6 +173,17 @@ module Cast
     end
 
     private
+
+    def set_stream_session
+      @stream_session = StreamSession.find(params[:id])
+    end
+
+    def authorize_stream_session_access!
+      return if operable_booth_for_stream_session?(@stream_session.booth)
+
+      session.delete(:current_booth_id)
+      head :forbidden
+    end
 
     def metadata_params
       params.require(:stream_session).permit(:title, :description)

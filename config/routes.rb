@@ -91,7 +91,7 @@ Rails.application.routes.draw do
       resources :stream_sessions, only: %i[create], module: :booths
     end
 
-    resources :stream_sessions, only: [] do
+    resources :stream_sessions, only: %i[show] do
       post :finish, on: :member
       get  :pending_drink_orders, on: :member
       get  :meta_modal, on: :member
