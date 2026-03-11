@@ -152,7 +152,6 @@ export default class extends Controller {
       this._audioTrack = this._media.getAudioTracks()[0] || null
 
       this._captureMeasuredVideoTrack(this._cameraVideoTrack)
-      this._logMeasuredVideoTrack("broadcast", this._cameraVideoTrack, videoConstraints)
       this._syncCanvasResolutionToMeasured()
 
       // preview（ミラーは video 要素だけ）
@@ -627,7 +626,6 @@ export default class extends Controller {
 
       const previewTrack = stream.getVideoTracks()[0] || null
       this._captureMeasuredVideoTrack(previewTrack)
-      this._logMeasuredVideoTrack("preview-only", previewTrack, videoConstraints)
       this._syncCanvasResolutionToMeasured()
 
       this._media = stream
@@ -653,10 +651,8 @@ export default class extends Controller {
   }
 
   _buildCameraVideoConstraints() {
-    const portrait = this._isPortraitViewport()
-
-    const maxWidth = portrait ? 1080 : 1920
-    const maxHeight = portrait ? 1920 : 1080
+    const maxWidth = 1920
+    const maxHeight = 1080
 
     return {
       facingMode: "user",
@@ -669,37 +665,6 @@ export default class extends Controller {
         max: maxHeight,
       },
     }
-  }
-
-  _isPortraitViewport() {
-    const vv = window.visualViewport
-    const width = vv?.width || window.innerWidth || screen?.width || 0
-    const height = vv?.height || window.innerHeight || screen?.height || 0
-    return height >= width
-  }
-
-  _logMeasuredVideoTrack(label, track, requestedConstraints) {
-    if (!track) {
-      console.warn(`[ivs-publisher] ${label}: video track is not available`, {
-        requestedConstraints,
-      })
-      return
-    }
-
-    const settings = typeof track.getSettings === "function" ? track.getSettings() : {}
-    const constraints = typeof track.getConstraints === "function" ? track.getConstraints() : {}
-
-    console.log(`[ivs-publisher] ${label}: camera video acquired`, {
-      requestedConstraints,
-      appliedConstraints: constraints,
-      measured: {
-        width: settings.width ?? null,
-        height: settings.height ?? null,
-        aspectRatio: settings.aspectRatio ?? null,
-        facingMode: settings.facingMode ?? null,
-        deviceId: settings.deviceId ?? null,
-      },
-    })
   }
 
   // -------------------------
