@@ -1,0 +1,350 @@
+/* ------------------------------------------------------------
+   レイアウト調整メモ（live overlay）
+
+   このファイルの clamp() を変更すると、Overlay UI のサイズを調整できる。
+
+   ■ bottom row の高さ
+     grid-template-rows の clamp(...) を変更する
+     MIN   : 小画面でも最低限確保する高さ
+     IDEAL : 画面高に応じた目標（vh）
+     MAX   : PCなどで大きくなりすぎない上限
+
+   ■ drink slot の幅（右カラム / main row）
+     .live-overlay-main-row の
+     grid-template-columns: minmax(0,1fr) clamp(...)
+     の clamp を変更する
+
+     MIN   : 小画面で潰れない最低幅
+     IDEAL : 画面幅に応じた目標（vw）
+     MAX   : PCで太りすぎない上限
+
+   ■ ops slot の幅（右カラム / bottom row）
+     .live-overlay-bottom-row の
+     grid-template-columns: minmax(0,1fr) clamp(...)
+     の clamp を変更する
+
+     MIN   : ボタンが折り返さない最低幅
+     IDEAL : 画面幅に応じた目標（vw）
+     MAX   : PCで太りすぎない上限
+
+   調整の目安
+     ・iPhone縦で右カラムが細い → MIN / IDEAL を上げる
+     ・PCで右カラムが太い     → MAX を下げる
+------------------------------------------------------------ */
+body.cast-live-layout #app_header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  background: rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+body.cast-live-layout #app_header .text-muted,
+body.cast-live-layout #app_header .btn-link,
+body.cast-live-layout #app_header .link-secondary {
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+body.cast-live-layout #app_header .btn-primary {
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.25);
+}
+
+body.cast-live-layout #app_footer.cast-live-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+
+  background: rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  border-top-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+body.cast-live-layout #app_footer.cast-live-footer .container {
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+}
+
+body.cast-live-layout #app_footer.cast-live-footer .btn-outline-secondary {
+  color: rgba(255, 255, 255, 0.92);
+  border-color: rgba(255, 255, 255, 0.32);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+body.cast-live-layout #app_footer.cast-live-footer .btn-outline-secondary:hover,
+body.cast-live-layout #app_footer.cast-live-footer .btn-outline-secondary:focus,
+body.cast-live-layout #app_footer.cast-live-footer .btn-outline-secondary:active {
+  color: rgba(255, 255, 255, 0.98);
+  border-color: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+body.cast-live-layout #app_footer.cast-live-footer .button_to {
+  margin: 0;
+}
+
+#live_stage {
+  height: var(--live-stage-h);
+  overflow: hidden;
+  position: relative;
+  background: #000;
+}
+
+#live_media {
+  position: absolute;
+  inset: 0;
+}
+
+#live_flash_layer {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(640px, calc(100vw - 24px));
+  z-index: 20;
+  pointer-events: none;
+}
+
+#live_flash_layer #flash_inner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#live_flash_layer .alert {
+  margin-bottom: 0;
+  pointer-events: auto;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.35);
+}
+
+#live_overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+#live_overlay .live-overlay-ui {
+  pointer-events: auto;
+  width: 100%;
+  height: 100%;
+  padding-top: calc(var(--app-header-h) + 12px);
+  padding-right: 12px;
+  padding-bottom: calc(var(--app-footer-h) + 12px);
+  padding-left: 12px;
+
+  display: grid;
+  grid-template-rows:
+    minmax(0, auto)
+    minmax(0, 1fr)
+    clamp(220px, 34vh, 320px);
+
+  gap: 12px;
+
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+}
+
+.live-overlay-main-row,
+.live-overlay-bottom-row {
+  min-width: 0;
+  min-height: 0;
+}
+
+.live-overlay-main-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(150px, 20vw, 280px);
+  gap: 12px;
+}
+
+.live-overlay-bottom-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(80px, 10vw, 100px);
+  gap: 12px;
+}
+
+.live-overlay-meta-slot,
+.live-overlay-main-spacer,
+.live-overlay-drink-slot,
+.live-overlay-comment-slot,
+.live-overlay-ops-slot {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.live-overlay-main-spacer {
+  display: flex;
+  align-items: flex-start;
+}
+
+.live-overlay-meta-slot {
+  max-height: clamp(120px, 24vh, 240px);
+}
+
+.live-overlay-meta-slot,
+.live-overlay-drink-slot,
+.live-overlay-comment-slot,
+.live-overlay-ops-slot {
+  min-height: 48px;
+}
+
+.live-slot-label {
+  display: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 8px 10px;
+  color: #fff;
+}
+
+.live-overlay-ui[data-live-grid-debug="1"] .live-overlay-meta-slot,
+.live-overlay-ui[data-live-grid-debug="1"] .live-overlay-main-spacer,
+.live-overlay-ui[data-live-grid-debug="1"] .live-overlay-drink-slot,
+.live-overlay-ui[data-live-grid-debug="1"] .live-overlay-comment-slot,
+.live-overlay-ui[data-live-grid-debug="1"] .live-overlay-ops-slot {
+  outline: 1px solid rgba(255, 255, 255, 0.7);
+  outline-offset: -1px;
+}
+
+.live-overlay-ui[data-live-grid-debug="1"] .live-overlay-meta-slot {
+  background: rgba(13, 110, 253, 0.22);
+}
+
+.live-overlay-ui[data-live-grid-debug="1"] .live-overlay-main-spacer {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.live-overlay-ui[data-live-grid-debug="1"] .live-overlay-drink-slot {
+  background: rgba(255, 193, 7, 0.22);
+}
+
+.live-overlay-ui[data-live-grid-debug="1"] .live-overlay-comment-slot {
+  background: rgba(25, 135, 84, 0.22);
+}
+
+.live-overlay-ui[data-live-grid-debug="1"] .live-overlay-ops-slot {
+  background: rgba(220, 53, 69, 0.22);
+}
+
+.live-overlay-ui[data-live-grid-debug="1"] .live-slot-label {
+  display: inline-block;
+}
+
+.live-overlay-ui[data-live-grid-debug="0"] .live-overlay-meta-slot,
+.live-overlay-ui[data-live-grid-debug="0"] .live-overlay-main-spacer,
+.live-overlay-ui[data-live-grid-debug="0"] .live-overlay-drink-slot,
+.live-overlay-ui[data-live-grid-debug="0"] .live-overlay-comment-slot,
+.live-overlay-ui[data-live-grid-debug="0"] .live-overlay-ops-slot {
+  background: transparent;
+  outline: none;
+}
+
+/* ------------------------------------------------------------
+   live standby actions (#346, #347, #365)
+------------------------------------------------------------ */
+.live-standby-actions-panel {
+  width: min(100%, 360px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.45);
+
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+}
+
+.live-standby-actions-buttons {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.live-standby-action-form,
+.live-standby-action-link {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+}
+
+.live-standby-action-btn,
+.live-standby-action-link {
+  width: 100%;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+
+  background: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.96);
+  text-decoration: none;
+
+  transition:
+    background-color 0.15s ease,
+    opacity 0.15s ease,
+    transform 0.15s ease;
+
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.live-standby-action-btn:hover:not(:disabled),
+.live-standby-action-link:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.96);
+  text-decoration: none;
+}
+
+.live-standby-action-btn:active:not(:disabled),
+.live-standby-action-link:active {
+  transform: scale(0.98);
+}
+
+.live-standby-action-btn:disabled {
+  opacity: 0.45;
+}
+
+/* video は Stage に contain */
+#live_media video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/*
+  canvas は object-fit が効かないので、
+  intrinsic size（width/height属性）を維持して中央に収める
+*/
+#live_media canvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  max-width: 100%;
+  max-height: 100%;
+
+  width: auto;
+  height: auto;
+
+  display: block;
+}
