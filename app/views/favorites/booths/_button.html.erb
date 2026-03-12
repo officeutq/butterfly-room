@@ -1,13 +1,21 @@
 <%# locals: booth:, favorited: %>
 
 <% if favorited %>
-  <%= button_to "お気に入り解除",
-        booth_favorite_path(booth),
+  <%= button_to booth_favorite_path(booth),
         method: :delete,
-        class: "btn btn-sm btn-outline-secondary" %>
+        class: "viewer-favorite-btn is-active",
+        form_class: "viewer-favorite-form",
+        aria: { label: "ブースのお気に入りを解除" },
+        title: "お気に入り解除" do %>
+    <i class="bi bi-star-fill" aria-hidden="true"></i>
+  <% end %>
 <% else %>
-  <%= button_to "お気に入り",
-        booth_favorite_path(booth),
+  <%= button_to booth_favorite_path(booth),
         method: :post,
-        class: "btn btn-sm btn-outline-primary" %>
+        class: "viewer-favorite-btn",
+        form_class: "viewer-favorite-form",
+        aria: { label: "ブースをお気に入り" },
+        title: "お気に入り" do %>
+    <i class="bi bi-star" aria-hidden="true"></i>
+  <% end %>
 <% end %>

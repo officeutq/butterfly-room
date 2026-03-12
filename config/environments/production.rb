@@ -100,4 +100,6 @@ Rails.application.configure do
   # config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
 
   config.time_zone = "Asia/Tokyo"
+
+  routes.default_url_options = { host: "butterflyve.jp", protocol: "https" }
 end
