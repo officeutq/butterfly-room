@@ -2,35 +2,51 @@
   <meta name="turbo-cache-control" content="no-cache">
 <% end %>
 
-<div class="viewer-page">
-  <div class="viewer-legacy-offscreen" aria-hidden="true">
-    <h1>Public Booth#show (stub)</h1>
+<% initial_live_ui = @stream_session.present? && (@booth.live? || @booth.away?) %>
 
-    <p>booth_id: <%= @booth.id %></p>
-
-    <%# ★お気に入りボタン（stream_state とは分離して固定DOM） %>
-    <% if user_signed_in? %>
-      <%= render "favorites/booths/button_booth_show", booth: @booth, favorited: @booth_favorited %>
-    <% end %>
-  </div>
-
-  <%# ★booth単位で常時購読（開始/終了/状態変化を自動反映） %>
+<div class="viewer-page <%= "is-live" if initial_live_ui %>" data-controller="viewer-page">
   <%= turbo_stream_from [@booth, :stream_state] %>
 
-  <%# ★箱（wrapper）は show 側に固定。idを絶対に消さない %>
-  <div id="stream_state">
-    <%= render "booths/stream_state",
-          booth: @booth,
-          stream_session: @stream_session,
-          comments: @comments,
-          drink_items: @drink_items %>
+  <% if user_signed_in? %>
+    <div class="viewer-favorites-depot" data-viewer-page-target="favoritesDepot" hidden>
+      <%= render "favorites/booths/button_booth_show", booth: @booth, favorited: @booth_favorited %>
+      <%= render "favorites/stores/button_store_show", store: @booth.store, favorited: @store_favorited %>
+    </div>
+  <% end %>
+
+  <div id="viewer_flash_layer">
+    <div id="flash_inner">
+      <% if notice.present? %>
+        <%= render "shared/flash_message", level: "success", message: notice %>
+      <% end %>
+
+      <% if alert.present? %>
+        <%= render "shared/flash_message", level: "danger", message: alert %>
+      <% end %>
+    </div>
   </div>
 
-  <div class="viewer-legacy-offscreen" aria-hidden="true">
-    <hr>
+  <div
+    id="viewer_live_root"
+    class="viewer-live-root <%= "d-none" unless initial_live_ui %>"
+    data-viewer-page-target="liveRoot"
+  >
+    <div id="stream_state">
+      <%= render "booths/stream_state",
+            booth: @booth,
+            stream_session: @stream_session,
+            comments: @comments,
+            drink_items: @drink_items %>
+    </div>
+  </div>
 
-    <div class="d-flex justify-content mb-3">
-      <%= link_to "退室", root_path, class: "btn btn-outline-secondary" %>
+  <div
+    id="viewer_waiting_root"
+    class="viewer-waiting-root <%= "d-none" if initial_live_ui %>"
+    data-viewer-page-target="waitingRoot"
+  >
+    <div id="waiting_state">
+      <%= render "booths/waiting_state", booth: @booth %>
     </div>
   </div>
 </div>

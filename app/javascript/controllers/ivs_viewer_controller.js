@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["video", "error", "state", "muteButton", "muteIcon", "muteHint"]
+  static targets = ["video", "error", "muteButton", "muteIcon", "muteHint"]
   static values = {
     tokenUrl: String, // /stream_sessions/:id/ivs_participant_tokens
   }
@@ -11,6 +11,7 @@ export default class extends Controller {
     this._lastJoinable = null
     this._remoteMediaStream = null
     this._remoteTrackMap = new Map()
+    this._state = "idle"
 
     this._beforeCache = () => this.stop()
     document.addEventListener("turbo:before-cache", this._beforeCache)
@@ -247,7 +248,7 @@ export default class extends Controller {
   }
 
   _setState(s) {
-    if (this.hasStateTarget) this.stateTarget.textContent = s
+    this._state = s
   }
 
   _clearError() {

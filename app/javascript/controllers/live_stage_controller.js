@@ -2,7 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   connect() {
-    // live中だけスクロールを殺す（non-live へ影響を残さない）
+    // viewer / live ともにスクロールを殺す
     this._prevHtmlOverflow = document.documentElement.style.overflow
     this._prevBodyOverflow = document.body.style.overflow
     document.documentElement.style.overflow = "hidden"
@@ -10,19 +10,15 @@ export default class extends Controller {
 
     this._update = this._update.bind(this)
 
-    // window events
     window.addEventListener("resize", this._update)
     window.addEventListener("orientationchange", this._update)
 
-    // visualViewport events（iOS Safari 対策）
     this._vv = window.visualViewport || null
     if (this._vv) {
       this._vv.addEventListener("resize", this._update)
-      // アドレスバー出入り等で height 変化が scroll で発生するケースがある
       this._vv.addEventListener("scroll", this._update)
     }
 
-    // 初回計測（layout描画後に安定させる）
     requestAnimationFrame(() => this._update())
   }
 
@@ -35,7 +31,6 @@ export default class extends Controller {
       this._vv.removeEventListener("scroll", this._update)
     }
 
-    // スクロール抑止を戻す（liveだけの副作用に閉じる）
     document.documentElement.style.overflow = this._prevHtmlOverflow
     document.body.style.overflow = this._prevBodyOverflow
   }
@@ -48,12 +43,18 @@ export default class extends Controller {
     const footerH = footer ? footer.getBoundingClientRect().height : 0
     const viewportH = this._vv?.height || window.innerHeight || 0
 
-    // 端末・バー出入りのタイミングで小数や負数が出るので丸め＆下限
     const safeViewportH = Math.max(0, Math.round(viewportH))
     const safeHeaderH = Math.max(0, Math.round(headerH))
     const safeFooterH = Math.max(0, Math.round(footerH))
 
-    document.documentElement.style.setProperty("--live-stage-h", `${safeViewportH}px`)
+    // cast/live は従来どおり viewport 全体基準
+    const liveStageH = safeViewportH
+
+    // viewer は header / footer を除いた本文可視領域
+    const viewerStageH = Math.max(0, safeViewportH - safeHeaderH - safeFooterH)
+
+    document.documentElement.style.setProperty("--live-stage-h", `${liveStageH}px`)
+    document.documentElement.style.setProperty("--viewer-stage-h", `${viewerStageH}px`)
     document.documentElement.style.setProperty("--app-header-h", `${safeHeaderH}px`)
     document.documentElement.style.setProperty("--app-footer-h", `${safeFooterH}px`)
   }

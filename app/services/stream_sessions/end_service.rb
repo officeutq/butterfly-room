@@ -24,7 +24,6 @@ module StreamSessions
 
         booth = Booth.lock.find(session.booth_id)
 
-        # boothをoffline化 + current_stream_session_id解除
         booth.update!(
           status: :offline,
           current_stream_session_id: nil
@@ -40,10 +39,11 @@ module StreamSessions
 
       StreamSessionNotifier.broadcast_ended(ended_session)
 
-      # ★Issue42: booth単位のUIを「未配信」に自動切替（リロード不要）
-      StreamSessionNotifier.broadcast_stream_state(booth: ended_booth)
+      StreamSessionNotifier.broadcast_stream_state(
+        booth: ended_booth,
+        flash_message: "配信が終了しました。未消化ドリンクは返却されました。"
+      )
 
-      # ★Issue146: 返却が発生したユーザーの wallet 残高を個人チャンネルで更新
       WalletNotifier.broadcast_balance_for_wallet_ids(refund_result&.wallet_ids)
 
       ended_session
@@ -54,13 +54,9 @@ module StreamSessions
     def authorize!
       raise NotAuthorized if @actor.blank?
 
-      # system_admin は常にOK
       return if @actor.system_admin?
-
-      # cast は従来どおりOK
       return if @actor.cast?
 
-      # store_admin は「対象storeのadminであること」が必須
       if @actor.store_admin?
         booth = Booth.find_by(id: @stream_session.booth_id)
         raise NotAuthorized if booth.blank?

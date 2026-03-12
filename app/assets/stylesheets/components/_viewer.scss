@@ -28,7 +28,24 @@
   overflow: hidden;
 }
 
-.viewer-page,
+.viewer-page {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.viewer-live-root,
+.viewer-waiting-root {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .viewer-stream-state {
   width: 100%;
   height: 100%;
@@ -39,18 +56,12 @@
 
 .viewer-stage-shell {
   width: 100%;
-  height: var(--live-stage-h);
+  height: var(--viewer-stage-h);
   min-width: 0;
   min-height: 0;
 }
 
-.viewer-stage-shell-empty {
-  background: #000;
-  overflow: hidden;
-}
-
-.viewer-stage-shell > #viewer_stage,
-.viewer-stage-shell-empty > #viewer_stage {
+.viewer-stage-shell > #viewer_stage {
   position: relative;
   width: 100%;
   height: 100%;
@@ -60,14 +71,14 @@
   background: #000;
 }
 
-/* viewer flash layer（cast/live の live_flash_layer 相当） */
+/* 共通 viewer flash overlay */
 #viewer_flash_layer {
   position: absolute;
   top: 12px;
   left: 50%;
   transform: translateX(-50%);
   width: min(640px, calc(100vw - 24px));
-  z-index: 20;
+  z-index: 30;
   pointer-events: none;
 }
 
@@ -84,28 +95,276 @@
 }
 
 /* ------------------------------------------------------------
+   viewer waiting layout (#357)
+------------------------------------------------------------ */
+.viewer-favorites-depot {
+  display: none !important;
+}
+
+.viewer-waiting-shell {
+  width: 100%;
+  height: var(--viewer-stage-h);
+  min-width: 0;
+  min-height: 0;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 12px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.viewer-waiting-panel {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows:
+    clamp(148px, 24vh, 220px)
+    auto
+    minmax(0, 1fr)
+    auto
+    auto;
+  gap: 12px;
+
+  padding: 14px;
+  border-radius: 20px;
+  background: #fff;
+  color: #212529;
+  box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.viewer-waiting-thumbnail-wrap {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #f8f9fa;
+}
+
+.viewer-waiting-thumbnail {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.viewer-waiting-thumbnail-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #6c757d;
+  background: #f8f9fa;
+}
+
+.viewer-waiting-title-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+}
+
+.viewer-waiting-title-main {
+  min-width: 0;
+}
+
+.viewer-waiting-title-text {
+  font-size: clamp(1.25rem, 2vw, 1.6rem);
+  line-height: 1.3;
+  font-weight: 700;
+  color: #212529;
+  word-break: break-word;
+}
+
+.viewer-waiting-title-badge {
+  margin-top: 8px;
+}
+
+.viewer-waiting-description {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 4px;
+}
+
+.viewer-waiting-description-inner {
+  color: #495057;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.viewer-waiting-description-inner p:last-child {
+  margin-bottom: 0;
+}
+
+.viewer-waiting-description-empty {
+  font-size: 0.9375rem;
+}
+
+.viewer-waiting-info-card {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  background: #f8f9fa;
+}
+
+.viewer-waiting-info-row + .viewer-waiting-info-row {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.viewer-waiting-info-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.viewer-waiting-info-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #6c757d;
+}
+
+.viewer-waiting-info-value {
+  min-width: 0;
+}
+
+.viewer-waiting-cast-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: #212529;
+}
+
+.viewer-waiting-cast-avatar {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  object-fit: cover;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.viewer-waiting-cast-avatar-placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f3f5;
+  color: #6c757d;
+}
+
+.viewer-waiting-cast-name {
+  min-width: 0;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.viewer-waiting-store-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.viewer-waiting-store-link {
+  min-width: 0;
+  font-weight: 600;
+  color: #212529;
+  word-break: break-word;
+}
+
+.viewer-waiting-message {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #fff8db;
+  border: 1px solid rgba(255, 193, 7, 0.35);
+}
+
+.viewer-waiting-message-title {
+  font-size: 0.975rem;
+  font-weight: 700;
+  color: #212529;
+}
+
+.viewer-waiting-message-text {
+  margin-top: 4px;
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.viewer-waiting-favorite-anchor {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.viewer-favorite-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.viewer-favorite-form {
+  display: inline-flex;
+  margin: 0;
+}
+
+.viewer-favorite-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #f0ad00;
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.viewer-favorite-btn:hover:not(:disabled) {
+  background: rgba(255, 193, 7, 0.12);
+  opacity: 0.95;
+}
+
+.viewer-favorite-btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.viewer-favorite-btn:disabled {
+  opacity: 0.5;
+}
+
+.viewer-favorite-btn i {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.viewer-favorite-btn.is-active {
+  color: #e0a800;
+}
+
+/* ------------------------------------------------------------
    viewer overlay foundation (#352)
-
-   このファイルの clamp() を変更すると、Overlay UI のサイズを調整できる。
-
-   ■ bottom row の高さ
-     .viewer-overlay-ui の grid-template-rows 3行目の clamp(...) を変更する
-
-   ■ drink slot の幅（右カラム / main row）
-     .viewer-overlay-main-row の
-     grid-template-columns: minmax(0,1fr) clamp(...)
-     の clamp を変更する
-
-   ■ ops slot の幅（右カラム / bottom row）
-     .viewer-overlay-bottom-row の
-     grid-template-columns: minmax(0,1fr) clamp(...)
-     の clamp を変更する
-
-   ■ drink action row の高さ
-     .viewer-overlay-ui の grid-template-rows 4行目の clamp(...) を変更する
-
-   ■ meta slot の最大高さ
-     .viewer-overlay-meta-slot の max-height を変更する
 ------------------------------------------------------------ */
 #viewer_overlay {
   position: absolute;
@@ -160,7 +419,6 @@
   display: block;
 }
 
-/* slot共通 */
 .viewer-overlay-meta-slot,
 .viewer-overlay-main-spacer,
 .viewer-overlay-drink-slot,
@@ -201,7 +459,6 @@
   overflow: hidden;
 }
 
-/* metaは内容可変だが上限あり */
 .viewer-overlay-meta-slot {
   display: flex;
   align-items: flex-start;
@@ -214,7 +471,6 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* このIssueでは枠だけなので、空でも見えるように最低高さを持たせる */
 .viewer-overlay-meta-slot,
 .viewer-overlay-drink-slot,
 .viewer-overlay-comment-slot,
@@ -223,7 +479,6 @@
   min-height: 48px;
 }
 
-/* ラベル */
 .viewer-slot-label {
   display: none;
   font-size: 0.875rem;
@@ -233,7 +488,6 @@
   color: #fff;
 }
 
-/* debug ON で色付け表示 */
 .viewer-overlay-ui[data-viewer-grid-debug="1"] .viewer-overlay-meta-slot,
 .viewer-overlay-ui[data-viewer-grid-debug="1"] .viewer-overlay-main-spacer,
 .viewer-overlay-ui[data-viewer-grid-debug="1"] .viewer-overlay-drink-slot,
@@ -272,7 +526,6 @@
   display: inline-block;
 }
 
-/* debug OFF では完全に枠表示を消す */
 .viewer-overlay-ui[data-viewer-grid-debug="0"] .viewer-overlay-meta-slot,
 .viewer-overlay-ui[data-viewer-grid-debug="0"] .viewer-overlay-main-spacer,
 .viewer-overlay-ui[data-viewer-grid-debug="0"] .viewer-overlay-drink-slot,
@@ -445,20 +698,6 @@
   display: none;
 }
 
-/* DOMは残すが、visible領域からは退避する */
-.viewer-legacy-offscreen {
-  position: absolute !important;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  border: 0;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 /* ------------------------------------------------------------
    viewer comment panel (#353)
 ------------------------------------------------------------ */
@@ -487,7 +726,6 @@
   min-height: 0;
 }
 
-/* コメント一覧：固定高さ＋内部スクロール（7行相当） */
 .viewer-comment-list {
   flex: 0 0 auto;
   height: clamp(140px, 25vh, 260px);
@@ -504,7 +742,6 @@
   padding-right: 4px;
 }
 
-/* コメント行：最低限の見た目 */
 .viewer-comment-list .comment {
   font-size: 0.875rem;
   line-height: 1.3;
@@ -516,12 +753,10 @@
   word-break: break-word;
 }
 
-/* フォーム（常に見える） */
 .viewer-comment-form {
   flex: 0 0 auto;
 }
 
-/* フォーム内部の最低限のレイアウト */
 .viewer-comment-panel #comment_form form {
   display: flex;
   gap: 8px;
@@ -673,4 +908,52 @@
 
 .viewer-drink-action-btn:disabled {
   opacity: 0.5;
+}
+
+@media (max-width: 767.98px) {
+  .viewer-waiting-shell {
+    padding: 10px;
+  }
+
+  .viewer-waiting-panel {
+    grid-template-rows:
+      clamp(120px, 20vh, 180px)
+      auto
+      minmax(0, 1fr)
+      auto
+      auto;
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .viewer-waiting-title-row {
+    gap: 8px;
+  }
+
+  .viewer-waiting-title-text {
+    font-size: 1.15rem;
+  }
+
+  .viewer-waiting-info-row {
+    grid-template-columns: 82px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .viewer-waiting-store-line {
+    gap: 6px;
+  }
+
+  #viewer_overlay .viewer-overlay-ui {
+    grid-template-rows:
+      minmax(0, auto)
+      minmax(0, 1fr)
+      clamp(200px, 32vh, 280px)
+      clamp(56px, 9vh, 76px);
+  }
+
+  .viewer-drink-action-btn {
+    min-height: 46px;
+    padding: 10px 13px;
+    font-size: 0.8125rem;
+  }
 }

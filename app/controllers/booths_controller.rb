@@ -30,6 +30,9 @@ class BoothsController < ApplicationController
 
     @booth_favorited =
       user_signed_in? && current_user.favorite_booths.exists?(booth_id: @booth.id)
+
+    @store_favorited =
+      user_signed_in? && current_user.favorite_stores.exists?(store_id: @booth.store_id)
   end
 
   # ブースカードクリック導線（ロール/権限で分岐）
