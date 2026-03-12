@@ -11,6 +11,6 @@
     "bootstrap-icons": "^1.11.3"
   },
   "devDependencies": {
-    "sass": "^1.97.2"
+    "sass": "^1.98.0"
   }
 }
