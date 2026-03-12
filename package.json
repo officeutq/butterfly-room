@@ -5,6 +5,7 @@
     "watch:css": "npm run copy:bi && sass --watch ./app/assets/stylesheets/application.scss:./app/assets/builds/application.css --load-path=node_modules"
   },
   "dependencies": {
+    "@banuba/webar": "^1.18.0",
     "@popperjs/core": "^2.11.8",
     "bootstrap": "^5.3.6",
     "bootstrap-icons": "^1.11.3"

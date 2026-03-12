@@ -1,0 +1,113 @@
+<% content_for :title, "Banuba 検証" %>
+
+<div class="container py-4 banuba-page">
+  <div class="row g-4">
+    <div class="col-12">
+      <div class="card banuba-card" data-bs-theme="light">
+        <div class="card-body">
+          <h1 class="h4 mb-3">Banuba Web SDK 検証</h1>
+
+          <p class="text-body-secondary mb-3">
+            development 限定の検証ページです。Rails 上で Banuba が起動し、
+            カメラ映像と effect が適用できるかを確認します。
+          </p>
+
+          <div class="small text-body-secondary">
+            <div>SDK: <code><%= @banuba_sdk_base_url %></code></div>
+            <div>Face tracker: <code><%= @banuba_face_tracker_url %></code></div>
+            <div>Effect: <code><%= @banuba_effect_url %></code></div>
+          </div>
+
+          <% if @banuba_client_token.blank? %>
+            <div class="alert alert-danger mt-3 mb-0" role="alert">
+              BANUBA_CLIENT_TOKEN が未設定です。.env を確認してください。
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-xl-8">
+      <div
+        class="card banuba-card h-100"
+        data-bs-theme="light"
+        data-controller="banuba-verification"
+        data-banuba-verification-client-token-value="<%= @banuba_client_token %>"
+        data-banuba-verification-sdk-base-url-value="<%= @banuba_sdk_base_url %>"
+        data-banuba-verification-face-tracker-url-value="<%= @banuba_face_tracker_url %>"
+        data-banuba-verification-effect-url-value="<%= @banuba_effect_url %>"
+        data-banuba-verification-effect-name-value="<%= @banuba_effect_name %>"
+      >
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span>プレビュー</span>
+          <span class="badge text-bg-secondary" data-banuba-verification-target="state">idle</span>
+        </div>
+
+        <div class="card-body">
+          <div class="banuba-preview-wrap">
+            <div class="banuba-preview-surface" data-banuba-verification-target="surface"></div>
+          </div>
+
+          <div class="banuba-error mt-3" data-banuba-verification-target="error"></div>
+
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <button
+              type="button"
+              class="btn btn-primary"
+              data-action="banuba-verification#start"
+              data-banuba-verification-target="startBtn">
+              起動
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-outline-secondary d-none"
+              data-action="banuba-verification#stop"
+              data-banuba-verification-target="stopBtn">
+              停止
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-outline-primary d-none"
+              data-action="banuba-verification#reapplyEffect"
+              data-banuba-verification-target="effectBtn">
+              effect 再適用
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-xl-4">
+      <div class="card banuba-card h-100" data-bs-theme="light">
+        <div class="card-header">確認メモ</div>
+        <div class="card-body">
+          <div class="mb-3">
+            <div class="fw-semibold">起動時に確認すること</div>
+            <ul class="mb-0">
+              <li>カメラ権限が取れる</li>
+              <li>映像が表示される</li>
+              <li>effect 適用で見た目が変わる</li>
+              <li>顔移動に追従する</li>
+            </ul>
+          </div>
+
+          <div class="mb-3">
+            <div class="fw-semibold">安定性</div>
+            <ul class="mb-0">
+              <li>数分放置で console error が出ない</li>
+              <li>停止 → 起動 を数回繰り返して壊れない</li>
+              <li>Turbo 遷移後にカメラが残らない</li>
+            </ul>
+          </div>
+
+          <div class="mb-0">
+            <div class="fw-semibold">URL</div>
+            <code><%= dev_banuba_verification_path %></code>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

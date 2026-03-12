@@ -5,6 +5,12 @@ Rails.application.routes.draw do
 
   root "home#show"
 
+  if Rails.env.development?
+    namespace :dev do
+      resource :banuba_verification, only: %i[show], controller: "banuba_verifications"
+    end
+  end
+
   # --- Common dashboard (login required) ---
   get "/dashboard", to: "dashboard#show", as: :dashboard
 
