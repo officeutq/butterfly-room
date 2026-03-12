@@ -140,6 +140,7 @@ app/
       modal_controller.js
       presence_poll_controller.js
       stream_debug_controller.js
+      viewer_page_controller.js
     application.js
   jobs/
     application_job.rb
@@ -263,6 +264,7 @@ app/
       _drink_menu.html.erb
       _enter_modal.html.erb
       _stream_state.html.erb
+      _waiting_state.html.erb
       enter.html.erb
       show.html.erb
     cast/
@@ -376,7 +378,6 @@ config/
     assets.rb
     content_security_policy.rb
     dartsass.rb
-    default_url_options.rb
     devise.rb
     filter_parameter_logging.rb
     inflections.rb
