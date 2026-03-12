@@ -43,6 +43,7 @@ app/
     images/
     stylesheets/
       components/
+        _banuba_verification.scss
         _layout.scss
         _live.scss
         _live_comment.scss
@@ -79,6 +80,8 @@ app/
       store_ban_guard.rb
     customers/
       registrations_controller.rb
+    dev/
+      banuba_verifications_controller.rb
     favorites/
       booths_controller.rb
       stores_controller.rb
@@ -130,6 +133,7 @@ app/
   javascript/
     controllers/
       application.js
+      banuba_verification_controller.js
       clipboard_controller.js
       comment_panel_controller.js
       hello_controller.js
@@ -296,6 +300,9 @@ app/
         new.html.erb
     dashboard/
       show.html.erb
+    dev/
+      banuba_verifications/
+        show.html.erb
     devise/
       sessions/
         new.html.erb
