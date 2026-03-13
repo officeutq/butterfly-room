@@ -8,6 +8,9 @@ export default class extends Controller {
     clientToken: String,
     sdkBaseUrl: String,
     faceTrackerUrl: String,
+    eyesUrl: String,
+    lipsUrl: String,
+    skinUrl: String,
     effectUrl: String,
     effectName: String,
   }
@@ -51,7 +54,21 @@ export default class extends Controller {
         },
       })
 
-      await player.addModule(new Module(this.faceTrackerUrlValue))
+      const modules = [new Module(this.faceTrackerUrlValue)]
+
+      if (this.eyesUrlValue) {
+        modules.push(new Module(this.eyesUrlValue))
+      }
+
+      if (this.lipsUrlValue) {
+        modules.push(new Module(this.lipsUrlValue))
+      }
+
+      if (this.skinUrlValue) {
+        modules.push(new Module(this.skinUrlValue))
+      }
+
+      await player.addModule(...modules)
       await player.use(new Webcam())
 
       Dom.render(player, this.surfaceTarget)

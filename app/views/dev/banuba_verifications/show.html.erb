@@ -9,7 +9,7 @@
 
           <p class="text-body-secondary mb-3">
             development 限定の検証ページです。Rails 上で Banuba が起動し、
-            カメラ映像と effect が適用できるかを確認します。
+            カメラ映像と Butterfly Room 向け Beauty effect が適用できるかを確認します。
           </p>
 
           <div class="small text-body-secondary">
@@ -35,6 +35,9 @@
         data-banuba-verification-client-token-value="<%= @banuba_client_token %>"
         data-banuba-verification-sdk-base-url-value="<%= @banuba_sdk_base_url %>"
         data-banuba-verification-face-tracker-url-value="<%= @banuba_face_tracker_url %>"
+        data-banuba-verification-eyes-url-value="<%= @banuba_eyes_url %>"
+        data-banuba-verification-lips-url-value="<%= @banuba_lips_url %>"
+        data-banuba-verification-skin-url-value="<%= @banuba_skin_url %>"
         data-banuba-verification-effect-url-value="<%= @banuba_effect_url %>"
         data-banuba-verification-effect-name-value="<%= @banuba_effect_name %>"
       >
@@ -88,8 +91,18 @@
             <ul class="mb-0">
               <li>カメラ権限が取れる</li>
               <li>映像が表示される</li>
-              <li>effect 適用で見た目が変わる</li>
+              <li>Beauty effect 適用で見た目が変わる</li>
               <li>顔移動に追従する</li>
+            </ul>
+          </div>
+
+          <div class="mb-3">
+            <div class="fw-semibold">Beauty 確認項目</div>
+            <ul class="mb-0">
+              <li>美肌が過度に強すぎない</li>
+              <li>輪郭補正が不自然に崩れない</li>
+              <li>目の拡大が違和感なく追従する</li>
+              <li>鼻・口補正が極端に破綻しない</li>
             </ul>
           </div>
 
