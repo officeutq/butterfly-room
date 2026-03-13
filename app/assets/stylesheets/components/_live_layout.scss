@@ -321,20 +321,29 @@ body.cast-live-layout #app_footer.cast-live-footer .button_to {
   opacity: 0.45;
 }
 
-/* video は Stage に contain */
-#live_media video {
+#live_media .live-banuba-surface {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+}
+
+#live_media .live-banuba-surface.is-mirrored {
+  transform: scaleX(-1);
+  transform-origin: center;
+}
+
+#live_media .live-banuba-surface canvas,
+#live_media .live-banuba-surface video {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
+  display: block;
 }
 
-/*
-  canvas は object-fit が効かないので、
-  intrinsic size（width/height属性）を維持して中央に収める
-*/
-#live_media canvas {
+#live_media canvas[data-ivs-publisher-target="canvas"] {
   position: absolute;
   top: 50%;
   left: 50%;
