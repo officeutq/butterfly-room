@@ -24,20 +24,16 @@ module Cast
       @confirm_switch_booth = current_booth.present? && !current_booth.offline?
     end
 
-    # Summary（offline専用）
     def show
-      # ★offline以外（standby/live/away）は配信画面へ寄せる
       unless @booth.offline?
         redirect_to live_cast_booth_path(@booth)
         nil
       end
     end
 
-    # Live UI（standby/live/away）
     def live
       @stream_session = @booth.current_stream_session
 
-      # ★offline で live に来たら summary へ
       if @booth.offline? || @stream_session.blank?
         redirect_to cast_booth_path(@booth), alert: "配信セッションがありません（まずスタンバイ開始してください）"
         return
@@ -48,6 +44,15 @@ module Cast
                .order(created_at: :desc)
                .limit(50)
                .reverse
+
+      @banuba_client_token = ENV["BANUBA_CLIENT_TOKEN"].to_s
+      @banuba_sdk_base_url = "/banuba/sdk"
+      @banuba_face_tracker_url = "/banuba/modules/face_tracker.zip"
+      @banuba_eyes_url = "/banuba/modules/eyes.zip"
+      @banuba_lips_url = "/banuba/modules/lips.zip"
+      @banuba_skin_url = "/banuba/modules/skin.zip"
+      @banuba_effect_url = "/banuba/effects/beauty_base.zip"
+      @banuba_effect_name = "beauty_base.zip"
     end
 
     def edit

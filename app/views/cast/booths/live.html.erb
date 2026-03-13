@@ -7,28 +7,26 @@
   data-ivs-publisher-mirror-value="true"
   data-ivs-publisher-initial-mode-value="<%= @booth.away? ? "away" : "normal" %>"
   data-ivs-publisher-initial-booth-status-value="<%= @booth.status %>"
+  data-ivs-publisher-banuba-client-token-value="<%= @banuba_client_token %>"
+  data-ivs-publisher-banuba-sdk-base-url-value="<%= @banuba_sdk_base_url %>"
+  data-ivs-publisher-banuba-face-tracker-url-value="<%= @banuba_face_tracker_url %>"
+  data-ivs-publisher-banuba-eyes-url-value="<%= @banuba_eyes_url %>"
+  data-ivs-publisher-banuba-lips-url-value="<%= @banuba_lips_url %>"
+  data-ivs-publisher-banuba-skin-url-value="<%= @banuba_skin_url %>"
+  data-ivs-publisher-banuba-effect-url-value="<%= @banuba_effect_url %>"
+  data-ivs-publisher-banuba-effect-name-value="<%= @banuba_effect_name %>"
 >
-  <%# ------------------------------------------------------------
-      Stage（映像 + Overlay + Flash layer）
-      ------------------------------------------------------------ %>
   <div id="live_stage">
     <div id="live_media">
-      <video
-        playsinline
-        autoplay
-        muted
-        data-ivs-publisher-target="preview"></video>
+      <div
+        class="live-banuba-surface"
+        data-ivs-publisher-target="banubaSurface"></div>
 
       <canvas
         class="d-none"
         data-ivs-publisher-target="canvas"></canvas>
     </div>
 
-    <%# ------------------------------------------------------------
-        Flash layer（Overlayとは別の最前面通知レイヤー）
-        - レイヤー自体は pointer-events:none
-        - 各 alert のみ pointer-events:auto
-        ------------------------------------------------------------ %>
     <div id="live_flash_layer">
       <div id="flash_inner">
         <% if notice.present? %>
@@ -41,11 +39,6 @@
       </div>
     </div>
 
-    <%# ------------------------------------------------------------
-        Overlay（映像上にDOMを重ねる）
-        - Overlay自体は pointer-events:none
-        - 実UIは .live-overlay-ui で pointer-events:auto
-        ------------------------------------------------------------ %>
     <div id="live_overlay">
       <div class="live-overlay-ui" data-live-grid-debug="<%= Rails.env.development? ? "1" : "0" %>">
         <div class="live-overlay-meta-slot">
