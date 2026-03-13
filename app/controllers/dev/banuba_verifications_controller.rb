@@ -9,8 +9,11 @@ module Dev
       @banuba_client_token = ENV["BANUBA_CLIENT_TOKEN"].to_s
       @banuba_sdk_base_url = "/banuba/sdk"
       @banuba_face_tracker_url = "/banuba/modules/face_tracker.zip"
-      @banuba_effect_url = "/banuba/effects/glasses_RayBan4165_Dark.zip"
-      @banuba_effect_name = "glasses_RayBan4165_Dark.zip"
+      @banuba_eyes_url = "/banuba/modules/eyes.zip"
+      @banuba_lips_url = "/banuba/modules/lips.zip"
+      @banuba_skin_url = "/banuba/modules/skin.zip"
+      @banuba_effect_url = "/banuba/effects/beauty_base.zip"
+      @banuba_effect_name = "beauty_base.zip"
     end
 
     private
