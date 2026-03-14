@@ -1,5 +1,10 @@
 import { Controller } from "@hotwired/stimulus"
-import { Dom, Effect, Module, Player, MediaStream as BanubaMediaStream } from "banuba-web-sdk"
+import { clearError, humanizeError, setError } from "controllers/ivs_publisher/errors"
+import { fetchParticipantToken, patchBoothStatus, postFinish, reloadMetaDisplay } from "controllers/ivs_publisher/api_client"
+import { syncCanvasResolutionToMeasured, startCanvasRenderLoop, stopCanvasRenderLoop } from "controllers/ivs_publisher/away_canvas"
+import { destroyBanubaPlayer, ensureBanubaPublishTrack, ensureBanubaStarted, waitForBanubaRenderedNode } from "controllers/ivs_publisher/banuba_session"
+import { cleanupBanubaPublishTrack, cleanupCameraMedia, cleanupMediaAndCanvas, cleanupStage, ensureAudioTrack, ensureCameraVideoTrack, ensureCanvasPublishTrack } from "controllers/ivs_publisher/media_state"
+import { applyCurrentMode, syncMicUI, syncUI } from "controllers/ivs_publisher/ui_state"
 
 export default class extends Controller {
   static targets = [
@@ -27,7 +32,7 @@ export default class extends Controller {
     metaDisplayUrl: String,
     mirror: { type: Boolean, default: true },
     initialMode: { type: String, default: "normal" },
-    initialBoothStatus: String, // "offline" | "live" | "away" | "standby" etc
+    initialBoothStatus: String,
 
     banubaClientToken: String,
     banubaSdkBaseUrl: String,
@@ -64,7 +69,7 @@ export default class extends Controller {
     this._currentVideoStageStream = null
 
     this._publishedVideoTrack = null
-    this._publishedVideoSource = null // "banuba" | "canvas" | null
+    this._publishedVideoSource = null
 
     this._state = "idle"
     this._mode = this.initialModeValue === "away" ? "away" : "normal"
@@ -216,7 +221,9 @@ export default class extends Controller {
 
     try {
       if (this._stage) {
-        try { this._stage.leave() } catch (_) {}
+        try {
+          this._stage.leave()
+        } catch (_) {}
       }
     } finally {
       this._cleanupStage()
@@ -334,44 +341,6 @@ export default class extends Controller {
     }
   }
 
-  _applyCurrentMode() {
-    if (this._mode === "away") {
-      this._applyAwayMode()
-    } else {
-      this._applyNormalMode()
-    }
-  }
-
-  _applyAwayMode() {
-    if (this.hasBanubaSurfaceTarget) this.banubaSurfaceTarget.classList.add("d-none")
-    if (this.hasCanvasTarget) this.canvasTarget.classList.remove("d-none")
-
-    this._syncCanvasResolutionToMeasured()
-    this._startCanvasRenderLoop()
-
-    if (this._broadcasting && this._publishedVideoSource !== "canvas" && !this._switchingVideoSource) {
-      this._setError("映像状態の同期が必要です。もう一度お試しください。")
-    }
-    console.log("away canvas size", {
-      measured: this._measuredVideo,
-      canvasWidth: this.canvasTarget?.width,
-      canvasHeight: this.canvasTarget?.height,
-    })
-  }
-
-  _applyNormalMode() {
-    if (this.hasCanvasTarget) this.canvasTarget.classList.add("d-none")
-    if (this.hasBanubaSurfaceTarget) this.banubaSurfaceTarget.classList.remove("d-none")
-
-    if (!this._broadcasting && this._publishedVideoSource !== "canvas") {
-      this._stopCanvasRenderLoop()
-    }
-
-    if (this._broadcasting && this._publishedVideoSource !== "banuba" && !this._switchingVideoSource) {
-      this._setError("映像状態の同期が必要です。もう一度お試しください。")
-    }
-  }
-
   async _switchPublishedVideoSource(source) {
     if (!this._broadcasting || !this._stage) return
     if (source === this._publishedVideoSource) return
@@ -423,186 +392,61 @@ export default class extends Controller {
     throw new Error("stage_refresh_strategy_not_supported")
   }
 
-  async _ensureCameraVideoTrack() {
-    if (this._cameraVideoTrack) return
+  _buildCameraVideoConstraints() {
+    const maxWidth = 1920
+    const maxHeight = 1080
 
-    const videoConstraints = this._buildCameraVideoConstraints()
-
-    this._cameraMedia = await navigator.mediaDevices.getUserMedia({
-      video: videoConstraints,
-      audio: false,
-    })
-
-    this._cameraVideoTrack = this._cameraMedia.getVideoTracks()[0] || null
-
-    this._captureMeasuredVideoTrack(this._cameraVideoTrack)
-    this._syncCanvasResolutionToMeasured()
-  }
-
-  async _ensureBanubaStarted() {
-    if (this._banubaStarted && this._banubaPlayer) return
-
-    if (!this.banubaClientTokenValue) {
-      throw new Error("banuba_client_token_missing")
-    }
-
-    await this._ensureCameraVideoTrack()
-
-    const sdkBase = this._normalizedBanubaSdkBaseUrl()
-
-    const player = await Player.create({
-      clientToken: this.banubaClientTokenValue,
-      locateFile: {
-        "BanubaSDK.data": `${sdkBase}/BanubaSDK.data`,
-        "BanubaSDK.wasm": `${sdkBase}/BanubaSDK.wasm`,
-        "BanubaSDK.simd.wasm": `${sdkBase}/BanubaSDK.simd.wasm`,
+    return {
+      facingMode: "user",
+      width: {
+        ideal: maxWidth,
+        max: maxWidth,
       },
-    })
-
-    const modules = []
-
-    if (this.banubaFaceTrackerUrlValue) {
-      modules.push(new Module(this.banubaFaceTrackerUrlValue))
-    }
-
-    if (this.banubaEyesUrlValue) {
-      modules.push(new Module(this.banubaEyesUrlValue))
-    }
-
-    if (this.banubaLipsUrlValue) {
-      modules.push(new Module(this.banubaLipsUrlValue))
-    }
-
-    if (this.banubaSkinUrlValue) {
-      modules.push(new Module(this.banubaSkinUrlValue))
-    }
-
-    if (modules.length > 0) {
-      await player.addModule(...modules)
-    }
-
-    const rawCameraStream = new window.MediaStream()
-    if (this._cameraVideoTrack) {
-      rawCameraStream.addTrack(this._cameraVideoTrack)
-    }
-
-    const banubaInput = new BanubaMediaStream(rawCameraStream)
-    await player.use(banubaInput, { horizontalFlip: false })
-
-    if (!this.hasBanubaSurfaceTarget) {
-      throw new Error("banuba_surface_missing")
-    }
-
-    Dom.render(player, this.banubaSurfaceTarget)
-
-    if (this.banubaEffectUrlValue) {
-      player.applyEffect(new Effect(this.banubaEffectUrlValue))
-    }
-
-    this._banubaPlayer = player
-    this._banubaStarted = true
-    this._banubaRenderedNode = await this._waitForBanubaRenderedNode()
-    this._syncCanvasResolutionToMeasured()
-  }
-
-  async _ensureBanubaPublishTrack() {
-    await this._ensureBanubaStarted()
-
-    if (this._banubaVideoTrack && this._banubaStageStream) return
-
-    const renderedNode = this._banubaRenderedNode || await this._waitForBanubaRenderedNode()
-    this._banubaRenderedNode = renderedNode
-    this._syncCanvasResolutionToMeasured()
-
-    let stream = null
-
-    if (renderedNode?.tagName === "CANVAS" && typeof renderedNode.captureStream === "function") {
-      stream = renderedNode.captureStream(15)
-    } else if (typeof renderedNode?.captureStream === "function") {
-      stream = renderedNode.captureStream(15)
-    }
-
-    const track = stream?.getVideoTracks?.()[0] || null
-
-    if (!track) {
-      throw new Error("banuba_publish_track_unavailable")
-    }
-
-    this._banubaStream = stream
-    this._banubaVideoTrack = track
-
-    const { LocalStageStream } = window.IVSBroadcastClient || {}
-    this._banubaStageStream = (track && LocalStageStream) ? new LocalStageStream(track) : null
-  }
-
-  async _ensureAudioTrack() {
-    if (this._audioTrack) return
-
-    this._audioMedia = await navigator.mediaDevices.getUserMedia({
-      video: false,
-      audio: true,
-    })
-
-    this._audioTrack = this._audioMedia.getAudioTracks()[0] || null
-  }
-
-  async _destroyBanubaPlayer() {
-    this._stopBanubaSurfaceMediaStreams()
-
-    if (this._banubaPlayer) {
-      try {
-        if (typeof this._banubaPlayer.destroy === "function") {
-          await this._banubaPlayer.destroy()
-        }
-      } catch (_) {}
-    }
-
-    this._stopBanubaSurfaceMediaStreams()
-
-    this._banubaPlayer = null
-    this._banubaStarted = false
-    this._banubaRenderedNode = null
-
-    if (this.hasBanubaSurfaceTarget) {
-      this.banubaSurfaceTarget.innerHTML = ""
+      height: {
+        ideal: maxHeight,
+        max: maxHeight,
+      },
     }
   }
 
-  _stopBanubaSurfaceMediaStreams() {
-    if (!this.hasBanubaSurfaceTarget) return
-
-    const mediaElements = this.banubaSurfaceTarget.querySelectorAll("video, audio")
-
-    mediaElements.forEach((el) => {
-      try {
-        if (typeof el.pause === "function") {
-          el.pause()
-        }
-      } catch (_) {}
-
-      try {
-        const stream = el.srcObject
-        if (stream && typeof stream.getTracks === "function") {
-          stream.getTracks().forEach((track) => {
-            try { track.stop() } catch (_) {}
-          })
-        }
-        el.srcObject = null
-      } catch (_) {}
-    })
+  _applyMicTrackEnabled() {
+    if (this._audioTrack) {
+      this._audioTrack.enabled = !!this._micEnabled
+    }
   }
 
-  async _waitForBanubaRenderedNode() {
-    const timeoutMs = 5000
-    const startAt = Date.now()
+  _applyManualMicState() {
+    this._micEnabled = !!this._lastManualMicEnabled
+    this._applyMicTrackEnabled()
+  }
 
-    while ((Date.now() - startAt) < timeoutMs) {
-      const node = this.banubaSurfaceTarget?.querySelector("canvas, video")
-      if (node) return node
-      await this._nextFrame()
+  _forceMicOffForAwayEntry() {
+    this._micEnabled = false
+    this._applyMicTrackEnabled()
+  }
+
+  async _startPreviewOnlyIfNeeded() {
+    if (!this.hasTokenUrlValue) return
+    if (this._stage || this._broadcasting) return
+    if (this._banubaStarted) return
+
+    this._clearError()
+
+    try {
+      await this._ensureBanubaStarted()
+      await this._ensureBanubaPublishTrack()
+
+      this._previewOnly = true
+      this._applyCurrentMode()
+    } catch (e) {
+      this._setError(this._humanizeError(e))
+      await this._destroyBanubaPlayer()
+      this._cleanupBanubaPublishTrack()
+      this._cleanupCameraMedia()
+      this._previewOnly = false
+    } finally {
+      this._syncUI()
     }
-
-    throw new Error("banuba_render_node_not_found")
   }
 
   _nextFrame() {
@@ -663,441 +507,105 @@ export default class extends Controller {
     }
   }
 
-  _ensureCanvasPublishTrack() {
-    this._syncCanvasResolutionToMeasured()
-    this._startCanvasRenderLoop()
-
-    if (this._canvasVideoTrack && this._canvasStageStream) return
-
-    const stream = this.canvasTarget.captureStream(15)
-    const track = stream.getVideoTracks()[0] || null
-
-    this._canvasStream = stream
-    this._canvasVideoTrack = track
-
-    const { LocalStageStream } = window.IVSBroadcastClient || {}
-    this._canvasStageStream = (track && LocalStageStream) ? new LocalStageStream(track) : null
-  }
-
-  _syncCanvasResolutionToMeasured() {
-    if (!this.hasCanvasTarget) return
-
-    const width = Math.max(1, Math.round(this._measuredVideo?.width || 1280))
-    const height = Math.max(1, Math.round(this._measuredVideo?.height || 720))
-
-    if (this.canvasTarget.width !== width) this.canvasTarget.width = width
-    if (this.canvasTarget.height !== height) this.canvasTarget.height = height
-  }
-
-  _buildCameraVideoConstraints() {
-    const maxWidth = 1920
-    const maxHeight = 1080
-
-    return {
-      facingMode: "user",
-      width: {
-        ideal: maxWidth,
-        max: maxWidth,
-      },
-      height: {
-        ideal: maxHeight,
-        max: maxHeight,
-      },
-    }
-  }
-
-  _applyMicTrackEnabled() {
-    if (this._audioTrack) {
-      this._audioTrack.enabled = !!this._micEnabled
-    }
-  }
-
-  _applyManualMicState() {
-    this._micEnabled = !!this._lastManualMicEnabled
-    this._applyMicTrackEnabled()
-  }
-
-  _forceMicOffForAwayEntry() {
-    this._micEnabled = false
-    this._applyMicTrackEnabled()
-  }
-
-  _syncMicUI() {
-    if (!this.hasMicBtnTarget || !this.hasMicIconTarget) return
-
-    this.micBtnTarget.disabled = !this._broadcasting
-    this.micBtnTarget.classList.toggle("is-off", !this._micEnabled)
-    this.micBtnTarget.setAttribute(
-      "aria-label",
-      this._micEnabled ? "マイクをオフにする" : "マイクをオンにする"
-    )
-    this.micBtnTarget.setAttribute(
-      "title",
-      this._micEnabled ? "マイクON" : "マイクOFF"
-    )
-
-    this.micIconTarget.className = this._micEnabled
-      ? "bi bi-mic-fill"
-      : "bi bi-mic-mute-fill"
-  }
-
-  _syncUI() {
-    if (this.hasStartBtnTarget && this.hasEndBtnTarget) {
-      if (this._broadcasting) {
-        this.startBtnTarget.classList.add("d-none")
-        this.endBtnTarget.classList.remove("d-none")
-      } else {
-        this.startBtnTarget.classList.remove("d-none")
-        this.endBtnTarget.classList.add("d-none")
-      }
-    }
-
-    const canToggleCamera = this._broadcasting && !this._switchingVideoSource
-
-    if (this.hasCameraOffBtnTarget) {
-      this.cameraOffBtnTarget.disabled = !canToggleCamera || this._boothStatus === "away"
-      this.cameraOffBtnTarget.classList.toggle("d-none", this._boothStatus === "away")
-    }
-
-    if (this.hasCameraOnBtnTarget) {
-      this.cameraOnBtnTarget.disabled = !canToggleCamera || this._boothStatus !== "away"
-      this.cameraOnBtnTarget.classList.toggle("d-none", this._boothStatus !== "away")
-    }
-
-    this._syncMicUI()
-
-    if (this.hasSummaryPanelTarget) {
-      const visible = (this._boothStatus === "standby") && !this._broadcasting
-      this.summaryPanelTarget.classList.toggle("d-none", !visible)
-    }
-
-    if (this.hasSummaryBtnTarget) {
-      const visible = (this._boothStatus === "standby") && !this._broadcasting
-      this.summaryBtnTarget.classList.toggle("d-none", !visible)
-      this.summaryBtnTarget.disabled = !visible
-    }
-
-    if (this.hasStartBtnTarget) {
-      const normal = this.startBtnTarget.dataset.labelNormal || "配信開始"
-      const resume = this.startBtnTarget.dataset.labelResume || "配信に戻る"
-      this.startBtnTarget.textContent = this._resumable ? resume : normal
-    }
-
-    if (this.hasMetaPanelTarget) {
-      const visible =
-        this._boothStatus === "standby" ||
-        this._boothStatus === "live" ||
-        this._boothStatus === "away" ||
-        this._broadcasting
-
-      this.metaPanelTarget.classList.toggle("d-none", !visible)
-    }
-
-    if (this.hasDrinkPanelTarget) {
-      const visible =
-        this._broadcasting ||
-        this._boothStatus === "live" ||
-        this._boothStatus === "away"
-
-      this.drinkPanelTarget.classList.toggle("d-none", !visible)
-    }
-
-    if (this.hasOpsPanelTarget) {
-      const visible = this._broadcasting
-      this.opsPanelTarget.classList.toggle("d-none", !visible)
-    }
-  }
-
-  async _startPreviewOnlyIfNeeded() {
-    if (!this.hasTokenUrlValue) return
-    if (this._stage || this._broadcasting) return
-    if (this._banubaStarted) return
-
-    this._clearError()
-
-    try {
-      await this._ensureBanubaStarted()
-      await this._ensureBanubaPublishTrack()
-
-      this._previewOnly = true
-      this._applyCurrentMode()
-    } catch (e) {
-      this._setError(this._humanizeError(e))
-      await this._destroyBanubaPlayer()
-      this._cleanupBanubaPublishTrack()
-      this._cleanupCameraMedia()
-      this._previewOnly = false
-    } finally {
-      this._syncUI()
-    }
-  }
-
-  _startCanvasRenderLoop() {
-    if (!this.hasCanvasTarget) return
-    if (this._raf) return
-
-    const canvas = this.canvasTarget
-    const ctx = canvas.getContext("2d")
-
-    const draw = () => {
-      try {
-        const width = canvas.width
-        const height = canvas.height
-
-        ctx.clearRect(0, 0, width, height)
-
-        ctx.fillStyle = "#111"
-        ctx.fillRect(0, 0, width, height)
-
-        const minSide = Math.min(width, height)
-        const fontSize = Math.max(28, Math.round(minSide * 0.1))
-        const subFontSize = Math.max(16, Math.round(minSide * 0.045))
-
-        ctx.fillStyle = "#fff"
-        ctx.textAlign = "center"
-        ctx.textBaseline = "middle"
-        ctx.font = `700 ${fontSize}px sans-serif`
-        ctx.fillText("席外し中", width / 2, height / 2 - fontSize * 0.15)
-
-        ctx.fillStyle = "rgba(255, 255, 255, 0.75)"
-        ctx.font = `400 ${subFontSize}px sans-serif`
-        ctx.fillText("しばらくお待ちください", width / 2, height / 2 + fontSize * 0.8)
-      } catch (_) {
-      }
-
-      this._raf = requestAnimationFrame(draw)
-    }
-
-    this._raf = requestAnimationFrame(draw)
-  }
-
-  _stopCanvasRenderLoop() {
-    if (this._raf) cancelAnimationFrame(this._raf)
-    this._raf = null
-
-    if (!this.hasCanvasTarget) return
-
-    const canvas = this.canvasTarget
-    const ctx = canvas.getContext("2d")
-    if (ctx) {
-      try {
-        ctx.clearRect(0, 0, canvas.width, canvas.height)
-      } catch (_) {}
-    }
-  }
-
-  async _fetchParticipantToken(role) {
-    const resp = await fetch(this.tokenUrlValue, {
-      method: "POST",
-      credentials: "same-origin",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content
-      },
-      body: JSON.stringify({ role }),
-    })
-
-    let body = null
-    try { body = await resp.json() } catch (_) {}
-
-    if (!resp.ok) {
-      throw new Error(`token_api_failed(${resp.status}) ${body?.error || ""}`.trim())
-    }
-
-    return body.participant_token
-  }
-
-  async _patchBoothStatus(to) {
-    console.log("[ivs-publisher] statusUrlValue=", this.statusUrlValue, "to=", to)
-    if (!this.statusUrlValue) return
-
-    const url = new URL(this.statusUrlValue, window.location.origin)
-    url.searchParams.set("to", to)
-
-    const resp = await fetch(url.toString(), {
-      method: "PATCH",
-      redirect: "manual",
-      credentials: "same-origin",
-      headers: {
-        "Accept": "text/vnd.turbo-stream.html",
-        "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content
-      },
-    })
-
-    if (resp.status >= 300 && resp.status < 400) {
-      return
-    }
-
-    if (!resp.ok) throw new Error(`booth_status_failed(${resp.status})`)
-
-    const html = await resp.text()
-    if (html && window.Turbo?.renderStreamMessage) {
-      window.Turbo.renderStreamMessage(html)
-    }
-  }
-
-  async _reloadMetaDisplay() {
-    if (!this.hasMetaDisplayUrlValue) return
-
-    const frame = document.getElementById("stream_meta_display")
-    if (!frame) return
-
-    const currentSrc = frame.getAttribute("src")
-    if (currentSrc === this.metaDisplayUrlValue) {
-      if (typeof frame.reload === "function") {
-        await frame.reload()
-      } else {
-        frame.removeAttribute("src")
-        frame.setAttribute("src", this.metaDisplayUrlValue)
-      }
-      return
-    }
-
-    frame.setAttribute("src", this.metaDisplayUrlValue)
-  }
-
-  async _postFinish() {
-    const resp = await fetch(this.finishUrlValue, {
-      method: "POST",
-      credentials: "same-origin",
-      headers: {
-        "Accept": "text/html, application/xhtml+xml",
-        "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content
-      }
-    })
-
-    if (!resp.ok) throw new Error(`finish_failed(${resp.status})`)
-
-    return resp.url
-  }
-
-  _cleanupStage() {
-    this._stage = null
-    this._strategy = null
-    this._banubaStageStream = null
-    this._canvasStageStream = null
-    this._audioStageStream = null
-    this._currentVideoStageStream = null
-  }
-
-  _cleanupBanubaPublishTrack() {
-    if (this._banubaStream) {
-      try {
-        this._banubaStream.getTracks().forEach((t) => t.stop())
-      } catch (_) {}
-      this._banubaStream = null
-    }
-
-    this._banubaVideoTrack = null
-    this._banubaStageStream = null
-    this._publishedVideoTrack = null
-    if (this._publishedVideoSource === "banuba") {
-      this._publishedVideoSource = null
-    }
-  }
-
-  _cleanupCameraMedia() {
-    if (this._cameraMedia) {
-      try {
-        this._cameraMedia.getTracks().forEach((t) => t.stop())
-      } catch (_) {}
-      this._cameraMedia = null
-    }
-
-    this._cameraVideoTrack = null
-  }
-
-  async _cleanupMediaAndCanvas() {
-    this._stopCanvasRenderLoop()
-    this._stopBanubaSurfaceMediaStreams()
-
-    if (this._audioMedia) {
-      this._audioMedia.getTracks().forEach((t) => t.stop())
-      this._audioMedia = null
-    }
-
-    if (this._canvasStream) {
-      try {
-        this._canvasStream.getTracks().forEach((t) => t.stop())
-      } catch (_) {}
-      this._canvasStream = null
-    }
-
-    this._cleanupBanubaPublishTrack()
-    await this._destroyBanubaPlayer()
-    this._cleanupCameraMedia()
-
-    this._audioTrack = null
-    this._canvasVideoTrack = null
-    this._publishedVideoTrack = null
-    this._publishedVideoSource = null
-    this._previewOnly = false
-    this._switchingVideoSource = false
-  }
-
-  _normalizedBanubaSdkBaseUrl() {
-    return (this.banubaSdkBaseUrlValue || "").replace(/\/+$/, "")
-  }
-
   _setState(s) {
     this._state = s
     if (this.hasStateTarget) this.stateTarget.textContent = s
   }
 
   _clearError() {
-    if (this.hasErrorTarget) this.errorTarget.textContent = ""
+    clearError(this)
   }
 
   _setError(msg) {
-    if (this.hasErrorTarget) this.errorTarget.textContent = msg
+    setError(this, msg)
   }
 
   _humanizeError(err) {
-    const msg = `${err?.message || err}`
+    return humanizeError(err)
+  }
 
-    if (msg.includes("token_api_failed(403)")) {
-      return "このブースの配信者ではありません（担当キャストのみ配信できます）。"
-    }
-    if (msg.includes("token_api_failed(409) stage_not_bound")) {
-      return "ステージが未準備です（stage_not_bound）。"
-    }
-    if (msg.includes("token_api_failed(409) not_joinable")) {
-      return "まだ配信開始できない状態です（not_joinable：スタンバイ/配信状態を確認）。"
-    }
-    if (msg.includes("stage_refresh_strategy_not_supported")) {
-      return "この環境では映像切替に未対応です。"
-    }
-    if (msg.includes("canvas_publish_track_unavailable")) {
-      return "席外し映像の準備に失敗しました。もう一度お試しください。"
-    }
-    if (msg.includes("banuba_publish_track_unavailable")) {
-      return "Banuba の映像出力取得に失敗しました。もう一度お試しください。"
-    }
-    if (msg.includes("banuba_render_node_not_found")) {
-      return "Banuba の描画面が見つかりませんでした。再読込してください。"
-    }
-    if (msg.includes("banuba_client_token_missing")) {
-      return "Banuba の client token が未設定です。"
-    }
-    if (msg.includes("banuba_surface_missing")) {
-      return "Banuba の表示領域が見つかりません。"
-    }
-    if (msg.includes("not loaded")) {
-      return "IVS SDK の読み込みに失敗しました（script tag を確認してください）。"
-    }
+  _fetchParticipantToken(role) {
+    return fetchParticipantToken(this, role)
+  }
 
-    if (err?.name === "NotAllowedError" || err?.name === "SecurityError") {
-      return "カメラ/マイク権限が拒否されました。ブラウザ設定で許可してください。"
-    }
-    if (err?.name === "NotFoundError" || err?.name === "OverconstrainedError") {
-      return "利用できるカメラ/マイクが見つかりません。接続やOS設定を確認してください。"
-    }
-    if (err?.name === "NotReadableError") {
-      return "カメラ/マイクを使用できません（他アプリ使用中の可能性）。"
-    }
+  _patchBoothStatus(to) {
+    return patchBoothStatus(this, to)
+  }
 
-    return `配信開始に失敗しました: ${msg}`
+  _reloadMetaDisplay() {
+    return reloadMetaDisplay(this)
+  }
+
+  _postFinish() {
+    return postFinish(this)
+  }
+
+  _syncCanvasResolutionToMeasured() {
+    syncCanvasResolutionToMeasured(this)
+  }
+
+  _startCanvasRenderLoop() {
+    startCanvasRenderLoop(this)
+  }
+
+  _stopCanvasRenderLoop() {
+    stopCanvasRenderLoop(this)
+  }
+
+  _ensureBanubaStarted() {
+    return ensureBanubaStarted(this)
+  }
+
+  _ensureBanubaPublishTrack() {
+    return ensureBanubaPublishTrack(this)
+  }
+
+  _destroyBanubaPlayer() {
+    return destroyBanubaPlayer(this)
+  }
+
+  _waitForBanubaRenderedNode() {
+    return waitForBanubaRenderedNode(this)
+  }
+
+  _ensureCameraVideoTrack() {
+    return ensureCameraVideoTrack(this)
+  }
+
+  _ensureAudioTrack() {
+    return ensureAudioTrack(this)
+  }
+
+  _ensureCanvasPublishTrack() {
+    return ensureCanvasPublishTrack(this)
+  }
+
+  _cleanupStage() {
+    cleanupStage(this)
+  }
+
+  _cleanupBanubaPublishTrack() {
+    cleanupBanubaPublishTrack(this)
+  }
+
+  _cleanupCameraMedia() {
+    cleanupCameraMedia(this)
+  }
+
+  _cleanupMediaAndCanvas() {
+    return cleanupMediaAndCanvas(this)
+  }
+
+  _syncMicUI() {
+    syncMicUI(this)
+  }
+
+  _syncUI() {
+    syncUI(this)
+  }
+
+  _applyCurrentMode() {
+    applyCurrentMode(this)
   }
 
   _resumeKey() {
