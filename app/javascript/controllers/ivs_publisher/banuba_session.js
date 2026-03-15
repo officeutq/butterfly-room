@@ -65,6 +65,102 @@ export async function destroyBanubaPlayer(ctx) {
   }
 }
 
+export function buildBeautyConfig(ctx) {
+  const state = ctx._beautyState || {}
+  const enabled = !!state.beautyEnabled
+
+  const softlightStrength = enabled ? Number(state.softlightStrength ?? 0) : 0
+  const faceNarrowing = enabled ? Number(state.faceNarrowing ?? 0) : 0
+  const eyeRounding = enabled ? Number(state.eyeRounding ?? 0) : 0
+  const eyeEnlargement = enabled ? Number(state.eyeEnlargement ?? 0) : 0
+  const lipsSize = enabled ? Number(state.lipsSize ?? 0) : 0
+  const lipsMouthSize = enabled ? Number(state.lipsMouthSize ?? 0) : 0
+  const noseLength = enabled ? Number(state.noseLength ?? 0) : 0
+
+  return {
+    faces: [
+      {
+        morphing: {
+          eyes: {
+            rounding: eyeRounding,
+            enlargement: eyeEnlargement,
+            height: 0,
+            spacing: 0,
+            squint: 0,
+            lower_eyelid_pos: 0,
+            lower_eyelid_size: 0,
+            down: 0,
+            eyelid_upper: 0,
+            eyelid_lower: 0,
+          },
+          face: {
+            narrowing: faceNarrowing,
+            v_shape: 0,
+            cheekbones_narrowing: 0,
+            cheeks_narrowing: 0,
+            jaw_narrowing: 0,
+            chin_shortening: 0,
+            chin_narrowing: 0,
+            sunken_cheeks: 0,
+            cheeks_and_jaw_narrowing: 0,
+            jaw_wide_thin: 0,
+            chin: 0,
+            forehead: 0,
+          },
+          nose: {
+            width: 0,
+            length: noseLength,
+            tip_width: 0,
+            down_up: 0,
+            sellion: 0,
+          },
+          lips: {
+            size: lipsSize,
+            height: 0,
+            thickness: 0,
+            mouth_size: lipsMouthSize,
+            smile: 0,
+            shape: 0,
+            sharp: 0,
+          },
+        },
+        eyes_whitening: {
+          strength: 1,
+        },
+        eyes_flare: {
+          strength: 1,
+        },
+        teeth_whitening: {
+          strength: 1,
+        },
+        softlight: {
+          strength: softlightStrength,
+        },
+      },
+    ],
+    scene: "effect C8bSOT83XWnng4YKk1Q4j",
+    version: "2.0.0",
+    camera: {},
+    files: [],
+  }
+}
+
+export async function applyBeautyConfig(ctx) {
+  if (!ctx._banubaPlayer) return
+
+  const config = buildBeautyConfig(ctx)
+  const reloadConfig = ctx._banubaPlayer?._effectManager?.reloadConfig
+
+  if (typeof reloadConfig !== "function") {
+    throw new Error("banuba_reload_config_not_available")
+  }
+
+  await reloadConfig.call(
+    ctx._banubaPlayer._effectManager,
+    JSON.stringify(config)
+  )
+}
+
 export async function ensureBanubaStarted(ctx) {
   if (ctx._banubaStarted && ctx._banubaPlayer) return
 
@@ -122,11 +218,12 @@ export async function ensureBanubaStarted(ctx) {
   Dom.render(player, ctx.banubaSurfaceTarget)
 
   if (ctx.banubaEffectUrlValue) {
-    player.applyEffect(new Effect(ctx.banubaEffectUrlValue))
+    await player.applyEffect(new Effect(ctx.banubaEffectUrlValue))
   }
 
   ctx._banubaPlayer = player
   ctx._banubaStarted = true
+  await applyBeautyConfig(ctx)
   ctx._banubaRenderedNode = await waitForBanubaRenderedNode(ctx)
   ctx._syncCanvasResolutionToMeasured()
 }
