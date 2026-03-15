@@ -132,6 +132,13 @@ app/
     application_helper.rb
   javascript/
     controllers/
+      ivs_publisher/
+        api_client.js
+        away_canvas.js
+        banuba_session.js
+        errors.js
+        media_state.js
+        ui_state.js
       application.js
       banuba_verification_controller.js
       clipboard_controller.js
