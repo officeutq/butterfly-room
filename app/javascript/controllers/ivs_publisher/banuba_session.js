@@ -240,9 +240,9 @@ export async function ensureBanubaPublishTrack(ctx) {
   let stream = null
 
   if (renderedNode?.tagName === "CANVAS" && typeof renderedNode.captureStream === "function") {
-    stream = renderedNode.captureStream(15)
+    stream = renderedNode.captureStream(30)
   } else if (typeof renderedNode?.captureStream === "function") {
-    stream = renderedNode.captureStream(15)
+    stream = renderedNode.captureStream(30)
   }
 
   const track = stream?.getVideoTracks?.()[0] || null
