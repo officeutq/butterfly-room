@@ -30,6 +30,36 @@ export function stopBanubaSurfaceMediaStreams(ctx) {
   })
 }
 
+function applyBanubaPreviewNodeStyles(node) {
+  if (!node || !node.style) return
+
+  node.style.position = "absolute"
+  node.style.inset = "0"
+  node.style.width = "100%"
+  node.style.height = "100%"
+  node.style.maxWidth = "100%"
+  node.style.maxHeight = "100%"
+  node.style.objectFit = "contain"
+  node.style.display = "block"
+}
+
+async function syncBanubaRenderedNode(ctx, node) {
+  if (!node) return
+
+  applyBanubaPreviewNodeStyles(node)
+  ctx._captureMeasuredBanubaNode(node)
+
+  await ctx._nextFrame()
+
+  applyBanubaPreviewNodeStyles(node)
+  ctx._captureMeasuredBanubaNode(node)
+
+  await ctx._nextFrame()
+
+  applyBanubaPreviewNodeStyles(node)
+  ctx._captureMeasuredBanubaNode(node)
+}
+
 export async function waitForBanubaRenderedNode(ctx) {
   const timeoutMs = 5000
   const startAt = Date.now()
@@ -224,7 +254,9 @@ export async function ensureBanubaStarted(ctx) {
   ctx._banubaPlayer = player
   ctx._banubaStarted = true
   await applyBeautyConfig(ctx)
+
   ctx._banubaRenderedNode = await waitForBanubaRenderedNode(ctx)
+  await syncBanubaRenderedNode(ctx, ctx._banubaRenderedNode)
   ctx._syncCanvasResolutionToMeasured()
 }
 
@@ -235,6 +267,8 @@ export async function ensureBanubaPublishTrack(ctx) {
 
   const renderedNode = ctx._banubaRenderedNode || await waitForBanubaRenderedNode(ctx)
   ctx._banubaRenderedNode = renderedNode
+
+  await syncBanubaRenderedNode(ctx, renderedNode)
   ctx._syncCanvasResolutionToMeasured()
 
   let stream = null
