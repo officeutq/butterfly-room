@@ -508,7 +508,7 @@ export default class extends Controller {
   }
 
   setLipsSize(value) {
-    this._beautyState.lipsSize = this._clampNumber(value, 0, 1, this._beautyState.lipsSize)
+    this._beautyState.lipsSize = this._clampNumber(value, -1, 1, this._beautyState.lipsSize)
     return this._applyBeautyConfig()
   }
 

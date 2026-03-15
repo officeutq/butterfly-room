@@ -34,7 +34,7 @@ export function ensureCanvasPublishTrack(ctx) {
 
   if (ctx._canvasVideoTrack && ctx._canvasStageStream) return
 
-  const stream = ctx.canvasTarget.captureStream(15)
+  const stream = ctx.canvasTarget.captureStream(30)
   const track = stream.getVideoTracks()[0] || null
 
   ctx._canvasStream = stream
