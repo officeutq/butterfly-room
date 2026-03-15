@@ -1,0 +1,125 @@
+/* ------------------------------------------------------------
+   live beauty panel (#403)
+------------------------------------------------------------ */
+.live-beauty-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  pointer-events: auto;
+  background: transparent;
+}
+
+.live-beauty-panel {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: calc(var(--app-footer-h) + 12px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.28);
+}
+
+.live-beauty-slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.live-beauty-slider-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  color: rgba(255, 255, 255, 0.96);
+  font-size: 0.875rem;
+  line-height: 1.2;
+}
+
+.live-beauty-slider-label {
+  font-weight: 600;
+}
+
+.live-beauty-slider-value {
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.live-beauty-slider {
+  margin: 0;
+}
+
+.live-beauty-select-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.live-beauty-select-btn {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+
+  background: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.96);
+  font-size: 0.875rem;
+  line-height: 1.2;
+
+  transition:
+    background-color 0.15s ease,
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.live-beauty-select-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.live-beauty-select-btn:active {
+  transform: scale(0.98);
+}
+
+.live-beauty-select-btn.is-active {
+  background: rgba(13, 110, 253, 0.7);
+}
+
+.live-ops-btn.is-active {
+  background: rgba(13, 110, 253, 0.45);
+}
+
+@media (max-width: 575.98px) {
+  .live-beauty-panel {
+    left: 8px;
+    right: 8px;
+    bottom: calc(var(--app-footer-h) + 8px);
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .live-beauty-select-row {
+    gap: 6px;
+  }
+
+  .live-beauty-select-btn {
+    min-height: 36px;
+    padding: 6px 8px;
+    font-size: 0.8125rem;
+  }
+
+  .live-beauty-slider-header {
+    font-size: 0.8125rem;
+  }
+}
