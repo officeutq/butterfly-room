@@ -2,6 +2,8 @@
 
 module Admin
   class StoresController < Admin::BaseController
+    include RemovableImageAttachment
+
     before_action :set_store, only: %i[edit update]
     before_action :authorize_store_edit!, only: %i[edit update]
 
@@ -17,10 +19,7 @@ module Admin
             .order(:id)
         end
 
-      # 現在選択中があれば view で判定できるように
       @current_store_id = session[:current_store_id]
-
-      # Issue #270: return_to / return_to_key を view へ渡す（POSTに引き継ぐ）
       @return_to = params[:return_to].presence
       @return_to_key = params[:return_to_key].presence
     end
@@ -30,6 +29,12 @@ module Admin
 
     def update
       if @store.update(store_params)
+        purge_attachment_if_requested(
+          record: @store,
+          attachment_name: :thumbnail,
+          remove_param_name: :remove_thumbnail
+        )
+
         redirect_to edit_admin_store_path(@store), notice: "店舗情報を更新しました"
       else
         render :edit, status: :unprocessable_entity
@@ -45,7 +50,6 @@ module Admin
     def authorize_store_edit!
       return if current_user.system_admin?
 
-      # store_admin: admin membership がある store のみ
       ok = StoreMembership.admin_only.exists?(user_id: current_user.id, store_id: @store.id)
       head :forbidden unless ok
     end

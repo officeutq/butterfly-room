@@ -11,6 +11,7 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     build-essential libpq-dev curl git nodejs npm \
     pkg-config libyaml-dev \
     vim-tiny \
+    imagemagick \
   && rm -rf /var/lib/apt/lists/*
 
 # 作業ディレクトリ

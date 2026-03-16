@@ -1,4 +1,6 @@
 class User < ApplicationRecord
+  include NormalizedImageAttachment
+
   devise :database_authenticatable, :recoverable, :rememberable, :validatable
 
   enum :role, { customer: 0, cast: 1, store_admin: 2, system_admin: 3 }
@@ -13,6 +15,8 @@ class User < ApplicationRecord
   }.freeze
 
   has_one_attached :avatar
+
+  normalizes_image_attachment :avatar
 
   has_one :wallet, foreign_key: :customer_user_id, dependent: :destroy, inverse_of: :customer_user
   has_many :store_memberships, dependent: :destroy

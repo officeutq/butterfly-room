@@ -1,4 +1,6 @@
 class Booth < ApplicationRecord
+  include NormalizedImageAttachment
+
   belongs_to :store
   belongs_to :current_stream_session, class_name: "StreamSession", optional: true
 
@@ -7,6 +9,8 @@ class Booth < ApplicationRecord
   has_many :cast_users, through: :booth_casts, source: :cast_user
   has_many :favorite_booths, dependent: :destroy
   has_one_attached :thumbnail_image
+
+  normalizes_image_attachment :thumbnail_image
 
   enum :status, { offline: 0, live: 1, away: 2, standby: 3 }
 

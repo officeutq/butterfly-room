@@ -17,11 +17,12 @@
       <div class="form-check mb-2">
         <%= check_box_tag "booth[remove_thumbnail_image]", "1", false,
                           class: "form-check-input", id: "remove_thumbnail_image" %>
-        <%= label_tag "remove_thumbnail_image", "現在のサムネを削除する", class: "form-check-label" %>
+        <%= label_tag "remove_thumbnail_image", "画像なし", class: "form-check-label" %>
       </div>
     <% end %>
 
     <%= f.file_field :thumbnail_image, class: "form-control" %>
+    <div class="form-text">png / jpg / webp、最大 1024x1024 に縮小保存</div>
   </div>
 
   <div class="d-flex gap-2">

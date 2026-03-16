@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class ProfilesController < ApplicationController
+  include RemovableImageAttachment
+
   before_action :authenticate_user!
 
   def edit
@@ -11,6 +13,12 @@ class ProfilesController < ApplicationController
     @user = current_user
 
     if @user.update(profile_params)
+      purge_attachment_if_requested(
+        record: @user,
+        attachment_name: :avatar,
+        remove_param_name: :remove_avatar
+      )
+
       redirect_to edit_profile_path, notice: "プロフィールを更新しました"
     else
       render :edit, status: :unprocessable_entity

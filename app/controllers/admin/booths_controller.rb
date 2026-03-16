@@ -2,6 +2,8 @@
 
 module Admin
   class BoothsController < Admin::BaseController
+    include RemovableImageAttachment
+
     before_action :require_current_store!
     before_action :set_booth, only: %i[show edit update watch archive force_end]
     before_action :authorize_update!, only: %i[edit update]
@@ -44,11 +46,13 @@ module Admin
     end
 
     def update
-      if remove_thumbnail_image?
-        @booth.thumbnail_image.purge_later if @booth.thumbnail_image.attached?
-      end
-
       if @booth.update(booth_params)
+        purge_attachment_if_requested(
+          record: @booth,
+          attachment_name: :thumbnail_image,
+          remove_param_name: :remove_thumbnail_image
+        )
+
         redirect_to admin_booth_path(@booth), notice: "更新しました"
       else
         render :edit, status: :unprocessable_entity
@@ -114,7 +118,6 @@ module Admin
         if current_user.system_admin?
           Booth.all
         else
-          # require_current_store! があるので current_store は必ずいる前提
           current_store.booths
         end
 
@@ -131,18 +134,12 @@ module Admin
       head :forbidden unless policy.create?
     end
 
-    # create 用（name など許可）
     def booth_create_params
       params.require(:booth).permit(:name, :description, :thumbnail_image)
     end
 
-    # update 用（現状維持）
     def booth_params
       params.require(:booth).permit(:description, :thumbnail_image)
-    end
-
-    def remove_thumbnail_image?
-      params.dig(:booth, :remove_thumbnail_image) == "1"
     end
   end
 end
