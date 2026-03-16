@@ -160,6 +160,8 @@ app/
     application_mailer.rb
   models/
     concerns/
+      normalized_image_attachment.rb
+      removable_image_attachment.rb
     application_record.rb
     booth.rb
     booth_cast.rb
