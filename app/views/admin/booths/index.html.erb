@@ -26,10 +26,17 @@
         <td><%= booth.id %></td>
 
         <td>
-          <%= link_to booth.name,
+          <%= button_to booth.name,
                 enter_booth_path(booth),
-                data: { turbo_frame: "modal" },
-                class: "text-decoration-none text-reset" %>
+                method: :get,
+                class: "btn btn-outline-primary btn-sm",
+                form: {
+                  class: "d-inline",
+                  data: {
+                    turbo_frame: "modal",
+                    turbo_confirm: enter_booth_switch_confirm_message(booth)
+                  }
+                } %>
         </td>
 
         <td><%= booth.status %></td>

@@ -88,10 +88,9 @@ Rails.application.routes.draw do
 
   # --- Cast ---
   namespace :cast do
-    # current_booth selection
     resource :current_booth, only: %i[create]
 
-    resources :booths, only: %i[index show edit update] do
+    resources :booths, only: %i[index edit update] do
       get :live, on: :member
       patch :status, on: :member
       resources :stream_sessions, only: %i[create], module: :booths
@@ -113,7 +112,6 @@ Rails.application.routes.draw do
 
   # --- Store Admin ---
   namespace :admin do
-    # current_store selection
     resources :stores, only: %i[index edit update] do
       resource :payout_account, only: %i[edit update], controller: "store_payout_accounts"
     end
@@ -127,7 +125,6 @@ Rails.application.routes.draw do
       end
     end
 
-    # --- Booth casts management (Phase1: 1 booth = 1 cast) ---
     resources :booth_casts, only: %i[index create]
 
     resources :drink_items, only: %i[index create update destroy]
@@ -142,7 +139,6 @@ Rails.application.routes.draw do
 
     get "/cast_metrics", to: "metrics#cast"
 
-    # --- #261 store-facing settlements (view only) ---
     resources :settlements, only: %i[index show]
   end
 
@@ -153,23 +149,19 @@ Rails.application.routes.draw do
 
     resources :settlements, only: %i[index show] do
       collection do
-        # --- manual settlement (existing) ---
         get  "manual/new",     to: "settlements#new_manual",     as: :new_manual
         post "manual/preview", to: "settlements#preview_manual", as: :preview_manual
         post "manual",         to: "settlements#create_manual",  as: :create_manual
 
-        # --- #260 bulk export (selected confirmed -> 1 file) ---
         post :export_csv
       end
 
       member do
-        # --- #260 transitions ---
         post :confirm
         post :mark_paid
       end
     end
 
-    # 生成済みCSVの閲覧・DL（生成ボタンは別途無効化）
     resources :settlement_exports, only: %i[index show create]
   end
 end

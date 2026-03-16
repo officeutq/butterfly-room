@@ -84,10 +84,17 @@
                      (current_user.store_admin? && current_user.admin_of_store?(@store.id))
                    ) %>
 
-              <%= link_to "視聴ページへ",
+              <%= button_to "視聴ページへ",
                     enter_booth_path(booth),
-                    data: (open_in_modal ? { turbo_frame: "modal" } : {}),
-                    class: "btn btn-outline-primary btn-sm" %>
+                    method: :get,
+                    class: "btn btn-outline-primary btn-sm",
+                    form: {
+                      class: "d-inline",
+                      data: (
+                        (open_in_modal ? { turbo_frame: "modal" } : {})
+                          .merge(turbo_confirm: enter_booth_switch_confirm_message(booth))
+                      )
+                    } %>
             </div>
           </div>
         </div>

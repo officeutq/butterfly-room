@@ -10,14 +10,21 @@ module Cast
           return
         end
 
-        session = StreamSessions::StartService.new(
+        result = ::Booths::EnterAsCastService.new(
           booth: booth,
           actor: current_user
         ).call
 
-        redirect_to live_cast_booth_path(booth), notice: "スタンバイ開始: session=#{session.id}"
-      rescue => e
-        redirect_to cast_booth_path(booth&.id || params[:booth_id]), alert: e.message
+        case result.action
+        when :redirect_live
+          redirect_to live_cast_booth_path(result.booth), notice: "配信画面を開きました"
+        when :occupied_by_other
+          redirect_to cast_booths_path, alert: "このブースはすでに配信中です"
+        else
+          redirect_to cast_booths_path, alert: "配信導線の開始に失敗しました"
+        end
+      rescue ::Booths::EnterAsCastService::NotAuthorized
+        redirect_to cast_booths_path, alert: "選択できないブースです"
       end
     end
   end

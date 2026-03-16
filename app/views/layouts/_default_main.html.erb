@@ -28,34 +28,27 @@
 
       <div>
         <% if user_signed_in? && current_user.at_least?(:cast) %>
-          <% cast_booths_show = (controller_path == "cast/booths" && action_name == "show") %>
+          <% booth = current_user.cast? ? layout_current_booth : nil %>
 
-          <% if cast_booths_show %>
-            <% booth = @booth %>
+          <% stream_path =
+              if current_user.cast?
+                if booth.present?
+                  enter_booth_path(booth)
+                else
+                  cast_booths_path
+                end
+              else
+                cast_booths_path
+              end %>
 
-            <% if booth.archived? %>
-              <button class="btn btn-primary" disabled>スタンバイ開始</button>
-            <% else %>
-              <%= button_to "スタンバイ開始",
-                    cast_booth_stream_sessions_path(booth),
-                    method: :post,
-                    class: "btn btn-primary" %>
-            <% end %>
-          <% else %>
-            <% stream_path =
-                 if current_user.cast?
-                   booth = layout_current_booth
-                   if booth.present?
-                     booth.offline? ? cast_booth_path(booth) : live_cast_booth_path(booth)
-                   else
-                     cast_booths_path
-                   end
-                 else
-                   cast_booths_path
-                 end %>
-
-            <%= link_to "配信", stream_path, class: "btn btn-sm btn-primary" %>
-          <% end %>
+          <%= button_to "配信",
+                stream_path,
+                method: :get,
+                class: "btn btn-sm btn-primary",
+                form: {
+                  class: "d-inline",
+                  data: (booth.present? ? { turbo_confirm: enter_booth_switch_confirm_message(booth) } : {})
+                } %>
         <% end %>
       </div>
 
