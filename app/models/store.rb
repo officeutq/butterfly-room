@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Store < ApplicationRecord
+  include NormalizedImageAttachment
+
   belongs_to :referral_code, optional: true
 
   has_many :booths, dependent: :destroy
@@ -14,6 +16,8 @@ class Store < ApplicationRecord
   has_one :active_payout_account, -> { active }, class_name: "StorePayoutAccount"
   has_one_attached :thumbnail
 
+  normalizes_image_attachment :thumbnail
+
   enum :business_type, {
     cabaret: 0,
     girls_bar: 1,
@@ -26,8 +30,6 @@ class Store < ApplicationRecord
   validates :name, presence: true
   validates :description, length: { maximum: 1000 }, allow_nil: true
   validates :area, length: { maximum: 50 }, allow_nil: true
-
-  validate :thumbnail_validation
 
   BUSINESS_TYPE_LABELS = {
     cabaret: "キャバクラ",
@@ -69,22 +71,5 @@ class Store < ApplicationRecord
     return nil if pa.account_number.blank?
 
     pa.account_number.to_s.last(4)
-  end
-
-  private
-
-  def thumbnail_validation
-    return unless thumbnail.attached?
-
-    # content_type
-    allowed = %w[image/png image/jpeg image/webp]
-    if thumbnail.blob.content_type.blank? || !allowed.include?(thumbnail.blob.content_type)
-      errors.add(:thumbnail, "は png / jpg / webp のみアップロードできます")
-    end
-
-    # size（5MB）
-    if thumbnail.blob.byte_size > 5.megabytes
-      errors.add(:thumbnail, "は 5MB 以下にしてください")
-    end
   end
 end

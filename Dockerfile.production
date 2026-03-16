@@ -8,6 +8,7 @@ ENV LANG=C.UTF-8 TZ=Asia/Tokyo \
 RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     build-essential libpq-dev curl git nodejs npm \
     pkg-config libyaml-dev \
+    imagemagick \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

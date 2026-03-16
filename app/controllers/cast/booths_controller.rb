@@ -2,6 +2,8 @@
 
 module Cast
   class BoothsController < Cast::BaseController
+    include RemovableImageAttachment
+
     before_action :set_booth, only: %i[live status edit update]
     before_action :authorize_update!, only: %i[edit update]
 
@@ -52,11 +54,13 @@ module Cast
     end
 
     def update
-      if remove_thumbnail_image?
-        @booth.thumbnail_image.purge_later if @booth.thumbnail_image.attached?
-      end
-
       if @booth.update(booth_params)
+        purge_attachment_if_requested(
+          record: @booth,
+          attachment_name: :thumbnail_image,
+          remove_param_name: :remove_thumbnail_image
+        )
+
         redirect_to cast_booths_path, notice: "更新しました"
       else
         render :edit, status: :unprocessable_entity
@@ -138,10 +142,6 @@ module Cast
 
     def booth_params
       params.require(:booth).permit(:description, :thumbnail_image)
-    end
-
-    def remove_thumbnail_image?
-      params.dig(:booth, :remove_thumbnail_image) == "1"
     end
   end
 end
