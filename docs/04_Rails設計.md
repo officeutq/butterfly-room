@@ -201,6 +201,7 @@ app/
       store_ban_checker.rb
       stream_session_policy.rb
     booths/
+      enter_as_cast_service.rb
       provision_ivs_stage_service.rb
     casts/
       register_cast.rb
@@ -286,7 +287,6 @@ app/
         edit.html.erb
         index.html.erb
         live.html.erb
-        show.html.erb
       stream_sessions/
         _ended.html.erb
         _meta_display_frame.html.erb
