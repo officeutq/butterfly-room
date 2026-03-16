@@ -72,13 +72,6 @@
           <div class="live-overlay-main-spacer">
             <div class="live-standby-actions-panel d-none" data-ivs-publisher-target="summaryPanel">
               <div class="live-standby-actions-buttons">
-                <%= button_to "スタンバイをやめて戻る",
-                      finish_cast_stream_session_path(@stream_session),
-                      method: :post,
-                      class: "live-standby-action-btn",
-                      form_class: "live-standby-action-form",
-                      data: { ivs_publisher_target: "summaryBtn" } %>
-
                 <%= link_to "配信設定",
                       meta_modal_cast_stream_session_path(@stream_session),
                       class: "live-standby-action-btn live-standby-action-link",

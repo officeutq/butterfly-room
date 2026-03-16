@@ -88,12 +88,6 @@ export function syncUI(ctx) {
     ctx.summaryPanelTarget.classList.toggle("d-none", !visible)
   }
 
-  if (ctx.hasSummaryBtnTarget) {
-    const visible = (ctx._boothStatus === "standby") && !ctx._broadcasting
-    ctx.summaryBtnTarget.classList.toggle("d-none", !visible)
-    ctx.summaryBtnTarget.disabled = !visible
-  }
-
   if (ctx.hasStartBtnTarget) {
     const normal = ctx.startBtnTarget.dataset.labelNormal || "配信開始"
     const resume = ctx.startBtnTarget.dataset.labelResume || "配信に戻る"
