@@ -46,6 +46,7 @@ app/
         _banuba_verification.scss
         _layout.scss
         _live.scss
+        _live_beauty.scss
         _live_comment.scss
         _live_drink.scss
         _live_layout.scss
