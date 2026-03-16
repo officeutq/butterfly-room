@@ -25,7 +25,7 @@
           <td class="text-end">
             <% data_attrs = {} %>
             <% if @confirm_switch_booth && booth.id.to_s != @current_booth_id.to_s %>
-              <% data_attrs[:turbo_confirm] = "配信中（またはスタンバイ/離席中）のブースから切り替えます。よろしいですか？" %>
+              <% data_attrs[:turbo_confirm] = enter_booth_switch_confirm_message(booth) %>
             <% end %>
 
             <%= button_to "このブースを開く",

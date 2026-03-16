@@ -22,20 +22,19 @@ class AdminBoothsIndexTest < ActionDispatch::IntegrationTest
   test "store_admin: index shows only current_store booths (active only by default) and booth name links to enter in modal" do
     sign_in @store_admin, scope: :user
 
-    # store_admin は BaseController#current_store が「最初の admin membership」をfallbackする仕様
     get admin_booths_path
     assert_response :success
 
-    # current_store(store1) の active のみ
     assert_select "tbody tr", minimum: 1
-    assert_select "a[href=?][data-turbo-frame=?]", enter_booth_path(@booth1_active), "modal", text: @booth1_active.name
-    assert_select "a", text: @booth1_arch.name, count: 0
 
-    # 他storeは出ない
-    assert_select "a", text: @booth2_active.name, count: 0
-    assert_select "a", text: @booth2_arch.name, count: 0
+    assert_select "form[action=?][data-turbo-frame=?]", enter_booth_path(@booth1_active), "modal", minimum: 1 do
+      assert_select "button", text: @booth1_active.name
+    end
 
-    # 「詳細」ボタンが無い
+    assert_select "button", text: @booth1_arch.name, count: 0
+    assert_select "button", text: @booth2_active.name, count: 0
+    assert_select "button", text: @booth2_arch.name, count: 0
+
     assert_select "a", text: "詳細", count: 0
     assert_select "a[href=?]", admin_booth_path(@booth1_active), count: 0
   end
@@ -46,44 +45,37 @@ class AdminBoothsIndexTest < ActionDispatch::IntegrationTest
     get admin_booths_path(archived: 1)
     assert_response :success
 
-    # current_store(store1) の active + archived が出る
-    assert_select "a", text: @booth1_active.name, count: 1
-    assert_select "a", text: @booth1_arch.name, count: 1
+    assert_select "button", text: @booth1_active.name, count: 1
+    assert_select "button", text: @booth1_arch.name, count: 1
 
-    # 他storeは出ない
-    assert_select "a", text: @booth2_active.name, count: 0
-    assert_select "a", text: @booth2_arch.name, count: 0
+    assert_select "button", text: @booth2_active.name, count: 0
+    assert_select "button", text: @booth2_arch.name, count: 0
   end
 
   test "system_admin: index requires current_store and shows only that store booths" do
     sign_in @system_admin, scope: :user
 
-    # current_store 未選択は /admin/stores へ誘導
     get admin_booths_path
     assert_response :redirect
     assert_redirected_to admin_stores_path
 
-    # 選択（選択後は root にリダイレクト）
     post admin_current_store_path, params: { store_id: @store1.id }
     assert_response :redirect
     assert_redirected_to dashboard_path
 
-    # 選択後に index
     get admin_booths_path
     assert_response :success
 
-    # store1 の active のみ
-    assert_select "a", text: @booth1_active.name, count: 1
-    assert_select "a", text: @booth1_arch.name, count: 0
+    assert_select "button", text: @booth1_active.name, count: 1
+    assert_select "button", text: @booth1_arch.name, count: 0
 
-    # 他storeは出ない
-    assert_select "a", text: @booth2_active.name, count: 0
-    assert_select "a", text: @booth2_arch.name, count: 0
+    assert_select "button", text: @booth2_active.name, count: 0
+    assert_select "button", text: @booth2_arch.name, count: 0
 
-    # ブース名は enter（modal）
-    assert_select "a[href=?][data-turbo-frame=?]", enter_booth_path(@booth1_active), "modal", text: @booth1_active.name
+    assert_select "form[action=?][data-turbo-frame=?]", enter_booth_path(@booth1_active), "modal", minimum: 1 do
+      assert_select "button", text: @booth1_active.name
+    end
 
-    # 「詳細」ボタンが無い
     assert_select "a", text: "詳細", count: 0
   end
 
@@ -97,9 +89,9 @@ class AdminBoothsIndexTest < ActionDispatch::IntegrationTest
     get admin_booths_path(archived: 1)
     assert_response :success
 
-    assert_select "a", text: @booth1_active.name, count: 1
-    assert_select "a", text: @booth1_arch.name, count: 1
-    assert_select "a", text: @booth2_active.name, count: 0
-    assert_select "a", text: @booth2_arch.name, count: 0
+    assert_select "button", text: @booth1_active.name, count: 1
+    assert_select "button", text: @booth1_arch.name, count: 1
+    assert_select "button", text: @booth2_active.name, count: 0
+    assert_select "button", text: @booth2_arch.name, count: 0
   end
 end

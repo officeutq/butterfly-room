@@ -73,7 +73,7 @@ module Cast
       redirect_to cast_stream_session_path(ended_session),
                   notice: "今回の配信が終了しました"
     rescue => e
-      redirect_to cast_booth_path(@stream_session.booth_id), alert: e.message
+      redirect_to live_cast_booth_path(@stream_session.booth_id), alert: e.message
     end
 
     def pending_drink_orders

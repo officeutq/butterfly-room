@@ -116,4 +116,17 @@ module ApplicationHelper
 
     current_user.wallet&.available_points || 0
   end
+
+  def enter_booth_switch_confirm_message(target_booth)
+    return nil unless user_signed_in?
+    return nil unless current_user.at_least?(:cast)
+    return nil if target_booth.blank?
+
+    current = layout_current_booth
+    return nil if current.blank?
+    return nil if current.id == target_booth.id
+    return nil unless current.live? || current.away?
+
+    "配信中（または離席中）のブースから切り替えます。よろしいですか？"
+  end
 end

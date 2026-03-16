@@ -5,7 +5,7 @@ module Cast
     def create
       booth_id = params.require(:booth_id)
 
-      booth = Booth.find_by(id: booth_id)
+      booth = Booth.active.find_by(id: booth_id)
       if booth.blank?
         session.delete(:current_booth_id)
         redirect_to cast_booths_path, alert: "ブースが見つかりません"
@@ -29,8 +29,22 @@ module Cast
 
       session[:current_booth_id] = booth.id
 
-      path = booth.offline? ? cast_booth_path(booth) : live_cast_booth_path(booth)
-      redirect_to path, notice: "ブースを選択しました"
+      result = ::Booths::EnterAsCastService.new(
+        booth: booth,
+        actor: current_user
+      ).call
+
+      case result.action
+      when :redirect_live
+        redirect_to live_cast_booth_path(result.booth), notice: "ブースを選択しました"
+      when :occupied_by_other
+        redirect_to cast_booths_path, alert: "このブースはすでに配信中です"
+      else
+        redirect_to cast_booths_path, alert: "ブースを開けませんでした"
+      end
+    rescue ::Booths::EnterAsCastService::NotAuthorized
+      session.delete(:current_booth_id)
+      redirect_to cast_booths_path, alert: "選択できないブースです"
     rescue ActionController::ParameterMissing
       redirect_to cast_booths_path, alert: "ブースを選択してください"
     end

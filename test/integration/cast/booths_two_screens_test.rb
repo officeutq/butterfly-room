@@ -19,24 +19,36 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
     sign_in @cast, scope: :user
   end
 
-  test "offline: summary is 200" do
-    get cast_booth_path(@booth)
-    assert_response :success
-  end
+  test "offline: enter auto starts standby and redirects to live" do
+    assert_difference "StreamSession.count", 1 do
+      get enter_booth_path(@booth)
+    end
 
-  test "offline: live redirects to summary" do
-    get live_cast_booth_path(@booth)
-    assert_response :redirect
-    assert_redirected_to cast_booth_path(@booth)
-  end
-
-  test "standby: summary redirects to live" do
-    StreamSessions::StartService.new(booth: @booth, actor: @cast).call
-    assert @booth.reload.standby?
-
-    get cast_booth_path(@booth)
     assert_response :redirect
     assert_redirected_to live_cast_booth_path(@booth)
+
+    @booth.reload
+    assert @booth.standby?
+    assert @booth.current_stream_session_id.present?
+  end
+
+  test "offline: live redirects to cast booths index" do
+    get live_cast_booth_path(@booth)
+    assert_response :redirect
+    assert_redirected_to cast_booths_path
+  end
+
+  test "standby: enter reuses existing session and redirects to live" do
+    session = StreamSessions::StartService.new(booth: @booth, actor: @cast).call
+    assert @booth.reload.standby?
+
+    assert_no_difference "StreamSession.count" do
+      get enter_booth_path(@booth)
+    end
+
+    assert_response :redirect
+    assert_redirected_to live_cast_booth_path(@booth)
+    assert_equal session.id, @booth.reload.current_stream_session_id
   end
 
   test "standby: live is 200" do
@@ -60,22 +72,30 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
     assert_nil @booth.current_stream_session_id
   end
 
-  test "live: summary redirects to live" do
-    StreamSessions::StartService.new(booth: @booth, actor: @cast).call
+  test "live by self: enter redirects to live without creating new session" do
+    session = StreamSessions::StartService.new(booth: @booth, actor: @cast).call
     @booth.update!(status: :live)
 
-    get cast_booth_path(@booth)
+    assert_no_difference "StreamSession.count" do
+      get enter_booth_path(@booth)
+    end
+
     assert_response :redirect
     assert_redirected_to live_cast_booth_path(@booth)
+    assert_equal session.id, @booth.reload.current_stream_session_id
   end
 
-  test "away: summary redirects to live" do
-    StreamSessions::StartService.new(booth: @booth, actor: @cast).call
+  test "away by self: enter redirects to live without creating new session" do
+    session = StreamSessions::StartService.new(booth: @booth, actor: @cast).call
     @booth.update!(status: :away)
 
-    get cast_booth_path(@booth)
+    assert_no_difference "StreamSession.count" do
+      get enter_booth_path(@booth)
+    end
+
     assert_response :redirect
     assert_redirected_to live_cast_booth_path(@booth)
+    assert_equal session.id, @booth.reload.current_stream_session_id
   end
 
   test "standby: live subscribes comments but does not render comments UI" do
@@ -85,13 +105,8 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
     get live_cast_booth_path(@booth)
     assert_response :success
 
-    # 購読は維持される（turbo_stream_fromが生成するタグが含まれる）
     assert_includes response.body, "turbo-cable-stream-source"
-
-    # append先の空コンテナは存在する
     assert_includes response.body, 'id="comments"'
-
-    # フォーム（turbo-frame）は表示しない
     refute_includes response.body, 'id="comment_form"'
   end
 

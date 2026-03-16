@@ -2,7 +2,7 @@
 
 module Cast
   class BoothsController < Cast::BaseController
-    before_action :set_booth, only: %i[show live status edit update]
+    before_action :set_booth, only: %i[live status edit update]
     before_action :authorize_update!, only: %i[edit update]
 
     def index
@@ -21,21 +21,14 @@ module Cast
         end
 
       @current_booth_id = session[:current_booth_id]
-      @confirm_switch_booth = current_booth.present? && !current_booth.offline?
-    end
-
-    def show
-      unless @booth.offline?
-        redirect_to live_cast_booth_path(@booth)
-        nil
-      end
+      @confirm_switch_booth = current_booth&.live? || current_booth&.away?
     end
 
     def live
       @stream_session = @booth.current_stream_session
 
-      if @booth.offline? || @stream_session.blank?
-        redirect_to cast_booth_path(@booth), alert: "配信セッションがありません（まずスタンバイ開始してください）"
+      if @stream_session.blank?
+        redirect_to cast_booths_path, alert: "配信セッションがありません（配信導線から入り直してください）"
         return
       end
 
@@ -64,7 +57,7 @@ module Cast
       end
 
       if @booth.update(booth_params)
-        redirect_to cast_booth_path(@booth), notice: "更新しました"
+        redirect_to cast_booths_path, notice: "更新しました"
       else
         render :edit, status: :unprocessable_entity
       end
@@ -116,7 +109,7 @@ module Cast
     private
 
     def set_booth
-      booth = Booth.find(params[:id])
+      booth = Booth.active.find(params[:id])
 
       allowed =
         if current_user.system_admin?
@@ -135,6 +128,7 @@ module Cast
 
       @booth = booth
       session[:current_booth_id] = @booth.id
+      session[:current_store_id] = @booth.store_id
     end
 
     def authorize_update!
