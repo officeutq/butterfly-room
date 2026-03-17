@@ -3,7 +3,6 @@
 module StreamSessions
   module Comments
     class CreateService
-      class BannedError < StandardError; end
       class RateLimitedError < StandardError; end
       class BoothNotLiveError < StandardError; end
 
@@ -16,7 +15,6 @@ module StreamSessions
       def call
         raise ActiveRecord::RecordInvalid.new(Comment.new) if @body.blank?
         raise BoothNotLiveError unless booth_allows_comments?
-        raise BannedError if banned?
         raise RateLimitedError if rate_limited?
 
         comment = Comment.create!(
@@ -35,11 +33,6 @@ module StreamSessions
       def booth_allows_comments?
         booth = @stream_session.booth
         booth.live? || booth.away?
-      end
-
-      def banned?
-        return false unless @user.customer?
-        StoreBan.exists?(store_id: @stream_session.store_id, customer_user_id: @user.id)
       end
 
       def rate_limited?

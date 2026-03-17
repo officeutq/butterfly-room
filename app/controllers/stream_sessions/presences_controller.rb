@@ -8,6 +8,9 @@ class StreamSessions::PresencesController < ApplicationController
   before_action :reject_banned_customer_for_stream_session!
 
   def ping
+    policy = Authorization::ViewerPolicy.new(current_user, @stream_session)
+    head :forbidden and return unless policy.ping_presence?
+
     Presences::PingService.new(
       stream_session: @stream_session,
       customer_user: current_user
