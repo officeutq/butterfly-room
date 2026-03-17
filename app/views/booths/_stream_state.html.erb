@@ -1,4 +1,4 @@
-<%# locals: booth:, stream_session:, comments:, drink_items: %>
+<%# locals: booth:, stream_session:, comments:, drink_items:, can_create_drink_order: %>
 
 <% live_like = booth.live? || booth.away? %>
 <% live_ui = stream_session.present? && live_like %>
@@ -30,7 +30,8 @@
       <%= render "booths/drink_menu",
             booth: booth,
             stream_session: stream_session,
-            drink_items: drink_items %>
+            drink_items: drink_items,
+            can_create_drink_order: can_create_drink_order %>
     <% end %>
 
     <div class="viewer-stage-shell">

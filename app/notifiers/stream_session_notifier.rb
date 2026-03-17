@@ -15,6 +15,7 @@ class StreamSessionNotifier
         comments: stream_session ? Comment.alive.where(stream_session: stream_session)
                                      .order(created_at: :desc).limit(50).reverse : [],
         drink_items: booth.store.drink_items.enabled_only.ordered,
+        can_create_drink_order: false,
         flash_message: flash_message
       }
     )

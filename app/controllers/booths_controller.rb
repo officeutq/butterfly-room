@@ -33,6 +33,13 @@ class BoothsController < ApplicationController
 
     @store_favorited =
       user_signed_in? && current_user.favorite_stores.exists?(store_id: @booth.store_id)
+
+    @can_create_drink_order =
+      if @stream_session.present? && user_signed_in?
+        Authorization::ViewerPolicy.new(current_user, @stream_session).create_drink_order?
+      else
+        false
+      end
   end
 
   def enter
