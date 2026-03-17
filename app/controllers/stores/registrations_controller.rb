@@ -13,7 +13,10 @@ module Stores
 
       if @form.save
         sign_in(@form.user) # Devise
-        redirect_to dashboard_path, notice: "店舗登録が完了しました"
+        session[:current_store_id] = @form.store.id
+        session.delete(:current_booth_id)
+
+        redirect_to edit_admin_store_path(@form.store), notice: "店舗登録が完了しました。続けて店舗情報を入力してください。"
       else
         render :new, status: :unprocessable_entity
       end
