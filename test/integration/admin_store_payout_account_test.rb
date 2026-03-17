@@ -16,21 +16,31 @@ class AdminStorePayoutAccountTest < ActionDispatch::IntegrationTest
   test "store_admin can access own payout_account edit" do
     sign_in @store_admin, scope: :user
 
-    get edit_admin_store_payout_account_path(@store1)
+    post admin_current_store_path, params: { store_id: @store1.id }
+    assert_response :redirect
+
+    get edit_admin_payout_account_path
     assert_response :success
   end
 
-  test "store_admin cannot access other store payout_account edit (403)" do
+  test "store_admin cannot select other store for payout_account edit" do
     sign_in @store_admin, scope: :user
 
-    get edit_admin_store_payout_account_path(@store2)
-    assert_response :forbidden
+    post admin_current_store_path, params: { store_id: @store2.id, return_to_key: "payout_account_edit" }
+    assert_response :redirect
+    assert_redirected_to admin_stores_path
+    follow_redirect!
+    assert_response :success
+    assert_match "選択できない店舗です", response.body
   end
 
-  test "system_admin can access any store payout_account edit" do
+  test "system_admin can access selected store payout_account edit" do
     sign_in @system_admin, scope: :user
 
-    get edit_admin_store_payout_account_path(@store2)
+    post admin_current_store_path, params: { store_id: @store2.id }
+    assert_response :redirect
+
+    get edit_admin_payout_account_path
     assert_response :success
   end
 
@@ -48,7 +58,10 @@ class AdminStorePayoutAccountTest < ActionDispatch::IntegrationTest
       account_holder_kana: "テスト"
     )
 
-    patch admin_store_payout_account_path(@store1), params: {
+    post admin_current_store_path, params: { store_id: @store1.id }
+    assert_response :redirect
+
+    patch admin_payout_account_path, params: {
       store_payout_account: {
         bank_code: "0005",
         branch_code: "123",
@@ -59,7 +72,7 @@ class AdminStorePayoutAccountTest < ActionDispatch::IntegrationTest
     }
 
     assert_response :redirect
-    assert_redirected_to edit_admin_store_payout_account_path(@store1)
+    assert_redirected_to edit_admin_payout_account_path
 
     @store1.reload
     assert_equal 1, @store1.store_payout_accounts.active.count
@@ -70,7 +83,6 @@ class AdminStorePayoutAccountTest < ActionDispatch::IntegrationTest
   test "dashboard shows unconfigured badge when payout account is missing" do
     sign_in @store_admin, scope: :user
 
-    # current_store を store1 に
     post admin_current_store_path, params: { store_id: @store1.id }
     follow_redirect!
     assert_response :success
@@ -80,12 +92,13 @@ class AdminStorePayoutAccountTest < ActionDispatch::IntegrationTest
     assert_select "span.badge", text: "未設定"
   end
 
-  test "admin store edit shows unconfigured badge when payout account is missing" do
+  test "admin store edit does not show payout account section badge anymore" do
     sign_in @store_admin, scope: :user
 
     get edit_admin_store_path(@store1)
     assert_response :success
-    assert_select "span.badge", text: "未設定"
+    assert_select "span.badge", text: "未設定", count: 0
+    assert_no_match(/精算・振込設定/, response.body)
   end
 
   test "account number is not fully displayed on edit screen (only last4)" do
@@ -102,12 +115,13 @@ class AdminStorePayoutAccountTest < ActionDispatch::IntegrationTest
       account_holder_kana: "テスト"
     )
 
-    get edit_admin_store_payout_account_path(@store1)
+    post admin_current_store_path, params: { store_id: @store1.id }
+    assert_response :redirect
+
+    get edit_admin_payout_account_path
     assert_response :success
 
-    # フル表示は禁止
     assert_no_match(/1234567/, response.body)
-    # 下4桁は表示されてよい
     assert_match(/4567/, response.body)
   end
 end

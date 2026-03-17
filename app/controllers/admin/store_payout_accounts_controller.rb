@@ -2,6 +2,7 @@
 
 module Admin
   class StorePayoutAccountsController < Admin::BaseController
+    before_action :require_current_store!
     before_action :set_store
     before_action :authorize_store!
 
@@ -34,13 +35,13 @@ module Admin
         @payout_account.save!
       end
 
-      redirect_to edit_admin_store_payout_account_path(@store), notice: "精算・振込設定を更新しました"
+      redirect_to edit_admin_payout_account_path, notice: "精算・振込設定を更新しました"
     end
 
     private
 
     def set_store
-      @store = Store.find(params[:store_id])
+      @store = current_store
     end
 
     def authorize_store!

@@ -73,7 +73,7 @@ module Admin
 
       case key.to_s
       when "payout_account_edit"
-        edit_admin_store_payout_account_path(store)
+        edit_admin_payout_account_path
       when "store_edit"
         edit_admin_store_path(store)
       else

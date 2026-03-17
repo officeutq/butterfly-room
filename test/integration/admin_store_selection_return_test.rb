@@ -15,7 +15,6 @@ class AdminStoreSelectionReturnTest < ActionDispatch::IntegrationTest
   test "return_to: selecting store redirects back to the admin page" do
     sign_in @store_admin, scope: :user
 
-    # 例：/admin/booths に戻したい
     get admin_stores_path(return_to: admin_booths_path)
     assert_response :success
 
@@ -24,7 +23,7 @@ class AdminStoreSelectionReturnTest < ActionDispatch::IntegrationTest
     assert_redirected_to admin_booths_path
   end
 
-  test "return_to_key: payout_account_edit redirects to the store scoped page" do
+  test "return_to_key: payout_account_edit redirects to the current_store scoped page" do
     sign_in @system_admin, scope: :user
 
     get admin_stores_path(return_to_key: "payout_account_edit")
@@ -32,7 +31,7 @@ class AdminStoreSelectionReturnTest < ActionDispatch::IntegrationTest
 
     post admin_current_store_path, params: { store_id: @store.id, return_to_key: "payout_account_edit" }
     assert_response :redirect
-    assert_redirected_to edit_admin_store_payout_account_path(@store)
+    assert_redirected_to edit_admin_payout_account_path
   end
 
   test "invalid return_to is rejected and falls back to dashboard" do
