@@ -1,9 +1,9 @@
-<%# locals: booth:, stream_session:, drink_items: %>
+<%# locals: booth:, stream_session:, drink_items:, can_create_drink_order: %>
 
 <turbo-frame id="drink_menu">
   <% live_like = booth.live? || booth.away? %>
 
-  <% if stream_session.present? && live_like && (drink_items || []).any? %>
+  <% if can_create_drink_order && live_like && (drink_items || []).any? %>
     <div class="viewer-drink-action-bar">
       <div class="viewer-drink-action-list" role="group" aria-label="ドリンク送信">
         <% (drink_items || []).each do |item| %>

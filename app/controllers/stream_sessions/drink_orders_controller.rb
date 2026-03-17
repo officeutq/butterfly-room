@@ -5,8 +5,8 @@ module StreamSessions
     include StoreBanGuard
 
     before_action :authenticate_user!
-    before_action :require_customer!
     before_action :set_stream_session
+    before_action :authorize_create_drink_order!
     before_action :reject_banned_customer_for_stream_session!
 
     def create
@@ -29,7 +29,8 @@ module StreamSessions
               locals: {
                 booth: @stream_session.booth,
                 stream_session: @stream_session,
-                drink_items: DrinkItem.where(store_id: @stream_session.store_id, enabled: true).order(:id)
+                drink_items: DrinkItem.where(store_id: @stream_session.store_id, enabled: true).order(:id),
+                can_create_drink_order: true
               }
             ),
             turbo_stream.append(
@@ -71,12 +72,13 @@ module StreamSessions
       @stream_session = StreamSession.find(params[:stream_session_id])
     end
 
-    def reject_banned_customer_for_stream_session!
-      reject_banned_customer!(store: @stream_session.store)
+    def authorize_create_drink_order!
+      policy = Authorization::ViewerPolicy.new(current_user, @stream_session)
+      head :forbidden unless policy.create_drink_order?
     end
 
-    def require_customer!
-      head :forbidden unless current_user.customer?
+    def reject_banned_customer_for_stream_session!
+      reject_banned_customer!(store: @stream_session.store)
     end
 
     def render_drink_menu_error(message, status: :ok)
@@ -90,7 +92,8 @@ module StreamSessions
               locals: {
                 booth: @stream_session.booth,
                 stream_session: @stream_session,
-                drink_items: DrinkItem.where(store_id: @stream_session.store_id, enabled: true).order(:id)
+                drink_items: DrinkItem.where(store_id: @stream_session.store_id, enabled: true).order(:id),
+                can_create_drink_order: true
               }
             ),
             turbo_stream.append(
