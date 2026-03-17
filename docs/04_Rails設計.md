@@ -202,6 +202,7 @@ app/
       booth_policy.rb
       store_ban_checker.rb
       stream_session_policy.rb
+      viewer_policy.rb
     booths/
       enter_as_cast_service.rb
       provision_ivs_stage_service.rb
