@@ -35,7 +35,7 @@ module Admin
           remove_param_name: :remove_thumbnail
         )
 
-        redirect_to edit_admin_store_path(@store), notice: "店舗情報を更新しました"
+        redirect_to dashboard_path, notice: "店舗情報を更新しました"
       else
         render :edit, status: :unprocessable_entity
       end

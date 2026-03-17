@@ -47,7 +47,7 @@ class AdminStoreEditAuthorizationTest < ActionDispatch::IntegrationTest
 
     patch admin_store_path(@store2), params: { store: { name: "sys updated" } }
     assert_response :redirect
-    assert_redirected_to edit_admin_store_path(@store2)
+    assert_redirected_to dashboard_path
     assert_equal "sys updated", @store2.reload.name
   end
 
@@ -67,7 +67,7 @@ class AdminStoreEditAuthorizationTest < ActionDispatch::IntegrationTest
     }
 
     assert_response :redirect
-    assert_redirected_to edit_admin_store_path(@store1)
+    assert_redirected_to dashboard_path
 
     @store1.reload
     assert_equal "store1 updated", @store1.name
