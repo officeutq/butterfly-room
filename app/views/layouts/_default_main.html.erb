@@ -30,25 +30,23 @@
         <% if user_signed_in? && current_user.at_least?(:cast) %>
           <% booth = current_user.cast? ? layout_current_booth : nil %>
 
-          <% stream_path =
-              if current_user.cast?
-                if booth.present?
-                  enter_booth_path(booth)
-                else
-                  cast_booths_path
-                end
-              else
-                cast_booths_path
-              end %>
-
-          <%= button_to "配信",
-                stream_path,
-                method: :get,
-                class: "btn btn-sm btn-primary",
-                form: {
-                  class: "d-inline",
-                  data: (booth.present? ? { turbo_confirm: enter_booth_switch_confirm_message(booth) } : {})
-                } %>
+          <% if current_user.cast? && booth.present? %>
+            <%= button_to "配信",
+                  enter_booth_path(booth),
+                  method: :get,
+                  class: "btn btn-sm btn-primary",
+                  form: {
+                    class: "d-inline",
+                    data: { turbo_confirm: enter_booth_switch_confirm_message(booth) }
+                  } %>
+          <% else %>
+            <%= button_to "配信",
+                  cast_booths_path,
+                  method: :get,
+                  params: { return_to_key: "booth_live" },
+                  class: "btn btn-sm btn-primary",
+                  form: { class: "d-inline" } %>
+          <% end %>
         <% end %>
       </div>
 

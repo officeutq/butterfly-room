@@ -45,7 +45,7 @@
         <% if store.present? %>
           <%= link_to "店舗設定", edit_admin_store_path(store), class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "店舗設定（先に店舗を選択）",
+          <%= link_to "店舗設定",
                 admin_stores_path(return_to_key: "store_edit"),
                 class: "text-decoration-none" %>
         <% end %>
@@ -55,7 +55,7 @@
         <% if store.present? %>
           <%= link_to "ブース一覧", admin_booths_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "ブース一覧（先に店舗を選択）",
+          <%= link_to "ブース一覧",
                 admin_stores_path(return_to: admin_booths_path),
                 class: "text-decoration-none" %>
         <% end %>
@@ -65,8 +65,8 @@
         <% if booth.present? %>
           <%= link_to "ブースを編集", edit_cast_booth_path(booth), class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "ブースを編集（先にブースを選択）",
-                cast_booths_path,
+          <%= link_to "ブースを編集",
+                cast_booths_path(return_to_key: "booth_edit"),
                 class: "text-decoration-none" %>
         <% end %>
       </li>
@@ -75,7 +75,7 @@
         <% if store.present? %>
           <%= link_to "キャスト管理", admin_casts_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "キャスト管理（先に店舗を選択）",
+          <%= link_to "キャスト管理",
                 admin_stores_path(return_to: admin_casts_path),
                 class: "text-decoration-none" %>
         <% end %>
@@ -85,7 +85,7 @@
         <% if store.present? %>
           <%= link_to "ブースにキャストを紐づける", admin_booth_casts_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "ブースにキャストを紐づける（先に店舗を選択）",
+          <%= link_to "ブースにキャストを紐づける",
                 admin_stores_path(return_to: admin_booth_casts_path),
                 class: "text-decoration-none" %>
         <% end %>
@@ -95,7 +95,7 @@
         <% if store.present? %>
           <%= link_to "キャスト別数値一覧（直近30日）", admin_cast_metrics_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "キャスト別数値一覧（直近30日）（先に店舗を選択）",
+          <%= link_to "キャスト別数値一覧（直近30日）",
                 admin_stores_path(return_to: admin_cast_metrics_path),
                 class: "text-decoration-none" %>
         <% end %>
@@ -105,7 +105,7 @@
         <% if store.present? %>
           <%= link_to "ドリンクメニュー", admin_drink_items_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "ドリンクメニュー（先に店舗を選択）",
+          <%= link_to "ドリンクメニュー",
                 admin_stores_path(return_to: admin_drink_items_path),
                 class: "text-decoration-none" %>
         <% end %>
@@ -115,7 +115,7 @@
         <% if store.present? %>
           <%= link_to "店舗BAN", admin_store_bans_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "店舗BAN（先に店舗を選択）",
+          <%= link_to "店舗BAN",
                 admin_stores_path(return_to: admin_store_bans_path),
                 class: "text-decoration-none" %>
         <% end %>
@@ -130,7 +130,7 @@
             <% end %>
           <% end %>
         <% else %>
-          <%= link_to "精算・振込設定（先に店舗を選択）",
+          <%= link_to "精算・振込設定",
                 admin_stores_path(return_to_key: "payout_account_edit"),
                 class: "text-decoration-none" %>
         <% end %>
@@ -140,7 +140,7 @@
         <% if store.present? %>
           <%= link_to "精算（予定・履歴）", admin_settlements_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "精算（予定・履歴）（先に店舗を選択）",
+          <%= link_to "精算（予定・履歴）",
                 admin_stores_path(return_to: admin_settlements_path),
                 class: "text-decoration-none" %>
         <% end %>
@@ -166,7 +166,7 @@
         <% if store.present? %>
           <%= link_to "店舗設定", edit_admin_store_path(store), class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "店舗設定（先に店舗を選択）",
+          <%= link_to "店舗設定",
                 admin_stores_path(return_to_key: "store_edit"),
                 class: "text-decoration-none" %>
         <% end %>
@@ -176,7 +176,7 @@
         <% if store.present? %>
           <%= link_to "ブース一覧", admin_booths_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "ブース一覧（先に店舗を選択）",
+          <%= link_to "ブース一覧",
                 admin_stores_path(return_to: admin_booths_path),
                 class: "text-decoration-none" %>
         <% end %>
@@ -186,8 +186,8 @@
         <% if booth.present? %>
           <%= link_to "ブースを編集", edit_cast_booth_path(booth), class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "ブースを編集（先にブースを選択）",
-                cast_booths_path,
+          <%= link_to "ブースを編集",
+                cast_booths_path(return_to_key: "booth_edit"),
                 class: "text-decoration-none" %>
         <% end %>
       </li>
@@ -196,7 +196,7 @@
         <% if store.present? %>
           <%= link_to "キャスト管理", admin_casts_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "キャスト管理（先に店舗を選択）",
+          <%= link_to "キャスト管理",
                 admin_stores_path(return_to: admin_casts_path),
                 class: "text-decoration-none" %>
         <% end %>
@@ -206,7 +206,7 @@
         <% if store.present? %>
           <%= link_to "ブースにキャストを紐づける", admin_booth_casts_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "ブースにキャストを紐づける（先に店舗を選択）",
+          <%= link_to "ブースにキャストを紐づける",
                 admin_stores_path(return_to: admin_booth_casts_path),
                 class: "text-decoration-none" %>
         <% end %>
@@ -216,7 +216,7 @@
         <% if store.present? %>
           <%= link_to "キャスト別数値一覧（直近30日）", admin_cast_metrics_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "キャスト別数値一覧（直近30日）（先に店舗を選択）",
+          <%= link_to "キャスト別数値一覧（直近30日）",
                 admin_stores_path(return_to: admin_cast_metrics_path),
                 class: "text-decoration-none" %>
         <% end %>
@@ -226,7 +226,7 @@
         <% if store.present? %>
           <%= link_to "ドリンクメニュー", admin_drink_items_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "ドリンクメニュー（先に店舗を選択）",
+          <%= link_to "ドリンクメニュー",
                 admin_stores_path(return_to: admin_drink_items_path),
                 class: "text-decoration-none" %>
         <% end %>
@@ -236,7 +236,7 @@
         <% if store.present? %>
           <%= link_to "店舗BAN", admin_store_bans_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "店舗BAN（先に店舗を選択）",
+          <%= link_to "店舗BAN",
                 admin_stores_path(return_to: admin_store_bans_path),
                 class: "text-decoration-none" %>
         <% end %>
@@ -251,7 +251,7 @@
             <% end %>
           <% end %>
         <% else %>
-          <%= link_to "精算・振込設定（先に店舗を選択）",
+          <%= link_to "精算・振込設定",
                 admin_stores_path(return_to_key: "payout_account_edit"),
                 class: "text-decoration-none" %>
         <% end %>
@@ -261,7 +261,7 @@
         <% if store.present? %>
           <%= link_to "精算（予定・履歴）", admin_settlements_path, class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "精算（予定・履歴）（先に店舗を選択）",
+          <%= link_to "精算（予定・履歴）",
                 admin_stores_path(return_to: admin_settlements_path),
                 class: "text-decoration-none" %>
         <% end %>
@@ -280,15 +280,17 @@
 
     <ul class="list-group mb-4">
       <li class="list-group-item">
-        <%= link_to "ブース一覧", cast_booths_path, class: "text-decoration-none" %>
+        <%= link_to "ブース切替",
+              cast_booths_path(return_to: dashboard_path),
+              class: "text-decoration-none" %>
       </li>
 
       <li class="list-group-item">
         <% if booth.present? %>
           <%= link_to "ブースを編集", edit_cast_booth_path(booth), class: "text-decoration-none" %>
         <% else %>
-          <%= link_to "ブースを編集（先にブースを選択）",
-                cast_booths_path,
+          <%= link_to "ブースを編集",
+                cast_booths_path(return_to_key: "booth_edit"),
                 class: "text-decoration-none" %>
         <% end %>
       </li>

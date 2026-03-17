@@ -84,8 +84,15 @@
                 <li>
                   <span class="dropdown-item-text text-muted small">
                     booth:
+                    <% booth_link_params =
+                        if request.get? && request.path != "/cast/booths"
+                          { return_to: request.fullpath }
+                        else
+                          {}
+                        end %>
+
                     <% if current_user.cast? %>
-                      <%= link_to cast_booths_path,
+                      <%= link_to cast_booths_path(booth_link_params),
                             class: "link-secondary link-underline-opacity-0 link-underline-opacity-100-hover" do %>
                         <% if booth.present? %>
                           <strong><%= booth.name.presence || "(no name)" %></strong>
@@ -94,7 +101,7 @@
                         <% end %>
                       <% end %>
                     <% elsif current_user.at_least?(:store_admin) %>
-                      <%= link_to cast_booths_path,
+                      <%= link_to cast_booths_path(booth_link_params),
                             class: "link-secondary link-underline-opacity-0 link-underline-opacity-100-hover" do %>
                         <% if booth.present? %>
                           <strong><%= booth.name.presence || "(no name)" %></strong>
