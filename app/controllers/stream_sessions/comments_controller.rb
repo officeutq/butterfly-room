@@ -9,6 +9,9 @@ module StreamSessions
     before_action :reject_banned_customer_for_stream_session!
 
     def create
+      policy = Authorization::ViewerPolicy.new(current_user, @stream_session)
+      head :forbidden and return unless policy.create_comment?
+
       StreamSessions::Comments::CreateService.new(
         stream_session: @stream_session,
         user: current_user,
