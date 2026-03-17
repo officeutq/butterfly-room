@@ -123,7 +123,7 @@
 
       <li class="list-group-item">
         <% if store.present? %>
-          <%= link_to edit_admin_store_payout_account_path(store), class: "text-decoration-none" do %>
+          <%= link_to edit_admin_payout_account_path, class: "text-decoration-none" do %>
             精算・振込設定
             <% if store.payout_account_unconfigured? %>
               <span class="badge text-bg-warning ms-2">未設定</span>
@@ -244,7 +244,7 @@
 
       <li class="list-group-item">
         <% if store.present? %>
-          <%= link_to edit_admin_store_payout_account_path(store), class: "text-decoration-none" do %>
+          <%= link_to edit_admin_payout_account_path, class: "text-decoration-none" do %>
             精算・振込設定
             <% if store.payout_account_unconfigured? %>
               <span class="badge text-bg-warning ms-2">未設定</span>

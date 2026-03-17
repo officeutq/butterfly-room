@@ -43,7 +43,7 @@
     <div class="card-header">口座情報（manual_bank）</div>
     <div class="card-body">
       <%= form_with model: @payout_account,
-            url: admin_store_payout_account_path(@store),
+            url: admin_payout_account_path,
             method: :patch do |f| %>
 
         <% if @payout_account.errors.any? %>

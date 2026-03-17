@@ -112,9 +112,8 @@ Rails.application.routes.draw do
 
   # --- Store Admin ---
   namespace :admin do
-    resources :stores, only: %i[index edit update] do
-      resource :payout_account, only: %i[edit update], controller: "store_payout_accounts"
-    end
+    resources :stores, only: %i[index edit update]
+    resource :payout_account, only: %i[edit update], controller: "store_payout_accounts"
     resource :current_store, only: %i[create], controller: "current_stores"
 
     resources :booths, only: %i[index show new edit create update] do
