@@ -28,18 +28,7 @@ module Authorization
     end
 
     def view_token?
-      return false unless user.present?
-
-      # viewer: customer または admin（store_admin/system_admin）
-      allowed =
-        user.customer? ||
-        BoothPolicy.new(user, record.booth).admin_operate?
-
-      return false unless allowed
-
-      # BAN は customer のみ対象（StoreBanCheckerの仕様に合わせる）
-      checker = StoreBanChecker.new(store: record.store, user: user)
-      !checker.banned?
+      ViewerPolicy.new(user, record).view_token?
     end
   end
 end
