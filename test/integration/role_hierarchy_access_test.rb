@@ -27,7 +27,7 @@ class RoleHierarchyAccessTest < ActionDispatch::IntegrationTest
 
     post cast_current_booth_path, params: { booth_id: @booth1.id }
     assert_response :redirect
-    assert_redirected_to live_cast_booth_path(@booth1)
+    assert_redirected_to dashboard_path
 
     get live_cast_booth_path(@booth2)
     assert_response :forbidden
