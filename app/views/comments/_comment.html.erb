@@ -1,3 +1,10 @@
-<div class="comment">
-  <span class="comment-body"><%= comment.body %></span>
+<div class="comment comment-item">
+  <div class="comment-avatar">
+    <%= user_avatar_badge(comment.user, size: 32, klass: "comment-avatar-badge") %>
+  </div>
+
+  <div class="comment-text">
+    <span class="comment-author"><%= display_name_or_anonymous(comment.user) %></span>
+    <span class="comment-body"><%= comment.body %></span>
+  </div>
 </div>

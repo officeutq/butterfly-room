@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------
-   live comment panel (#320)
+   live comment panel (#320, #468)
 ------------------------------------------------------------ */
 .live-overlay-comment-slot {
   display: flex;
@@ -49,8 +49,18 @@
   color: rgba(255, 255, 255, 0.92);
 }
 
+.live-comment-list .comment-avatar-badge {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+.live-comment-list .comment-author {
+  color: rgba(255, 255, 255, 0.98);
+}
+
 .live-comment-list .comment-body {
-  word-break: break-word;
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .live-comment-form {
