@@ -292,7 +292,9 @@ app/
       show.html.erb
     cast/
       booths/
+        _beauty_panel.html.erb
         _comment_section.html.erb
+        _effect_panel.html.erb
         _stream_meta_display.html.erb
         edit.html.erb
         index.html.erb
