@@ -1,0 +1,77 @@
+<div
+  class="live-beauty-overlay d-none"
+  data-action="click->ivs-publisher#closeBeautyPanelOnBackdrop"
+  data-ivs-publisher-target="beautyOverlay">
+  <div
+    class="live-beauty-panel"
+    data-ivs-publisher-target="beautyPanel">
+    <div class="live-panel-header">
+      <div class="live-panel-header-text">
+        <div class="live-effect-panel-title">Beauty 調整</div>
+        <div class="live-effect-panel-caption">各項目をスライダーで調整できます</div>
+      </div>
+
+      <button type="button"
+              class="live-panel-close-btn"
+              data-action="ivs-publisher#closeBeautyPanel"
+              aria-label="Beauty 調整を閉じる"
+              title="閉じる">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <div class="live-beauty-slider-row">
+      <div class="live-beauty-slider-header">
+        <span class="live-beauty-slider-label" data-ivs-publisher-target="beautyLabel">美白</span>
+        <span class="live-beauty-slider-value" data-ivs-publisher-target="beautyValue">1.00</span>
+      </div>
+
+      <input
+        type="range"
+        class="form-range live-beauty-slider"
+        min="0"
+        max="1"
+        step="0.01"
+        value="1"
+        data-action="input->ivs-publisher#onBeautySliderInput"
+        data-ivs-publisher-target="beautySlider">
+    </div>
+
+    <div class="live-beauty-select-row" role="tablist" aria-label="Beauty 調整項目">
+      <button type="button"
+              class="live-beauty-select-btn is-active"
+              data-action="ivs-publisher#selectBeautyControl"
+              data-beauty-control="softlight">
+        美白
+      </button>
+
+      <button type="button"
+              class="live-beauty-select-btn"
+              data-action="ivs-publisher#selectBeautyControl"
+              data-beauty-control="face">
+        輪郭
+      </button>
+
+      <button type="button"
+              class="live-beauty-select-btn"
+              data-action="ivs-publisher#selectBeautyControl"
+              data-beauty-control="eyes">
+        目
+      </button>
+
+      <button type="button"
+              class="live-beauty-select-btn"
+              data-action="ivs-publisher#selectBeautyControl"
+              data-beauty-control="nose">
+        鼻
+      </button>
+
+      <button type="button"
+              class="live-beauty-select-btn"
+              data-action="ivs-publisher#selectBeautyControl"
+              data-beauty-control="lips">
+        口
+      </button>
+    </div>
+  </div>
+</div>
