@@ -54,6 +54,12 @@ app/
         _live_meta.scss
         _live_ops.scss
         _viewer.scss
+        _viewer_comment.scss
+        _viewer_drink.scss
+        _viewer_layout.scss
+        _viewer_meta.scss
+        _viewer_ops.scss
+        _viewer_video.scss
       application.scss
   controllers/
     admin/
