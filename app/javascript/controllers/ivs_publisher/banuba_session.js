@@ -60,6 +60,23 @@ async function syncBanubaRenderedNode(ctx, node) {
   ctx._captureMeasuredBanubaNode(node)
 }
 
+function ensureBeautyEffect(ctx) {
+  const url = ctx.banubaEffectUrlValue || ""
+  if (!url) {
+    throw new Error("banuba_beauty_effect_url_missing")
+  }
+
+  if (!ctx._banubaEffects) {
+    ctx._banubaEffects = {}
+  }
+
+  if (!ctx._banubaEffects.beauty) {
+    ctx._banubaEffects.beauty = new Effect(url)
+  }
+
+  return ctx._banubaEffects.beauty
+}
+
 export async function waitForBanubaRenderedNode(ctx) {
   const timeoutMs = 5000
   const startAt = Date.now()
@@ -89,6 +106,7 @@ export async function destroyBanubaPlayer(ctx) {
   ctx._banubaPlayer = null
   ctx._banubaStarted = false
   ctx._banubaRenderedNode = null
+  ctx._banubaEffects = {}
 
   if (ctx.hasBanubaSurfaceTarget) {
     ctx.banubaSurfaceTarget.innerHTML = ""
@@ -177,6 +195,7 @@ export function buildBeautyConfig(ctx) {
 
 export async function applyBeautyConfig(ctx) {
   if (!ctx._banubaPlayer) return
+  if (ctx._selectedEffect !== "beauty") return
 
   const config = buildBeautyConfig(ctx)
   const reloadConfig = ctx._banubaPlayer?._effectManager?.reloadConfig
@@ -189,6 +208,31 @@ export async function applyBeautyConfig(ctx) {
     ctx._banubaPlayer._effectManager,
     JSON.stringify(config)
   )
+}
+
+export async function applySelectedEffect(ctx) {
+  if (!ctx._banubaPlayer) return
+
+  const selectedEffect = ctx._selectedEffect || "beauty"
+  console.log("[banuba] applySelectedEffect:", selectedEffect)
+
+  if (selectedEffect === "none") {
+    if (typeof ctx._banubaPlayer.clearEffect !== "function") {
+      throw new Error("banuba_clear_effect_not_available")
+    }
+
+    await ctx._banubaPlayer.clearEffect()
+    return
+  }
+
+  if (selectedEffect === "beauty") {
+    const beautyEffect = ensureBeautyEffect(ctx)
+    await ctx._banubaPlayer.applyEffect(beautyEffect)
+    await applyBeautyConfig(ctx)
+    return
+  }
+
+  throw new Error(`unsupported_selected_effect(${selectedEffect})`)
 }
 
 export async function ensureBanubaStarted(ctx) {
@@ -247,13 +291,11 @@ export async function ensureBanubaStarted(ctx) {
 
   Dom.render(player, ctx.banubaSurfaceTarget)
 
-  if (ctx.banubaEffectUrlValue) {
-    await player.applyEffect(new Effect(ctx.banubaEffectUrlValue))
-  }
-
   ctx._banubaPlayer = player
   ctx._banubaStarted = true
-  await applyBeautyConfig(ctx)
+
+  ensureBeautyEffect(ctx)
+  await applySelectedEffect(ctx)
 
   ctx._banubaRenderedNode = await waitForBanubaRenderedNode(ctx)
   await syncBanubaRenderedNode(ctx, ctx._banubaRenderedNode)
