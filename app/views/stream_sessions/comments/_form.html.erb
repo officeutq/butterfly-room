@@ -3,11 +3,7 @@
     <div class="alert alert-danger py-1 mb-2"><%= error_message %></div>
   <% end %>
 
-  <%= form_with url: stream_session_comments_path(stream_session),
-                scope: :comment,
-                data: {
-                  action: "turbo:submit-start->live-stage#onCommentSubmitStart turbo:submit-end->live-stage#onCommentSubmitEnd"
-                } do |f| %>
+  <%= form_with url: stream_session_comments_path(stream_session), scope: :comment do |f| %>
     <%= f.text_field :body,
           maxlength: 200,
           required: true,
