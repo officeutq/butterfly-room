@@ -2,9 +2,13 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   connect() {
+    this._vv = window.visualViewport || null
+
     this._onFocusIn = this._onFocusIn.bind(this)
     this._onFocusOut = this._onFocusOut.bind(this)
     this._onResize = this._onResize.bind(this)
+
+    this._keyboardCloseTimers = []
 
     this._applyStaticLayoutVars()
 
@@ -19,6 +23,8 @@ export default class extends Controller {
     document.removeEventListener("focusout", this._onFocusOut)
     window.removeEventListener("orientationchange", this._onResize)
     window.removeEventListener("resize", this._onResize)
+
+    this._clearKeyboardCloseTimers()
 
     document.body.classList.remove("keyboard-open", "cast-live-keyboard-open")
 
@@ -39,14 +45,52 @@ export default class extends Controller {
     if (!document.body.classList.contains("cast-live-layout")) return
     if (!this._hasTextInputFocus()) return
 
+    this._clearKeyboardCloseTimers()
     document.body.classList.add("keyboard-open", "cast-live-keyboard-open")
   }
 
   _onFocusOut() {
     requestAnimationFrame(() => {
       if (this._hasTextInputFocus()) return
+
       document.body.classList.remove("keyboard-open", "cast-live-keyboard-open")
+      this._restoreRootScrollAfterKeyboardClose()
     })
+  }
+
+  _restoreRootScrollAfterKeyboardClose() {
+    const run = () => {
+      const offsetTop = Math.max(0, Math.round(this._vv?.offsetTop || 0))
+      if (offsetTop !== 0) return
+
+      const root = document.scrollingElement || document.documentElement
+
+      if (root.scrollTop > 0) {
+        root.scrollTop = 0
+      }
+
+      if (document.documentElement.scrollTop > 0) {
+        document.documentElement.scrollTop = 0
+      }
+
+      if (document.body.scrollTop > 0) {
+        document.body.scrollTop = 0
+      }
+
+      if ((window.scrollY || 0) > 0) {
+        window.scrollTo(0, 0)
+      }
+    }
+
+    requestAnimationFrame(run)
+    this._keyboardCloseTimers.push(window.setTimeout(run, 100))
+    this._keyboardCloseTimers.push(window.setTimeout(run, 250))
+    this._keyboardCloseTimers.push(window.setTimeout(run, 400))
+  }
+
+  _clearKeyboardCloseTimers() {
+    this._keyboardCloseTimers.forEach((id) => clearTimeout(id))
+    this._keyboardCloseTimers = []
   }
 
   _applyStaticLayoutVars() {
