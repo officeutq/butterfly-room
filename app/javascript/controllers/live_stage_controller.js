@@ -3,6 +3,7 @@ import { Controller } from "@hotwired/stimulus"
 export default class extends Controller {
   connect() {
     // viewer / live ともにスクロールを殺す
+    this._vv = window.visualViewport || null
     this._prevHtmlOverflow = document.documentElement.style.overflow
     this._prevBodyOverflow = document.body.style.overflow
     document.documentElement.style.overflow = "hidden"
@@ -57,6 +58,18 @@ export default class extends Controller {
     if (!this._hasTextInputFocus()) return
 
     document.body.classList.add("keyboard-open", "cast-live-keyboard-open")
+
+    requestAnimationFrame(() => {
+      this._trimScrollToVisualViewportOffsetTop()
+    })
+
+    window.setTimeout(() => {
+      this._trimScrollToVisualViewportOffsetTop()
+    }, 100)
+
+    window.setTimeout(() => {
+      this._trimScrollToVisualViewportOffsetTop()
+    }, 250)
   }
 
   _onFocusOut() {
@@ -64,6 +77,17 @@ export default class extends Controller {
       if (this._hasTextInputFocus()) return
       document.body.classList.remove("keyboard-open", "cast-live-keyboard-open")
     })
+  }
+
+  _trimScrollToVisualViewportOffsetTop() {
+    if (!this._vv) return
+
+    const offsetTop = Math.max(0, Math.round(this._vv.offsetTop || 0))
+    const scrollY = Math.max(0, Math.round(window.scrollY || 0))
+
+    if (scrollY > offsetTop) {
+      window.scrollTo(0, offsetTop)
+    }
   }
 
   _applyStaticLayoutVars() {
