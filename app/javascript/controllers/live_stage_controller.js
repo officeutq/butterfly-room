@@ -2,18 +2,9 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   connect() {
-    this._vv = window.visualViewport || null
-    this._prevHtmlOverflow = document.documentElement.style.overflow
-    this._prevBodyOverflow = document.body.style.overflow
-
-    document.documentElement.style.overflow = "hidden"
-    document.body.style.overflow = "hidden"
-
     this._onFocusIn = this._onFocusIn.bind(this)
     this._onFocusOut = this._onFocusOut.bind(this)
     this._onResize = this._onResize.bind(this)
-
-    this._keyboardCloseTimers = []
 
     this._applyStaticLayoutVars()
 
@@ -29,12 +20,7 @@ export default class extends Controller {
     window.removeEventListener("orientationchange", this._onResize)
     window.removeEventListener("resize", this._onResize)
 
-    this._clearKeyboardCloseTimers()
-
     document.body.classList.remove("keyboard-open", "cast-live-keyboard-open")
-
-    document.documentElement.style.overflow = this._prevHtmlOverflow
-    document.body.style.overflow = this._prevBodyOverflow
 
     document.documentElement.style.removeProperty("--live-stage-h")
     document.documentElement.style.removeProperty("--viewer-stage-h")
@@ -53,40 +39,14 @@ export default class extends Controller {
     if (!document.body.classList.contains("cast-live-layout")) return
     if (!this._hasTextInputFocus()) return
 
-    this._clearKeyboardCloseTimers()
     document.body.classList.add("keyboard-open", "cast-live-keyboard-open")
   }
 
   _onFocusOut() {
     requestAnimationFrame(() => {
       if (this._hasTextInputFocus()) return
-
       document.body.classList.remove("keyboard-open", "cast-live-keyboard-open")
-      this._restoreScrollAfterKeyboardClose()
     })
-  }
-
-  _restoreScrollAfterKeyboardClose() {
-    const run = () => {
-      const offsetTop = Math.max(0, Math.round(this._vv?.offsetTop || 0))
-      const scrollY = Math.max(0, Math.round(window.scrollY || 0))
-
-      // キーボードが閉じ切ったあとに残留 scroll だけ掃除する
-      if (offsetTop === 0 && scrollY > 0) {
-        window.scrollTo(0, 0)
-      }
-    }
-
-    requestAnimationFrame(run)
-
-    this._keyboardCloseTimers.push(window.setTimeout(run, 100))
-    this._keyboardCloseTimers.push(window.setTimeout(run, 250))
-    this._keyboardCloseTimers.push(window.setTimeout(run, 400))
-  }
-
-  _clearKeyboardCloseTimers() {
-    this._keyboardCloseTimers.forEach((id) => clearTimeout(id))
-    this._keyboardCloseTimers = []
   }
 
   _applyStaticLayoutVars() {
