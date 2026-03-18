@@ -24,6 +24,7 @@ export default class extends Controller {
       this._vv.addEventListener("scroll", this._update)
     }
 
+    this._lockPageScrollTop()
     requestAnimationFrame(() => this._update())
   }
 
@@ -41,6 +42,7 @@ export default class extends Controller {
     document.body.classList.remove("keyboard-open", "cast-live-keyboard-open")
     document.documentElement.style.overflow = this._prevHtmlOverflow
     document.body.style.overflow = this._prevBodyOverflow
+    this._lockPageScrollTop()
   }
 
   _update() {
@@ -69,14 +71,24 @@ export default class extends Controller {
     // viewer は header / footer を除いた本文可視領域
     const viewerStageH = Math.max(0, safeViewportH - safeHeaderH - safeFooterH)
 
+    const isCastLiveLayout = document.body.classList.contains("cast-live-layout")
+
     document.body.classList.toggle("keyboard-open", keyboardOpen)
-    document.body.classList.toggle("cast-live-keyboard-open", keyboardOpen && document.body.classList.contains("cast-live-layout"))
+    document.body.classList.toggle("cast-live-keyboard-open", keyboardOpen && isCastLiveLayout)
 
     document.documentElement.style.setProperty("--live-stage-h", `${liveStageH}px`)
     document.documentElement.style.setProperty("--viewer-stage-h", `${viewerStageH}px`)
     document.documentElement.style.setProperty("--app-header-h", `${safeHeaderH}px`)
     document.documentElement.style.setProperty("--app-footer-h", `${safeFooterH}px`)
     document.documentElement.style.setProperty("--soft-keyboard-inset-h", `${Math.max(0, Math.round(keyboardInsetH))}px`)
+
+    if (isCastLiveLayout) {
+      this._lockPageScrollTop()
+    }
+  }
+
+  _lockPageScrollTop() {
+    window.scrollTo(0, 0)
   }
 
   _currentViewportHeight() {
