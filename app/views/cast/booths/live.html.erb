@@ -148,11 +148,20 @@
 
                 <button type="button"
                         class="live-ops-btn"
-                        data-action="ivs-publisher#openBeautyPanel"
-                        data-ivs-publisher-target="beautyOpenBtn"
-                        aria-label="Beauty 設定を開く"
-                        title="加工設定">
+                        data-action="ivs-publisher#openEffectPanel"
+                        data-ivs-publisher-target="effectOpenBtn"
+                        aria-label="加工モードを選択する"
+                        title="加工モード選択">
                   <i class="bi bi-stars" aria-hidden="true"></i>
+                </button>
+
+                <button type="button"
+                        class="live-ops-btn d-none"
+                        data-action="ivs-publisher#openBeautyPanel"
+                        data-ivs-publisher-target="beautyAdjustBtn"
+                        aria-label="Beauty 設定を開く"
+                        title="Beauty 調整">
+                  <i class="bi bi-sliders" aria-hidden="true"></i>
                 </button>
               </div>
             </div>
@@ -161,68 +170,8 @@
       </div>
     </div>
 
-    <div
-      class="live-beauty-overlay d-none"
-      data-action="click->ivs-publisher#closeBeautyPanelOnBackdrop"
-      data-ivs-publisher-target="beautyOverlay">
-      <div
-        class="live-beauty-panel"
-        data-ivs-publisher-target="beautyPanel">
-        <div class="live-beauty-slider-row">
-          <div class="live-beauty-slider-header">
-            <span class="live-beauty-slider-label" data-ivs-publisher-target="beautyLabel">美白</span>
-            <span class="live-beauty-slider-value" data-ivs-publisher-target="beautyValue">1.00</span>
-          </div>
-
-          <input
-            type="range"
-            class="form-range live-beauty-slider"
-            min="0"
-            max="1"
-            step="0.01"
-            value="1"
-            data-action="input->ivs-publisher#onBeautySliderInput"
-            data-ivs-publisher-target="beautySlider">
-        </div>
-
-        <div class="live-beauty-select-row" role="tablist" aria-label="Beauty 調整項目">
-          <button type="button"
-                  class="live-beauty-select-btn is-active"
-                  data-action="ivs-publisher#selectBeautyControl"
-                  data-beauty-control="softlight">
-            美白
-          </button>
-
-          <button type="button"
-                  class="live-beauty-select-btn"
-                  data-action="ivs-publisher#selectBeautyControl"
-                  data-beauty-control="face">
-            輪郭
-          </button>
-
-          <button type="button"
-                  class="live-beauty-select-btn"
-                  data-action="ivs-publisher#selectBeautyControl"
-                  data-beauty-control="eyes">
-            目
-          </button>
-
-          <button type="button"
-                  class="live-beauty-select-btn"
-                  data-action="ivs-publisher#selectBeautyControl"
-                  data-beauty-control="nose">
-            鼻
-          </button>
-
-          <button type="button"
-                  class="live-beauty-select-btn"
-                  data-action="ivs-publisher#selectBeautyControl"
-                  data-beauty-control="lips">
-            口
-          </button>
-        </div>
-      </div>
-    </div>
+    <%= render "cast/booths/effect_panel" %>
+    <%= render "cast/booths/beauty_panel" %>
   </div>
 
   <footer id="app_footer" class="cast-live-footer border-top bg-white fixed-bottom">

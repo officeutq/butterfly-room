@@ -1,0 +1,78 @@
+<div
+  class="live-effect-overlay d-none"
+  data-action="click->ivs-publisher#closeEffectPanelOnBackdrop"
+  data-ivs-publisher-target="effectOverlay">
+  <div
+    class="live-effect-panel"
+    data-ivs-publisher-target="effectPanel">
+    <div class="live-panel-header">
+      <div class="live-panel-header-text">
+        <div class="live-effect-panel-title">加工モード</div>
+        <div class="live-effect-panel-caption">Beauty と Effect は単一選択です</div>
+      </div>
+
+      <button type="button"
+              class="live-panel-close-btn"
+              data-action="ivs-publisher#closeEffectPanel"
+              aria-label="加工モード選択を閉じる"
+              title="閉じる">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <div class="live-effect-toggle-group" role="radiogroup" aria-label="加工モード選択">
+      <input
+        type="radio"
+        class="btn-check"
+        name="cast_live_effect_mode"
+        id="cast_live_effect_mode_none"
+        value="none"
+        autocomplete="off"
+        data-action="change->ivs-publisher#onEffectSelectionChanged">
+
+      <label class="btn btn-outline-light live-effect-toggle-btn" for="cast_live_effect_mode_none">
+        なし
+      </label>
+
+      <input
+        type="radio"
+        class="btn-check"
+        name="cast_live_effect_mode"
+        id="cast_live_effect_mode_beauty"
+        value="beauty"
+        autocomplete="off"
+        checked
+        data-action="change->ivs-publisher#onEffectSelectionChanged">
+
+      <label class="btn btn-outline-light live-effect-toggle-btn" for="cast_live_effect_mode_beauty">
+        Beauty
+      </label>
+
+      <input
+        type="radio"
+        class="btn-check"
+        name="cast_live_effect_mode"
+        id="cast_live_effect_mode_effect_heart"
+        value="effect_heart"
+        autocomplete="off"
+        data-action="change->ivs-publisher#onEffectSelectionChanged">
+
+      <label class="btn btn-outline-light live-effect-toggle-btn" for="cast_live_effect_mode_effect_heart">
+        Effect（仮）
+      </label>
+
+      <input
+        type="radio"
+        class="btn-check"
+        name="cast_live_effect_mode"
+        id="cast_live_effect_mode_effect_neon"
+        value="effect_neon"
+        autocomplete="off"
+        data-action="change->ivs-publisher#onEffectSelectionChanged">
+
+      <label class="btn btn-outline-light live-effect-toggle-btn" for="cast_live_effect_mode_effect_neon">
+        Effect（仮）
+      </label>
+    </div>
+  </div>
+</div>

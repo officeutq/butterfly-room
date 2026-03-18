@@ -1,7 +1,8 @@
 /* ------------------------------------------------------------
-   live beauty panel (#403)
+   live beauty / effect panel (#403, #471)
 ------------------------------------------------------------ */
-.live-beauty-overlay {
+.live-beauty-overlay,
+.live-effect-overlay {
   position: absolute;
   inset: 0;
   z-index: 25;
@@ -9,7 +10,8 @@
   background: transparent;
 }
 
-.live-beauty-panel {
+.live-beauty-panel,
+.live-effect-panel {
   position: absolute;
   left: 12px;
   right: 12px;
@@ -25,6 +27,70 @@
   -webkit-backdrop-filter: blur(6px);
 
   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.28);
+}
+
+.live-effect-panel-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.live-effect-panel-title {
+  color: rgba(255, 255, 255, 0.96);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.live-effect-panel-caption {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.8125rem;
+  line-height: 1.2;
+}
+
+.live-effect-toggle-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.live-effect-toggle-btn.btn {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 8px 10px;
+  border-radius: 10px;
+
+  background: rgba(255, 255, 255, 0.14);
+  border-color: transparent;
+  color: rgba(255, 255, 255, 0.96);
+  font-size: 0.875rem;
+  line-height: 1.2;
+
+  transition:
+    background-color 0.15s ease,
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.live-effect-toggle-btn.btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: transparent;
+  color: rgba(255, 255, 255, 0.96);
+}
+
+.live-effect-toggle-group .btn-check:checked + .live-effect-toggle-btn.btn {
+  background: rgba(13, 110, 253, 0.7);
+  border-color: rgba(13, 110, 253, 0.7);
+  color: #fff;
+}
+
+.live-effect-toggle-group .btn-check:focus + .live-effect-toggle-btn.btn {
+  box-shadow: none;
 }
 
 .live-beauty-slider-row {
@@ -88,7 +154,8 @@
   background: rgba(255, 255, 255, 0.22);
 }
 
-.live-beauty-select-btn:active {
+.live-beauty-select-btn:active,
+.live-effect-toggle-btn.btn:active {
   transform: scale(0.98);
 }
 
@@ -101,7 +168,8 @@
 }
 
 @media (max-width: 575.98px) {
-  .live-beauty-panel {
+  .live-beauty-panel,
+  .live-effect-panel {
     left: 8px;
     right: 8px;
     bottom: calc(var(--app-footer-h) + 8px);
@@ -109,17 +177,79 @@
     gap: 8px;
   }
 
+  .live-effect-toggle-group,
   .live-beauty-select-row {
     gap: 6px;
   }
 
+  .live-effect-toggle-btn.btn,
   .live-beauty-select-btn {
     min-height: 36px;
     padding: 6px 8px;
     font-size: 0.8125rem;
   }
 
+  .live-effect-panel-title,
   .live-beauty-slider-header {
     font-size: 0.8125rem;
+  }
+
+  .live-effect-panel-caption {
+    font-size: 0.75rem;
+  }
+}
+
+.live-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.live-panel-header-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.live-panel-close-btn {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+
+  background: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.96);
+
+  transition:
+    background-color 0.15s ease,
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.live-panel-close-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.live-panel-close-btn:active {
+  transform: scale(0.98);
+}
+
+.live-panel-close-btn i {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+@media (max-width: 575.98px) {
+  .live-panel-close-btn {
+    width: 32px;
+    height: 32px;
   }
 }
