@@ -26,7 +26,11 @@ export default class extends Controller {
 
     this._clearKeyboardCloseTimers()
 
-    document.body.classList.remove("keyboard-open", "cast-live-keyboard-open")
+    document.body.classList.remove(
+      "keyboard-open",
+      "cast-live-keyboard-open",
+      "viewer-keyboard-open"
+    )
 
     document.documentElement.style.removeProperty("--live-stage-h")
     document.documentElement.style.removeProperty("--viewer-stage-h")
@@ -42,19 +46,35 @@ export default class extends Controller {
 
   _onFocusIn() {
     if (!this._isMobileLike()) return
-    if (!document.body.classList.contains("cast-live-layout")) return
     if (!this._hasTextInputFocus()) return
 
     this._clearKeyboardCloseTimers()
-    document.body.classList.add("keyboard-open", "cast-live-keyboard-open")
+
+    if (this._isCastLiveLayout()) {
+      document.body.classList.add("keyboard-open", "cast-live-keyboard-open")
+      return
+    }
+
+    if (this._isViewerLayout()) {
+      document.body.classList.add("keyboard-open", "viewer-keyboard-open")
+    }
   }
 
   _onFocusOut() {
     requestAnimationFrame(() => {
       if (this._hasTextInputFocus()) return
 
-      document.body.classList.remove("keyboard-open", "cast-live-keyboard-open")
-      this._restoreRootScrollAfterKeyboardClose()
+      const wasCastLiveOpen = document.body.classList.contains("cast-live-keyboard-open")
+
+      document.body.classList.remove(
+        "keyboard-open",
+        "cast-live-keyboard-open",
+        "viewer-keyboard-open"
+      )
+
+      if (wasCastLiveOpen) {
+        this._restoreRootScrollAfterKeyboardClose()
+      }
     })
   }
 
@@ -112,6 +132,14 @@ export default class extends Controller {
 
   _isMobileLike() {
     return window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 992
+  }
+
+  _isCastLiveLayout() {
+    return document.body.classList.contains("cast-live-layout")
+  }
+
+  _isViewerLayout() {
+    return document.body.classList.contains("viewer-layout")
   }
 
   _hasTextInputFocus() {
