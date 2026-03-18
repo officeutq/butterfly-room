@@ -12,11 +12,8 @@ export default class extends Controller {
 
     this._vv = window.visualViewport || null
     this._keyboardThresholdPx = 120
-
     this._lastNonKeyboardViewportH = this._currentViewportHeight()
     this._keyboardOpen = false
-    this._lockedLiveStageH = Math.max(0, Math.round(this._lastNonKeyboardViewportH))
-    this._lockedKeyboardInsetH = 0
 
     window.addEventListener("resize", this._update)
     window.addEventListener("orientationchange", this._update)
@@ -46,6 +43,10 @@ export default class extends Controller {
     document.body.classList.remove("keyboard-open", "cast-live-keyboard-open")
     document.documentElement.style.overflow = this._prevHtmlOverflow
     document.body.style.overflow = this._prevBodyOverflow
+
+    document.documentElement.style.removeProperty("--soft-keyboard-inset-h")
+    document.documentElement.style.removeProperty("--keyboard-visible-viewport-h")
+
     this._lockPageScrollTop()
   }
 
@@ -63,48 +64,40 @@ export default class extends Controller {
     const safeFooterH = Math.max(0, Math.round(footerH))
 
     const nextKeyboardOpen = this._isKeyboardOpen(currentViewportH)
-    const rawKeyboardInsetH = this._keyboardInsetHeight()
 
     if (!nextKeyboardOpen) {
       this._lastNonKeyboardViewportH = currentViewportH
     }
 
-    if (nextKeyboardOpen && !this._keyboardOpen) {
-      // closed -> open に遷移した瞬間の値を固定
-      this._lockedLiveStageH = Math.max(0, Math.round(this._lastNonKeyboardViewportH || currentViewportH))
-      this._lockedKeyboardInsetH = Math.max(0, Math.round(rawKeyboardInsetH))
-      this._lockPageScrollTop()
-    } else if (!nextKeyboardOpen && this._keyboardOpen) {
-      // open -> closed
-      this._lockedKeyboardInsetH = 0
-      this._lockPageScrollTop()
-    } else if (!nextKeyboardOpen) {
-      // 通常時は最新値へ追随
-      this._lockedLiveStageH = Math.max(0, Math.round(currentViewportH))
-      this._lockedKeyboardInsetH = 0
-    }
+    // cast/live ではキーボード中も映像を動かさない
+    const liveStageHBase = isCastLiveLayout && nextKeyboardOpen
+      ? this._lastNonKeyboardViewportH
+      : currentViewportH
 
-    this._keyboardOpen = nextKeyboardOpen
-
-    const liveStageH = isCastLiveLayout && this._keyboardOpen
-      ? this._lockedLiveStageH
-      : Math.max(0, Math.round(currentViewportH))
-
-    const keyboardInsetH = isCastLiveLayout && this._keyboardOpen
-      ? this._lockedKeyboardInsetH
-      : Math.max(0, Math.round(rawKeyboardInsetH))
-
-    // viewer は header / footer を除いた本文可視領域
+    const liveStageH = Math.max(0, Math.round(liveStageHBase))
     const viewerStageH = Math.max(0, safeViewportH - safeHeaderH - safeFooterH)
 
-    document.body.classList.toggle("keyboard-open", this._keyboardOpen)
-    document.body.classList.toggle("cast-live-keyboard-open", this._keyboardOpen && isCastLiveLayout)
+    const keyboardInsetH = nextKeyboardOpen ? this._keyboardInsetHeight() : 0
+    const keyboardVisibleViewportH = nextKeyboardOpen
+      ? Math.max(0, Math.round(currentViewportH))
+      : 0
+
+    const stateChanged = this._keyboardOpen !== nextKeyboardOpen
+    this._keyboardOpen = nextKeyboardOpen
+
+    document.body.classList.toggle("keyboard-open", nextKeyboardOpen)
+    document.body.classList.toggle("cast-live-keyboard-open", nextKeyboardOpen && isCastLiveLayout)
 
     document.documentElement.style.setProperty("--live-stage-h", `${liveStageH}px`)
     document.documentElement.style.setProperty("--viewer-stage-h", `${viewerStageH}px`)
     document.documentElement.style.setProperty("--app-header-h", `${safeHeaderH}px`)
     document.documentElement.style.setProperty("--app-footer-h", `${safeFooterH}px`)
-    document.documentElement.style.setProperty("--soft-keyboard-inset-h", `${keyboardInsetH}px`)
+    document.documentElement.style.setProperty("--soft-keyboard-inset-h", `${Math.max(0, Math.round(keyboardInsetH))}px`)
+    document.documentElement.style.setProperty("--keyboard-visible-viewport-h", `${keyboardVisibleViewportH}px`)
+
+    if (isCastLiveLayout && stateChanged) {
+      this._lockPageScrollTop()
+    }
   }
 
   _lockPageScrollTop() {
