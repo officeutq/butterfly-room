@@ -359,11 +359,9 @@ body.cast-live-layout #app_footer.cast-live-footer .button_to {
 }
 
 /* ------------------------------------------------------------
-   cast/live soft keyboard layout (#457)
-   - 通常時レイアウトはそのまま
-   - キーボード時は映像 + コメントエリアのみ表示
-   - 映像のサイズ/位置は変更しない
-   - コメントエリアだけ viewport 下部へ固定
+   cast/live soft keyboard layout (#457, #464)
+   - #live_stage / #live_media はキーボード中も触らない
+   - overlay だけコメント専用表示に切り替える
 ------------------------------------------------------------ */
 body.cast-live-layout.cast-live-keyboard-open #app_header,
 body.cast-live-layout.cast-live-keyboard-open #app_footer.cast-live-footer {

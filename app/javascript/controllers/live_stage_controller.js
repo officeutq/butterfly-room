@@ -14,8 +14,6 @@ export default class extends Controller {
     this._keyboardThresholdPx = 120
     this._lastNonKeyboardViewportH = this._currentViewportHeight()
     this._keyboardOpen = false
-    this._recoveryRafIds = []
-    this._recoveryTimeoutIds = []
 
     window.addEventListener("resize", this._update)
     window.addEventListener("orientationchange", this._update)
@@ -27,7 +25,6 @@ export default class extends Controller {
       this._vv.addEventListener("scroll", this._update)
     }
 
-    this._lockPageScrollTop()
     requestAnimationFrame(() => this._update())
   }
 
@@ -42,26 +39,30 @@ export default class extends Controller {
       this._vv.removeEventListener("scroll", this._update)
     }
 
-    this._clearRecoveryWork()
-
     document.body.classList.remove("keyboard-open", "cast-live-keyboard-open")
     document.documentElement.style.overflow = this._prevHtmlOverflow
     document.body.style.overflow = this._prevBodyOverflow
 
     document.documentElement.style.removeProperty("--soft-keyboard-inset-h")
     document.documentElement.style.removeProperty("--keyboard-visible-viewport-h")
-
-    this._lockPageScrollTop()
   }
 
-  onCommentSubmitStart(event) {
-    if (!this._isCastLiveCommentForm(event.target)) return
-    this._lockPageScrollTop()
+  onCommentSubmitStart(_event) {
+    // まずは何もしない。
+    // iPhone Safari 向けの blur 制御が必要なら次段で追加する。
   }
 
-  onCommentSubmitEnd(event) {
-    if (!this._isCastLiveCommentForm(event.target)) return
-    this._scheduleCommentSubmitRecovery()
+  onCommentSubmitEnd(_event) {
+    // 送信後の scrollTo(0, 0) は行わず、
+    // Safari の viewport 変動が落ち着くのを待ちながら再計算だけ行う。
+    requestAnimationFrame(() => this._update())
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => this._update())
+    })
+
+    ;[100, 250, 400].forEach((delayMs) => {
+      window.setTimeout(() => this._update(), delayMs)
+    })
   }
 
   _update() {
@@ -84,7 +85,7 @@ export default class extends Controller {
       this._lastNonKeyboardViewportH = currentViewportH
     }
 
-    // cast/live ではキーボード中も映像を動かさない
+    // cast/live ではキーボード中も stage/media 側は動かさない
     const liveStageHBase = isCastLiveLayout && nextKeyboardOpen
       ? this._lastNonKeyboardViewportH
       : currentViewportH
@@ -97,7 +98,6 @@ export default class extends Controller {
       ? Math.max(0, Math.round(currentViewportH))
       : 0
 
-    const stateChanged = this._keyboardOpen !== nextKeyboardOpen
     this._keyboardOpen = nextKeyboardOpen
 
     document.body.classList.toggle("keyboard-open", nextKeyboardOpen)
@@ -109,46 +109,6 @@ export default class extends Controller {
     document.documentElement.style.setProperty("--app-footer-h", `${safeFooterH}px`)
     document.documentElement.style.setProperty("--soft-keyboard-inset-h", `${Math.max(0, Math.round(keyboardInsetH))}px`)
     document.documentElement.style.setProperty("--keyboard-visible-viewport-h", `${keyboardVisibleViewportH}px`)
-
-    if (isCastLiveLayout && stateChanged) {
-      this._lockPageScrollTop()
-    }
-  }
-
-  _scheduleCommentSubmitRecovery() {
-    this._clearRecoveryWork()
-
-    const run = () => {
-      this._lockPageScrollTop()
-      this._update()
-    }
-
-    this._recoveryRafIds.push(
-      requestAnimationFrame(() => {
-        run()
-
-        this._recoveryRafIds.push(
-          requestAnimationFrame(() => {
-            run()
-          })
-        )
-      })
-    )
-
-    ;[100, 250, 400].forEach((delayMs) => {
-      const timeoutId = window.setTimeout(() => {
-        run()
-      }, delayMs)
-
-      this._recoveryTimeoutIds.push(timeoutId)
-    })
-  }
-
-  _clearRecoveryWork() {
-    this._recoveryRafIds.forEach((id) => cancelAnimationFrame(id))
-    this._recoveryTimeoutIds.forEach((id) => clearTimeout(id))
-    this._recoveryRafIds = []
-    this._recoveryTimeoutIds = []
   }
 
   _canCaptureNonKeyboardViewportHeight(currentViewportH, nextKeyboardOpen, keyboardInsetH) {
@@ -157,23 +117,14 @@ export default class extends Controller {
     const lastViewportH = this._lastNonKeyboardViewportH || 0
     if (lastViewportH <= 0) return true
 
-    // visualViewport が十分戻っていない間は、
-    // 「非キーボード時の高さ」を縮んだ値で上書きしない。
+    // keyboard が閉じ切る前の縮んだ高さで
+    // 「通常時の高さ」を上書きしない
     if (keyboardInsetH > 0) {
       const recoveryAllowancePx = Math.max(24, Math.floor(this._keyboardThresholdPx / 2))
       return currentViewportH >= (lastViewportH - recoveryAllowancePx)
     }
 
     return true
-  }
-
-  _isCastLiveCommentForm(target) {
-    if (!document.body.classList.contains("cast-live-layout")) return false
-    return target instanceof HTMLFormElement && target.closest("#comment_form") !== null
-  }
-
-  _lockPageScrollTop() {
-    window.scrollTo(0, 0)
   }
 
   _currentViewportHeight() {
