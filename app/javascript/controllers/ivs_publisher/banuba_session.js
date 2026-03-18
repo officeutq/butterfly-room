@@ -77,6 +77,23 @@ function ensureBeautyEffect(ctx) {
   return ctx._banubaEffects.beauty
 }
 
+function ensureExtraEffect(ctx) {
+  const url = ctx.banubaExtraEffectUrlValue || ""
+  if (!url) {
+    throw new Error("banuba_extra_effect_url_missing")
+  }
+
+  if (!ctx._banubaEffects) {
+    ctx._banubaEffects = {}
+  }
+
+  if (!ctx._banubaEffects.effect) {
+    ctx._banubaEffects.effect = new Effect(url)
+  }
+
+  return ctx._banubaEffects.effect
+}
+
 export async function waitForBanubaRenderedNode(ctx) {
   const timeoutMs = 5000
   const startAt = Date.now()
@@ -232,6 +249,12 @@ export async function applySelectedEffect(ctx) {
     return
   }
 
+  if (selectedEffect === "effect") {
+    const extraEffect = ensureExtraEffect(ctx)
+    await ctx._banubaPlayer.applyEffect(extraEffect)
+    return
+  }
+
   throw new Error(`unsupported_selected_effect(${selectedEffect})`)
 }
 
@@ -295,6 +318,10 @@ export async function ensureBanubaStarted(ctx) {
   ctx._banubaStarted = true
 
   ensureBeautyEffect(ctx)
+  if (ctx.banubaExtraEffectUrlValue) {
+    ensureExtraEffect(ctx)
+  }
+
   await applySelectedEffect(ctx)
 
   ctx._banubaRenderedNode = await waitForBanubaRenderedNode(ctx)
