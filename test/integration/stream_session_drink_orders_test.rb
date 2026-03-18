@@ -3,6 +3,8 @@
 require "test_helper"
 
 class StreamSessionDrinkOrdersTest < ActionDispatch::IntegrationTest
+  include Devise::Test::IntegrationHelpers
+
   setup do
     @store = Store.create!(name: "store-drink-orders")
     @booth = Booth.create!(
