@@ -66,3 +66,37 @@
 .live-comment-panel #comment_form input[type="text"] {
   min-width: 0;
 }
+
+/* ------------------------------------------------------------
+   cast/live soft keyboard comment mode (#457)
+------------------------------------------------------------ */
+body.cast-live-layout.cast-live-keyboard-open .live-comment-panel {
+  gap: 6px;
+  padding: 8px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.58);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.32);
+}
+
+body.cast-live-layout.cast-live-keyboard-open .live-comment-list {
+  height: clamp(96px, 16vh, 132px);
+}
+
+body.cast-live-layout.cast-live-keyboard-open .live-comment-list .comment {
+  font-size: 0.8125rem;
+  line-height: 1.25;
+  padding: 3px 0;
+}
+
+body.cast-live-layout.cast-live-keyboard-open .live-comment-panel #comment_form form {
+  gap: 6px;
+}
+
+body.cast-live-layout.cast-live-keyboard-open .live-comment-panel #comment_form input[type="text"] {
+  min-height: 36px;
+}
+
+body.cast-live-layout.cast-live-keyboard-open .live-comment-panel #comment_form .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}

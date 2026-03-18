@@ -10,10 +10,15 @@ export default class extends Controller {
 
     this._update = this._update.bind(this)
 
+    this._vv = window.visualViewport || null
+    this._lastNonKeyboardViewportH = this._currentViewportHeight()
+    this._keyboardThresholdPx = 120
+
     window.addEventListener("resize", this._update)
     window.addEventListener("orientationchange", this._update)
+    document.addEventListener("focusin", this._update)
+    document.addEventListener("focusout", this._update)
 
-    this._vv = window.visualViewport || null
     if (this._vv) {
       this._vv.addEventListener("resize", this._update)
       this._vv.addEventListener("scroll", this._update)
@@ -25,12 +30,15 @@ export default class extends Controller {
   disconnect() {
     window.removeEventListener("resize", this._update)
     window.removeEventListener("orientationchange", this._update)
+    document.removeEventListener("focusin", this._update)
+    document.removeEventListener("focusout", this._update)
 
     if (this._vv) {
       this._vv.removeEventListener("resize", this._update)
       this._vv.removeEventListener("scroll", this._update)
     }
 
+    document.body.classList.remove("keyboard-open", "cast-live-keyboard-open")
     document.documentElement.style.overflow = this._prevHtmlOverflow
     document.body.style.overflow = this._prevBodyOverflow
   }
@@ -41,21 +49,87 @@ export default class extends Controller {
 
     const headerH = header ? header.getBoundingClientRect().height : 0
     const footerH = footer ? footer.getBoundingClientRect().height : 0
-    const viewportH = this._vv?.height || window.innerHeight || 0
 
-    const safeViewportH = Math.max(0, Math.round(viewportH))
+    const currentViewportH = this._currentViewportHeight()
+    const safeViewportH = Math.max(0, Math.round(currentViewportH))
     const safeHeaderH = Math.max(0, Math.round(headerH))
     const safeFooterH = Math.max(0, Math.round(footerH))
 
-    // cast/live は従来どおり viewport 全体基準
-    const liveStageH = safeViewportH
+    const keyboardOpen = this._isKeyboardOpen(currentViewportH)
+    const keyboardInsetH = this._keyboardInsetHeight()
+
+    if (!keyboardOpen) {
+      this._lastNonKeyboardViewportH = currentViewportH
+    }
+
+    // cast/live は通常時は visualViewport 準拠、キーボード中だけ直前の通常高さを維持
+    const liveStageBaseH = keyboardOpen ? this._lastNonKeyboardViewportH : currentViewportH
+    const liveStageH = Math.max(0, Math.round(liveStageBaseH))
 
     // viewer は header / footer を除いた本文可視領域
     const viewerStageH = Math.max(0, safeViewportH - safeHeaderH - safeFooterH)
+
+    document.body.classList.toggle("keyboard-open", keyboardOpen)
+    document.body.classList.toggle("cast-live-keyboard-open", keyboardOpen && document.body.classList.contains("cast-live-layout"))
 
     document.documentElement.style.setProperty("--live-stage-h", `${liveStageH}px`)
     document.documentElement.style.setProperty("--viewer-stage-h", `${viewerStageH}px`)
     document.documentElement.style.setProperty("--app-header-h", `${safeHeaderH}px`)
     document.documentElement.style.setProperty("--app-footer-h", `${safeFooterH}px`)
+    document.documentElement.style.setProperty("--soft-keyboard-inset-h", `${Math.max(0, Math.round(keyboardInsetH))}px`)
+  }
+
+  _currentViewportHeight() {
+    return this._vv?.height || window.innerHeight || 0
+  }
+
+  _keyboardInsetHeight() {
+    if (!this._vv) return 0
+
+    const baseH = this._lastNonKeyboardViewportH || window.innerHeight || 0
+    const vvHeight = this._vv.height || 0
+    const vvOffsetTop = this._vv.offsetTop || 0
+
+    return Math.max(0, baseH - vvHeight - vvOffsetTop)
+  }
+
+  _isKeyboardOpen(currentViewportH) {
+    if (!this._isMobileLike()) return false
+    if (!this._hasTextInputFocus()) return false
+
+    const baseH = this._lastNonKeyboardViewportH || currentViewportH
+    const delta = Math.max(0, baseH - currentViewportH)
+
+    return delta >= this._keyboardThresholdPx
+  }
+
+  _isMobileLike() {
+    return window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 992
+  }
+
+  _hasTextInputFocus() {
+    const active = document.activeElement
+    if (!active) return false
+
+    if (active.matches("textarea")) return true
+    if (active.matches("[contenteditable='true']")) return true
+
+    if (active.matches("input")) {
+      const type = (active.getAttribute("type") || "text").toLowerCase()
+      return ![
+        "button",
+        "checkbox",
+        "color",
+        "file",
+        "hidden",
+        "image",
+        "radio",
+        "range",
+        "reset",
+        "submit",
+      ].includes(type)
+    }
+
+    return false
   }
 }
