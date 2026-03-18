@@ -44,6 +44,7 @@ app/
     stylesheets/
       components/
         _banuba_verification.scss
+        _comment_item.scss
         _layout.scss
         _live.scss
         _live_beauty.scss
