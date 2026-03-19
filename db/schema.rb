@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_03_060736) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_19_081646) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -119,6 +119,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_03_060736) do
     t.index ["store_id"], name: "index_drink_orders_on_store_id"
     t.index ["stream_session_id", "status", "created_at", "id"], name: "idx_drink_orders_fifo"
     t.index ["stream_session_id"], name: "index_drink_orders_on_stream_session_id"
+  end
+
+  create_table "effects", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.boolean "enabled", default: true, null: false
+    t.string "icon_path"
+    t.string "key", null: false
+    t.string "name", null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.string "zip_filename", null: false
+    t.index ["enabled", "position"], name: "index_effects_on_enabled_and_position"
+    t.index ["key"], name: "index_effects_on_key", unique: true
+    t.index ["zip_filename"], name: "index_effects_on_zip_filename", unique: true
   end
 
   create_table "favorite_booths", force: :cascade do |t|
