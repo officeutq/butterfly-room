@@ -1,0 +1,46 @@
+<h1>Effect管理</h1>
+
+<div class="mb-3 d-flex gap-2">
+  <%= link_to "新規作成", new_system_admin_effect_path, class: "btn btn-primary" %>
+  <%= link_to "ダッシュボードへ戻る", dashboard_path, class: "btn btn-outline-secondary" %>
+</div>
+
+<table class="table table-sm align-middle">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>表示名</th>
+      <th>key</th>
+      <th>zip</th>
+      <th>icon</th>
+      <th>position</th>
+      <th>enabled</th>
+      <th></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @effects.each do |e| %>
+      <tr class="<%= "text-muted" unless e.enabled %>">
+        <td><%= e.id %></td>
+        <td class="fw-semibold"><%= e.name %></td>
+        <td><%= e.key %></td>
+        <td><%= e.zip_filename %></td>
+        <td><%= e.icon_path.presence || "-" %></td>
+        <td><%= e.position %></td>
+
+        <td>
+          <%= form_with model: [:system_admin, e], method: :patch, class: "d-inline" do |f| %>
+            <%= f.hidden_field :enabled, value: (!e.enabled).to_s %>
+            <%= f.submit(e.enabled ? "有効" : "無効",
+                  class: "btn btn-sm #{e.enabled ? "btn-success" : "btn-outline-secondary"}") %>
+          <% end %>
+        </td>
+
+        <td class="d-flex justify-content-end gap-2">
+          <%= link_to "編集", edit_system_admin_effect_path(e), class: "btn btn-outline-secondary btn-sm" %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

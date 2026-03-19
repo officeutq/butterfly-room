@@ -1,0 +1,47 @@
+<%= form_with model: [:system_admin, effect] do |f| %>
+  <% if effect.errors.any? %>
+    <div class="alert alert-danger">
+      <ul class="mb-0">
+        <% effect.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="mb-3">
+    <%= f.label :name, "表示名", class: "form-label" %>
+    <%= f.text_field :name, class: "form-control", required: true %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :key, "key（ユニーク）", class: "form-label" %>
+    <%= f.text_field :key, class: "form-control", required: true %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :zip_filename, "zip_filename", class: "form-label" %>
+    <%= f.text_field :zip_filename, class: "form-control", required: true %>
+    <div class="form-text">public/banuba/effects に配置されたファイル名</div>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :icon_path, "icon_path（任意）", class: "form-label" %>
+    <%= f.text_field :icon_path, class: "form-control" %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :position, "position", class: "form-label" %>
+    <%= f.number_field :position, class: "form-control" %>
+  </div>
+
+  <div class="form-check mb-3">
+    <%= f.check_box :enabled, class: "form-check-input" %>
+    <%= f.label :enabled, "enabled（有効）", class: "form-check-label" %>
+  </div>
+
+  <div class="d-flex gap-2">
+    <%= f.submit effect.persisted? ? "更新する" : "作成する", class: "btn btn-primary" %>
+    <%= link_to "キャンセル", system_admin_effects_path, class: "btn btn-outline-secondary" %>
+  </div>
+<% end %>
