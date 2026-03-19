@@ -104,6 +104,7 @@ app/
       presences_controller.rb
     system_admin/
       base_controller.rb
+      effects_controller.rb
       referral_codes_controller.rb
       settlement_exports_controller.rb
       settlements_controller.rb
@@ -372,6 +373,11 @@ app/
       _pending_drink_orders.html.erb
       _viewer_ended.html.erb
     system_admin/
+      effects/
+        _form.html.erb
+        edit.html.erb
+        index.html.erb
+        new.html.erb
       referral_codes/
         _form.html.erb
         edit.html.erb
