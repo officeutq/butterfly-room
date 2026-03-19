@@ -56,6 +56,8 @@ export default class extends Controller {
     banubaEyesUrl: String,
     banubaLipsUrl: String,
     banubaSkinUrl: String,
+    banubaBackgroundUrl: String,
+    banubaHairUrl: String,
     banubaEffectUrl: String,
     banubaEffectName: String,
     banubaBeautyConfigUrl: String,
