@@ -454,6 +454,14 @@ export async function ensureBanubaStarted(ctx) {
     modules.push(new Module(ctx.banubaSkinUrlValue))
   }
 
+  if (ctx.banubaBackgroundUrlValue) {
+    modules.push(new Module(ctx.banubaBackgroundUrlValue))
+  }
+
+  if (ctx.banubaHairUrlValue) {
+    modules.push(new Module(ctx.banubaHairUrlValue))
+  }
+
   if (modules.length > 0) {
     await player.addModule(...modules)
   }

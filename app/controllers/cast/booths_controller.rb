@@ -48,6 +48,8 @@ module Cast
       @banuba_eyes_url = "/banuba/modules/eyes.zip"
       @banuba_lips_url = "/banuba/modules/lips.zip"
       @banuba_skin_url = "/banuba/modules/skin.zip"
+      @banuba_background_url = "/banuba/modules/background.zip"
+      @banuba_hair_url = "/banuba/modules/hair.zip"
 
       @banuba_effect_url = "/banuba/effects/beauty_base.zip"
       @banuba_effect_name = "beauty_base.zip"
