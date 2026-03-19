@@ -40,6 +40,8 @@ module Cast
                .limit(50)
                .reverse
 
+      @effects = Effect.enabled_only.ordered
+
       @banuba_client_token = ENV["BANUBA_CLIENT_TOKEN"].to_s
       @banuba_sdk_base_url = "/banuba/sdk"
       @banuba_face_tracker_url = "/banuba/modules/face_tracker.zip"
@@ -49,9 +51,6 @@ module Cast
 
       @banuba_effect_url = "/banuba/effects/beauty_base.zip"
       @banuba_effect_name = "beauty_base.zip"
-
-      @banuba_extra_effect_url = "/banuba/effects/ActionunitsRabbit.zip"
-      @banuba_extra_effect_name = "ActionunitsRabbit.zip"
     end
 
     def edit

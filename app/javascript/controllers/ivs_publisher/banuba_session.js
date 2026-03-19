@@ -77,21 +77,34 @@ function ensureBeautyEffect(ctx) {
   return ctx._banubaEffects.beauty
 }
 
-function ensureExtraEffect(ctx) {
-  const url = ctx.banubaExtraEffectUrlValue || ""
-  if (!url) {
-    throw new Error("banuba_extra_effect_url_missing")
+function selectedCustomEffectZipFilename(ctx) {
+  if (typeof ctx._selectedEffectInput !== "function") return ""
+
+  const input = ctx._selectedEffectInput()
+  return input?.dataset?.effectZipFilename || ""
+}
+
+function ensureSelectedCustomEffect(ctx) {
+  const selectedEffect = ctx._selectedEffect || ""
+  if (!selectedEffect || selectedEffect === "none" || selectedEffect === "beauty") {
+    throw new Error("selected_effect_is_not_custom")
+  }
+
+  const zipFilename = selectedCustomEffectZipFilename(ctx)
+  if (!zipFilename) {
+    throw new Error(`custom_effect_zip_filename_missing(${selectedEffect})`)
   }
 
   if (!ctx._banubaEffects) {
     ctx._banubaEffects = {}
   }
 
-  if (!ctx._banubaEffects.effect) {
-    ctx._banubaEffects.effect = new Effect(url)
+  if (!ctx._banubaEffects[selectedEffect]) {
+    const url = `/banuba/effects/${encodeURIComponent(zipFilename)}`
+    ctx._banubaEffects[selectedEffect] = new Effect(url)
   }
 
-  return ctx._banubaEffects.effect
+  return ctx._banubaEffects[selectedEffect]
 }
 
 function deepCloneJson(value) {
@@ -398,13 +411,8 @@ export async function applySelectedEffect(ctx) {
     return
   }
 
-  if (selectedEffect === "effect") {
-    const extraEffect = ensureExtraEffect(ctx)
-    await ctx._banubaPlayer.applyEffect(extraEffect)
-    return
-  }
-
-  throw new Error(`unsupported_selected_effect(${selectedEffect})`)
+  const customEffect = ensureSelectedCustomEffect(ctx)
+  await ctx._banubaPlayer.applyEffect(customEffect)
 }
 
 export async function ensureBanubaStarted(ctx) {
@@ -468,9 +476,6 @@ export async function ensureBanubaStarted(ctx) {
   ctx._banubaStarted = true
 
   ensureBeautyEffect(ctx)
-  if (ctx.banubaExtraEffectUrlValue) {
-    ensureExtraEffect(ctx)
-  }
 
   await applySelectedEffect(ctx)
 
