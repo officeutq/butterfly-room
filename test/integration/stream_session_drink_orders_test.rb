@@ -37,7 +37,7 @@ class StreamSessionDrinkOrdersTest < ActionDispatch::IntegrationTest
     user = create_user!("customer@example.com", :customer)
     create_wallet!(user, 1_000)
 
-    sign_in user
+    sign_in user, scope: :user
 
     assert_difference("DrinkOrder.count", 1) do
       post stream_session_drink_orders_path(@stream_session), params: {
@@ -57,7 +57,7 @@ class StreamSessionDrinkOrdersTest < ActionDispatch::IntegrationTest
     user = create_user!("cast@example.com", :cast)
     create_wallet!(user, 1_000)
 
-    sign_in user
+    sign_in user, scope: :user
 
     assert_difference("DrinkOrder.count", 1) do
       post stream_session_drink_orders_path(@stream_session), params: {
@@ -73,7 +73,7 @@ class StreamSessionDrinkOrdersTest < ActionDispatch::IntegrationTest
     user = create_user!("store-admin@example.com", :store_admin)
     create_wallet!(user, 1_000)
 
-    sign_in user
+    sign_in user, scope: :user
 
     assert_difference("DrinkOrder.count", 1) do
       post stream_session_drink_orders_path(@stream_session), params: {
@@ -89,7 +89,7 @@ class StreamSessionDrinkOrdersTest < ActionDispatch::IntegrationTest
     user = create_user!("system-admin@example.com", :system_admin)
     create_wallet!(user, 1_000)
 
-    sign_in user
+    sign_in user, scope: :user
 
     assert_difference("DrinkOrder.count", 1) do
       post stream_session_drink_orders_path(@stream_session), params: {
