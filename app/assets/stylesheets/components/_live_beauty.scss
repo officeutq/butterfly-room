@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------
-   live beauty / effect panel (#403, #471)
+   live beauty / effect panel (#403, #471, #485)
 ------------------------------------------------------------ */
 .live-beauty-overlay,
 .live-effect-overlay {
@@ -124,12 +124,27 @@
 }
 
 .live-beauty-select-row {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: nowrap;
   gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.live-beauty-select-row::-webkit-scrollbar {
+  height: 6px;
+}
+
+.live-beauty-select-row::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
 }
 
 .live-beauty-select-btn {
+  flex: 0 0 auto;
   min-height: 40px;
   display: inline-flex;
   align-items: center;
@@ -138,6 +153,7 @@
   padding: 8px 10px;
   border: 0;
   border-radius: 10px;
+  white-space: nowrap;
 
   background: rgba(255, 255, 255, 0.14);
   color: rgba(255, 255, 255, 0.96);
