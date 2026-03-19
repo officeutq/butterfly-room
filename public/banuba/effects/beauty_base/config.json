@@ -30,16 +30,16 @@
         },
         "nose": {
           "width": 0,
-          "length": -1,
+          "length": 0,
           "tip_width": 0,
           "down_up": 0,
           "sellion": 0
         },
         "lips": {
-          "size": 1,
+          "size": 0,
           "height": 0,
           "thickness": 0,
-          "mouth_size": -1,
+          "mouth_size": 0,
           "smile": 0,
           "shape": 0,
           "sharp": 0
@@ -59,7 +59,7 @@
       }
     }
   ],
-  "scene": "effect C8bSOT83XWnng4YKk1Q4j",
+  "scene": "effect wkXreXufEzVN9D-tn4K_u",
   "version": "2.0.0",
   "camera": {},
   "files": []
