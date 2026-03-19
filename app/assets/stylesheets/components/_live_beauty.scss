@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------
-   live beauty / effect panel (#403, #471, #485)
+   live beauty / effect panel (#403, #471, #485, #488)
 ------------------------------------------------------------ */
 .live-beauty-overlay,
 .live-effect-overlay {
@@ -49,12 +49,28 @@
 }
 
 .live-effect-toggle-group {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: nowrap;
   gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.live-effect-toggle-group::-webkit-scrollbar {
+  height: 6px;
+}
+
+.live-effect-toggle-group::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
 }
 
 .live-effect-toggle-btn.btn {
+  flex: 0 0 auto;
+  min-width: 72px;
   min-height: 40px;
   display: inline-flex;
   align-items: center;
@@ -62,6 +78,7 @@
 
   padding: 8px 10px;
   border-radius: 10px;
+  white-space: nowrap;
 
   background: rgba(255, 255, 255, 0.14);
   border-color: transparent;
@@ -91,6 +108,14 @@
 
 .live-effect-toggle-group .btn-check:focus + .live-effect-toggle-btn.btn {
   box-shadow: none;
+}
+
+.live-effect-toggle-icon {
+  display: block;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  pointer-events: none;
 }
 
 .live-beauty-slider-row {
@@ -203,6 +228,11 @@
     min-height: 36px;
     padding: 6px 8px;
     font-size: 0.8125rem;
+  }
+
+  .live-effect-toggle-icon {
+    width: 28px;
+    height: 28px;
   }
 
   .live-effect-panel-title,

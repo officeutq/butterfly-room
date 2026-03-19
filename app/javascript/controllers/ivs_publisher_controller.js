@@ -58,8 +58,6 @@ export default class extends Controller {
     banubaSkinUrl: String,
     banubaEffectUrl: String,
     banubaEffectName: String,
-    banubaExtraEffectUrl: String,
-    banubaExtraEffectName: String,
     banubaBeautyConfigUrl: String,
   }
 
@@ -635,9 +633,9 @@ export default class extends Controller {
     }
   }
 
-  async _applyBeautyConfig() {
+  _applyBeautyConfig() {
     try {
-      await applyBeautyConfig(this)
+      return applyBeautyConfig(this)
     } catch (e) {
       console.error("[ivs-publisher] apply beauty config failed", e)
       this._setError("Beauty 設定の反映に失敗しました。")
@@ -825,8 +823,26 @@ export default class extends Controller {
     return this._canUseEffectUI() && this._selectedEffect === "beauty"
   }
 
+  _effectOptionInputs() {
+    if (!this.hasEffectPanelTarget) return []
+
+    return Array.from(
+      this.effectPanelTarget.querySelectorAll("input[type='radio'][name='cast_live_effect_mode']")
+    )
+  }
+
+  _effectOptionValues() {
+    return this._effectOptionInputs()
+      .map((input) => input.value)
+      .filter((value) => value)
+  }
+
+  _selectedEffectInput() {
+    return this._effectOptionInputs().find((input) => input.value === this._selectedEffect) || null
+  }
+
   _isSelectableEffect(value) {
-    return ["none", "beauty", "effect"].includes(value)
+    return this._effectOptionValues().includes(value)
   }
 
   _shouldShowBeautyAdjustBtn() {

@@ -16,8 +16,6 @@
   data-ivs-publisher-banuba-skin-url-value="<%= @banuba_skin_url %>"
   data-ivs-publisher-banuba-effect-url-value="<%= @banuba_effect_url %>"
   data-ivs-publisher-banuba-effect-name-value="<%= @banuba_effect_name %>"
-  data-ivs-publisher-banuba-extra-effect-url-value="<%= @banuba_extra_effect_url %>"
-  data-ivs-publisher-banuba-extra-effect-name-value="<%= @banuba_extra_effect_name %>"
   data-ivs-publisher-banuba-beauty-config-url-value="/banuba/effects/beauty_base/config.json"
 >
   <div id="live_stage">
@@ -173,7 +171,7 @@
       </div>
     </div>
 
-    <%= render "cast/booths/effect_panel" %>
+    <%= render "cast/booths/effect_panel", effects: @effects %>
     <%= render "cast/booths/beauty_panel" %>
   </div>
 
