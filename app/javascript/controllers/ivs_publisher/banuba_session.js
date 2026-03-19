@@ -94,6 +94,194 @@ function ensureExtraEffect(ctx) {
   return ctx._banubaEffects.effect
 }
 
+function deepCloneJson(value) {
+  return JSON.parse(JSON.stringify(value))
+}
+
+function isPlainObject(value) {
+  return value != null && typeof value === "object" && !Array.isArray(value)
+}
+
+function ensureObject(value) {
+  return isPlainObject(value) ? value : {}
+}
+
+function ensureArray(value) {
+  return Array.isArray(value) ? value : []
+}
+
+function numberOrFallback(value, fallback = 0) {
+  const num = Number(value)
+  return Number.isFinite(num) ? num : fallback
+}
+
+function readNestedNumber(source, path, fallback = 0) {
+  let current = source
+
+  for (const key of path) {
+    if (!isPlainObject(current) && !Array.isArray(current)) return fallback
+    current = current?.[key]
+  }
+
+  return numberOrFallback(current, fallback)
+}
+
+function buildFallbackBeautyConfigSource() {
+  return {
+    faces: [
+      {
+        eyes_whitening: {
+          strength: 0,
+        },
+        eyes_flare: {
+          strength: 0,
+        },
+        teeth_whitening: {
+          strength: 0,
+        },
+        softlight: {
+          strength: 0,
+        },
+        morphing: {
+          eyebrows: {
+            spacing: 0,
+            height: 0,
+            bend: 0,
+          },
+          eyes: {
+            rounding: 0,
+            enlargement: 0,
+            height: 0,
+            spacing: 0,
+            squint: 0,
+            lower_eyelid_pos: 0,
+            lower_eyelid_size: 0,
+            down: 0,
+            eyelid_upper: 0,
+            eyelid_lower: 0,
+          },
+          face: {
+            narrowing: 0,
+            v_shape: 0,
+            cheekbones_narrowing: 0,
+            cheeks_narrowing: 0,
+            jaw_narrowing: 0,
+            chin_shortening: 0,
+            chin_narrowing: 0,
+            sunken_cheeks: 0,
+            cheeks_and_jaw_narrowing: 0,
+            jaw_wide_thin: 0,
+            chin: 0,
+            forehead: 0,
+          },
+          nose: {
+            width: 0,
+            length: 0,
+            tip_width: 0,
+            down_up: 0,
+            sellion: 0,
+          },
+          lips: {
+            size: 0,
+            height: 0,
+            thickness: 0,
+            mouth_size: 0,
+            smile: 0,
+            shape: 0,
+            sharp: 0,
+          },
+        },
+      },
+    ],
+    scene: "",
+    version: "2.0.0",
+    camera: {},
+    files: [],
+  }
+}
+
+async function loadBeautyConfigSource(ctx) {
+  if (ctx._beautyConfigSourceLoaded) {
+    return ctx._beautyConfigSource || buildFallbackBeautyConfigSource()
+  }
+
+  ctx._beautyConfigSourceLoaded = true
+
+  const url = ctx.banubaBeautyConfigUrlValue || ""
+
+  if (!url) {
+    ctx._beautyConfigSource = buildFallbackBeautyConfigSource()
+    return ctx._beautyConfigSource
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      credentials: "same-origin",
+      headers: {
+        "Accept": "application/json",
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`beauty_config_fetch_failed(${response.status})`)
+    }
+
+    const json = await response.json()
+    ctx._beautyConfigSource = deepCloneJson(json)
+  } catch (e) {
+    console.warn("[banuba] beauty config load failed, fallback to zeros", e)
+    ctx._beautyConfigSource = buildFallbackBeautyConfigSource()
+  }
+
+  return ctx._beautyConfigSource
+}
+
+function buildInitialBeautyStateFromConfig(configSource) {
+  const config = configSource || buildFallbackBeautyConfigSource()
+  const face = ensureArray(config.faces)[0] || {}
+  const morphing = ensureObject(face.morphing)
+
+  return {
+    beautyEnabled: true,
+    softlightStrength: readNestedNumber(face, ["softlight", "strength"], 0),
+    faceNarrowing: readNestedNumber(morphing, ["face", "narrowing"], 0),
+    eyeRounding: readNestedNumber(morphing, ["eyes", "rounding"], 0),
+    eyeEnlargement: readNestedNumber(morphing, ["eyes", "enlargement"], 0),
+    lipsSize: readNestedNumber(morphing, ["lips", "size"], 0),
+    lipsMouthSize: readNestedNumber(morphing, ["lips", "mouth_size"], 0),
+    noseLength: readNestedNumber(morphing, ["nose", "length"], 0),
+  }
+}
+
+export async function ensureInitialBeautyStateLoaded(ctx) {
+  if (ctx._beautyStateInitialized) {
+    return ctx._beautyState
+  }
+
+  if (ctx._beautyStateLoadPromise) {
+    return ctx._beautyStateLoadPromise
+  }
+
+  ctx._beautyStateLoadPromise = (async () => {
+    const configSource = await loadBeautyConfigSource(ctx)
+    ctx._beautyState = buildInitialBeautyStateFromConfig(configSource)
+    ctx._beautyStateInitialized = true
+
+    if (typeof ctx._syncBeautySliderFromState === "function") {
+      ctx._syncBeautySliderFromState()
+    }
+
+    return ctx._beautyState
+  })()
+
+  try {
+    return await ctx._beautyStateLoadPromise
+  } finally {
+    ctx._beautyStateLoadPromise = null
+  }
+}
+
 export async function waitForBanubaRenderedNode(ctx) {
   const timeoutMs = 5000
   const startAt = Date.now()
@@ -134,85 +322,45 @@ export function buildBeautyConfig(ctx) {
   const state = ctx._beautyState || {}
   const enabled = !!state.beautyEnabled
 
-  const softlightStrength = enabled ? Number(state.softlightStrength ?? 0) : 0
-  const faceNarrowing = enabled ? Number(state.faceNarrowing ?? 0) : 0
-  const eyeRounding = enabled ? Number(state.eyeRounding ?? 0) : 0
-  const eyeEnlargement = enabled ? Number(state.eyeEnlargement ?? 0) : 0
-  const lipsSize = enabled ? Number(state.lipsSize ?? 0) : 0
-  const lipsMouthSize = enabled ? Number(state.lipsMouthSize ?? 0) : 0
-  const noseLength = enabled ? Number(state.noseLength ?? 0) : 0
+  const source = ctx._beautyConfigSource || buildFallbackBeautyConfigSource()
+  const config = deepCloneJson(source)
 
-  return {
-    faces: [
-      {
-        morphing: {
-          eyes: {
-            rounding: eyeRounding,
-            enlargement: eyeEnlargement,
-            height: 0,
-            spacing: 0,
-            squint: 0,
-            lower_eyelid_pos: 0,
-            lower_eyelid_size: 0,
-            down: 0,
-            eyelid_upper: 0,
-            eyelid_lower: 0,
-          },
-          face: {
-            narrowing: faceNarrowing,
-            v_shape: 0,
-            cheekbones_narrowing: 0,
-            cheeks_narrowing: 0,
-            jaw_narrowing: 0,
-            chin_shortening: 0,
-            chin_narrowing: 0,
-            sunken_cheeks: 0,
-            cheeks_and_jaw_narrowing: 0,
-            jaw_wide_thin: 0,
-            chin: 0,
-            forehead: 0,
-          },
-          nose: {
-            width: 0,
-            length: noseLength,
-            tip_width: 0,
-            down_up: 0,
-            sellion: 0,
-          },
-          lips: {
-            size: lipsSize,
-            height: 0,
-            thickness: 0,
-            mouth_size: lipsMouthSize,
-            smile: 0,
-            shape: 0,
-            sharp: 0,
-          },
-        },
-        eyes_whitening: {
-          strength: 1,
-        },
-        eyes_flare: {
-          strength: 1,
-        },
-        teeth_whitening: {
-          strength: 1,
-        },
-        softlight: {
-          strength: softlightStrength,
-        },
-      },
-    ],
-    scene: "effect C8bSOT83XWnng4YKk1Q4j",
-    version: "2.0.0",
-    camera: {},
-    files: [],
+  config.faces = ensureArray(config.faces)
+  if (config.faces.length === 0) {
+    config.faces.push({})
   }
+
+  const face = ensureObject(config.faces[0])
+  config.faces[0] = face
+
+  face.softlight = ensureObject(face.softlight)
+  face.morphing = ensureObject(face.morphing)
+  face.morphing.eyes = ensureObject(face.morphing.eyes)
+  face.morphing.face = ensureObject(face.morphing.face)
+  face.morphing.nose = ensureObject(face.morphing.nose)
+  face.morphing.lips = ensureObject(face.morphing.lips)
+
+  config.camera = ensureObject(config.camera)
+  config.files = ensureArray(config.files)
+  config.version = config.version || "2.0.0"
+  config.scene = typeof config.scene === "string" ? config.scene : ""
+
+  face.softlight.strength = enabled ? numberOrFallback(state.softlightStrength, 0) : 0
+  face.morphing.face.narrowing = enabled ? numberOrFallback(state.faceNarrowing, 0) : 0
+  face.morphing.eyes.rounding = enabled ? numberOrFallback(state.eyeRounding, 0) : 0
+  face.morphing.eyes.enlargement = enabled ? numberOrFallback(state.eyeEnlargement, 0) : 0
+  face.morphing.nose.length = enabled ? numberOrFallback(state.noseLength, 0) : 0
+  face.morphing.lips.size = enabled ? numberOrFallback(state.lipsSize, 0) : 0
+  face.morphing.lips.mouth_size = enabled ? numberOrFallback(state.lipsMouthSize, 0) : 0
+
+  return config
 }
 
 export async function applyBeautyConfig(ctx) {
   if (!ctx._banubaPlayer) return
   if (ctx._selectedEffect !== "beauty") return
+
+  await ensureInitialBeautyStateLoaded(ctx)
 
   const config = buildBeautyConfig(ctx)
   const reloadConfig = ctx._banubaPlayer?._effectManager?.reloadConfig
@@ -243,6 +391,7 @@ export async function applySelectedEffect(ctx) {
   }
 
   if (selectedEffect === "beauty") {
+    await ensureInitialBeautyStateLoaded(ctx)
     const beautyEffect = ensureBeautyEffect(ctx)
     await ctx._banubaPlayer.applyEffect(beautyEffect)
     await applyBeautyConfig(ctx)
@@ -265,6 +414,7 @@ export async function ensureBanubaStarted(ctx) {
     throw new Error("banuba_client_token_missing")
   }
 
+  await ensureInitialBeautyStateLoaded(ctx)
   await ctx._ensureCameraVideoTrack()
 
   const sdkBase = normalizedBanubaSdkBaseUrl(ctx)
