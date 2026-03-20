@@ -59,15 +59,39 @@ module Cast
     end
 
     def update
-      if @booth.update(booth_params)
-        purge_attachment_if_requested(
-          record: @booth,
-          attachment_name: :thumbnail_image,
-          remove_param_name: :remove_thumbnail_image
-        )
+      begin
+        if @booth.update(booth_params)
+          # --- S3実在チェック ---
+          if @booth.thumbnail_image.attached?
+            blob = @booth.thumbnail_image.blob
 
-        redirect_to cast_booths_path, notice: "更新しました"
-      else
+            unless blob.service.exist?(blob.key)
+              Rails.logger.error("[BoothThumbnail] upload missing blob_id=#{blob.id} key=#{blob.key}")
+
+              @booth.thumbnail_image.purge
+              @booth.errors.add(:thumbnail_image, "の保存に失敗しました。再度アップロードしてください")
+
+              return render :edit, status: :unprocessable_entity
+            end
+          end
+          # --- ここまで ---
+
+          purge_attachment_if_requested(
+            record: @booth,
+            attachment_name: :thumbnail_image,
+            remove_param_name: :remove_thumbnail_image
+          )
+
+          redirect_to cast_booths_path, notice: "ブースを更新しました"
+        else
+          render :edit, status: :unprocessable_entity
+        end
+
+      rescue => e
+        Rails.logger.error("[BoothUpdate] #{e.class}: #{e.message}")
+
+        @booth.errors.add(:thumbnail_image, "の処理に失敗しました。png / jpg / webp の画像で再度お試しください")
+
         render :edit, status: :unprocessable_entity
       end
     end
