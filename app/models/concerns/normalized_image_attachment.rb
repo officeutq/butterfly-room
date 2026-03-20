@@ -68,8 +68,7 @@ module NormalizedImageAttachment
 
     image.auto_orient
 
-    return attachable if image.width <= max_width && image.height <= max_height &&
-                         actual_content_type == claimed_content_type
+    return attachable if image.width <= max_width && image.height <= max_height
 
     output_content_type = actual_content_type
     output_extension = filename_extension_for(output_content_type)
