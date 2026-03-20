@@ -28,7 +28,15 @@ module Admin
     end
 
     def update
-      if @store.update(store_params)
+      begin
+        success = @store.update(store_params)
+      rescue NormalizedImageAttachment::InvalidImageAttachment => e
+        @store.assign_attributes(store_params.except(:thumbnail))
+        @store.errors.add(:thumbnail, e.message)
+        success = false
+      end
+
+      if success
         purge_attachment_if_requested(
           record: @store,
           attachment_name: :thumbnail,
