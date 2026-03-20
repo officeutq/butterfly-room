@@ -9,7 +9,7 @@ jobs:
   scan_ruby:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Make bin scripts executable (Windows-friendly)
         run: git ls-files -z bin/* | xargs -0 chmod +x
       - uses: ruby/setup-ruby@v1
@@ -22,7 +22,7 @@ jobs:
   scan_js:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Make bin scripts executable (Windows-friendly)
         run: git ls-files -z bin/* | xargs -0 chmod +x
       - uses: ruby/setup-ruby@v1
@@ -35,7 +35,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Make bin scripts executable (Windows-friendly)
         run: git ls-files -z bin/* | xargs -0 chmod +x
       - uses: ruby/setup-ruby@v1
@@ -67,7 +67,7 @@ jobs:
       CACHE_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/butterfly_room_test
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Make bin scripts executable (Windows-friendly)
         run: git ls-files -z bin/* | xargs -0 chmod +x
