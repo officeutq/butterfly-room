@@ -3,6 +3,7 @@
 module Admin
   class BoothsController < Admin::BaseController
     include RemovableImageAttachment
+    include AttachmentPersistenceChecker
 
     before_action :require_current_store!
     before_action :set_booth, only: %i[show edit update watch archive force_end]
@@ -26,19 +27,51 @@ module Admin
     end
 
     def create
-      @booth = current_store.booths.new(booth_create_params)
+      @booth = current_store.booths.new
       authorize_create!
+
+      @booth.assign_attributes(booth_create_params)
 
       Booth.transaction do
         @booth.save!
         Booths::ProvisionIvsStageService.new(booth: @booth).call!
       end
 
+      # 👇 ここでチェック
+      unless ensure_attachment_persisted!(record: @booth, attachment_name: :thumbnail_image)
+        return render :new, status: :unprocessable_entity
+      end
+
+      purge_attachment_if_requested(
+        record: @booth,
+        attachment_name: :thumbnail_image,
+        remove_param_name: :remove_thumbnail_image
+      )
+
       redirect_to admin_booth_path(@booth), notice: "ブースを作成しました"
+
     rescue ActiveRecord::RecordInvalid
       render :new, status: :unprocessable_entity
+
     rescue Booths::ProvisionIvsStageService::StageProvisionFailed => e
       @booth.errors.add(:base, "IVS Stage の作成に失敗しました: #{e.message}")
+      render :new, status: :unprocessable_entity
+
+    rescue NormalizedImageAttachment::InvalidImageAttachment => e
+      Rails.logger.error("[BoothCreate] #{e.class}: #{e.message}")
+
+      @booth ||= current_store.booths.new
+      @booth.assign_attributes(booth_create_params.except(:thumbnail_image))
+      @booth.errors.add(:thumbnail_image, e.message)
+
+      render :new, status: :unprocessable_entity
+
+    rescue => e
+      Rails.logger.error("[BoothCreate] #{e.class}: #{e.message}")
+
+      @booth ||= current_store.booths.new
+      @booth.errors.add(:base, "ブースの作成に失敗しました")
+
       render :new, status: :unprocessable_entity
     end
 
@@ -46,15 +79,28 @@ module Admin
     end
 
     def update
-      if @booth.update(booth_params)
-        purge_attachment_if_requested(
-          record: @booth,
-          attachment_name: :thumbnail_image,
-          remove_param_name: :remove_thumbnail_image
-        )
+      begin
+        if @booth.update(booth_params)
+          unless ensure_attachment_persisted!(record: @booth, attachment_name: :thumbnail_image)
+            return render :edit, status: :unprocessable_entity
+          end
 
-        redirect_to admin_booth_path(@booth), notice: "更新しました"
-      else
+          purge_attachment_if_requested(
+            record: @booth,
+            attachment_name: :thumbnail_image,
+            remove_param_name: :remove_thumbnail_image
+          )
+
+          redirect_to admin_booth_path(@booth), notice: "更新しました"
+        else
+          render :edit, status: :unprocessable_entity
+        end
+
+      rescue => e
+        Rails.logger.error("[BoothUpdate] #{e.class}: #{e.message}")
+
+        @booth.errors.add(:thumbnail_image, "の処理に失敗しました。png / jpg / webp の画像で再度お試しください")
+
         render :edit, status: :unprocessable_entity
       end
     end

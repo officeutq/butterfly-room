@@ -3,6 +3,7 @@
 module Cast
   class BoothsController < Cast::BaseController
     include RemovableImageAttachment
+    include AttachmentPersistenceChecker
 
     before_action :set_booth, only: %i[live status edit update]
     before_action :authorize_update!, only: %i[edit update]
@@ -59,15 +60,28 @@ module Cast
     end
 
     def update
-      if @booth.update(booth_params)
-        purge_attachment_if_requested(
-          record: @booth,
-          attachment_name: :thumbnail_image,
-          remove_param_name: :remove_thumbnail_image
-        )
+      begin
+        if @booth.update(booth_params)
+          unless ensure_attachment_persisted!(record: @booth, attachment_name: :thumbnail_image)
+            return render :edit, status: :unprocessable_entity
+          end
 
-        redirect_to cast_booths_path, notice: "更新しました"
-      else
+          purge_attachment_if_requested(
+            record: @booth,
+            attachment_name: :thumbnail_image,
+            remove_param_name: :remove_thumbnail_image
+          )
+
+          redirect_to cast_booths_path, notice: "ブースを更新しました"
+        else
+          render :edit, status: :unprocessable_entity
+        end
+
+      rescue => e
+        Rails.logger.error("[BoothUpdate] #{e.class}: #{e.message}")
+
+        @booth.errors.add(:thumbnail_image, "の処理に失敗しました。png / jpg / webp の画像で再度お試しください")
+
         render :edit, status: :unprocessable_entity
       end
     end
