@@ -3,6 +3,7 @@
 module Cast
   class BoothsController < Cast::BaseController
     include RemovableImageAttachment
+    include AttachmentPersistenceChecker
 
     before_action :set_booth, only: %i[live status edit update]
     before_action :authorize_update!, only: %i[edit update]
@@ -61,20 +62,9 @@ module Cast
     def update
       begin
         if @booth.update(booth_params)
-          # --- S3実在チェック ---
-          if @booth.thumbnail_image.attached?
-            blob = @booth.thumbnail_image.blob
-
-            unless blob.service.exist?(blob.key)
-              Rails.logger.error("[BoothThumbnail] upload missing blob_id=#{blob.id} key=#{blob.key}")
-
-              @booth.thumbnail_image.purge
-              @booth.errors.add(:thumbnail_image, "の保存に失敗しました。再度アップロードしてください")
-
-              return render :edit, status: :unprocessable_entity
-            end
+          unless ensure_attachment_persisted!(record: @booth, attachment_name: :thumbnail_image)
+            return render :edit, status: :unprocessable_entity
           end
-          # --- ここまで ---
 
           purge_attachment_if_requested(
             record: @booth,

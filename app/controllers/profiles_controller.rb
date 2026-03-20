@@ -2,6 +2,7 @@
 
 class ProfilesController < ApplicationController
   include RemovableImageAttachment
+  include AttachmentPersistenceChecker
 
   before_action :authenticate_user!
 
@@ -21,6 +22,10 @@ class ProfilesController < ApplicationController
     end
 
     if success
+      unless ensure_attachment_persisted!(record: @user, attachment_name: :avatar)
+        return render :edit, status: :unprocessable_entity
+      end
+
       purge_attachment_if_requested(
         record: @user,
         attachment_name: :avatar,

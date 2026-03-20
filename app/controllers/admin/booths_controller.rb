@@ -3,6 +3,7 @@
 module Admin
   class BoothsController < Admin::BaseController
     include RemovableImageAttachment
+    include AttachmentPersistenceChecker
 
     before_action :require_current_store!
     before_action :set_booth, only: %i[show edit update watch archive force_end]
@@ -35,6 +36,17 @@ module Admin
         @booth.save!
         Booths::ProvisionIvsStageService.new(booth: @booth).call!
       end
+
+      # 👇 ここでチェック
+      unless ensure_attachment_persisted!(record: @booth, attachment_name: :thumbnail_image)
+        return render :new, status: :unprocessable_entity
+      end
+
+      purge_attachment_if_requested(
+        record: @booth,
+        attachment_name: :thumbnail_image,
+        remove_param_name: :remove_thumbnail_image
+      )
 
       redirect_to admin_booth_path(@booth), notice: "ブースを作成しました"
 
@@ -69,20 +81,9 @@ module Admin
     def update
       begin
         if @booth.update(booth_params)
-          # --- S3実在チェック ---
-          if @booth.thumbnail_image.attached?
-            blob = @booth.thumbnail_image.blob
-
-            unless blob.service.exist?(blob.key)
-              Rails.logger.error("[BoothThumbnail] upload missing blob_id=#{blob.id} key=#{blob.key}")
-
-              @booth.thumbnail_image.purge
-              @booth.errors.add(:thumbnail_image, "の保存に失敗しました。再度アップロードしてください")
-
-              return render :edit, status: :unprocessable_entity
-            end
+          unless ensure_attachment_persisted!(record: @booth, attachment_name: :thumbnail_image)
+            return render :edit, status: :unprocessable_entity
           end
-          # --- ここまで ---
 
           purge_attachment_if_requested(
             record: @booth,
