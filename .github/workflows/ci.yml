@@ -111,5 +111,21 @@ jobs:
       - name: Prepare DB
         run: bundle exec rails db:prepare
 
+      - name: Install system deps for pg/psych/ImageMagick
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends \
+            libpq-dev \
+            pkg-config \
+            libyaml-dev \
+            imagemagick
+
+      - name: Show ImageMagick version
+        run: |
+          which magick || true
+          magick -version || true
+          which identify || true
+          identify -version || true
+
       - name: Run tests (Minitest)
         run: bundle exec rails test
