@@ -42,6 +42,10 @@ export default class extends Controller {
     }
   }
 
+  scrollToBottomNow() {
+    this._scheduleScrollToBottom()
+  }
+
   _isNearBottom() {
     const el = this.listTarget
     const distance = el.scrollHeight - (el.scrollTop + el.clientHeight)
