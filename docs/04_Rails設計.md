@@ -35,9 +35,6 @@
 app/
   assets/
     builds/
-      app/
-        assets/
-          builds/
       bootstrap-icons/
         fonts/
     images/
@@ -85,6 +82,7 @@ app/
     casts/
       registrations_controller.rb
     concerns/
+      attachment_persistence_checker.rb
       store_ban_guard.rb
     customers/
       registrations_controller.rb
