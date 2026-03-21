@@ -26,8 +26,9 @@ COPY . .
 
 ENV RAILS_ENV=production NODE_ENV=production
 
-# ★ここが本命：ビルド中に必ず precompile
+# CSS を先にビルドしてから、Rails の assets を precompile する
 # credentials を要しないよう SECRET_KEY_BASE はダミーでOK（ビルド時のみ）
-RUN SECRET_KEY_BASE=dummy bundle exec rails assets:precompile
+RUN npm run build:css
+RUN SECRET_KEY_BASE=dummy bundle exec rails assets:clobber assets:precompile
 
 CMD ["bash", "-lc", "bundle exec rails server -b 0.0.0.0 -p 3000"]
