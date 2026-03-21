@@ -57,6 +57,16 @@ export default class extends Controller {
 
     if (this._isViewerLayout()) {
       document.body.classList.add("keyboard-open", "viewer-keyboard-open")
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const panel = document.querySelector('[data-controller~="comment-panel"]')
+          if (!panel) return
+
+          const controller = this.application.getControllerForElementAndIdentifier(panel, "comment-panel")
+          controller?.scrollToBottomNow?.()
+        })
+      })
     }
   }
 
