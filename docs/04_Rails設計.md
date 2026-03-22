@@ -35,6 +35,9 @@
 app/
   assets/
     builds/
+      app/
+        assets/
+          builds/
       bootstrap-icons/
         fonts/
     images/
@@ -158,6 +161,7 @@ app/
       modal_controller.js
       presence_poll_controller.js
       stream_debug_controller.js
+      viewer_drink_panel_controller.js
       viewer_page_controller.js
     application.js
   jobs/
@@ -285,6 +289,7 @@ app/
     booths/
       _comment_section.html.erb
       _drink_menu.html.erb
+      _drink_menu_panel.html.erb
       _enter_modal.html.erb
       _stream_state.html.erb
       _waiting_state.html.erb
