@@ -9,34 +9,14 @@
     <%= turbo_stream_from [stream_session, :comments] %>
     <%= turbo_stream_from [stream_session, :viewer_stage] %>
 
-    <% content_for :viewer_overlay_comment do %>
-      <%= render "booths/comment_section",
-            booth: booth,
-            stream_session: stream_session,
-            comments: comments %>
-    <% end %>
-
-    <% content_for :viewer_overlay_drink do %>
-      <div class="viewer-drink-panel">
-        <div class="viewer-drink-panel-header">ドリンク</div>
-
-        <div class="viewer-drink-panel-body">
-          <%= render "stream_sessions/pending_drink_orders", stream_session: stream_session %>
-        </div>
-      </div>
-    <% end %>
-
-    <% content_for :viewer_overlay_drink_action do %>
-      <%= render "booths/drink_menu",
-            booth: booth,
-            stream_session: stream_session,
-            drink_items: drink_items,
-            can_create_drink_order: can_create_drink_order %>
-    <% end %>
-
     <div class="viewer-stage-shell">
       <div id="viewer_stage">
-        <%= render "stream_sessions/ivs_viewer", stream_session: stream_session %>
+        <%= render "stream_sessions/ivs_viewer",
+              stream_session: stream_session,
+              booth: booth,
+              comments: comments,
+              drink_items: drink_items,
+              can_create_drink_order: can_create_drink_order %>
       </div>
     </div>
   <% end %>

@@ -1,0 +1,31 @@
+<div
+  id="viewer_drink_menu_panel"
+  class="viewer-drink-menu-overlay d-none"
+  data-action="click->viewer-drink-panel#closeOnBackdrop"
+  data-viewer-drink-panel-target="overlay"
+  aria-hidden="true">
+  <div
+    class="viewer-drink-menu-panel"
+    data-viewer-drink-panel-target="panel">
+    <div class="viewer-panel-header">
+      <div class="viewer-panel-header-text">
+        <div class="viewer-drink-menu-title">ドリンク送信</div>
+        <div class="viewer-drink-menu-caption">送りたいドリンクを選べます</div>
+      </div>
+
+      <button type="button"
+              class="viewer-panel-close-btn"
+              data-action="viewer-drink-panel#close"
+              aria-label="ドリンクメニューを閉じる"
+              title="閉じる">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <div class="viewer-drink-menu-body">
+      <turbo-frame id="viewer_drink_menu" data-viewer-drink-panel-target="frame">
+        <div class="small text-white-50">ドリンクメニューを読み込みます。</div>
+      </turbo-frame>
+    </div>
+  </div>
+</div>
