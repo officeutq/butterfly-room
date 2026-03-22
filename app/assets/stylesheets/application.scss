@@ -8,7 +8,11 @@
 }
 
 @import "components/layout";
-@import "components/comment_item";
+@import "components/broadcast_layout";
+@import "components/broadcast_meta";
+@import "components/broadcast_drink";
+@import "components/broadcast_comment";
+@import "components/broadcast_ops";
 @import "components/live";
 @import "components/viewer";
 @import "components/banuba_verification";

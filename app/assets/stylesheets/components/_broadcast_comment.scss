@@ -1,22 +1,16 @@
-/* ------------------------------------------------------------
-   viewer comment panel (#353, #468, #467)
------------------------------------------------------------- */
-.viewer-overlay-comment-slot {
-  display: flex;
-  align-items: flex-end;
-}
-
+.live-overlay-comment-slot > #cast_comment_section,
 .viewer-overlay-comment-slot > #viewer_comment_section {
   width: 100%;
 }
 
+.live-comment-panel,
 .viewer-comment-panel {
   width: 100%;
   display: flex;
   flex-direction: column;
 
   gap: 2px;
-  padding: 0;
+  padding: 4px 8px;
 
   border-radius: 12px;
   background: transparent;
@@ -26,6 +20,7 @@
   min-height: 0;
 }
 
+.live-comment-list,
 .viewer-comment-list {
   flex: 1 1 auto;
 
@@ -44,24 +39,29 @@
   background: transparent;
 }
 
+.live-comment-list .comment,
+.live-comment-list .comment-item,
 .viewer-comment-list .comment,
 .viewer-comment-list .comment-item {
   background: transparent;
 }
 
+.live-comment-list .comment,
 .viewer-comment-list .comment {
-  padding: 4px 0;
-  color: #fff;
   font-size: 0.875rem;
   line-height: 1.3;
+  padding: 4px 0;
+  color: #fff;
 }
 
+.live-comment-list .comment-avatar-badge,
 .viewer-comment-list .comment-avatar-badge {
   background: rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.88) !important;
   border-color: rgba(255, 255, 255, 0.18) !important;
 }
 
+.live-comment-list .comment-author,
 .viewer-comment-list .comment-author {
   color: #fff;
   font-weight: 700;
@@ -73,6 +73,7 @@
     0 2px 6px rgba(0, 0, 0, 0.95);
 }
 
+.live-comment-list .comment-body,
 .viewer-comment-list .comment-body {
   color: #fff;
   font-weight: 500;
@@ -84,25 +85,31 @@
     0 2px 6px rgba(0, 0, 0, 0.95);
 }
 
+.live-comment-form,
 .viewer-comment-form {
   flex: 0 0 auto;
   border-radius: 12px;
 }
 
+.live-comment-panel #comment_form form,
 .viewer-comment-panel #comment_form form {
   display: flex;
   align-items: center;
 }
 
+.live-comment-panel #comment_form input[type="text"],
 .viewer-comment-panel #comment_form input[type="text"] {
   min-width: 0;
   background: rgba(0, 0, 0, 0.2);
 }
 
 /* ------------------------------------------------------------
-   iPhone Safari auto zoom guard for viewer comment input
+   iPhone Safari auto zoom guard for live comment input
+   - 文字サイズは16px以上を維持
+   - 見た目の小ささは padding / 高さで調整
 ------------------------------------------------------------ */
 @media (pointer: coarse) {
+  .live-comment-panel #comment_form input[type="text"],
   .viewer-comment-panel #comment_form input[type="text"] {
     font-size: 16px;
     line-height: 1.2;
@@ -110,6 +117,7 @@
     min-height: 36px;
   }
 
+  .live-comment-panel #comment_form .btn.btn-sm,
   .viewer-comment-panel #comment_form .btn.btn-sm {
     padding: 0.375rem 0.625rem;
     line-height: 1.2;
@@ -120,8 +128,9 @@
 }
 
 /* ------------------------------------------------------------
-   viewer soft keyboard comment mode (#462)
+   soft keyboard comment mode
 ------------------------------------------------------------ */
+body.cast-live-layout.cast-live-keyboard-open .live-comment-panel,
 body.viewer-layout.viewer-keyboard-open .viewer-comment-panel {
   gap: 6px;
   padding: 0;
@@ -130,10 +139,12 @@ body.viewer-layout.viewer-keyboard-open .viewer-comment-panel {
   box-shadow: none;
 }
 
+body.cast-live-layout.cast-live-keyboard-open .live-comment-list,
 body.viewer-layout.viewer-keyboard-open .viewer-comment-list {
   max-height: 40dvh;
 }
 
+body.cast-live-layout.cast-live-keyboard-open .live-comment-form,
 body.viewer-layout.viewer-keyboard-open .viewer-comment-form {
   padding: 8px;
   border-radius: 12px;
@@ -141,15 +152,59 @@ body.viewer-layout.viewer-keyboard-open .viewer-comment-form {
   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.32);
 }
 
+body.cast-live-layout.cast-live-keyboard-open .live-comment-panel #comment_form form,
 body.viewer-layout.viewer-keyboard-open .viewer-comment-panel #comment_form form {
   gap: 6px;
 }
 
+body.cast-live-layout.cast-live-keyboard-open .live-comment-panel #comment_form input[type="text"],
 body.viewer-layout.viewer-keyboard-open .viewer-comment-panel #comment_form input[type="text"] {
   min-height: 36px;
 }
 
+body.cast-live-layout.cast-live-keyboard-open .live-comment-panel #comment_form .btn,
 body.viewer-layout.viewer-keyboard-open .viewer-comment-panel #comment_form .btn {
   flex-shrink: 0;
   white-space: nowrap;
+}
+
+/* ------------------------------------------------------------
+   shared comment item (#468)
+------------------------------------------------------------ */
+.comment-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.comment-avatar {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.comment-avatar-badge {
+  width: 32px !important;
+  height: 32px !important;
+  flex: 0 0 32px;
+  object-fit: cover;
+}
+
+.comment-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: inherit;
+}
+
+.comment-author {
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.comment-body {
+  word-break: break-word;
 }

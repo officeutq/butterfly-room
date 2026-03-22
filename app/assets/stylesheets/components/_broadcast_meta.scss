@@ -1,6 +1,4 @@
-/* ------------------------------------------------------------
-   viewer meta panel (#389)
------------------------------------------------------------- */
+.live-meta-panel,
 .viewer-meta-panel {
   width: 100%;
   display: flex;
@@ -16,6 +14,15 @@
   min-height: 0;
 }
 
+.live-meta-main-row,
+.viewer-meta-main-row {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-meta-layout,
 .viewer-meta-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) max-content;
@@ -24,17 +31,7 @@
   min-width: 0;
 }
 
-.viewer-meta-main {
-  min-width: 0;
-}
-
-.viewer-meta-main-row {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
+.live-meta-title,
 .viewer-meta-title {
   min-width: 0;
   font-size: 1rem;
@@ -44,28 +41,33 @@
   word-break: break-word;
 }
 
+.live-meta-description,
 .viewer-meta-description {
   min-width: 0;
-  margin-top: 6px;
   font-size: 0.8125rem;
   line-height: 1.35;
   color: rgba(255, 255, 255, 0.76);
   word-break: break-word;
 }
 
-.viewer-meta-description p {
+.live-meta-description p,
+.viewer-meta-description p  {
   margin-bottom: 0.35rem;
 }
 
+.live-meta-description p:last-child,
 .viewer-meta-description p:last-child {
   margin-bottom: 0;
 }
 
+.live-meta-side,
 .viewer-meta-side {
   flex: 0 0 auto;
 }
 
+.live-meta-viewer-count,
 .viewer-meta-viewer-count {
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -74,4 +76,14 @@
   font-size: 0.875rem;
   line-height: 1.2;
   color: rgba(255, 255, 255, 0.88);
+}
+
+.live-meta-main,
+.viewer-meta-main {
+  min-width: 0;
+}
+
+.live-meta-main turbo-frame {
+  display: block;
+  min-width: 0;
 }
