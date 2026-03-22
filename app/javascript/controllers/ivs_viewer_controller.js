@@ -12,6 +12,7 @@ export default class extends Controller {
     this._remoteMediaStream = null
     this._remoteTrackMap = new Map()
     this._state = "idle"
+    this._mutedPreference = true
 
     this._beforeCache = () => this.stop()
     document.addEventListener("turbo:before-cache", this._beforeCache)
@@ -26,6 +27,11 @@ export default class extends Controller {
     window.addEventListener("stream-session:joinable", this._onJoinable)
 
     // 初期UI
+    this._restoreMutedPreference()
+    if (this.hasVideoTarget) {
+      this.videoTarget.muted = this._mutedPreference
+    }
+
     this._setState("idle")
     this._syncMuteUI({ hint: false })
 
@@ -101,6 +107,7 @@ export default class extends Controller {
     if (v.muted) {
       // muted -> unmuted（ユーザー操作なので play 再試行する）
       v.muted = false
+      this._storeMutedPreference(false)
       try {
         await v.play?.()
         this._syncMuteUI({ hint: false })
@@ -108,11 +115,13 @@ export default class extends Controller {
         // まだ音が出せない（端末制約など）→ミュートに戻し、ヒントを出す
         v.muted = true
         try { await v.play?.() } catch (_) {}
+        this._storeMutedPreference(true)
         this._syncMuteUI({ hint: true })
       }
     } else {
       // unmuted -> muted
       v.muted = true
+      this._storeMutedPreference(true)
       this._syncMuteUI({ hint: false })
     }
   }
@@ -176,18 +185,20 @@ export default class extends Controller {
     if (!changed) return
 
     const v = this.videoTarget
-    const currentMuted = v.muted
+    const preferredMuted = this._readMutedPreference()
+
     v.srcObject = this._remoteMediaStream
 
     // 1) まず音あり（unmuted autoplay）を試す
     // 2) 失敗したら muted autoplay にフォールバック（映像優先）
     try {
-      v.muted = currentMuted ? true : false
+      v.muted = preferredMuted
       await v.play?.()
       this._syncMuteUI({ hint: false })
     } catch (_) {
       v.muted = true
       try { await v.play?.() } catch (_) {}
+      this._storeMutedPreference(true)
       // 音が出ない状態を明示（ユーザー操作で解除できる）
       this._syncMuteUI({ hint: true })
     }
@@ -245,6 +256,33 @@ export default class extends Controller {
       const show = hint && v.muted
       this.muteHintTarget.style.display = show ? "" : "none"
     }
+  }
+
+  _mutePreferenceKey() {
+    return `ivs-viewer:muted:${this.tokenUrlValue}`
+  }
+
+  _readMutedPreference() {
+    try {
+      const raw = sessionStorage.getItem(this._mutePreferenceKey())
+      if (raw === "false") return false
+      return true
+    } catch (_) {
+      return this._mutedPreference
+    }
+  }
+
+  _storeMutedPreference(value) {
+    this._mutedPreference = !!value
+    try {
+      sessionStorage.setItem(this._mutePreferenceKey(), String(this._mutedPreference))
+    } catch (_) {
+      // noop
+    }
+  }
+
+  _restoreMutedPreference() {
+    this._mutedPreference = this._readMutedPreference()
   }
 
   _setState(s) {
