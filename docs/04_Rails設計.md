@@ -44,21 +44,18 @@ app/
     stylesheets/
       components/
         _banuba_verification.scss
-        _comment_item.scss
+        _broadcast_comment.scss
+        _broadcast_drink.scss
+        _broadcast_layout.scss
+        _broadcast_meta.scss
+        _broadcast_ops.scss
         _layout.scss
         _live.scss
         _live_beauty.scss
-        _live_comment.scss
-        _live_drink.scss
         _live_layout.scss
-        _live_meta.scss
-        _live_ops.scss
         _viewer.scss
-        _viewer_comment.scss
         _viewer_drink.scss
         _viewer_layout.scss
-        _viewer_meta.scss
-        _viewer_ops.scss
         _viewer_video.scss
       application.scss
   controllers/
