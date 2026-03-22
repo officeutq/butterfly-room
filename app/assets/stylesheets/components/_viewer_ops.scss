@@ -1,11 +1,12 @@
 /* ------------------------------------------------------------
-   viewer mute ops panel (#355)
+   viewer mute ops panel (#355, #511)
 ------------------------------------------------------------ */
 .viewer-ops-panel {
   width: 100%;
   display: flex;
   justify-content: center;
 
+  padding: 6px;
   border-radius: 12px;
   background: rgba(0, 0, 0, 0.45);
 
@@ -15,9 +16,12 @@
 }
 
 .viewer-ops-buttons {
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  gap: 6px;
+  min-width: 0;
 }
 
 .viewer-ops-btn {
@@ -53,6 +57,10 @@
 
 .viewer-ops-btn.is-off {
   background: rgba(220, 53, 69, 0.35);
+}
+
+.viewer-ops-btn.is-active {
+  background: rgba(13, 110, 253, 0.45);
 }
 
 .viewer-ops-btn i {

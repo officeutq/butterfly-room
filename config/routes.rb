@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 Rails.application.routes.draw do
   get "up" => "rails/health#show", as: :rails_health_check
 
@@ -62,6 +64,7 @@ Rails.application.routes.draw do
     member do
       get :enter
       post :enter_as_cast
+      get :viewer_drink_menu
     end
 
     resource :favorite, only: %i[create destroy], controller: "favorites/booths"

@@ -1,21 +1,26 @@
 <%# locals: booth:, stream_session:, drink_items:, can_create_drink_order: %>
 
-<turbo-frame id="drink_menu">
+<turbo-frame id="viewer_drink_menu">
   <% live_like = booth.live? || booth.away? %>
+  <% has_drink_items = Array(drink_items).any? %>
 
-  <% if can_create_drink_order && live_like && (drink_items || []).any? %>
-    <div class="viewer-drink-action-bar">
-      <div class="viewer-drink-action-list" role="group" aria-label="ドリンク送信">
-        <% (drink_items || []).each do |item| %>
-          <%= form_with url: stream_session_drink_orders_path(stream_session),
-                        scope: :drink_order,
-                        method: :post,
-                        class: "viewer-drink-action-form" do |f| %>
-            <%= f.hidden_field :drink_item_id, value: item.id %>
-            <%= f.submit "#{item.name}(#{item.price_points}pt)", class: "viewer-drink-action-btn" %>
-          <% end %>
+  <% if !live_like %>
+    <div class="small text-white-50">配信中のみドリンクを送れます。</div>
+  <% elsif !has_drink_items %>
+    <div class="small text-white-50">現在送れるドリンクがありません。</div>
+  <% elsif !can_create_drink_order %>
+    <div class="small text-white-50">現在このアカウントではドリンク送信を利用できません。</div>
+  <% else %>
+    <div class="viewer-drink-menu-list" role="group" aria-label="ドリンク送信">
+      <% Array(drink_items).each do |item| %>
+        <%= form_with url: stream_session_drink_orders_path(stream_session),
+                      scope: :drink_order,
+                      method: :post,
+                      class: "viewer-drink-menu-form" do |f| %>
+          <%= f.hidden_field :drink_item_id, value: item.id %>
+          <%= f.submit "#{item.name}(#{item.price_points}pt)", class: "viewer-drink-menu-btn" %>
         <% end %>
-      </div>
+      <% end %>
     </div>
   <% end %>
 </turbo-frame>

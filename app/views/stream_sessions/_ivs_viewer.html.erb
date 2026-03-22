@@ -1,3 +1,9 @@
+<%# locals: stream_session:, booth:, comments:, drink_items:, can_create_drink_order: %>
+
+<% live_like = booth.live? || booth.away? %>
+<% drink_menu_button_visible = live_like && Array(drink_items).any? %>
+<% title_display = stream_session.title.presence || stream_session.booth.name %>
+
 <div
   class="ivs-viewer-root"
   data-controller="ivs-viewer"
@@ -10,16 +16,13 @@
     data-ivs-viewer-target="video"
   ></video>
 
-  <%# ------------------------------------------------------------
-      Overlay（映像上にDOMを重ねる）
-      - Overlay自体は pointer-events:none
-      - 実UIは .viewer-overlay-ui で pointer-events:auto
-      ------------------------------------------------------------ %>
   <div id="viewer_overlay">
-    <div class="viewer-overlay-ui" data-viewer-grid-debug="<%= Rails.env.development? ? "1" : "0" %>">
+    <div
+      class="viewer-overlay-ui"
+      data-controller="viewer-drink-panel"
+      data-viewer-drink-panel-menu-url-value="<%= viewer_drink_menu_booth_path(booth) %>"
+      data-viewer-grid-debug="<%= Rails.env.development? ? "1" : "0" %>">
       <div class="viewer-overlay-meta-slot">
-        <% title_display = stream_session.title.presence || stream_session.booth.name %>
-
         <div
           class="viewer-meta-panel"
           data-controller="presence-poll"
@@ -56,18 +59,41 @@
         </div>
 
         <div class="viewer-overlay-drink-slot">
-          <%= yield :viewer_overlay_drink if content_for?(:viewer_overlay_drink) %>
+          <div class="viewer-drink-panel">
+            <div class="viewer-drink-panel-header">ドリンク</div>
+
+            <div class="viewer-drink-panel-body">
+              <%= render "stream_sessions/pending_drink_orders", stream_session: stream_session %>
+            </div>
+          </div>
         </div>
       </div>
 
       <div class="viewer-overlay-bottom-row">
         <div class="viewer-overlay-comment-slot">
-          <%= yield :viewer_overlay_comment if content_for?(:viewer_overlay_comment) %>
+          <%= render "booths/comment_section",
+                booth: booth,
+                stream_session: stream_session,
+                comments: comments %>
         </div>
 
         <div class="viewer-overlay-ops-slot">
           <div class="viewer-ops-panel">
             <div class="viewer-ops-buttons">
+              <% if drink_menu_button_visible %>
+                <button
+                  type="button"
+                  class="viewer-ops-btn"
+                  data-action="viewer-drink-panel#toggle"
+                  data-viewer-drink-panel-target="openButton"
+                  aria-label="ドリンクメニューを開く"
+                  aria-expanded="false"
+                  aria-controls="viewer_drink_menu_panel"
+                  title="ドリンクメニュー">
+                  <i class="bi bi-cup-straw" aria-hidden="true"></i>
+                </button>
+              <% end %>
+
               <button
                 type="button"
                 class="viewer-ops-btn"
@@ -97,11 +123,9 @@
         </div>
       </div>
 
-      <div class="viewer-overlay-drink-action-row">
-        <div class="viewer-overlay-drink-action-slot">
-          <%= yield :viewer_overlay_drink_action if content_for?(:viewer_overlay_drink_action) %>
-        </div>
-      </div>
+      <% if drink_menu_button_visible %>
+        <%= render "booths/drink_menu_panel" %>
+      <% end %>
     </div>
   </div>
 </div>

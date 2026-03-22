@@ -3,13 +3,11 @@
 class BoothsController < ApplicationController
   include StoreBanGuard
 
-  before_action :set_booth, only: %i[show enter enter_as_cast]
-  before_action :reject_banned_customer_for_booth!, only: %i[show]
+  before_action :set_booth, only: %i[show enter enter_as_cast viewer_drink_menu]
+  before_action :reject_banned_customer_for_booth!, only: %i[show viewer_drink_menu]
+  before_action :set_viewer_stream_context, only: %i[show viewer_drink_menu]
 
   def show
-    @stream_session = @booth.current_stream_session
-    @drink_items = @booth.store.drink_items.enabled_only.ordered
-
     @wallet =
       if user_signed_in?
         Wallet.find_or_create_by!(customer_user_id: current_user.id) do |w|
@@ -18,28 +16,25 @@ class BoothsController < ApplicationController
         end
       end
 
-    @comments =
-      if @stream_session.present?
-        Comment.alive.where(stream_session: @stream_session)
-              .order(created_at: :desc)
-              .limit(50)
-              .reverse
-      else
-        []
-      end
+    @comments = load_viewer_comments
 
     @booth_favorited =
       user_signed_in? && current_user.favorite_booths.exists?(booth_id: @booth.id)
 
     @store_favorited =
       user_signed_in? && current_user.favorite_stores.exists?(store_id: @booth.store_id)
+  end
 
-    @can_create_drink_order =
-      if @stream_session.present? && user_signed_in?
-        Authorization::ViewerPolicy.new(current_user, @stream_session).create_drink_order?
-      else
-        false
-      end
+  def viewer_drink_menu
+    render partial: "booths/drink_menu",
+           locals: {
+             booth: @booth,
+             stream_session: @stream_session,
+             drink_items: @drink_items,
+             can_create_drink_order: @can_create_drink_order
+           },
+           layout: false,
+           status: :ok
   end
 
   def enter
@@ -129,6 +124,27 @@ class BoothsController < ApplicationController
 
   def set_booth
     @booth = Booth.active.find(params[:id])
+  end
+
+  def set_viewer_stream_context
+    @stream_session = @booth.current_stream_session
+    @drink_items = @booth.store.drink_items.enabled_only.ordered
+    @can_create_drink_order = can_create_drink_order?
+  end
+
+  def can_create_drink_order?
+    return false unless @stream_session.present? && user_signed_in?
+
+    Authorization::ViewerPolicy.new(current_user, @stream_session).create_drink_order?
+  end
+
+  def load_viewer_comments
+    return [] unless @stream_session.present?
+
+    Comment.alive.where(stream_session: @stream_session)
+           .order(created_at: :desc)
+           .limit(50)
+           .reverse
   end
 
   def reject_banned_customer_for_booth!
