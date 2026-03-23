@@ -180,6 +180,14 @@
   align-items: flex-end;
 }
 
+.live-overlay-comment-slot .live-comment-stack {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .live-overlay-ui[data-live-grid-debug="1"] .live-overlay-meta-slot,
 .live-overlay-ui[data-live-grid-debug="1"] .live-overlay-main-spacer,
 .live-overlay-ui[data-live-grid-debug="1"] .live-overlay-drink-slot,

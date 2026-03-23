@@ -25,12 +25,7 @@ export default class extends Controller {
     window.removeEventListener("resize", this._onResize)
 
     this._clearKeyboardCloseTimers()
-
-    document.body.classList.remove(
-      "keyboard-open",
-      "cast-live-keyboard-open",
-      "viewer-keyboard-open"
-    )
+    this._clearKeyboardModeClasses()
 
     document.documentElement.style.removeProperty("--live-stage-h")
     document.documentElement.style.removeProperty("--viewer-stage-h")
@@ -39,23 +34,31 @@ export default class extends Controller {
   }
 
   _onResize() {
-    // 端末回転や通常リサイズ時だけ静的値を取り直す
-    // キーボード開閉に追随する再計算はしない
     this._applyStaticLayoutVars()
   }
 
-  _onFocusIn() {
+  _onFocusIn(event) {
     if (!this._isMobileLike()) return
-    if (!this._hasTextInputFocus()) return
+
+    const target = event.target
+    if (!this._isTextInputElement(target)) return
 
     this._clearKeyboardCloseTimers()
 
     if (this._isCastLiveLayout()) {
+      const role = this._keyboardRoleOf(target)
+
+      if (!["comment", "title"].includes(role)) return
+
+      this._clearKeyboardModeClasses()
       document.body.classList.add("keyboard-open", "cast-live-keyboard-open")
       return
     }
 
     if (this._isViewerLayout()) {
+      if (!this._hasTextInputFocus()) return
+
+      this._clearKeyboardCloseTimers()
       document.body.classList.add("keyboard-open", "viewer-keyboard-open")
 
       requestAnimationFrame(() => {
@@ -74,15 +77,11 @@ export default class extends Controller {
     requestAnimationFrame(() => {
       if (this._hasTextInputFocus()) return
 
-      const wasCastLiveOpen = document.body.classList.contains("cast-live-keyboard-open")
+      const wasCastCommentOpen = document.body.classList.contains("cast-live-keyboard-open")
 
-      document.body.classList.remove(
-        "keyboard-open",
-        "cast-live-keyboard-open",
-        "viewer-keyboard-open"
-      )
+      this._clearKeyboardModeClasses()
 
-      if (wasCastLiveOpen) {
+      if (wasCastCommentOpen) {
         this._restoreRootScrollAfterKeyboardClose()
       }
     })
@@ -123,6 +122,14 @@ export default class extends Controller {
     this._keyboardCloseTimers = []
   }
 
+  _clearKeyboardModeClasses() {
+    document.body.classList.remove(
+      "keyboard-open",
+      "cast-live-keyboard-open",
+      "viewer-keyboard-open"
+    )
+  }
+
   _applyStaticLayoutVars() {
     const header = document.getElementById("app_header")
     const footer = document.getElementById("app_footer")
@@ -152,15 +159,18 @@ export default class extends Controller {
     return document.body.classList.contains("viewer-layout")
   }
 
-  _hasTextInputFocus() {
-    const active = document.activeElement
-    if (!active) return false
+  _keyboardRoleOf(element) {
+    return element?.dataset?.keyboardRole || ""
+  }
 
-    if (active.matches("textarea")) return true
-    if (active.matches("[contenteditable='true']")) return true
+  _isTextInputElement(element) {
+    if (!element) return false
 
-    if (active.matches("input")) {
-      const type = (active.getAttribute("type") || "text").toLowerCase()
+    if (element.matches("textarea")) return true
+    if (element.matches("[contenteditable='true']")) return true
+
+    if (element.matches("input")) {
+      const type = (element.getAttribute("type") || "text").toLowerCase()
       return ![
         "button",
         "checkbox",
@@ -176,5 +186,9 @@ export default class extends Controller {
     }
 
     return false
+  }
+
+  _hasTextInputFocus() {
+    return this._isTextInputElement(document.activeElement)
   }
 }
