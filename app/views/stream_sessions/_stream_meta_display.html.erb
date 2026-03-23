@@ -1,12 +1,25 @@
-<%# locals: stream_session: %>
+<% user = stream_session.started_by_cast_user %>
 <% title_display = stream_session.title.presence || stream_session.booth.name %>
 
-<div class="live-meta-main-row">
-  <div class="live-meta-title"><%= title_display %></div>
-</div>
-
-<% if stream_session.description.present? %>
-  <div class="live-meta-description">
-    <%= simple_format(stream_session.description) %>
+<div class="live-meta-row viewer-meta-row">
+  <!-- avatar -->
+  <div class="meta-avatar">
+    <%= user_avatar_badge(user, size: 28) %>
   </div>
-<% end %>
+
+  <!-- name -->
+  <div class="meta-name">
+    <%= display_name_or_anonymous(user) %>
+  </div>
+
+  <!-- title -->
+  <div class="meta-title text-truncate">
+    <%= title_display %>
+  </div>
+
+  <!-- viewer count -->
+  <div class="meta-count">
+    <i class="bi bi-people-fill" aria-hidden="true"></i>
+    <span data-presence-poll-target="count">-</span>
+  </div>
+</div>

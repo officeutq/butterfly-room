@@ -53,21 +53,10 @@
             data-presence-poll-summary-url-value="<%= presence_summary_stream_session_path(@stream_session) %>"
             data-presence-poll-interval-ms-value="20000"
           >
-            <div class="live-meta-layout">
-              <div class="live-meta-main">
-                <turbo-frame id="stream_meta_display">
-                  <%= render "stream_sessions/stream_meta_display",
-                            stream_session: @stream_session %>
-                </turbo-frame>
-              </div>
-
-              <div class="live-meta-side">
-                <div class="live-meta-viewer-count">
-                  <i class="bi bi-people-fill" aria-hidden="true"></i>
-                  <span data-presence-poll-target="count">-</span>
-                </div>
-              </div>
-            </div>
+            <turbo-frame id="stream_meta_display">
+              <%= render "stream_sessions/stream_meta_display",
+                        stream_session: @stream_session %>
+            </turbo-frame>
           </div>
         </div>
 
