@@ -156,7 +156,7 @@ module Cast
     end
 
     def metadata_params
-      params.require(:stream_session).permit(:title, :description)
+      params.require(:stream_session).permit(:title)
     end
 
     def operable_booth_for_stream_session?(booth)
