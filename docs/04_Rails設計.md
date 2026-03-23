@@ -303,7 +303,6 @@ app/
       stream_sessions/
         _ended.html.erb
         _meta_display_frame.html.erb
-        _meta_modal.html.erb
         _pending_drink_orders.html.erb
         meta_display.html.erb
         show.html.erb
