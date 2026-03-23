@@ -2,8 +2,8 @@
 
 module Cast
   class StreamSessionsController < Cast::BaseController
-    before_action :set_stream_session, only: %i[show finish pending_drink_orders meta_modal meta_display metadata]
-    before_action :authorize_stream_session_access!, only: %i[show finish pending_drink_orders meta_modal meta_display metadata]
+    before_action :set_stream_session, only: %i[show finish pending_drink_orders meta_display metadata]
+    before_action :authorize_stream_session_access!, only: %i[show finish pending_drink_orders meta_display metadata]
 
     def show
       booth = @stream_session.booth
@@ -81,23 +81,6 @@ module Cast
              locals: { stream_session: @stream_session }
     end
 
-    def meta_modal
-      booth = @stream_session.booth
-
-      unless booth.current_stream_session_id == @stream_session.id
-        return head :forbidden
-      end
-
-      unless booth.standby?
-        return head :conflict
-      end
-
-      render partial: "cast/stream_sessions/meta_modal",
-             locals: { booth: booth, stream_session: @stream_session }
-    rescue ActiveRecord::RecordNotFound
-      head :not_found
-    end
-
     def meta_display
       booth = @stream_session.booth
 
@@ -126,22 +109,15 @@ module Cast
 
       respond_to do |format|
         format.html do
-          redirect_to live_cast_booth_path(booth), notice: "設定しました"
+          redirect_to live_cast_booth_path(booth)
         end
 
         format.turbo_stream do
-          render turbo_stream: [
-            turbo_stream.replace(
-              "stream_meta_display",
-              partial: "cast/stream_sessions/meta_display_frame",
-              locals: { booth: booth, stream_session: @stream_session }
-            ),
-            turbo_stream.append(
-              "flash_inner",
-              partial: "shared/flash_message",
-              locals: { level: "success", message: "設定しました" }
-            )
-          ]
+          render turbo_stream: turbo_stream.replace(
+            "stream_meta_display",
+            partial: "cast/stream_sessions/meta_display_frame",
+            locals: { booth: booth, stream_session: @stream_session }
+          )
         end
 
         format.json { render json: { ok: true }, status: :ok }
@@ -153,18 +129,11 @@ module Cast
       respond_to do |format|
         format.html { redirect_to live_cast_booth_path(booth), alert: message }
         format.turbo_stream do
-          render turbo_stream: [
-            turbo_stream.replace(
-              "modal",
-              partial: "cast/stream_sessions/meta_modal",
-              locals: { booth: booth, stream_session: e.record }
-            ),
-            turbo_stream.append(
-              "flash_inner",
-              partial: "shared/flash_message",
-              locals: { level: "danger", message: message }
-            )
-          ], status: :unprocessable_entity
+          render turbo_stream: turbo_stream.append(
+            "flash_inner",
+            partial: "shared/flash_message",
+            locals: { level: "danger", message: message }
+          ), status: :unprocessable_entity
         end
         format.json { render json: { error: message }, status: :unprocessable_entity }
         format.any { render plain: message, status: :unprocessable_entity }
