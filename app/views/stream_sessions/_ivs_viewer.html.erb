@@ -2,7 +2,6 @@
 
 <% live_like = booth.live? || booth.away? %>
 <% drink_menu_button_visible = live_like && Array(drink_items).any? %>
-<% title_display = stream_session.title.presence || stream_session.booth.name %>
 
 <div
   class="ivs-viewer-root"
@@ -32,15 +31,8 @@
         >
           <div class="viewer-meta-layout">
             <div class="viewer-meta-main">
-              <div class="viewer-meta-main-row">
-                <div class="viewer-meta-title"><%= title_display %></div>
-              </div>
-
-              <% if stream_session.description.present? %>
-                <div class="viewer-meta-description">
-                  <%= simple_format(stream_session.description) %>
-                </div>
-              <% end %>
+              <%= render "stream_sessions/stream_meta_display",
+                        stream_session: stream_session %>
             </div>
 
             <div class="viewer-meta-side">

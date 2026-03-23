@@ -1,5 +1,5 @@
-<%# locals: booth:, stream_session: %>
-<% title_display = stream_session.title.presence || booth.name %>
+<%# locals: stream_session: %>
+<% title_display = stream_session.title.presence || stream_session.booth.name %>
 
 <div class="live-meta-main-row">
   <div class="live-meta-title"><%= title_display %></div>
