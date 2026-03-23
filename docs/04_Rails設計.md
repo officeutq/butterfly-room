@@ -297,7 +297,6 @@ app/
         _beauty_panel.html.erb
         _comment_section.html.erb
         _effect_panel.html.erb
-        _stream_meta_display.html.erb
         edit.html.erb
         index.html.erb
         live.html.erb
@@ -371,6 +370,7 @@ app/
       _ended.html.erb
       _ivs_viewer.html.erb
       _pending_drink_orders.html.erb
+      _stream_meta_display.html.erb
       _viewer_ended.html.erb
     system_admin/
       effects/
