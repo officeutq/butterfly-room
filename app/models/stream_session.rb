@@ -7,7 +7,6 @@ class StreamSession < ApplicationRecord
   enum :status, { live: 0, ended: 1 }
 
   validates :title, length: { maximum: 64 }, allow_nil: true
-  validates :description, length: { maximum: 256 }, allow_nil: true
 
   delegate :current_stream_session_id, :status, to: :booth, prefix: true
 end
