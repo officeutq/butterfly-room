@@ -1,54 +1,29 @@
 <h1>ドリンクメニュー</h1>
 
-<div class="card mb-4">
-  <div class="card-header">新規作成</div>
-  <div class="card-body">
-    <%= render "form", drink_item: @drink_item, url: admin_drink_items_path, method: :post %>
+<div class="row g-3">
+  <% @drink_items.each do |item| %>
+    <% editing = @editing_drink_item_id == item.id %>
+
+    <div class="col-12 col-xl-6">
+      <% if editing %>
+        <%= render "form",
+                   drink_item: item,
+                   url: admin_drink_item_path(item),
+                   method: :patch,
+                   cancel_url: admin_drink_items_path,
+                   submit_label: "編集して保存" %>
+      <% else %>
+        <%= render "card", drink_item: item %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div class="col-12 col-xl-6">
+    <%= render "form",
+               drink_item: @drink_item,
+               url: admin_drink_items_path,
+               method: :post,
+               cancel_url: nil,
+               submit_label: "新規作成" %>
   </div>
 </div>
-
-<table class="table align-middle">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>表示順</th>
-      <th>名前</th>
-      <th>価格(pt)</th>
-      <th>有効</th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    <% @drink_items.each do |item| %>
-      <tr class="<%= "text-muted" unless item.enabled %>">
-        <td><%= item.id %></td>
-        <td><%= item.position %></td>
-        <td><%= item.name %></td>
-        <td><%= item.price_points %></td>
-        <td>
-          <%= form_with model: [:admin, item], method: :patch, class: "d-inline" do |f| %>
-            <%= f.hidden_field :enabled, value: (!item.enabled).to_s %>
-            <%= f.submit(item.enabled ? "有効" : "無効", class: "btn btn-sm #{item.enabled ? "btn-success" : "btn-outline-secondary"}") %>
-          <% end %>
-        </td>
-        <td class="text-end">
-          <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#edit-<%= item.id %>">
-            編集
-          </button>
-
-          <%= button_to "無効化", admin_drink_item_path(item), method: :delete,
-                class: "btn btn-sm btn-outline-danger",
-                form: { data: { turbo_confirm: "無効にしますか？" } } %>
-        </td>
-      </tr>
-
-      <tr class="collapse" id="edit-<%= item.id %>">
-        <td colspan="6">
-          <div class="card card-body">
-            <%= render "form", drink_item: item, url: admin_drink_item_path(item), method: :patch %>
-          </div>
-        </td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>

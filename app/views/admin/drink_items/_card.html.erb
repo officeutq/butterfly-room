@@ -1,0 +1,81 @@
+<div class="card drink-item-card <%= "text-muted drink-item-card-disabled" unless drink_item.enabled %>" data-bs-theme="light">
+  <div class="card-body">
+    <div class="vstack gap-2">
+      <div class="row align-items-center g-2">
+        <div class="col-4 col-sm-3">
+          <div class="small text-secondary">ドリンク名</div>
+        </div>
+        <div class="col-8 col-sm-9">
+          <div class="fw-semibold text-break"><%= drink_item.name %></div>
+        </div>
+      </div>
+
+      <div class="row align-items-center g-2">
+        <div class="col-4 col-sm-3">
+          <div class="small text-secondary">アイコン</div>
+        </div>
+        <div class="col-8 col-sm-9">
+          <% if drink_item.icon_key.present? %>
+            <%= image_tag DrinkItem::ICON_OPTIONS.fetch(drink_item.icon_key)[:path],
+                          alt: DrinkItem::ICON_OPTIONS.fetch(drink_item.icon_key)[:label],
+                          class: "drink-item-card-icon-image" %>
+          <% else %>
+            <%= image_tag "drink_icons/drink_unset.jpg",
+                          alt: "未設定",
+                          class: "drink-item-card-icon-image" %>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="row align-items-center g-2">
+        <div class="col-4 col-sm-3">
+          <div class="small text-secondary">価格</div>
+        </div>
+        <div class="col-8 col-sm-9">
+          <div><%= drink_item.price_points %> pt</div>
+        </div>
+      </div>
+
+      <div class="row align-items-center g-2">
+        <div class="col-4 col-sm-3">
+          <div class="small text-secondary">表示順</div>
+        </div>
+        <div class="col-8 col-sm-9">
+          <div><%= drink_item.position %></div>
+        </div>
+      </div>
+
+
+      <div class="row align-items-center g-2">
+        <div class="col-4 col-sm-3">
+          <%= form_with model: [:admin, drink_item], method: :patch, class: "d-inline-block" do |f| %>
+            <%= f.hidden_field :name, value: drink_item.name %>
+            <%= f.hidden_field :price_points, value: drink_item.price_points %>
+            <%= f.hidden_field :position, value: drink_item.position %>
+            <%= f.hidden_field :icon_key, value: drink_item.icon_key %>
+            <%= f.hidden_field :enabled, value: "0" %>
+
+            <div class="form-check mb-0">
+              <%= f.check_box :enabled,
+                              {
+                                class: "form-check-input",
+                                checked: drink_item.enabled,
+                                onchange: "this.form.requestSubmit()"
+                              },
+                              "1",
+                              "0" %>
+              <%= f.label :enabled, "有効 / 無効", class: "form-check-label" %>
+            </div>
+          <% end %>
+        </div>
+        <div class="col-8 col-sm-9">
+          <div class="d-flex justify-content-end gap-2 flex-wrap mt-3">
+            <%= link_to "編集",
+                        admin_drink_items_path(editing_id: drink_item.id),
+                        class: "btn btn-sm btn-outline-primary" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

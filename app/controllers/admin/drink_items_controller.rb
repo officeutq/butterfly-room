@@ -8,14 +8,17 @@ module Admin
     def index
       @drink_item = current_store.drink_items.new(enabled: true, position: default_position)
       @drink_items = current_store.drink_items.ordered
+      @editing_drink_item_id = params[:editing_id].to_i if params[:editing_id].present?
     end
 
     def create
       @drink_item = current_store.drink_items.new(drink_item_params)
+
       if @drink_item.save
         redirect_to admin_drink_items_path, notice: "作成しました"
       else
         @drink_items = current_store.drink_items.ordered
+        @editing_drink_item_id = nil
         render :index, status: :unprocessable_entity
       end
     end
@@ -25,6 +28,7 @@ module Admin
         redirect_to admin_drink_items_path, notice: "更新しました"
       else
         @drink_items = current_store.drink_items.ordered
+        @editing_drink_item_id = @drink_item.id
         @drink_item = current_store.drink_items.new(enabled: true, position: default_position)
         render :index, status: :unprocessable_entity
       end
