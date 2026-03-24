@@ -34,6 +34,8 @@ class DrinkItem < ApplicationRecord
 
   belongs_to :store
 
+  before_validation :normalize_icon_key
+
   validates :name, presence: true
   validates :price_points, numericality: { only_integer: true, greater_than: 0 }
   validates :position, numericality: { only_integer: true }
@@ -41,4 +43,10 @@ class DrinkItem < ApplicationRecord
 
   scope :enabled_only, -> { where(enabled: true) }
   scope :ordered, -> { order(:position, :id) }
+
+  private
+
+  def normalize_icon_key
+    self.icon_key = nil if icon_key.blank?
+  end
 end
