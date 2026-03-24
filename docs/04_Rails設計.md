@@ -41,6 +41,7 @@ app/
       bootstrap-icons/
         fonts/
     images/
+      drink_icons/
     stylesheets/
       components/
         _banuba_verification.scss
@@ -49,6 +50,7 @@ app/
         _broadcast_layout.scss
         _broadcast_meta.scss
         _broadcast_ops.scss
+        _drink_item.scss
         _layout.scss
         _live.scss
         _live_beauty.scss
@@ -269,6 +271,7 @@ app/
       casts/
         index.html.erb
       drink_items/
+        _card.html.erb
         _form.html.erb
         index.html.erb
       metrics/
