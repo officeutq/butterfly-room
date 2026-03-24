@@ -1,17 +1,5 @@
-<div class="card drink-item-card <%= "text-muted drink-item-card-disabled" unless drink_item.enabled %>">
+<div class="card drink-item-card <%= "text-muted drink-item-card-disabled" unless drink_item.enabled %>" data-bs-theme="light">
   <div class="card-body">
-    <div class="mb-3">
-      <% if drink_item.icon_key.present? %>
-        <%= image_tag DrinkItem::ICON_OPTIONS.fetch(drink_item.icon_key)[:path],
-                      alt: DrinkItem::ICON_OPTIONS.fetch(drink_item.icon_key)[:label],
-                      class: "drink-item-card-icon-image" %>
-      <% else %>
-        <%= image_tag "drink_icons/drink_unset.jpg",
-                      alt: "未設定",
-                      class: "drink-item-card-icon-image" %>
-      <% end %>
-    </div>
-
     <div class="vstack gap-2">
       <div class="row align-items-center g-2">
         <div class="col-4 col-sm-3">
@@ -19,6 +7,23 @@
         </div>
         <div class="col-8 col-sm-9">
           <div class="fw-semibold text-break"><%= drink_item.name %></div>
+        </div>
+      </div>
+
+      <div class="row align-items-center g-2">
+        <div class="col-4 col-sm-3">
+          <div class="small text-secondary">アイコン</div>
+        </div>
+        <div class="col-8 col-sm-9">
+          <% if drink_item.icon_key.present? %>
+            <%= image_tag DrinkItem::ICON_OPTIONS.fetch(drink_item.icon_key)[:path],
+                          alt: DrinkItem::ICON_OPTIONS.fetch(drink_item.icon_key)[:label],
+                          class: "drink-item-card-icon-image" %>
+          <% else %>
+            <%= image_tag "drink_icons/drink_unset.jpg",
+                          alt: "未設定",
+                          class: "drink-item-card-icon-image" %>
+          <% end %>
         </div>
       </div>
 

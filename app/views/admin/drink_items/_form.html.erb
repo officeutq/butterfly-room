@@ -1,5 +1,5 @@
 <%= form_with model: drink_item, url: url, method: method do |f| %>
-  <div class="card drink-item-card drink-item-form-card <%= "text-muted drink-item-card-disabled" unless drink_item.enabled %>">
+  <div class="card drink-item-card drink-item-form-card <%= "text-muted drink-item-card-disabled" unless drink_item.enabled %>" data-bs-theme="light">
     <div class="card-body">
       <% if drink_item.errors.any? %>
         <div class="alert alert-danger">
@@ -13,32 +13,6 @@
 
       <div class="text-center mb-3">
         <div class="small text-secondary mb-2"><%= submit_label %></div>
-
-        <div class="drink-icon-toggle-list" role="radiogroup" aria-label="ドリンクアイコン選択">
-          <%= f.radio_button :icon_key,
-                             "",
-                             class: "btn-check",
-                             id: "drink_icon_none_#{drink_item.id || 'new'}",
-                             aria: { label: "未設定" } %>
-          <label class="btn drink-icon-toggle-btn"
-                 for="drink_icon_none_<%= drink_item.id || 'new' %>"
-                 title="未設定">
-            <%= image_tag "drink_icons/drink_unset.jpg", alt: "", class: "drink-icon-toggle-image" %>
-          </label>
-
-          <% DrinkItem::ICON_OPTIONS.each do |key, option| %>
-            <%= f.radio_button :icon_key,
-                               key,
-                               class: "btn-check",
-                               id: "drink_icon_#{key}_#{drink_item.id || 'new'}",
-                               aria: { label: option[:label] } %>
-            <label class="btn drink-icon-toggle-btn"
-                   for="drink_icon_<%= key %>_<%= drink_item.id || 'new' %>"
-                   title="<%= option[:label] %>">
-              <%= image_tag option[:path], alt: "", class: "drink-icon-toggle-image" %>
-            </label>
-          <% end %>
-        </div>
       </div>
 
       <div class="vstack gap-2">
@@ -48,6 +22,39 @@
           </div>
           <div class="col-8 col-sm-9">
             <%= f.text_field :name, class: "form-control" %>
+          </div>
+        </div>
+
+        <div class="row align-items-center g-2">
+          <div class="col-4 col-sm-3">
+            <%= f.label :name, "アイコン", class: "col-form-label" %>
+          </div>
+          <div class="col-8 col-sm-9">
+            <div class="drink-icon-toggle-list" role="radiogroup" aria-label="ドリンクアイコン選択">
+              <%= f.radio_button :icon_key,
+                                "",
+                                class: "btn-check",
+                                id: "drink_icon_none_#{drink_item.id || 'new'}",
+                                aria: { label: "未設定" } %>
+              <label class="btn drink-icon-toggle-btn"
+                    for="drink_icon_none_<%= drink_item.id || 'new' %>"
+                    title="未設定">
+                <%= image_tag "drink_icons/drink_unset.jpg", alt: "", class: "drink-icon-toggle-image" %>
+              </label>
+
+              <% DrinkItem::ICON_OPTIONS.each do |key, option| %>
+                <%= f.radio_button :icon_key,
+                                  key,
+                                  class: "btn-check",
+                                  id: "drink_icon_#{key}_#{drink_item.id || 'new'}",
+                                  aria: { label: option[:label] } %>
+                <label class="btn drink-icon-toggle-btn"
+                      for="drink_icon_<%= key %>_<%= drink_item.id || 'new' %>"
+                      title="<%= option[:label] %>">
+                  <%= image_tag option[:path], alt: "", class: "drink-icon-toggle-image" %>
+                </label>
+              <% end %>
+            </div>
           </div>
         </div>
 
@@ -71,9 +78,6 @@
             <%= f.number_field :position, class: "form-control" %>
           </div>
         </div>
-
-
-
 
         <div class="row align-items-center g-2">
           <div class="col-4 col-sm-3">
