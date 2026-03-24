@@ -42,7 +42,7 @@ module Admin
     end
 
     def drink_item_params
-      params.require(:drink_item).permit(:name, :price_points, :position, :enabled)
+      params.require(:drink_item).permit(:name, :price_points, :position, :enabled, :icon_key)
     end
 
     def default_position
