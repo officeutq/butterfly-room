@@ -1,67 +1,98 @@
 <%= form_with model: drink_item, url: url, method: method do |f| %>
-  <% if drink_item.errors.any? %>
-    <div class="alert alert-danger">
-      <ul class="mb-0">
-        <% drink_item.errors.full_messages.each do |msg| %>
-          <li><%= msg %></li>
-        <% end %>
-      </ul>
-    </div>
-  <% end %>
+  <div class="card drink-item-card drink-item-form-card <%= "text-muted drink-item-card-disabled" unless drink_item.enabled %>">
+    <div class="card-body">
+      <% if drink_item.errors.any? %>
+        <div class="alert alert-danger">
+          <ul class="mb-0">
+            <% drink_item.errors.full_messages.each do |msg| %>
+              <li><%= msg %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
 
-  <div class="row g-3">
-    <div class="col-md-5">
-      <%= f.label :name, class: "form-label" %>
-      <%= f.text_field :name, class: "form-control" %>
-    </div>
+      <div class="text-center mb-3">
+        <div class="small text-secondary mb-2"><%= submit_label %></div>
 
-    <div class="col-md-3">
-      <%= f.label :price_points, class: "form-label" %>
-      <%= f.number_field :price_points, min: 1, class: "form-control" %>
-    </div>
-
-    <div class="col-md-2">
-      <%= f.label :position, class: "form-label" %>
-      <%= f.number_field :position, class: "form-control" %>
-    </div>
-
-    <div class="col-md-2 d-flex align-items-end">
-      <div class="form-check">
-        <%= f.check_box :enabled, class: "form-check-input" %>
-        <%= f.label :enabled, class: "form-check-label" %>
-      </div>
-    </div>
-
-    <div class="col-12">
-      <%= f.label :icon_key, "アイコン", class: "form-label" %>
-
-      <div class="drink-icon-toggle-list" role="radiogroup" aria-label="ドリンクアイコン選択">
-        <%= f.radio_button :icon_key,
-                           "",
-                           class: "btn-check",
-                           id: "drink_icon_none_#{drink_item.id || 'new'}",
-                           aria: { label: "未設定" } %>
-        <label class="btn drink-icon-toggle-btn" for="drink_icon_none_<%= drink_item.id || 'new' %>" title="未設定">
-          <%= image_tag "drink_icons/drink_unset.jpg", alt: "", class: "drink-icon-toggle-image" %>
-        </label>
-
-        <% DrinkItem::ICON_OPTIONS.each do |key, option| %>
+        <div class="drink-icon-toggle-list" role="radiogroup" aria-label="ドリンクアイコン選択">
           <%= f.radio_button :icon_key,
-                             key,
+                             "",
                              class: "btn-check",
-                             id: "drink_icon_#{key}_#{drink_item.id || 'new'}",
-                             aria: { label: option[:label] } %>
+                             id: "drink_icon_none_#{drink_item.id || 'new'}",
+                             aria: { label: "未設定" } %>
           <label class="btn drink-icon-toggle-btn"
-                 for="drink_icon_<%= key %>_<%= drink_item.id || 'new' %>"
-                 title="<%= option[:label] %>">
-            <%= image_tag option[:path], alt: "", class: "drink-icon-toggle-image" %>
+                 for="drink_icon_none_<%= drink_item.id || 'new' %>"
+                 title="未設定">
+            <%= image_tag "drink_icons/drink_unset.jpg", alt: "", class: "drink-icon-toggle-image" %>
           </label>
-        <% end %>
-      </div>
-    </div>
 
-    <div class="col-12">
-      <%= f.submit "保存", class: "btn btn-primary" %>
+          <% DrinkItem::ICON_OPTIONS.each do |key, option| %>
+            <%= f.radio_button :icon_key,
+                               key,
+                               class: "btn-check",
+                               id: "drink_icon_#{key}_#{drink_item.id || 'new'}",
+                               aria: { label: option[:label] } %>
+            <label class="btn drink-icon-toggle-btn"
+                   for="drink_icon_<%= key %>_<%= drink_item.id || 'new' %>"
+                   title="<%= option[:label] %>">
+              <%= image_tag option[:path], alt: "", class: "drink-icon-toggle-image" %>
+            </label>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="vstack gap-2">
+        <div class="row align-items-center g-2">
+          <div class="col-4 col-sm-3">
+            <%= f.label :name, "ドリンク名", class: "col-form-label" %>
+          </div>
+          <div class="col-8 col-sm-9">
+            <%= f.text_field :name, class: "form-control" %>
+          </div>
+        </div>
+
+        <div class="row align-items-center g-2">
+          <div class="col-4 col-sm-3">
+            <%= f.label :price_points, "価格", class: "col-form-label" %>
+          </div>
+          <div class="col-8 col-sm-9">
+            <div class="input-group">
+              <%= f.number_field :price_points, min: 1, class: "form-control" %>
+              <span class="input-group-text">pt</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="row align-items-center g-2">
+          <div class="col-4 col-sm-3">
+            <%= f.label :position, "表示順", class: "col-form-label" %>
+          </div>
+          <div class="col-8 col-sm-9">
+            <%= f.number_field :position, class: "form-control" %>
+          </div>
+        </div>
+
+
+
+
+        <div class="row align-items-center g-2">
+          <div class="col-4 col-sm-3">
+            <div class="form-check mt-2">
+              <%= f.check_box :enabled, class: "form-check-input" %>
+              <%= f.label :enabled, "有効 / 無効", class: "form-check-label" %>
+            </div>
+          </div>
+          <div class="col-8 col-sm-9">
+            <div class="d-flex justify-content-end gap-2 flex-wrap mt-3">
+              <%= f.submit submit_label, class: "btn btn-sm btn-primary" %>
+
+              <% if cancel_url.present? %>
+                <%= link_to "キャンセル", cancel_url, class: "btn btn-sm btn-outline-secondary" %>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 <% end %>
