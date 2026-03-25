@@ -36,17 +36,50 @@
   min-height: 0;
 }
 
-#cast_pending_drink_orders .card,
-#pending_drink_orders .card {
+.cast-pending-drink-order-btn {
+  display: block;
+  width: 100%;
+
+  padding: 0;
   border: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+
+  text-align: left;
+  cursor: pointer;
+
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
 }
 
-#cast_pending_drink_orders .card-body,
-#pending_drink_orders .card-body {
-  min-width: 0;
+.cast-pending-drink-order-btn:hover {
+  opacity: 0.92;
 }
 
-#cast_pending_drink_orders .fw-semibold,
-#pending_drink_orders .fw-semibold {
-  word-break: break-word;
+.cast-pending-drink-order-btn:active {
+  transform: scale(0.985);
+}
+
+.cast-pending-drink-order-btn > .drink-item-display {
+  width: 100%;
+}
+
+.cast-pending-drink-order-display {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.cast-pending-drink-order-disabled {
+  cursor: default;
+  filter: saturate(0.8);
+  transform: scale(0.9);
+}
+
+.cast-pending-drink-order-disabled > .drink-item-display {
+  width: 100%;
+}
+
+.pending-drink-item-display {
+  opacity: 0.8;
 }

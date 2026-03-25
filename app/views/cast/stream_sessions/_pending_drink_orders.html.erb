@@ -11,25 +11,17 @@
 
     <div class="vstack gap-2">
       <% pending.each do |order| %>
-        <div class="card live-drink-order-card">
-          <div class="card-body py-2 d-flex justify-content-between align-items-center gap-2">
-            <div class="min-w-0">
-              <div class="fw-semibold"><%= order.drink_item.name %></div>
-              <div class="text-muted small">
-                <%= l(order.created_at, format: :short) rescue order.created_at %>
-              </div>
-            </div>
-
-            <% if order.id == head_id %>
-              <%= button_to "消化",
-                    consume_cast_drink_order_path(order),
-                    method: :post,
-                    class: "btn btn-sm btn-success flex-shrink-0" %>
-            <% else %>
-              <button class="btn btn-sm btn-outline-secondary flex-shrink-0" disabled>待機</button>
-            <% end %>
+        <% if order.id == head_id %>
+          <%= button_to consume_cast_drink_order_path(order),
+                method: :post,
+                class: "cast-pending-drink-order-btn" do %>
+            <%= drink_item_display(order.drink_item, klass: "cast-pending-drink-order-display") %>
+          <% end %>
+        <% else %>
+          <div class="cast-pending-drink-order-disabled">
+            <%= drink_item_display(order.drink_item, klass: "pending-drink-item-display") %>
           </div>
-        </div>
+        <% end %>
       <% end %>
     </div>
   <% end %>
