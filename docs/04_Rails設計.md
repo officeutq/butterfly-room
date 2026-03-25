@@ -35,6 +35,9 @@
 app/
   assets/
     builds/
+      app/
+        assets/
+          builds/
       bootstrap-icons/
         fonts/
     images/
