@@ -33,6 +33,9 @@ module StreamSessions
       render_comment_form_error("配信中（live/away）のときのみコメントできます", status: :conflict)
     rescue StreamSessions::Comments::CreateService::RateLimitedError
       render_comment_form_error("送信が速すぎます。少し待ってからもう一度送信してください", status: :unprocessable_entity)
+    rescue ActiveRecord::RecordInvalid => e
+      message = e.record.errors.full_messages.to_sentence.presence || "入力が不正です"
+      render_comment_form_error(message, status: :unprocessable_entity)
     rescue ActionController::ParameterMissing, KeyError
       render_comment_form_error("入力が不正です", status: :unprocessable_entity)
     end

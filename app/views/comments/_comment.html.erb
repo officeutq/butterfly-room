@@ -1,10 +1,24 @@
 <div class="comment comment-item">
-  <div class="comment-avatar">
-    <%= user_avatar_badge(comment.user, size: 32, klass: "comment-avatar-badge") %>
-  </div>
+  <% case comment.kind %>
+  <% when Comment::KIND_CHAT %>
+    <div class="comment-avatar">
+      <%= user_avatar_badge(comment.user, size: 32, klass: "comment-avatar-badge") %>
+    </div>
 
-  <div class="comment-text">
-    <span class="comment-author"><%= display_name_or_anonymous(comment.user) %></span>
-    <span class="comment-body"><%= comment.body %></span>
-  </div>
+    <div class="comment-text">
+      <span class="comment-author"><%= display_name_or_anonymous(comment.user) %></span>
+      <span class="comment-body"><%= comment.body %></span>
+    </div>
+  <% else %>
+    <div class="comment-avatar">
+      <%= user_avatar_badge(comment.user, size: 32, klass: "comment-avatar-badge") %>
+    </div>
+
+    <div class="comment-text">
+      <span class="comment-author"><%= display_name_or_anonymous(comment.user) %></span>
+      <span class="comment-body">
+        <%= comment.body.presence || "イベントが発生しました" %>
+      </span>
+    </div>
+  <% end %>
 </div>

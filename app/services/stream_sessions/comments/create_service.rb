@@ -6,22 +6,25 @@ module StreamSessions
       class RateLimitedError < StandardError; end
       class BoothNotLiveError < StandardError; end
 
-      def initialize(stream_session:, user:, body:)
+      def initialize(stream_session:, user:, body: nil, kind: Comment::KIND_CHAT, metadata: {})
         @stream_session = stream_session
         @user = user
-        @body = body.to_s.strip
+        @body = body
+        @kind = kind.to_s.strip.presence || Comment::KIND_CHAT
+        @metadata = normalize_metadata(metadata)
       end
 
       def call
-        raise ActiveRecord::RecordInvalid.new(Comment.new) if @body.blank?
         raise BoothNotLiveError unless booth_allows_comments?
-        raise RateLimitedError if rate_limited?
+        raise RateLimitedError if chat? && rate_limited?
 
         comment = Comment.create!(
           stream_session: @stream_session,
           booth_id: @stream_session.booth_id,
           user: @user,
-          body: @body
+          body: @body,
+          kind: @kind,
+          metadata: @metadata
         )
 
         CommentNotifier.append(comment)
@@ -39,6 +42,25 @@ module StreamSessions
         Comment.where(user_id: @user.id, stream_session_id: @stream_session.id)
                .where("created_at >= ?", 1.second.ago)
                .exists?
+      end
+
+      def chat?
+        @kind == Comment::KIND_CHAT
+      end
+
+      def normalize_metadata(metadata)
+        case metadata
+        when ActionController::Parameters
+          metadata.to_unsafe_h
+        when Hash
+          metadata
+        when nil
+          {}
+        else
+          metadata.respond_to?(:to_h) ? metadata.to_h : {}
+        end
+      rescue TypeError, NoMethodError
+        {}
       end
     end
   end
