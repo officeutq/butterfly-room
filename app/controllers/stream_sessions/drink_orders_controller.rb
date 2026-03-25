@@ -32,11 +32,6 @@ module StreamSessions
                 drink_items: DrinkItem.where(store_id: @stream_session.store_id, enabled: true).order(:id),
                 can_create_drink_order: true
               }
-            ),
-            turbo_stream.append(
-              "flash_inner",
-              partial: "shared/flash_message",
-              locals: { level: "success", message: "ドリンクを送信しました" }
             )
           ]
         end

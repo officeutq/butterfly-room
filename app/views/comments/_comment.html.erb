@@ -9,6 +9,31 @@
       <span class="comment-author"><%= display_name_or_anonymous(comment.user) %></span>
       <span class="comment-body"><%= comment.body %></span>
     </div>
+
+    <% when Comment::KIND_DRINK %>
+      <% metadata = comment.metadata_hash %>
+      <% drink_item_id = metadata["drink_item_id"] || metadata[:drink_item_id] %>
+      <% drink_item = DrinkItem.find_by(id: drink_item_id) %>
+
+      <div class="comment-avatar">
+        <%= user_avatar_badge(comment.user, size: 32, klass: "comment-avatar-badge") %>
+      </div>
+
+      <div class="comment-text">
+        <div class="comment-line">
+          <span class="comment-author"><%= display_name_or_anonymous(comment.user) %></span>
+
+          <% if drink_item.present? %>
+            <span class="comment-body d-inline-flex align-items-center gap-1">
+              <%= drink_item_display(drink_item, icon_size: 32, klass: "comment-drink-item-display") %>
+              を送りました
+            </span>
+          <% else %>
+            <span class="comment-body">ドリンクを送りました</span>
+          <% end %>
+        </div>
+      </div>
+
   <% else %>
     <div class="comment-avatar">
       <%= user_avatar_badge(comment.user, size: 32, klass: "comment-avatar-badge") %>

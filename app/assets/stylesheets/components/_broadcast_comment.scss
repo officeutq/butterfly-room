@@ -208,3 +208,17 @@ body.viewer-layout.viewer-keyboard-open .viewer-comment-panel #comment_form .btn
 .comment-body {
   word-break: break-word;
 }
+
+.comment-line {
+  display: flex;
+  align-items: flex-start; // ← ここが本質
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.live-comment-list .comment-drink-item-display,
+.live-comment-list .comment-drink-item-display *,
+.viewer-comment-list .comment-drink-item-display,
+.viewer-comment-list .comment-drink-item-display * {
+  text-shadow: none;
+}
