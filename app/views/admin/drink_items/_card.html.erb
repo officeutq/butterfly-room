@@ -15,15 +15,7 @@
           <div class="small text-secondary">アイコン</div>
         </div>
         <div class="col-8 col-sm-9">
-          <% if drink_item.icon_key.present? %>
-            <%= image_tag DrinkItem::ICON_OPTIONS.fetch(drink_item.icon_key)[:path],
-                          alt: DrinkItem::ICON_OPTIONS.fetch(drink_item.icon_key)[:label],
-                          class: "drink-item-card-icon-image" %>
-          <% else %>
-            <%= image_tag "drink_icons/drink_unset.jpg",
-                          alt: "未設定",
-                          class: "drink-item-card-icon-image" %>
-          <% end %>
+          <%= drink_icon(drink_item, size: 72, klass: "drink-item-card-icon-image") %>
         </div>
       </div>
 
@@ -44,7 +36,6 @@
           <div><%= drink_item.position %></div>
         </div>
       </div>
-
 
       <div class="row align-items-center g-2">
         <div class="col-4 col-sm-3">
