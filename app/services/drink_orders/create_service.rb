@@ -17,12 +17,10 @@ module DrinkOrders
     def call!
       booth = @stream_session.booth
 
-      # booth 状態（live/awayだけOK）
       unless booth.status.in?(%w[live away])
         raise Conflict
       end
 
-      # item 妥当性
       unless @drink_item.store_id == booth.store_id && @drink_item.enabled? && @drink_item.price_points.to_i.positive?
         raise InvalidItem
       end
@@ -31,6 +29,7 @@ module DrinkOrders
       price  = @drink_item.price_points
 
       drink_order = nil
+      comment = nil
 
       ApplicationRecord.transaction do
         Wallets::HoldService.new(wallet: wallet, points: price).call!
@@ -51,13 +50,22 @@ module DrinkOrders
           ref: drink_order,
           occurred_at: Time.current
         )
+
+        comment = StreamSessions::Comments::CreateService.new(
+          stream_session: @stream_session,
+          user: @customer_user,
+          kind: Comment::KIND_DRINK,
+          metadata: {
+            drink_item_id: @drink_item.id,
+            drink_order_id: drink_order.id
+          },
+          notify: false
+        ).call
       end
 
-      # commit後に通知（ロールバック時の誤通知防止）
       DrinkOrderNotifier.replace_pending_lists(drink_order)
-
-      # ★wallet（個人UI）は user(wallet) チャンネルで更新
       WalletNotifier.broadcast_balance_for_user(@customer_user)
+      CommentNotifier.append(comment)
 
       Result.new(drink_order: drink_order, wallet: wallet.reload)
     end

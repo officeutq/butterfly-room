@@ -6,12 +6,13 @@ module StreamSessions
       class RateLimitedError < StandardError; end
       class BoothNotLiveError < StandardError; end
 
-      def initialize(stream_session:, user:, body: nil, kind: Comment::KIND_CHAT, metadata: {})
+      def initialize(stream_session:, user:, body: nil, kind: Comment::KIND_CHAT, metadata: {}, notify: true)
         @stream_session = stream_session
         @user = user
         @body = body
         @kind = kind.to_s.strip.presence || Comment::KIND_CHAT
         @metadata = normalize_metadata(metadata)
+        @notify = notify
       end
 
       def call
@@ -27,7 +28,7 @@ module StreamSessions
           metadata: @metadata
         )
 
-        CommentNotifier.append(comment)
+        CommentNotifier.append(comment) if @notify
         comment
       end
 
