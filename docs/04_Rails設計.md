@@ -139,6 +139,7 @@ app/
     admin/
       metrics_helper.rb
     application_helper.rb
+    drink_items_helper.rb
   javascript/
     controllers/
       ivs_publisher/
