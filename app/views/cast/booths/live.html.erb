@@ -67,8 +67,6 @@
             <%= turbo_stream_from [@stream_session, :cast_pending_drink_orders] %>
 
             <div class="live-drink-panel d-none" data-ivs-publisher-target="drinkPanel">
-              <div class="live-drink-panel-header">ドリンク</div>
-
               <div class="live-drink-panel-body">
                 <div id="cast-pending-drink-orders-container">
                   <%= render "cast/stream_sessions/pending_drink_orders", stream_session: @stream_session %>

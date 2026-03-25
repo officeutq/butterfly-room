@@ -167,6 +167,10 @@
   align-items: flex-start;
 }
 
+.pending-drink-item-display {
+  opacity: 0.8;
+}
+
 @media (max-width: 575.98px) {
   .viewer-drink-menu-panel {
     left: 8px;
