@@ -7,10 +7,11 @@
   <div
     class="viewer-drink-menu-panel"
     data-viewer-drink-panel-target="panel">
-    <div class="viewer-panel-header">
-      <div class="viewer-panel-header-text">
-        <div class="viewer-drink-menu-title">ドリンク送信</div>
-        <div class="viewer-drink-menu-caption">送りたいドリンクを選べます</div>
+    <div class="viewer-drink-menu-row">
+      <div class="viewer-drink-menu-body">
+        <turbo-frame id="viewer_drink_menu" data-viewer-drink-panel-target="frame">
+          <div class="small text-white-50">ドリンクメニューを読み込みます。</div>
+        </turbo-frame>
       </div>
 
       <button type="button"
@@ -20,12 +21,6 @@
               title="閉じる">
         <i class="bi bi-x-lg" aria-hidden="true"></i>
       </button>
-    </div>
-
-    <div class="viewer-drink-menu-body">
-      <turbo-frame id="viewer_drink_menu" data-viewer-drink-panel-target="frame">
-        <div class="small text-white-50">ドリンクメニューを読み込みます。</div>
-      </turbo-frame>
     </div>
   </div>
 </div>

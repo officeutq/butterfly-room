@@ -18,7 +18,9 @@
                       method: :post,
                       class: "viewer-drink-menu-form" do |f| %>
           <%= f.hidden_field :drink_item_id, value: item.id %>
-          <%= f.submit "#{item.name}(#{item.price_points}pt)", class: "viewer-drink-menu-btn" %>
+          <button type="submit" class="viewer-drink-menu-btn">
+            <%= drink_item_display(item) %>
+          </button>
         <% end %>
       <% end %>
     </div>
