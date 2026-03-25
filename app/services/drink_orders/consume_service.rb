@@ -55,6 +55,16 @@ module DrinkOrders
       # ★wallet（個人UI）は user(wallet) チャンネルで更新
       WalletNotifier.broadcast_balance_for_user(drink_order.customer_user)
 
+      StreamSessions::Comments::CreateService.new(
+        stream_session: drink_order.stream_session,
+        user: drink_order.stream_session.started_by_cast_user,
+        kind: Comment::KIND_DRINK_CONSUMED,
+        metadata: {
+          drink_item_id: drink_order.drink_item_id,
+          drink_order_id: drink_order.id
+        }
+      ).call
+
       Result.new(drink_order:, store_ledger_entry: ledger_entry)
     end
 

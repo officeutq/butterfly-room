@@ -1,6 +1,7 @@
 class Comment < ApplicationRecord
   KIND_CHAT = "chat"
   KIND_DRINK = "drink"
+  KIND_DRINK_CONSUMED = "drink_consumed"
   KIND_ENTRY = "entry"
   KIND_EXIT = "exit"
   KIND_SYSTEM = "system"
@@ -8,6 +9,7 @@ class Comment < ApplicationRecord
   KINDS = [
     KIND_CHAT,
     KIND_DRINK,
+    KIND_DRINK_CONSUMED,
     KIND_ENTRY,
     KIND_EXIT,
     KIND_SYSTEM
