@@ -31,18 +31,22 @@
           </div>
           <div class="col-8 col-sm-9">
             <div class="drink-icon-toggle-list" role="radiogroup" aria-label="ドリンクアイコン選択">
+              <% unset_option = send(:drink_icon_option_by_key, nil) %>
+
               <%= f.radio_button :icon_key,
                                 "",
                                 class: "btn-check",
                                 id: "drink_icon_none_#{drink_item.id || 'new'}",
-                                aria: { label: "未設定" } %>
+                                aria: { label: unset_option[:label] } %>
               <label class="btn drink-icon-toggle-btn"
                     for="drink_icon_none_<%= drink_item.id || 'new' %>"
-                    title="未設定">
-                <%= image_tag "drink_icons/drink_unset.jpg", alt: "", class: "drink-icon-toggle-image" %>
+                    title="<%= unset_option[:label] %>">
+                <%= image_tag unset_option[:path], alt: "", class: "drink-icon-toggle-image" %>
               </label>
 
-              <% DrinkItem::ICON_OPTIONS.each do |key, option| %>
+              <% DrinkItem::ICON_OPTIONS.each_key do |key| %>
+                <% option = send(:drink_icon_option_by_key, key) %>
+
                 <%= f.radio_button :icon_key,
                                   key,
                                   class: "btn-check",
