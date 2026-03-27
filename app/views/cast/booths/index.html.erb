@@ -1,50 +1,94 @@
-<h1>ブースを選択</h1>
+<h1 class="mb-4">ブース一覧</h1>
 
 <% if @booths.blank? %>
   <div class="alert alert-warning" role="alert">
     操作可能なブースがありません。
   </div>
 <% else %>
-  <table class="table align-middle">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>ブース名</th>
-        <th>状態</th>
-        <th>current_session</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @booths.each do |booth| %>
-        <tr class="<%= "table-active" if booth.id.to_s == @current_booth_id.to_s %>">
-          <td><%= booth.id %></td>
-          <td><%= booth.name.presence || "(no name)" %></td>
-          <td><%= booth.status %></td>
-          <td><%= booth.current_stream_session_id || "-" %></td>
-          <td class="text-end">
-            <% data_attrs = {} %>
-            <% if @confirm_switch_booth && booth.id.to_s != @current_booth_id.to_s %>
-              <% data_attrs[:turbo_confirm] = enter_booth_switch_confirm_message(booth) %>
+  <div class="row g-4">
+    <% @booths.each do |booth| %>
+      <% current_selected = booth.id.to_s == @current_booth_id.to_s %>
+      <% archived = booth.archived? %>
+      <% switch_form_data = {} %>
+
+      <% if @confirm_switch_booth && !current_selected && !archived %>
+        <% switch_form_data[:turbo_confirm] = enter_booth_switch_confirm_message(booth) %>
+      <% end %>
+
+      <div class="col-12 col-lg-6 col-xxl-4">
+        <div class="card h-100 cast-booths-card <%= "is-archived" if archived %>" data-bs-theme="light">
+          <div class="ratio ratio-16x9 border-bottom cast-booths-card-thumbnail-wrap">
+            <% if booth.thumbnail_image.attached? %>
+              <%= image_tag booth.thumbnail_image,
+                    class: "w-100 h-100 cast-booths-card-thumbnail",
+                    style: "object-fit: cover;",
+                    alt: booth.name.presence || "(no name)" %>
+            <% else %>
+              <div class="d-flex align-items-center justify-content-center bg-body-tertiary cast-booths-card-thumbnail">
+                <div class="text-center text-muted">
+                  <div class="fs-1 lh-1">
+                    <i class="bi bi-camera-video"></i>
+                  </div>
+                  <div class="small mt-2">サムネイル未設定</div>
+                </div>
+              </div>
             <% end %>
 
-            <%= button_to "このブースを開く",
-                  cast_current_booth_path,
-                  method: :post,
-                  params: {
-                    booth_id: booth.id,
-                    return_to: params[:return_to],
-                    return_to_key: params[:return_to_key]
-                  },
-                  class: "btn btn-primary btn-sm",
-                  data: data_attrs %>
-          </td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
+            <div class="cast-booths-card-overlay">
+              <div class="cast-booths-card-overlay-left">
+                <% if !archived && !current_selected %>
+                  <%= button_to "このブースへ切り替え",
+                        cast_current_booth_path,
+                        method: :post,
+                        params: {
+                          booth_id: booth.id,
+                          return_to: cast_booths_path
+                        },
+                        class: "btn btn-warning btn-sm",
+                        form: {
+                          class: "d-inline cast-booths-card-switch-form",
+                          data: switch_form_data
+                        } %>
+                <% end %>
+              </div>
+
+              <div class="cast-booths-card-overlay-right">
+                <% if current_selected %>
+                  <span class="badge text-bg-success cast-booths-card-badge">選択中</span>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-body d-flex flex-column">
+            <div class="cast-booths-card-title-row">
+              <div class="cast-booths-card-title">
+                <h2 class="h5 mb-0 cast-booths-card-title-text"><%= booth.name.presence || "(no name)" %></h2>
+              </div>
+
+              <div class="cast-booths-card-status d-flex align-items-center gap-2 flex-wrap justify-content-end">
+                <%= booth_status_badge(booth) %>
+
+                <% if archived %>
+                  <span class="badge text-bg-dark">削除済み</span>
+                <% end %>
+              </div>
+            </div>
+            <% if !archived %>
+              <div class="mt-auto cast-booths-card-actions pt-3">
+                <%= link_to "配信",
+                      enter_booth_path(booth),
+                      class: "btn btn-primary btn-sm" %>
+
+                <%= link_to "このブースを選択して編集",
+                      edit_cast_booth_path(booth),
+                      class: "btn btn-outline-secondary btn-sm" %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
 <% end %>
 
-<p class="mt-3">
-  <%= link_to "home", root_path, class: "btn btn-outline-secondary" %>
-</p>
