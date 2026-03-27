@@ -47,14 +47,16 @@
           <div class="d-flex justify-content-end gap-2 align-items-center">
             <% if booth.archived? %>
               <span class="badge text-bg-secondary">archived</span>
-            <% elsif booth.offline? && booth.current_stream_session_id.blank? %>
+            <% elsif (booth.offline? && booth.current_stream_session_id.blank?) || booth.standby? %>
               <%= button_to "アーカイブ",
                     archive_admin_booth_path(booth),
                     method: :patch,
                     class: "btn btn-outline-danger btn-sm",
                     data: { turbo_confirm: "このブースをアーカイブします。よろしいですか？" } %>
-            <% else %>
+            <% elsif booth.live? || booth.away? %>
               <span class="text-muted small">配信終了後にアーカイブ可</span>
+            <% else %>
+              <span class="text-muted small">状態確認後にアーカイブ可</span>
             <% end %>
           </div>
         </td>
