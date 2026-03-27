@@ -1,5 +1,13 @@
 <h1 class="mb-4">ブース一覧</h1>
 
+<div class="mb-4 d-flex gap-2 align-items-center flex-wrap">
+  <% if @include_archived %>
+    <%= link_to "現役のみ表示", cast_booths_path, class: "btn btn-outline-secondary" %>
+  <% else %>
+    <%= link_to "閉鎖済みも表示", cast_booths_path(archived: 1), class: "btn btn-outline-secondary" %>
+  <% end %>
+</div>
+
 <% if @booths.blank? %>
   <div class="alert alert-warning" role="alert">
     操作可能なブースがありません。
@@ -42,7 +50,7 @@
                         method: :post,
                         params: {
                           booth_id: booth.id,
-                          return_to: cast_booths_path
+                          return_to: (@include_archived ? cast_booths_path(archived: 1) : cast_booths_path)
                         },
                         class: "btn btn-warning btn-sm",
                         form: {
@@ -70,7 +78,7 @@
                 <%= booth_status_badge(booth) %>
 
                 <% if archived %>
-                  <span class="badge text-bg-dark">削除済み</span>
+                  <span class="badge text-bg-dark">閉鎖済み</span>
                 <% end %>
               </div>
             </div>
@@ -91,4 +99,3 @@
     <% end %>
   </div>
 <% end %>
-

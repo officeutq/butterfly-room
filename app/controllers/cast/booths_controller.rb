@@ -129,20 +129,24 @@ module Cast
     private
 
     def load_selectable_booths
+      @include_archived = ActiveModel::Type::Boolean.new.cast(params[:archived])
+
       @booths =
         if current_user.system_admin?
-          Booth.order(id: :desc)
+          Booth.all
         elsif current_user.at_least?(:store_admin)
           Booth.joins(store: :store_memberships)
-               .where(store_memberships: { user_id: current_user.id, membership_role: :admin })
-               .distinct
-               .order(id: :desc)
+              .where(store_memberships: { user_id: current_user.id, membership_role: :admin })
+              .distinct
         else
           Booth.joins(:booth_casts)
-               .where(booth_casts: { cast_user_id: current_user.id })
-               .distinct
-               .order(id: :desc)
+              .where(booth_casts: { cast_user_id: current_user.id })
+              .distinct
         end
+
+      @booths = @booths.includes(:thumbnail_image_attachment)
+      @booths = @booths.active unless @include_archived
+      @booths = @booths.order(Arel.sql('"booths"."archived_at" ASC NULLS FIRST'), id: :desc)
 
       @current_booth_id = session[:current_booth_id]
       @confirm_switch_booth = current_booth&.live? || current_booth&.away?

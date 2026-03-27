@@ -26,7 +26,7 @@ class AdminBoothCastsTest < ActionDispatch::IntegrationTest
 
     post admin_booth_casts_path, params: { booth_cast: { booth_id: @booth.id, cast_user_id: @cast1.id } }
     assert_response :redirect
-    assert_redirected_to admin_booth_casts_path
+    assert_redirected_to admin_booths_path
 
     assert_equal 1, BoothCast.where(booth_id: @booth.id).count
     assert_equal @cast1.id, BoothCast.find_by(booth_id: @booth.id).cast_user_id
@@ -39,7 +39,7 @@ class AdminBoothCastsTest < ActionDispatch::IntegrationTest
 
     post admin_booth_casts_path, params: { booth_cast: { booth_id: @booth.id, cast_user_id: @cast2.id } }
     assert_response :redirect
-    assert_redirected_to admin_booth_casts_path
+    assert_redirected_to admin_booths_path
 
     assert_equal 1, BoothCast.where(booth_id: @booth.id).count
     assert_equal @cast1.id, BoothCast.find_by(booth_id: @booth.id).cast_user_id
