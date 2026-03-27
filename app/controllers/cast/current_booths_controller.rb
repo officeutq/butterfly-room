@@ -51,15 +51,6 @@ module Cast
 
     private
 
-    # Issue #304: ブース選択後の遷移先決定
-    #
-    # 1) return_to_key（allowlist）
-    # 2) return_to（安全な相対パスのみ）
-    # 3) session[:cast_return_to]（/cast/ 直前ページ）
-    # 4) dashboard_path
-    #
-    # 特例:
-    # - /cast/booths 画面からのPOSTは session 戻りを使わない
     def resolve_redirect_path(booth)
       key = params[:return_to_key].presence
       if key.present?
@@ -93,7 +84,6 @@ module Cast
       end
     end
 
-    # open redirect対策：安全な相対パスのみ許可
     def safe_return_to(value)
       s = value.to_s
       return nil if s.blank?
@@ -103,9 +93,8 @@ module Cast
       return nil if s.include?("\n") || s.include?("\r")
       return nil if s.include?("\0")
 
-      # ループ/ノイズ防止：選択画面と選択POSTには戻さない
-      return nil if s == "/cast/booths"
       return nil if s == "/cast/current_booth"
+      return nil if s == "/cast/booths/select_modal"
 
       s
     end

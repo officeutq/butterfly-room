@@ -1,0 +1,83 @@
+<%= turbo_frame_tag "modal", data: { controller: "modal", action: "turbo:frame-load->modal#open" } do %>
+  <div class="modal fade" tabindex="-1" aria-labelledby="storeSelectModalLabel" aria-modal="true" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="storeSelectModalLabel">店舗を選択</h1>
+          <button
+            type="button"
+            class="btn-close"
+            aria-label="閉じる"
+            data-action="click->modal#close"></button>
+        </div>
+
+        <div class="modal-body">
+          <% if @stores.blank? %>
+            <div class="alert alert-warning mb-0" role="alert">
+              管理可能な店舗がありません。
+            </div>
+          <% else %>
+            <div class="list-group">
+              <% @stores.each do |store| %>
+                <div class="list-group-item">
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="flex-shrink-0">
+                      <% if store.thumbnail.attached? %>
+                        <%= image_tag store.thumbnail,
+                              class: "rounded border",
+                              style: "width: 56px; height: 56px; object-fit: cover;",
+                              alt: (store.name.presence || "(no name)") %>
+                      <% else %>
+                        <div
+                          class="rounded border d-flex align-items-center justify-content-center text-muted"
+                          style="width: 56px; height: 56px;">
+                          <i class="bi bi-shop"></i>
+                        </div>
+                      <% end %>
+                    </div>
+
+                    <div class="flex-grow-1" style="min-width: 0;">
+                      <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <div class="fw-semibold"><%= store.name.presence || "(no name)" %></div>
+                        <% if store.id.to_s == @current_store_id.to_s %>
+                          <span class="badge text-bg-success">選択中</span>
+                        <% end %>
+                      </div>
+
+                      <div class="text-muted small">ID: <%= store.id %></div>
+                    </div>
+
+                    <div class="flex-shrink-0">
+                      <%= button_to "この店舗に切り替え",
+                            admin_current_store_path,
+                            method: :post,
+                            params: {
+                              store_id: store.id,
+                              return_to: @return_to,
+                              return_to_key: @return_to_key
+                            },
+                            class: "btn btn-primary btn-sm",
+                            form: {
+                              class: "d-inline",
+                              data: { turbo_frame: "_top" }
+                            } %>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            data-action="click->modal#close">
+            閉じる
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
