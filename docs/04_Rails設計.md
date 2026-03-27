@@ -288,6 +288,7 @@ app/
       stores/
         edit.html.erb
         index.html.erb
+        select_modal.html.erb
     booths/
       _comment_section.html.erb
       _drink_menu.html.erb
@@ -305,6 +306,7 @@ app/
         edit.html.erb
         index.html.erb
         live.html.erb
+        select_modal.html.erb
       stream_sessions/
         _ended.html.erb
         _meta_display_frame.html.erb
