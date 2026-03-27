@@ -50,6 +50,7 @@ app/
         _broadcast_layout.scss
         _broadcast_meta.scss
         _broadcast_ops.scss
+        _dashboard.scss
         _drink_item.scss
         _layout.scss
         _live.scss
