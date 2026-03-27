@@ -1,332 +1,289 @@
-<div style="max-width: 960px;">
-  <div class="d-flex justify-content-between align-items-start gap-3">
-    <div>
-      <h1 class="mb-1">ダッシュボード</h1>
-      <p class="text-muted mb-0">ロール別リンク</p>
-    </div>
-  </div>
-
-  <hr class="my-4">
-
+<div class="container px-0">
   <% store = layout_current_store %>
   <% booth = layout_current_booth %>
 
-  <%#=== system_admin ===%>
-  <% if current_user.system_admin? %>
-    <h2 class="h5 mb-3">system_admin</h2>
+  <h1 class="mb-4">ダッシュボード</h1>
 
-    <ul class="list-group mb-4">
-      <li class="list-group-item">
-        <%= link_to "ユーザー管理", system_admin_users_path, class: "text-decoration-none" %>
-      </li>
-      <li class="list-group-item">
-        <%= link_to "紹介コード管理", system_admin_referral_codes_path, class: "text-decoration-none" %>
-      </li>
-      <li class="list-group-item">
-        <%= link_to "マニュアル精算（テスト）", "/system_admin/settlements/manual/new", class: "text-decoration-none" %>
-      </li>
-      <li class="list-group-item">
-        <%= link_to "振込CSV（住信SBI）", system_admin_settlement_exports_path, class: "text-decoration-none" %>
-      </li>
-      <li class="list-group-item">
-        <%= link_to "精算一覧", system_admin_settlements_path, class: "text-decoration-none" %>
-      </li>
-      <li class="list-group-item">
-        <%= link_to "Effect管理", system_admin_effects_path, class: "text-decoration-none" %>
-      </li>
-    </ul>
-
-    <ul class="list-group mb-4">
-      <li class="list-group-item">
-        <%= link_to "店舗一覧", admin_stores_path, class: "text-decoration-none" %>
-      </li>
-
-      <li class="list-group-item">
-        <% if store.present? %>
-          <%= link_to "店舗設定", edit_admin_store_path(store), class: "text-decoration-none" %>
-        <% else %>
-          <%= link_to "店舗設定",
-                select_modal_admin_stores_path(return_to_key: "store_edit"),
-                data: { turbo_frame: "modal" },
-                class: "text-decoration-none" %>
+  <div class="row g-3">
+    <% if current_user.at_least?(:customer) %>
+      <div class="col-12 col-md-6 col-xl-4">
+        <%= link_to edit_profile_path, class: "text-decoration-none" do %>
+          <div class="card h-100 dashboard-role-card dashboard-role-card-customer" data-bs-theme="light">
+            <div class="card-body">
+              <h5 class="card-title mb-2">プロフィール編集</h5>
+              <p class="card-text mb-0">プロフィールやアイコンを編集します</p>
+            </div>
+          </div>
         <% end %>
-      </li>
+      </div>
+    <% end %>
 
-      <li class="list-group-item">
-        <% if store.present? %>
-          <%= link_to "ブース一覧", admin_booths_path, class: "text-decoration-none" %>
-        <% else %>
-          <%= link_to "ブース一覧",
-                admin_stores_path(return_to: admin_booths_path),
-                class: "text-decoration-none" %>
+    <% if current_user.at_least?(:cast) %>
+      <div class="col-12 col-md-6 col-xl-4">
+        <%= link_to(current_user.at_least?(:store_admin) ? admin_booths_path : cast_booths_path,
+                    class: "text-decoration-none") do %>
+          <div class="card h-100 dashboard-role-card dashboard-role-card-cast" data-bs-theme="light">
+            <div class="card-body">
+              <h5 class="card-title mb-2">ブース一覧</h5>
+              <p class="card-text mb-0">ブースの選択・管理を行います</p>
+            </div>
+          </div>
         <% end %>
-      </li>
+      </div>
 
-      <li class="list-group-item">
+      <div class="col-12 col-md-6 col-xl-4">
         <% if booth.present? %>
-          <%= link_to "ブースを編集", edit_cast_booth_path(booth), class: "text-decoration-none" %>
-        <% else %>
-          <%= link_to "ブースを編集",
-                select_modal_cast_booths_path(return_to_key: "booth_edit"),
-                data: { turbo_frame: "modal" },
-                class: "text-decoration-none" %>
-        <% end %>
-      </li>
-
-      <li class="list-group-item">
-        <% if store.present? %>
-          <%= link_to "キャスト管理", admin_casts_path, class: "text-decoration-none" %>
-        <% else %>
-          <%= link_to "キャスト管理",
-                select_modal_admin_stores_path(return_to: admin_casts_path),
-                data: { turbo_frame: "modal" },
-                class: "text-decoration-none" %>
-        <% end %>
-      </li>
-
-      <li class="list-group-item">
-        <% if store.present? %>
-          <%= link_to "ブースにキャストを紐づける", admin_booth_casts_path, class: "text-decoration-none" %>
-        <% else %>
-          <%= link_to "ブースにキャストを紐づける",
-                select_modal_admin_stores_path(return_to: admin_booth_casts_path),
-                data: { turbo_frame: "modal" },
-                class: "text-decoration-none" %>
-        <% end %>
-      </li>
-
-      <li class="list-group-item">
-        <% if store.present? %>
-          <%= link_to "キャスト別数値一覧（直近30日）", admin_cast_metrics_path, class: "text-decoration-none" %>
-        <% else %>
-          <%= link_to "キャスト別数値一覧（直近30日）",
-                select_modal_admin_stores_path(return_to: admin_cast_metrics_path),
-                data: { turbo_frame: "modal" },
-                class: "text-decoration-none" %>
-        <% end %>
-      </li>
-
-      <li class="list-group-item">
-        <% if store.present? %>
-          <%= link_to "ドリンクメニュー", admin_drink_items_path, class: "text-decoration-none" %>
-        <% else %>
-          <%= link_to "ドリンクメニュー",
-                select_modal_admin_stores_path(return_to: admin_drink_items_path),
-                data: { turbo_frame: "modal" },
-                class: "text-decoration-none" %>
-        <% end %>
-      </li>
-
-      <li class="list-group-item">
-        <% if store.present? %>
-          <%= link_to "店舗BAN", admin_store_bans_path, class: "text-decoration-none" %>
-        <% else %>
-          <%= link_to "店舗BAN",
-                select_modal_admin_stores_path(return_to: admin_store_bans_path),
-                data: { turbo_frame: "modal" },
-                class: "text-decoration-none" %>
-        <% end %>
-      </li>
-
-      <li class="list-group-item">
-        <% if store.present? %>
-          <%= link_to edit_admin_payout_account_path, class: "text-decoration-none" do %>
-            精算・振込設定
-            <% if store.payout_account_unconfigured? %>
-              <span class="badge text-bg-warning ms-2">未設定</span>
-            <% end %>
+          <%= link_to edit_cast_booth_path(booth), class: "text-decoration-none" do %>
+            <div class="card h-100 dashboard-role-card dashboard-role-card-cast" data-bs-theme="light">
+              <div class="card-body">
+                <h5 class="card-title mb-2">ブース編集</h5>
+                <p class="card-text mb-0">現在のブース設定を編集します</p>
+              </div>
+            </div>
           <% end %>
         <% else %>
-          <%= link_to "精算・振込設定",
-                select_modal_admin_stores_path(return_to_key: "payout_account_edit"),
-                data: { turbo_frame: "modal" },
-                class: "text-decoration-none" %>
+          <%= link_to select_modal_cast_booths_path(return_to_key: "booth_edit"),
+                      data: { turbo_frame: "modal" },
+                      class: "text-decoration-none" do %>
+            <div class="card h-100 dashboard-role-card dashboard-role-card-cast" data-bs-theme="light">
+              <div class="card-body">
+                <h5 class="card-title mb-2">ブース編集</h5>
+                <p class="card-text mb-0">現在のブース設定を編集します</p>
+              </div>
+            </div>
+          <% end %>
         <% end %>
-      </li>
+      </div>
+    <% end %>
 
-      <li class="list-group-item">
+    <% if current_user.at_least?(:store_admin) %>
+      <div class="col-12 col-md-6 col-xl-4">
+        <%= link_to admin_stores_path, class: "text-decoration-none" do %>
+          <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
+            <div class="card-body">
+              <h5 class="card-title mb-2">店舗一覧</h5>
+              <p class="card-text mb-0">操作対象の店舗を選択します</p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="col-12 col-md-6 col-xl-4">
         <% if store.present? %>
-          <%= link_to "精算（予定・履歴）", admin_settlements_path, class: "text-decoration-none" %>
-        <% else %>
-          <%= link_to "精算（予定・履歴）",
-                select_modal_admin_stores_path(return_to: admin_settlements_path),
-                data: { turbo_frame: "modal" },
-                class: "text-decoration-none" %>
-        <% end %>
-      </li>
-    </ul>
-
-    <ul class="list-group mb-4">
-      <li class="list-group-item">
-        <%= link_to "プロフィール編集", edit_profile_path, class: "text-decoration-none" %>
-      </li>
-    </ul>
-
-  <%#=== store_admin ===%>
-  <% elsif current_user.store_admin? %>
-    <h2 class="h5 mb-3">store_admin</h2>
-
-    <ul class="list-group mb-4">
-      <li class="list-group-item">
-        <%= link_to "店舗一覧", admin_stores_path, class: "text-decoration-none" %>
-      </li>
-
-      <li class="list-group-item">
-        <% if store.present? %>
-          <%= link_to "店舗設定", edit_admin_store_path(store), class: "text-decoration-none" %>
-        <% else %>
-          <%= link_to "店舗設定",
-                select_modal_admin_stores_path(return_to_key: "store_edit"),
-                data: { turbo_frame: "modal" },
-                class: "text-decoration-none" %>
-        <% end %>
-      </li>
-
-      <li class="list-group-item">
-        <% if store.present? %>
-          <%= link_to "ブース一覧", admin_booths_path, class: "text-decoration-none" %>
-        <% else %>
-          <%= link_to "ブース一覧",
-                admin_stores_path(return_to: admin_booths_path),
-                class: "text-decoration-none" %>
-        <% end %>
-      </li>
-
-      <li class="list-group-item">
-        <% if booth.present? %>
-          <%= link_to "ブースを編集", edit_cast_booth_path(booth), class: "text-decoration-none" %>
-        <% else %>
-          <%= link_to "ブースを編集",
-                select_modal_cast_booths_path(return_to_key: "booth_edit"),
-                data: { turbo_frame: "modal" },
-                class: "text-decoration-none" %>
-        <% end %>
-      </li>
-
-      <li class="list-group-item">
-        <% if store.present? %>
-          <%= link_to "キャスト管理", admin_casts_path, class: "text-decoration-none" %>
-        <% else %>
-          <%= link_to "キャスト管理",
-                select_modal_admin_stores_path(return_to: admin_casts_path),
-                data: { turbo_frame: "modal" },
-                class: "text-decoration-none" %>
-        <% end %>
-      </li>
-
-      <li class="list-group-item">
-        <% if store.present? %>
-          <%= link_to "ブースにキャストを紐づける", admin_booth_casts_path, class: "text-decoration-none" %>
-        <% else %>
-          <%= link_to "ブースにキャストを紐づける",
-                select_modal_admin_stores_path(return_to: admin_booth_casts_path),
-                data: { turbo_frame: "modal" },
-                class: "text-decoration-none" %>
-        <% end %>
-      </li>
-
-      <li class="list-group-item">
-        <% if store.present? %>
-          <%= link_to "キャスト別数値一覧（直近30日）", admin_cast_metrics_path, class: "text-decoration-none" %>
-        <% else %>
-          <%= link_to "キャスト別数値一覧（直近30日）",
-                select_modal_admin_stores_path(return_to: admin_cast_metrics_path),
-                data: { turbo_frame: "modal" },
-                class: "text-decoration-none" %>
-        <% end %>
-      </li>
-
-      <li class="list-group-item">
-        <% if store.present? %>
-          <%= link_to "ドリンクメニュー", admin_drink_items_path, class: "text-decoration-none" %>
-        <% else %>
-          <%= link_to "ドリンクメニュー",
-                select_modal_admin_stores_path(return_to: admin_drink_items_path),
-                data: { turbo_frame: "modal" },
-                class: "text-decoration-none" %>
-        <% end %>
-      </li>
-
-      <li class="list-group-item">
-        <% if store.present? %>
-          <%= link_to "店舗BAN", admin_store_bans_path, class: "text-decoration-none" %>
-        <% else %>
-          <%= link_to "店舗BAN",
-                select_modal_admin_stores_path(return_to: admin_store_bans_path),
-                data: { turbo_frame: "modal" },
-                class: "text-decoration-none" %>
-        <% end %>
-      </li>
-
-      <li class="list-group-item">
-        <% if store.present? %>
-          <%= link_to edit_admin_payout_account_path, class: "text-decoration-none" do %>
-            精算・振込設定
-            <% if store.payout_account_unconfigured? %>
-              <span class="badge text-bg-warning ms-2">未設定</span>
-            <% end %>
+          <%= link_to edit_admin_store_path(store), class: "text-decoration-none" do %>
+            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
+              <div class="card-body">
+                <h5 class="card-title mb-2">店舗編集</h5>
+                <p class="card-text mb-0">店舗情報を編集します</p>
+              </div>
+            </div>
           <% end %>
         <% else %>
-          <%= link_to "精算・振込設定",
-                select_modal_admin_stores_path(return_to_key: "payout_account_edit"),
-                data: { turbo_frame: "modal" },
-                class: "text-decoration-none" %>
+          <%= link_to select_modal_admin_stores_path(return_to_key: "store_edit"),
+                      data: { turbo_frame: "modal" },
+                      class: "text-decoration-none" do %>
+            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
+              <div class="card-body">
+                <h5 class="card-title mb-2">店舗編集</h5>
+                <p class="card-text mb-0">店舗情報を編集します</p>
+              </div>
+            </div>
+          <% end %>
         <% end %>
-      </li>
+      </div>
 
-      <li class="list-group-item">
+      <div class="col-12 col-md-6 col-xl-4">
         <% if store.present? %>
-          <%= link_to "精算（予定・履歴）", admin_settlements_path, class: "text-decoration-none" %>
+          <%= link_to admin_cast_metrics_path, class: "text-decoration-none" do %>
+            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
+              <div class="card-body">
+                <h5 class="card-title mb-2">キャスト別数値一覧（直近30日）</h5>
+                <p class="card-text mb-0">キャストごとの売上等を確認します</p>
+              </div>
+            </div>
+          <% end %>
         <% else %>
-          <%= link_to "精算（予定・履歴）",
-                select_modal_admin_stores_path(return_to: admin_settlements_path),
-                data: { turbo_frame: "modal" },
-                class: "text-decoration-none" %>
+          <%= link_to select_modal_admin_stores_path(return_to: admin_cast_metrics_path),
+                      data: { turbo_frame: "modal" },
+                      class: "text-decoration-none" do %>
+            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
+              <div class="card-body">
+                <h5 class="card-title mb-2">キャスト別数値一覧（直近30日）</h5>
+                <p class="card-text mb-0">キャストごとの売上等を確認します</p>
+              </div>
+            </div>
+          <% end %>
         <% end %>
-      </li>
-    </ul>
+      </div>
 
-    <ul class="list-group mb-4">
-      <li class="list-group-item">
-        <%= link_to "プロフィール編集", edit_profile_path, class: "text-decoration-none" %>
-      </li>
-    </ul>
-
-  <%#=== cast ===%>
-  <% elsif current_user.cast? %>
-    <h2 class="h5 mb-3">cast</h2>
-
-    <ul class="list-group mb-4">
-      <li class="list-group-item">
-        <%= link_to "ブース切替",
-              cast_booths_path(return_to: dashboard_path),
-              class: "text-decoration-none" %>
-      </li>
-
-      <li class="list-group-item">
-        <% if booth.present? %>
-          <%= link_to "ブースを編集", edit_cast_booth_path(booth), class: "text-decoration-none" %>
+      <div class="col-12 col-md-6 col-xl-4">
+        <% if store.present? %>
+          <%= link_to admin_drink_items_path, class: "text-decoration-none" do %>
+            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
+              <div class="card-body">
+                <h5 class="card-title mb-2">ドリンクメニュー</h5>
+                <p class="card-text mb-0">ドリンクメニューを管理します</p>
+              </div>
+            </div>
+          <% end %>
         <% else %>
-          <%= link_to "ブースを編集",
-                select_modal_cast_booths_path(return_to_key: "booth_edit"),
-                data: { turbo_frame: "modal" },
-                class: "text-decoration-none" %>
+          <%= link_to select_modal_admin_stores_path(return_to: admin_drink_items_path),
+                      data: { turbo_frame: "modal" },
+                      class: "text-decoration-none" do %>
+            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
+              <div class="card-body">
+                <h5 class="card-title mb-2">ドリンクメニュー</h5>
+                <p class="card-text mb-0">ドリンクメニューを管理します</p>
+              </div>
+            </div>
+          <% end %>
         <% end %>
-      </li>
+      </div>
 
-      <li class="list-group-item">
-        <%= link_to "プロフィール編集", edit_profile_path, class: "text-decoration-none" %>
-      </li>
-    </ul>
+      <div class="col-12 col-md-6 col-xl-4">
+        <% if store.present? %>
+          <%= link_to admin_store_bans_path, class: "text-decoration-none" do %>
+            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
+              <div class="card-body">
+                <h5 class="card-title mb-2">店舗BAN</h5>
+                <p class="card-text mb-0">ユーザーのBAN管理を行います</p>
+              </div>
+            </div>
+          <% end %>
+        <% else %>
+          <%= link_to select_modal_admin_stores_path(return_to: admin_store_bans_path),
+                      data: { turbo_frame: "modal" },
+                      class: "text-decoration-none" do %>
+            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
+              <div class="card-body">
+                <h5 class="card-title mb-2">店舗BAN</h5>
+                <p class="card-text mb-0">ユーザーのBAN管理を行います</p>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
 
-  <%#=== customer ===%>
-  <% else %>
-    <h2 class="h5 mb-3">customer</h2>
+      <div class="col-12 col-md-6 col-xl-4">
+        <% if store.present? %>
+          <%= link_to edit_admin_payout_account_path, class: "text-decoration-none" do %>
+            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
+              <div class="card-body">
+                <h5 class="card-title mb-2">
+                  精算・振込設定
+                  <% if store.payout_account_unconfigured? %>
+                    <span class="badge text-bg-warning ms-2">未設定</span>
+                  <% end %>
+                </h5>
+                <p class="card-text mb-0">振込先や精算設定を行います</p>
+              </div>
+            </div>
+          <% end %>
+        <% else %>
+          <%= link_to select_modal_admin_stores_path(return_to_key: "payout_account_edit"),
+                      data: { turbo_frame: "modal" },
+                      class: "text-decoration-none" do %>
+            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
+              <div class="card-body">
+                <h5 class="card-title mb-2">精算・振込設定</h5>
+                <p class="card-text mb-0">振込先や精算設定を行います</p>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
 
-    <ul class="list-group mb-4">
-      <li class="list-group-item">
-        <%= link_to "プロフィール編集", edit_profile_path, class: "text-decoration-none" %>
-      </li>
-    </ul>
-  <% end %>
+      <div class="col-12 col-md-6 col-xl-4">
+        <% if store.present? %>
+          <%= link_to admin_settlements_path, class: "text-decoration-none" do %>
+            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
+              <div class="card-body">
+                <h5 class="card-title mb-2">精算（予定・履歴）</h5>
+                <p class="card-text mb-0">精算の予定・履歴を確認します</p>
+              </div>
+            </div>
+          <% end %>
+        <% else %>
+          <%= link_to select_modal_admin_stores_path(return_to: admin_settlements_path),
+                      data: { turbo_frame: "modal" },
+                      class: "text-decoration-none" do %>
+            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
+              <div class="card-body">
+                <h5 class="card-title mb-2">精算（予定・履歴）</h5>
+                <p class="card-text mb-0">精算の予定・履歴を確認します</p>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
+
+    <% if current_user.system_admin? %>
+      <div class="col-12 col-md-6 col-xl-4">
+        <%= link_to system_admin_users_path, class: "text-decoration-none" do %>
+          <div class="card h-100 dashboard-role-card dashboard-role-card-system-admin" data-bs-theme="light">
+            <div class="card-body">
+              <h5 class="card-title mb-2">ユーザー管理</h5>
+              <p class="card-text mb-0">ユーザー情報を管理します</p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="col-12 col-md-6 col-xl-4">
+        <%= link_to system_admin_referral_codes_path, class: "text-decoration-none" do %>
+          <div class="card h-100 dashboard-role-card dashboard-role-card-system-admin" data-bs-theme="light">
+            <div class="card-body">
+              <h5 class="card-title mb-2">紹介コード管理</h5>
+              <p class="card-text mb-0">紹介コードを管理します</p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="col-12 col-md-6 col-xl-4">
+        <%= link_to "/system_admin/settlements/manual/new", class: "text-decoration-none" do %>
+          <div class="card h-100 dashboard-role-card dashboard-role-card-system-admin" data-bs-theme="light">
+            <div class="card-body">
+              <h5 class="card-title mb-2">マニュアル精算（テスト）</h5>
+              <p class="card-text mb-0">手動で精算データを作成します</p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="col-12 col-md-6 col-xl-4">
+        <%= link_to system_admin_settlement_exports_path, class: "text-decoration-none" do %>
+          <div class="card h-100 dashboard-role-card dashboard-role-card-system-admin" data-bs-theme="light">
+            <div class="card-body">
+              <h5 class="card-title mb-2">振込CSV（住信SBI）</h5>
+              <p class="card-text mb-0">振込用CSVを出力します</p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="col-12 col-md-6 col-xl-4">
+        <%= link_to system_admin_settlements_path, class: "text-decoration-none" do %>
+          <div class="card h-100 dashboard-role-card dashboard-role-card-system-admin" data-bs-theme="light">
+            <div class="card-body">
+              <h5 class="card-title mb-2">精算一覧</h5>
+              <p class="card-text mb-0">精算データを確認します</p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="col-12 col-md-6 col-xl-4">
+        <%= link_to system_admin_effects_path, class: "text-decoration-none" do %>
+          <div class="card h-100 dashboard-role-card dashboard-role-card-system-admin" data-bs-theme="light">
+            <div class="card-body">
+              <h5 class="card-title mb-2">Effect管理</h5>
+              <p class="card-text mb-0">Effectを管理します</p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
 </div>

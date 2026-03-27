@@ -1,0 +1,37 @@
+.dashboard-role-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dashboard-role-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--bs-box-shadow);
+}
+
+.dashboard-role-card-customer {
+  background-color: var(--bs-secondary-bg-subtle);
+  color: var(--bs-secondary-text-emphasis);
+  border-color: var(--bs-secondary-border-subtle);
+}
+
+.dashboard-role-card-cast {
+  background-color: var(--bs-primary-bg-subtle);
+  color: var(--bs-primary-text-emphasis);
+  border-color: var(--bs-primary-border-subtle);
+}
+
+.dashboard-role-card-store-admin {
+  background-color: var(--bs-success-bg-subtle);
+  color: var(--bs-success-text-emphasis);
+  border-color: var(--bs-success-border-subtle);
+}
+
+.dashboard-role-card-system-admin {
+  background-color: var(--bs-warning-bg-subtle);
+  color: var(--bs-warning-text-emphasis);
+  border-color: var(--bs-warning-border-subtle);
+}
+
+.dashboard-role-card .card-text {
+  color: inherit;
+  opacity: 0.85;
+}
