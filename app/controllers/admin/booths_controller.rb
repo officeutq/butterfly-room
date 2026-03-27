@@ -12,10 +12,21 @@ module Admin
     def index
       @include_archived = ActiveModel::Type::Boolean.new.cast(params[:archived])
 
-      scope = current_store.booths
+      scope =
+        current_store
+          .booths
+          .includes(:thumbnail_image_attachment, booth_casts: :cast_user)
+
       scope = scope.active unless @include_archived
 
-      @booths = scope.order(id: :desc)
+      @booths = scope.order(Arel.sql('"booths"."archived_at" ASC NULLS FIRST'), id: :desc)
+      @current_booth_id = session[:current_booth_id]
+
+      @cast_memberships =
+        StoreMembership
+          .includes(:user)
+          .where(store_id: current_store.id, membership_role: :cast)
+          .order(:id)
     end
 
     def show

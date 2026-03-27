@@ -25,15 +25,16 @@ class AdminBoothsIndexTest < ActionDispatch::IntegrationTest
     get admin_booths_path
     assert_response :success
 
-    assert_select "tbody tr", minimum: 1
+    assert_select ".admin-booths-card", minimum: 1
 
-    assert_select "form[action=?][data-turbo-frame=?]", enter_booth_path(@booth1_active), "modal", minimum: 1 do
-      assert_select "button", text: @booth1_active.name
+    assert_select "h2", text: @booth1_active.name, count: 1
+    assert_select "h2", text: @booth1_arch.name, count: 0
+    assert_select "h2", text: @booth2_active.name, count: 0
+    assert_select "h2", text: @booth2_arch.name, count: 0
+
+    assert_select "form[action=?]", enter_booth_path(@booth1_active), minimum: 1 do
+      assert_select "button", text: "配信/視聴"
     end
-
-    assert_select "button", text: @booth1_arch.name, count: 0
-    assert_select "button", text: @booth2_active.name, count: 0
-    assert_select "button", text: @booth2_arch.name, count: 0
 
     assert_select "a", text: "詳細", count: 0
     assert_select "a[href=?]", admin_booth_path(@booth1_active), count: 0
@@ -45,11 +46,11 @@ class AdminBoothsIndexTest < ActionDispatch::IntegrationTest
     get admin_booths_path(archived: 1)
     assert_response :success
 
-    assert_select "button", text: @booth1_active.name, count: 1
-    assert_select "button", text: @booth1_arch.name, count: 1
+    assert_select "h2", text: @booth1_active.name, count: 1
+    assert_select "h2", text: @booth1_arch.name, count: 1
 
-    assert_select "button", text: @booth2_active.name, count: 0
-    assert_select "button", text: @booth2_arch.name, count: 0
+    assert_select "h2", text: @booth2_active.name, count: 0
+    assert_select "h2", text: @booth2_arch.name, count: 0
   end
 
   test "system_admin: index requires current_store and shows only that store booths" do
@@ -66,14 +67,14 @@ class AdminBoothsIndexTest < ActionDispatch::IntegrationTest
     get admin_booths_path
     assert_response :success
 
-    assert_select "button", text: @booth1_active.name, count: 1
-    assert_select "button", text: @booth1_arch.name, count: 0
+    assert_select "h2", text: @booth1_active.name, count: 1
+    assert_select "h2", text: @booth1_arch.name, count: 0
 
-    assert_select "button", text: @booth2_active.name, count: 0
-    assert_select "button", text: @booth2_arch.name, count: 0
+    assert_select "h2", text: @booth2_active.name, count: 0
+    assert_select "h2", text: @booth2_arch.name, count: 0
 
-    assert_select "form[action=?][data-turbo-frame=?]", enter_booth_path(@booth1_active), "modal", minimum: 1 do
-      assert_select "button", text: @booth1_active.name
+    assert_select "form[action=?]", enter_booth_path(@booth1_active), minimum: 1 do
+      assert_select "button", text: "配信/視聴"
     end
 
     assert_select "a", text: "詳細", count: 0
@@ -89,9 +90,9 @@ class AdminBoothsIndexTest < ActionDispatch::IntegrationTest
     get admin_booths_path(archived: 1)
     assert_response :success
 
-    assert_select "button", text: @booth1_active.name, count: 1
-    assert_select "button", text: @booth1_arch.name, count: 1
-    assert_select "button", text: @booth2_active.name, count: 0
-    assert_select "button", text: @booth2_arch.name, count: 0
+    assert_select "h2", text: @booth1_active.name, count: 1
+    assert_select "h2", text: @booth1_arch.name, count: 1
+    assert_select "h2", text: @booth2_active.name, count: 0
+    assert_select "h2", text: @booth2_arch.name, count: 0
   end
 end
