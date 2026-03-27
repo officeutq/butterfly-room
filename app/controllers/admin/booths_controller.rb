@@ -37,7 +37,6 @@ module Admin
         Booths::ProvisionIvsStageService.new(booth: @booth).call!
       end
 
-      # 👇 ここでチェック
       unless ensure_attachment_persisted!(record: @booth, attachment_name: :thumbnail_image)
         return render :new, status: :unprocessable_entity
       end
@@ -130,7 +129,7 @@ module Admin
         return
       end
 
-      StreamSessions::EndService.new(stream_session: stream_session, actor: current_user).call
+      StreamSessions::ForceEndService.new(stream_session: stream_session, actor: current_user).call
       redirect_to admin_booth_path(@booth), notice: "配信を強制終了しました"
     rescue StreamSessions::EndService::AlreadyEnded
       redirect_to admin_booth_path(@booth), alert: "既に配信は終了しています"
