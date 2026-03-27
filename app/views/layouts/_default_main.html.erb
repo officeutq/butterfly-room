@@ -28,9 +28,9 @@
 
       <div>
         <% if user_signed_in? && current_user.at_least?(:cast) %>
-          <% booth = current_user.cast? ? layout_current_booth : nil %>
+          <% booth = layout_current_booth %>
 
-          <% if current_user.cast? && booth.present? %>
+          <% if booth.present? %>
             <%= button_to "配信",
                   enter_booth_path(booth),
                   method: :get,
@@ -40,12 +40,10 @@
                     data: { turbo_confirm: enter_booth_switch_confirm_message(booth) }
                   } %>
           <% else %>
-            <%= button_to "配信",
-                  cast_booths_path,
-                  method: :get,
-                  params: { return_to_key: "booth_live" },
-                  class: "btn btn-sm btn-primary",
-                  form: { class: "d-inline" } %>
+            <%= link_to "配信",
+                  select_modal_cast_booths_path(return_to_key: "booth_live"),
+                  data: { turbo_frame: "modal" },
+                  class: "btn btn-sm btn-primary" %>
           <% end %>
         <% end %>
       </div>

@@ -1,0 +1,91 @@
+<%= turbo_frame_tag "modal", data: { controller: "modal", action: "turbo:frame-load->modal#open" } do %>
+  <div class="modal fade" tabindex="-1" aria-labelledby="boothSelectModalLabel" aria-modal="true" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="boothSelectModalLabel">ブースを選択</h1>
+          <button
+            type="button"
+            class="btn-close"
+            aria-label="閉じる"
+            data-action="click->modal#close"></button>
+        </div>
+
+        <div class="modal-body">
+          <% if @booths.blank? %>
+            <div class="alert alert-warning mb-0" role="alert">
+              操作可能なブースがありません。
+            </div>
+          <% else %>
+            <div class="list-group">
+              <% @booths.each do |booth| %>
+                <% form_data = { turbo_frame: "_top" } %>
+                <% if @confirm_switch_booth && booth.id.to_s != @current_booth_id.to_s %>
+                  <% form_data[:turbo_confirm] = enter_booth_switch_confirm_message(booth) %>
+                <% end %>
+
+                <div class="list-group-item">
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="flex-shrink-0">
+                      <% if booth.thumbnail_image.attached? %>
+                        <%= image_tag booth.thumbnail_image,
+                              class: "rounded border",
+                              style: "width: 56px; height: 56px; object-fit: cover;",
+                              alt: (booth.name.presence || "(no name)") %>
+                      <% else %>
+                        <div
+                          class="rounded border d-flex align-items-center justify-content-center text-muted"
+                          style="width: 56px; height: 56px;">
+                          <i class="bi bi-camera-video"></i>
+                        </div>
+                      <% end %>
+                    </div>
+
+                    <div class="flex-grow-1" style="min-width: 0;">
+                      <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <div class="fw-semibold"><%= booth.name.presence || "(no name)" %></div>
+                        <% if booth.id.to_s == @current_booth_id.to_s %>
+                          <span class="badge text-bg-success">選択中</span>
+                        <% end %>
+                      </div>
+
+                      <div class="d-flex align-items-center gap-2 flex-wrap mt-1">
+                        <span class="text-muted small">ID: <%= booth.id %></span>
+                        <%= booth_status_badge(booth) %>
+                      </div>
+                    </div>
+
+                    <div class="flex-shrink-0">
+                      <%= button_to "このブースに切り替え",
+                            cast_current_booth_path,
+                            method: :post,
+                            params: {
+                              booth_id: booth.id,
+                              return_to: @return_to,
+                              return_to_key: @return_to_key
+                            },
+                            class: "btn btn-primary btn-sm",
+                            form: {
+                              class: "d-inline",
+                              data: form_data
+                            } %>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            data-action="click->modal#close">
+            閉じる
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>

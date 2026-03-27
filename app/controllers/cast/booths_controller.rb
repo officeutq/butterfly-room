@@ -9,22 +9,20 @@ module Cast
     before_action :authorize_update!, only: %i[edit update]
 
     def index
-      @booths =
-        if current_user.system_admin?
-          Booth.order(:id)
-        elsif current_user.at_least?(:store_admin)
-          Booth.joins(store: :store_memberships)
-              .where(store_memberships: { user_id: current_user.id, membership_role: :admin })
-              .distinct
-              .order(:id)
-        else
-          Booth.joins(:booth_casts)
-              .where(booth_casts: { cast_user_id: current_user.id })
-              .order(:id)
-        end
+      load_selectable_booths
+    end
 
-      @current_booth_id = session[:current_booth_id]
-      @confirm_switch_booth = current_booth&.live? || current_booth&.away?
+    def select_modal
+      load_selectable_booths
+
+      if turbo_frame_request?
+        render :select_modal, layout: false, status: :ok
+      else
+        redirect_to cast_booths_path(
+          return_to: @return_to,
+          return_to_key: @return_to_key
+        )
+      end
     end
 
     def live
@@ -76,7 +74,6 @@ module Cast
         else
           render :edit, status: :unprocessable_entity
         end
-
       rescue => e
         Rails.logger.error("[BoothUpdate] #{e.class}: #{e.message}")
 
@@ -130,6 +127,29 @@ module Cast
     end
 
     private
+
+    def load_selectable_booths
+      scope = Booth.active
+
+      @booths =
+        if current_user.system_admin?
+          scope.order(:id)
+        elsif current_user.at_least?(:store_admin)
+          scope.joins(store: :store_memberships)
+               .where(store_memberships: { user_id: current_user.id, membership_role: :admin })
+               .distinct
+               .order(:id)
+        else
+          scope.joins(:booth_casts)
+               .where(booth_casts: { cast_user_id: current_user.id })
+               .order(:id)
+        end
+
+      @current_booth_id = session[:current_booth_id]
+      @confirm_switch_booth = current_booth&.live? || current_booth&.away?
+      @return_to = params[:return_to].presence
+      @return_to_key = params[:return_to_key].presence
+    end
 
     def set_booth
       booth = Booth.active.find(params[:id])

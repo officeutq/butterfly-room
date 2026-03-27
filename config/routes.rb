@@ -94,6 +94,10 @@ Rails.application.routes.draw do
     resource :current_booth, only: %i[create]
 
     resources :booths, only: %i[index edit update] do
+      collection do
+        get :select_modal
+      end
+
       get :live, on: :member
       patch :status, on: :member
       resources :stream_sessions, only: %i[create], module: :booths
@@ -113,7 +117,12 @@ Rails.application.routes.draw do
 
   # --- Store Admin ---
   namespace :admin do
-    resources :stores, only: %i[index edit update]
+    resources :stores, only: %i[index edit update] do
+      collection do
+        get :select_modal
+      end
+    end
+
     resource :payout_account, only: %i[edit update], controller: "store_payout_accounts"
     resource :current_store, only: %i[create], controller: "current_stores"
 

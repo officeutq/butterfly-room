@@ -47,21 +47,13 @@
               </li>
 
               <% unless current_user.customer? %>
-                <%# 店舗/ブース（現状ロジックを移植：リンク可否・return_to・未選択表示も維持） %>
-
                 <% store = layout_current_store %>
                 <li>
                   <span class="dropdown-item-text text-muted small">
                     store:
                     <% if current_user.at_least?(:store_admin) %>
-                      <% stores_link_params =
-                          if request.get? && request.path != "/admin/stores"
-                            { return_to: request.fullpath }
-                          else
-                            {}
-                          end %>
-
-                      <%= link_to admin_stores_path(stores_link_params),
+                      <%= link_to select_modal_admin_stores_path(return_to: request.fullpath),
+                            data: { turbo_frame: "modal" },
                             class: "link-secondary link-underline-opacity-0 link-underline-opacity-100-hover" do %>
                         <% if store.present? %>
                           <strong><%= store.name.presence || "(no name)" %></strong>
@@ -70,7 +62,6 @@
                         <% end %>
                       <% end %>
                     <% else %>
-                      <%# cast: store は表示のみ（クリック不可） %>
                       <% if store.present? %>
                         <strong><%= store.name.presence || "(no name)" %></strong>
                       <% else %>
@@ -84,33 +75,9 @@
                 <li>
                   <span class="dropdown-item-text text-muted small">
                     booth:
-                    <% booth_link_params =
-                        if request.get? && request.path != "/cast/booths"
-                          { return_to: request.fullpath }
-                        else
-                          {}
-                        end %>
-
-                    <% if current_user.cast? %>
-                      <%= link_to cast_booths_path(booth_link_params),
-                            class: "link-secondary link-underline-opacity-0 link-underline-opacity-100-hover" do %>
-                        <% if booth.present? %>
-                          <strong><%= booth.name.presence || "(no name)" %></strong>
-                        <% else %>
-                          <span class="text-danger">未選択</span>
-                        <% end %>
-                      <% end %>
-                    <% elsif current_user.at_least?(:store_admin) %>
-                      <%= link_to cast_booths_path(booth_link_params),
-                            class: "link-secondary link-underline-opacity-0 link-underline-opacity-100-hover" do %>
-                        <% if booth.present? %>
-                          <strong><%= booth.name.presence || "(no name)" %></strong>
-                        <% else %>
-                          <span class="text-danger">未選択</span>
-                        <% end %>
-                      <% end %>
-                    <% else %>
-                      <%# 念のため（到達しない想定）：customer は外で除外済み %>
+                    <%= link_to select_modal_cast_booths_path(return_to: request.fullpath),
+                          data: { turbo_frame: "modal" },
+                          class: "link-secondary link-underline-opacity-0 link-underline-opacity-100-hover" do %>
                       <% if booth.present? %>
                         <strong><%= booth.name.presence || "(no name)" %></strong>
                       <% else %>

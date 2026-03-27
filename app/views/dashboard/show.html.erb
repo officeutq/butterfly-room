@@ -22,19 +22,15 @@
       <li class="list-group-item">
         <%= link_to "紹介コード管理", system_admin_referral_codes_path, class: "text-decoration-none" %>
       </li>
-
       <li class="list-group-item">
         <%= link_to "マニュアル精算（テスト）", "/system_admin/settlements/manual/new", class: "text-decoration-none" %>
       </li>
-
       <li class="list-group-item">
         <%= link_to "振込CSV（住信SBI）", system_admin_settlement_exports_path, class: "text-decoration-none" %>
       </li>
-
       <li class="list-group-item">
         <%= link_to "精算一覧", system_admin_settlements_path, class: "text-decoration-none" %>
       </li>
-
       <li class="list-group-item">
         <%= link_to "Effect管理", system_admin_effects_path, class: "text-decoration-none" %>
       </li>
@@ -50,7 +46,8 @@
           <%= link_to "店舗設定", edit_admin_store_path(store), class: "text-decoration-none" %>
         <% else %>
           <%= link_to "店舗設定",
-                admin_stores_path(return_to_key: "store_edit"),
+                select_modal_admin_stores_path(return_to_key: "store_edit"),
+                data: { turbo_frame: "modal" },
                 class: "text-decoration-none" %>
         <% end %>
       </li>
@@ -70,7 +67,8 @@
           <%= link_to "ブースを編集", edit_cast_booth_path(booth), class: "text-decoration-none" %>
         <% else %>
           <%= link_to "ブースを編集",
-                cast_booths_path(return_to_key: "booth_edit"),
+                select_modal_cast_booths_path(return_to_key: "booth_edit"),
+                data: { turbo_frame: "modal" },
                 class: "text-decoration-none" %>
         <% end %>
       </li>
@@ -80,7 +78,8 @@
           <%= link_to "キャスト管理", admin_casts_path, class: "text-decoration-none" %>
         <% else %>
           <%= link_to "キャスト管理",
-                admin_stores_path(return_to: admin_casts_path),
+                select_modal_admin_stores_path(return_to: admin_casts_path),
+                data: { turbo_frame: "modal" },
                 class: "text-decoration-none" %>
         <% end %>
       </li>
@@ -90,7 +89,8 @@
           <%= link_to "ブースにキャストを紐づける", admin_booth_casts_path, class: "text-decoration-none" %>
         <% else %>
           <%= link_to "ブースにキャストを紐づける",
-                admin_stores_path(return_to: admin_booth_casts_path),
+                select_modal_admin_stores_path(return_to: admin_booth_casts_path),
+                data: { turbo_frame: "modal" },
                 class: "text-decoration-none" %>
         <% end %>
       </li>
@@ -100,7 +100,8 @@
           <%= link_to "キャスト別数値一覧（直近30日）", admin_cast_metrics_path, class: "text-decoration-none" %>
         <% else %>
           <%= link_to "キャスト別数値一覧（直近30日）",
-                admin_stores_path(return_to: admin_cast_metrics_path),
+                select_modal_admin_stores_path(return_to: admin_cast_metrics_path),
+                data: { turbo_frame: "modal" },
                 class: "text-decoration-none" %>
         <% end %>
       </li>
@@ -110,7 +111,8 @@
           <%= link_to "ドリンクメニュー", admin_drink_items_path, class: "text-decoration-none" %>
         <% else %>
           <%= link_to "ドリンクメニュー",
-                admin_stores_path(return_to: admin_drink_items_path),
+                select_modal_admin_stores_path(return_to: admin_drink_items_path),
+                data: { turbo_frame: "modal" },
                 class: "text-decoration-none" %>
         <% end %>
       </li>
@@ -120,7 +122,8 @@
           <%= link_to "店舗BAN", admin_store_bans_path, class: "text-decoration-none" %>
         <% else %>
           <%= link_to "店舗BAN",
-                admin_stores_path(return_to: admin_store_bans_path),
+                select_modal_admin_stores_path(return_to: admin_store_bans_path),
+                data: { turbo_frame: "modal" },
                 class: "text-decoration-none" %>
         <% end %>
       </li>
@@ -135,7 +138,8 @@
           <% end %>
         <% else %>
           <%= link_to "精算・振込設定",
-                admin_stores_path(return_to_key: "payout_account_edit"),
+                select_modal_admin_stores_path(return_to_key: "payout_account_edit"),
+                data: { turbo_frame: "modal" },
                 class: "text-decoration-none" %>
         <% end %>
       </li>
@@ -145,7 +149,8 @@
           <%= link_to "精算（予定・履歴）", admin_settlements_path, class: "text-decoration-none" %>
         <% else %>
           <%= link_to "精算（予定・履歴）",
-                admin_stores_path(return_to: admin_settlements_path),
+                select_modal_admin_stores_path(return_to: admin_settlements_path),
+                data: { turbo_frame: "modal" },
                 class: "text-decoration-none" %>
         <% end %>
       </li>
@@ -171,7 +176,8 @@
           <%= link_to "店舗設定", edit_admin_store_path(store), class: "text-decoration-none" %>
         <% else %>
           <%= link_to "店舗設定",
-                admin_stores_path(return_to_key: "store_edit"),
+                select_modal_admin_stores_path(return_to_key: "store_edit"),
+                data: { turbo_frame: "modal" },
                 class: "text-decoration-none" %>
         <% end %>
       </li>
@@ -191,7 +197,8 @@
           <%= link_to "ブースを編集", edit_cast_booth_path(booth), class: "text-decoration-none" %>
         <% else %>
           <%= link_to "ブースを編集",
-                cast_booths_path(return_to_key: "booth_edit"),
+                select_modal_cast_booths_path(return_to_key: "booth_edit"),
+                data: { turbo_frame: "modal" },
                 class: "text-decoration-none" %>
         <% end %>
       </li>
@@ -201,7 +208,8 @@
           <%= link_to "キャスト管理", admin_casts_path, class: "text-decoration-none" %>
         <% else %>
           <%= link_to "キャスト管理",
-                admin_stores_path(return_to: admin_casts_path),
+                select_modal_admin_stores_path(return_to: admin_casts_path),
+                data: { turbo_frame: "modal" },
                 class: "text-decoration-none" %>
         <% end %>
       </li>
@@ -211,7 +219,8 @@
           <%= link_to "ブースにキャストを紐づける", admin_booth_casts_path, class: "text-decoration-none" %>
         <% else %>
           <%= link_to "ブースにキャストを紐づける",
-                admin_stores_path(return_to: admin_booth_casts_path),
+                select_modal_admin_stores_path(return_to: admin_booth_casts_path),
+                data: { turbo_frame: "modal" },
                 class: "text-decoration-none" %>
         <% end %>
       </li>
@@ -221,7 +230,8 @@
           <%= link_to "キャスト別数値一覧（直近30日）", admin_cast_metrics_path, class: "text-decoration-none" %>
         <% else %>
           <%= link_to "キャスト別数値一覧（直近30日）",
-                admin_stores_path(return_to: admin_cast_metrics_path),
+                select_modal_admin_stores_path(return_to: admin_cast_metrics_path),
+                data: { turbo_frame: "modal" },
                 class: "text-decoration-none" %>
         <% end %>
       </li>
@@ -231,7 +241,8 @@
           <%= link_to "ドリンクメニュー", admin_drink_items_path, class: "text-decoration-none" %>
         <% else %>
           <%= link_to "ドリンクメニュー",
-                admin_stores_path(return_to: admin_drink_items_path),
+                select_modal_admin_stores_path(return_to: admin_drink_items_path),
+                data: { turbo_frame: "modal" },
                 class: "text-decoration-none" %>
         <% end %>
       </li>
@@ -241,7 +252,8 @@
           <%= link_to "店舗BAN", admin_store_bans_path, class: "text-decoration-none" %>
         <% else %>
           <%= link_to "店舗BAN",
-                admin_stores_path(return_to: admin_store_bans_path),
+                select_modal_admin_stores_path(return_to: admin_store_bans_path),
+                data: { turbo_frame: "modal" },
                 class: "text-decoration-none" %>
         <% end %>
       </li>
@@ -256,7 +268,8 @@
           <% end %>
         <% else %>
           <%= link_to "精算・振込設定",
-                admin_stores_path(return_to_key: "payout_account_edit"),
+                select_modal_admin_stores_path(return_to_key: "payout_account_edit"),
+                data: { turbo_frame: "modal" },
                 class: "text-decoration-none" %>
         <% end %>
       </li>
@@ -266,7 +279,8 @@
           <%= link_to "精算（予定・履歴）", admin_settlements_path, class: "text-decoration-none" %>
         <% else %>
           <%= link_to "精算（予定・履歴）",
-                admin_stores_path(return_to: admin_settlements_path),
+                select_modal_admin_stores_path(return_to: admin_settlements_path),
+                data: { turbo_frame: "modal" },
                 class: "text-decoration-none" %>
         <% end %>
       </li>
@@ -294,7 +308,8 @@
           <%= link_to "ブースを編集", edit_cast_booth_path(booth), class: "text-decoration-none" %>
         <% else %>
           <%= link_to "ブースを編集",
-                cast_booths_path(return_to_key: "booth_edit"),
+                select_modal_cast_booths_path(return_to_key: "booth_edit"),
+                data: { turbo_frame: "modal" },
                 class: "text-decoration-none" %>
         <% end %>
       </li>
