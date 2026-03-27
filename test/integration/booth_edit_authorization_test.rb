@@ -50,7 +50,7 @@ class BoothEditAuthorizationTest < ActionDispatch::IntegrationTest
 
     patch admin_booth_path(@booth1), params: { booth: { name: "x" } }
     assert_response :redirect
-    assert_redirected_to admin_booth_path(@booth1)
+    assert_redirected_to dashboard_path
 
     patch admin_booth_path(@booth2), params: { booth: { name: "x" } }
     assert_response :not_found
@@ -59,17 +59,16 @@ class BoothEditAuthorizationTest < ActionDispatch::IntegrationTest
   test "system_admin can update any booth" do
     sign_in @system_admin, scope: :user
 
-    # #206: admin配下は current_store 必須なので、先に選択する
     post admin_current_store_path, params: { store_id: @store1.id }
     assert_response :redirect
     assert_redirected_to dashboard_path
 
     patch admin_booth_path(@booth1), params: { booth: { name: "x" } }
     assert_response :redirect
-    assert_redirected_to admin_booth_path(@booth1)
+    assert_redirected_to dashboard_path
 
     patch admin_booth_path(@booth2), params: { booth: { name: "x" } }
     assert_response :redirect
-    assert_redirected_to admin_booth_path(@booth2)
+    assert_redirected_to dashboard_path
   end
 end

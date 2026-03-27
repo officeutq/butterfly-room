@@ -47,7 +47,7 @@ module Admin
         remove_param_name: :remove_thumbnail_image
       )
 
-      redirect_to admin_booth_path(@booth), notice: "ブースを作成しました"
+      redirect_to helpers.dashboard_path_for(current_user), notice: "ブースを作成しました"
 
     rescue ActiveRecord::RecordInvalid
       render :new, status: :unprocessable_entity
@@ -90,7 +90,7 @@ module Admin
             remove_param_name: :remove_thumbnail_image
           )
 
-          redirect_to admin_booth_path(@booth), notice: "更新しました"
+          redirect_to helpers.dashboard_path_for(current_user), notice: "更新しました"
         else
           render :edit, status: :unprocessable_entity
         end
@@ -184,7 +184,7 @@ module Admin
     end
 
     def booth_params
-      params.require(:booth).permit(:description, :thumbnail_image)
+      params.require(:booth).permit(:name, :description, :thumbnail_image)
     end
   end
 end

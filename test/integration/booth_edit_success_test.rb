@@ -27,7 +27,7 @@ class BoothEditSuccessTest < ActionDispatch::IntegrationTest
       booth: { description: "new desc", thumbnail_image: file }
     }
 
-    assert_redirected_to cast_booths_path
+    assert_redirected_to dashboard_path
 
     @booth1.reload
     assert_equal "new desc", @booth1.description
@@ -43,7 +43,7 @@ class BoothEditSuccessTest < ActionDispatch::IntegrationTest
       booth: { description: "admin desc", thumbnail_image: file }
     }
 
-    assert_redirected_to admin_booth_path(@booth1)
+    assert_redirected_to dashboard_path
 
     @booth1.reload
     assert_equal "admin desc", @booth1.description
