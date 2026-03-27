@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "ostruct"
 
 class AdminBoothForceEndTest < ActionDispatch::IntegrationTest
   setup do
@@ -87,5 +88,65 @@ class AdminBoothForceEndTest < ActionDispatch::IntegrationTest
 
     post force_end_admin_booth_path(@booth1)
     assert_response :forbidden
+  end
+
+  test "force_end triggers IVS disconnect when publisher exists" do
+    sign_in @system_admin, scope: :user
+
+    post admin_current_store_path, params: { store_id: @store1.id }
+    assert_response :redirect
+    assert_redirected_to dashboard_path
+
+    @session2.update!(ivs_stage_arn: "arn:aws:ivs:ap-northeast-1:123:stage/test")
+
+    participant = OpenStruct.new(
+      attributes: {
+        "stream_session_id" => @session2.id.to_s,
+        "role" => "publisher"
+      },
+      stage_session_id: "stage-session-1",
+      participant_id: "participant-1"
+    )
+
+    fake_client = Class.new do
+      attr_reader :list_participants_calls, :disconnect_participant_calls
+
+      def initialize(participants)
+        @participants = participants
+        @list_participants_calls = []
+        @disconnect_participant_calls = []
+      end
+
+      def list_participants(stage_arn:)
+        @list_participants_calls << { stage_arn: stage_arn }
+        @participants
+      end
+
+      def disconnect_participant(stage_arn:, session_id:, participant_id:)
+        @disconnect_participant_calls << {
+          stage_arn: stage_arn,
+          session_id: session_id,
+          participant_id: participant_id
+        }
+        nil
+      end
+    end.new([ participant ])
+
+    Ivs::Client.factory = ->(region:) { fake_client }
+
+    post force_end_admin_booth_path(@booth2)
+
+    assert_response :redirect
+    assert_redirected_to admin_booth_path(@booth2)
+
+    assert_equal 1, fake_client.list_participants_calls.size
+    assert_equal 1, fake_client.disconnect_participant_calls.size
+
+    disconnect_call = fake_client.disconnect_participant_calls.first
+    assert_equal "arn:aws:ivs:ap-northeast-1:123:stage/test", disconnect_call[:stage_arn]
+    assert_equal "stage-session-1", disconnect_call[:session_id]
+    assert_equal "participant-1", disconnect_call[:participant_id]
+  ensure
+    Ivs::Client.reset_factory!
   end
 end
