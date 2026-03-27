@@ -145,15 +145,63 @@ module Admin
 
       booth = Booth.lock.find(@booth.id)
 
-      if !booth.offline? || booth.current_stream_session_id.present?
+      if booth.archived?
+        redirect_to admin_booths_path, alert: "ブース##{booth.id}（#{booth.name}）は既にアーカイブされています。"
+        return
+      end
+
+      case booth.status.to_sym
+      when :offline
+        if booth.current_stream_session_id.present?
+          redirect_to admin_booths_path,
+                      alert: "ブース##{booth.id}（#{booth.name}）は配信セッション情報が残っているため、安全にアーカイブできません。状態を確認してください。"
+          return
+        end
+
+      when :standby
+        if booth.current_stream_session_id.blank?
+          redirect_to admin_booths_path,
+                      alert: "ブース##{booth.id}（#{booth.name}）は standby ですが配信セッション情報が見つからないため、安全にアーカイブできません。状態を確認してください。"
+          return
+        end
+
+        stream_session = StreamSession.find_by(id: booth.current_stream_session_id)
+        if stream_session.blank?
+          redirect_to admin_booths_path,
+                      alert: "ブース##{booth.id}（#{booth.name}）の配信セッションが見つからないため、安全にアーカイブできません。状態を確認してください。"
+          return
+        end
+
+        StreamSessions::EndService.new(stream_session: stream_session, actor: current_user).call
+        booth = Booth.lock.find(@booth.id)
+
+        if booth.current_stream_session_id.present? || !booth.offline?
+          redirect_to admin_booths_path,
+                      alert: "ブース##{booth.id}（#{booth.name}）の終了処理後に状態が整わなかったため、アーカイブできませんでした。"
+          return
+        end
+
+      when :live, :away
         redirect_to admin_booths_path,
-                    alert: "ブース##{booth.id}（#{booth.name}）は配信中の可能性があるためアーカイブできません。先に配信を終了してください。"
+                    alert: "ブース##{booth.id}（#{booth.name}）は配信中のためアーカイブできません。先に配信を終了してください。"
+        return
+
+      else
+        redirect_to admin_booths_path,
+                    alert: "ブース##{booth.id}（#{booth.name}）の状態を判定できないため、アーカイブできません。"
         return
       end
 
       booth.update!(archived_at: Time.current)
 
       redirect_to admin_booths_path, notice: "ブースをアーカイブしました"
+    rescue StreamSessions::EndService::AlreadyEnded
+      redirect_to admin_booths_path,
+                  alert: "配信セッションは既に終了済みですが、状態が整っていないためアーカイブできません。状態を確認してください。"
+    rescue StreamSessions::EndService::NotAuthorized
+      head :forbidden
+    rescue => e
+      redirect_to admin_booths_path, alert: e.message
     end
 
     private
