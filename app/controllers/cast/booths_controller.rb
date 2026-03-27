@@ -70,7 +70,7 @@ module Cast
             remove_param_name: :remove_thumbnail_image
           )
 
-          redirect_to cast_booths_path, notice: "ブースを更新しました"
+          redirect_to helpers.dashboard_path_for(current_user), notice: "ブースを更新しました"
         else
           render :edit, status: :unprocessable_entity
         end
@@ -180,7 +180,7 @@ module Cast
     end
 
     def booth_params
-      params.require(:booth).permit(:description, :thumbnail_image)
+      params.require(:booth).permit(:name, :description, :thumbnail_image)
     end
   end
 end
