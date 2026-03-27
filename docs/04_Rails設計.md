@@ -45,6 +45,7 @@ app/
     stylesheets/
       components/
         _banuba_verification.scss
+        _booths_index.scss
         _broadcast_comment.scss
         _broadcast_drink.scss
         _broadcast_layout.scss
