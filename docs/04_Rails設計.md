@@ -252,6 +252,7 @@ app/
       comments/
         create_service.rb
       end_service.rb
+      force_end_service.rb
       start_service.rb
       status_service.rb
     wallets/
