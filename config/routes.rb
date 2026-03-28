@@ -131,10 +131,9 @@ Rails.application.routes.draw do
         get :watch
         patch :archive
         post :force_end
+        post :assign_cast
       end
     end
-
-    resources :booth_casts, only: %i[index create]
 
     resources :drink_items, only: %i[index create update destroy]
     resources :store_bans, only: %i[index create destroy]
