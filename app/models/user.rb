@@ -21,6 +21,8 @@ class User < ApplicationRecord
   has_one :wallet, foreign_key: :customer_user_id, dependent: :destroy, inverse_of: :customer_user
   has_many :store_memberships, dependent: :destroy
   has_many :stores, through: :store_memberships
+  has_many :booth_casts, foreign_key: :cast_user_id, dependent: :restrict_with_error
+  has_many :cast_booths, through: :booth_casts, source: :booth
   has_many :favorite_booths, dependent: :destroy
   has_many :favorite_stores, dependent: :destroy
 
