@@ -139,12 +139,9 @@ Rails.application.routes.draw do
     resources :drink_items, only: %i[index create update destroy]
     resources :store_bans, only: %i[index create destroy]
 
-    resources :casts, only: %i[index destroy] do
-      collection do
-        post :invite
-        post :invite_store_admin
-      end
-    end
+    resources :casts, only: %i[index destroy]
+    resources :cast_invitations, only: %i[index create]
+    resources :store_admin_invitations, only: %i[index create]
 
     get "/cast_metrics", to: "metrics#cast"
 

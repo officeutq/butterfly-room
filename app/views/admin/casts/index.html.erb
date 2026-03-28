@@ -1,184 +1,61 @@
-<h1>キャスト管理</h1>
+<h1 class="mb-4">キャスト一覧</h1>
 
-<h2 class="h5 mt-4">登録済みキャスト</h2>
+<div class="mb-4 d-flex gap-2 align-items-center flex-wrap">
+  <%= link_to "キャスト招待", admin_cast_invitations_path, class: "btn btn-primary" %>
+</div>
 
-<table class="table table-sm">
-  <thead>
-    <tr>
-      <th>キャスト</th>
-      <th>Email</th>
-      <th class="text-end">操作</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% @cast_memberships.each do |m| %>
-      <tr>
-        <td><%= m.user.display_name.presence || "-" %></td>
-        <td><%= m.user.email %></td>
-        <td class="text-end">
-          <%= button_to "削除",
-                        admin_cast_path(m),
-                        method: :delete,
-                        data: { turbo_confirm: "このキャスト登録を解除しますか？" },
-                        class: "btn btn-sm btn-outline-danger" %>
-        </td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
+<% if @cast_memberships.blank? %>
+  <div class="alert alert-warning" role="alert">
+    所属中のキャストがいません。
+  </div>
+<% else %>
+  <div class="row g-4">
+    <% @cast_memberships.each do |membership| %>
+      <% user = membership.user %>
+      <% booths =
+           user.booth_casts
+               .filter_map { |booth_cast| booth_cast.booth if booth_cast.booth&.store_id == current_store.id }
+               .uniq(&:id)
+               .sort_by(&:id) %>
 
-<hr class="my-4">
+      <div class="col-12 col-lg-6 col-xxl-4">
+        <div class="card h-100" data-bs-theme="light">
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex align-items-start gap-3">
+              <div class="flex-shrink-0">
+                <%= user_avatar_badge(user, size: 64) %>
+              </div>
 
-<h2 class="h5 mt-4">キャスト招待（ワンタイム / 24時間）</h2>
+              <div class="flex-grow-1 min-w-0">
+                <h2 class="h5 mb-1"><%= display_name_or_anonymous(user) %></h2>
+                <div class="small text-muted text-break"><%= user.email %></div>
+              </div>
+            </div>
 
-<div class="card mb-3">
-  <div class="card-body">
-    <p class="text-muted mb-3">
-      招待URLを発行し、cast ロールのユーザーが承認した場合のみ、キャスト所属（store_memberships: cast）が作成されます。
-    </p>
+            <div class="mt-3">
+              <div class="small text-muted mb-2">所属ブース</div>
 
-    <%= form_with model: @new_invitation, url: invite_admin_casts_path, scope: :store_cast_invitation do |f| %>
-      <div class="row g-2 align-items-end">
-        <div class="col-12 col-md-8">
-          <%= f.label :note, "メモ（任意）", class: "form-label" %>
-          <%= f.text_area :note, class: "form-control", rows: 2, placeholder: "例）◯◯さん用 / SNSのアカウント名など" %>
-        </div>
-        <div class="col-12 col-md-auto">
-          <%= f.submit "招待URLを発行", class: "btn btn-primary" %>
+              <% if booths.present? %>
+                <div class="d-flex gap-2 flex-wrap">
+                  <% booths.each do |booth| %>
+                    <span class="badge text-bg-secondary"><%= booth.name.presence || "(no name)" %></span>
+                  <% end %>
+                </div>
+              <% else %>
+                <div class="text-muted">未設定</div>
+              <% end %>
+            </div>
+
+            <div class="mt-auto pt-3">
+              <%= button_to "削除",
+                    admin_cast_path(membership),
+                    method: :delete,
+                    data: { turbo_confirm: "このキャスト登録を解除しますか？" },
+                    class: "btn btn-sm btn-outline-danger" %>
+            </div>
+          </div>
         </div>
       </div>
     <% end %>
-
-    <div class="mt-3 text-muted small">
-      ※発行後のURLは「お知らせ（notice）」にも表示されます。必要に応じてコピペしてください。
-    </div>
   </div>
-</div>
-
-<h3 class="h6 mt-4">招待一覧</h3>
-
-<table class="table table-sm">
-  <thead>
-    <tr>
-      <th>状態</th>
-      <th>期限</th>
-      <th>メモ</th>
-      <th>発行者</th>
-      <th>承認者</th>
-      <th>URL</th>
-    </tr>
-  </thead>
-
-  <tbody>
-    <% @store_cast_invitations.each do |inv| %>
-      <tr>
-        <td><%= inv.status_label %></td>
-        <td><%= inv.expires_at.strftime("%Y-%m-%d %H:%M") %></td>
-        <td><%= inv.note.presence || "-" %></td>
-        <td><%= display_name_or_anonymous(inv.invited_by_user) %></td>
-        <td>
-          <% if inv.accepted_by_user.present? %>
-            <%= display_name_or_anonymous(inv.accepted_by_user) %>
-          <% else %>
-            -
-          <% end %>
-        </td>
-        <td class="text-nowrap">
-          <% if inv.issued_url.present? %>
-            <div class="d-flex align-items-center gap-2">
-              <span class="small text-break" style="max-width: 360px;">
-                <%= inv.issued_url %>
-              </span>
-
-              <button
-                type="button"
-                class="btn btn-sm btn-outline-secondary"
-                data-controller="clipboard"
-                data-clipboard-text="<%= inv.issued_url %>"
-                data-action="click->clipboard#copy">
-                コピー
-              </button>
-            </div>
-          <% else %>
-            <%# 旧レコード：token を保持していないのでURLを再生成できない（仕様通り） %>
-            <span class="text-muted small">（発行時に控えてください）</span>
-          <% end %>
-        </td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
-
-<hr class="my-4">
-
-<h2 class="h5 mt-4">store_admin 招待（ワンタイム / 24時間）</h2>
-
-<div class="card mb-3">
-  <div class="card-body">
-    <p class="text-muted mb-3">
-      招待URLを発行し、store_admin ロールのユーザーが承認した場合のみ、
-      店舗管理者所属（store_memberships: admin）が作成されます（ロール付け替えは行いません）。
-    </p>
-
-    <%= button_to "招待URLを発行",
-          invite_store_admin_admin_casts_path,
-          method: :post,
-          class: "btn btn-primary" %>
-
-    <div class="mt-3 text-muted small">
-      ※発行後のURLは「お知らせ（notice）」にも表示されます。必要に応じてコピペしてください。
-    </div>
-  </div>
-</div>
-
-<h3 class="h6 mt-4">招待一覧</h3>
-
-<table class="table table-sm">
-  <thead>
-    <tr>
-      <th>状態</th>
-      <th>期限</th>
-      <th>発行者</th>
-      <th>承認者</th>
-      <th>URL</th>
-    </tr>
-  </thead>
-
-  <tbody>
-    <% @store_admin_invitations.each do |inv| %>
-      <tr>
-        <td><%= inv.status_label %></td>
-        <td><%= inv.expires_at.strftime("%Y-%m-%d %H:%M") %></td>
-        <td><%= display_name_or_anonymous(inv.invited_by_user) %></td>
-        <td>
-          <% if inv.accepted_by_user.present? %>
-            <%= display_name_or_anonymous(inv.accepted_by_user) %>
-          <% else %>
-            -
-          <% end %>
-        </td>
-        <td class="text-nowrap">
-          <% if inv.issued_url.present? %>
-            <div class="d-flex align-items-center gap-2">
-              <span class="small text-break" style="max-width: 360px;">
-                <%= inv.issued_url %>
-              </span>
-
-              <button
-                type="button"
-                class="btn btn-sm btn-outline-secondary"
-                data-controller="clipboard"
-                data-clipboard-text="<%= inv.issued_url %>"
-                data-action="click->clipboard#copy">
-                コピー
-              </button>
-            </div>
-          <% else %>
-            <%# 旧レコード：token を保持していないのでURLを再生成できない（仕様通り） %>
-            <span class="text-muted small">（発行時に控えてください）</span>
-          <% end %>
-        </td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
+<% end %>

@@ -11,7 +11,7 @@ class AdminCastsInvitationIssuedUrlTest < ActionDispatch::IntegrationTest
   end
 
   test "issuing cast invitation saves issued_url and shows url + copy button in list" do
-    post invite_admin_casts_path, params: {
+    post admin_cast_invitations_path, params: {
       store_cast_invitation: { note: "note" }
     }
     assert_response :redirect
@@ -22,7 +22,6 @@ class AdminCastsInvitationIssuedUrlTest < ActionDispatch::IntegrationTest
     assert invitation.present?
     assert invitation.issued_url.present?
 
-    # 画面に URL とコピーUIが出る（issued_urlあり）
     assert_includes response.body, invitation.issued_url
     assert_includes response.body, 'data-controller="clipboard"'
     assert_includes response.body, 'data-action="click->clipboard#copy"'
@@ -30,7 +29,7 @@ class AdminCastsInvitationIssuedUrlTest < ActionDispatch::IntegrationTest
   end
 
   test "issuing store_admin invitation saves issued_url and shows url + copy button in list" do
-    post invite_store_admin_admin_casts_path
+    post admin_store_admin_invitations_path
     assert_response :redirect
     follow_redirect!
     assert_response :ok
@@ -45,7 +44,7 @@ class AdminCastsInvitationIssuedUrlTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "data-clipboard-text=\"#{invitation.issued_url}\""
   end
 
-  test "legacy records with nil issued_url do not error and show placeholder" do
+  test "legacy cast invitation record with nil issued_url does not error and shows placeholder" do
     StoreCastInvitation.create!(
       store: @store,
       invited_by_user: @store_admin,
@@ -55,6 +54,13 @@ class AdminCastsInvitationIssuedUrlTest < ActionDispatch::IntegrationTest
       issued_url: nil
     )
 
+    get admin_cast_invitations_path
+    assert_response :ok
+
+    assert_includes response.body, "（発行時に控えてください）"
+  end
+
+  test "legacy store_admin invitation record with nil issued_url does not error and shows placeholder" do
     StoreAdminInvitation.create!(
       store: @store,
       invited_by_user: @store_admin,
@@ -63,10 +69,9 @@ class AdminCastsInvitationIssuedUrlTest < ActionDispatch::IntegrationTest
       issued_url: nil
     )
 
-    get admin_casts_path
+    get admin_store_admin_invitations_path
     assert_response :ok
 
-    # placeholder が出ている（両一覧とも）
     assert_includes response.body, "（発行時に控えてください）"
   end
 end

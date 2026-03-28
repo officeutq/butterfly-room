@@ -1,0 +1,90 @@
+<h1 class="mb-4">キャスト招待</h1>
+
+<div class="mb-4 d-flex gap-2 align-items-center flex-wrap">
+  <%= link_to "キャスト一覧", admin_casts_path, class: "btn btn-outline-secondary" %>
+</div>
+
+<div class="card mb-4" data-bs-theme="light">
+  <div class="card-body">
+    <p class="text-muted mb-3">
+      招待URLを発行し、cast ロールのユーザーが承認した場合のみ、キャスト所属（store_memberships: cast）が作成されます。
+    </p>
+
+    <%= form_with model: @new_invitation, url: admin_cast_invitations_path, scope: :store_cast_invitation do |f| %>
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-md-8">
+          <%= f.label :note, "メモ（任意）", class: "form-label" %>
+          <%= f.text_area :note, class: "form-control", rows: 2, placeholder: "例）◯◯さん用 / SNSのアカウント名など" %>
+        </div>
+        <div class="col-12 col-md-auto">
+          <%= f.submit "招待URLを発行", class: "btn btn-primary" %>
+        </div>
+      </div>
+    <% end %>
+
+    <div class="mt-3 text-muted small">
+      ※発行後のURLは「お知らせ（notice）」にも表示されます。必要に応じてコピペしてください。
+    </div>
+  </div>
+</div>
+
+<h2 class="h5 mt-4">招待一覧</h2>
+
+<% if @store_cast_invitations.blank? %>
+  <div class="alert alert-warning" role="alert">
+    発行済みのキャスト招待はありません。
+  </div>
+<% else %>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th>状態</th>
+          <th>期限</th>
+          <th>メモ</th>
+          <th>発行者</th>
+          <th>承認者</th>
+          <th>URL</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <% @store_cast_invitations.each do |inv| %>
+          <tr>
+            <td><%= inv.status_label %></td>
+            <td><%= inv.expires_at.strftime("%Y-%m-%d %H:%M") %></td>
+            <td><%= inv.note.presence || "-" %></td>
+            <td><%= display_name_or_anonymous(inv.invited_by_user) %></td>
+            <td>
+              <% if inv.accepted_by_user.present? %>
+                <%= display_name_or_anonymous(inv.accepted_by_user) %>
+              <% else %>
+                -
+              <% end %>
+            </td>
+            <td class="text-nowrap">
+              <% if inv.issued_url.present? %>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="small text-break" style="max-width: 360px;">
+                    <%= inv.issued_url %>
+                  </span>
+
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    data-controller="clipboard"
+                    data-clipboard-text="<%= inv.issued_url %>"
+                    data-action="click->clipboard#copy">
+                    コピー
+                  </button>
+                </div>
+              <% else %>
+                <span class="text-muted small">（発行時に控えてください）</span>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>
