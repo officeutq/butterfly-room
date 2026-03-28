@@ -21,10 +21,10 @@ class AdminBoothCastsTest < ActionDispatch::IntegrationTest
   test "store_admin can link cast to booth when unset" do
     sign_in @store_admin, scope: :user
 
-    get admin_booth_casts_path
+    get admin_booths_path
     assert_response :success
 
-    post admin_booth_casts_path, params: { booth_cast: { booth_id: @booth.id, cast_user_id: @cast1.id } }
+    post assign_cast_admin_booth_path(@booth), params: { booth_cast: { cast_user_id: @cast1.id } }
     assert_response :redirect
     assert_redirected_to admin_booths_path
 
@@ -37,7 +37,7 @@ class AdminBoothCastsTest < ActionDispatch::IntegrationTest
 
     BoothCast.create!(booth: @booth, cast_user: @cast1)
 
-    post admin_booth_casts_path, params: { booth_cast: { booth_id: @booth.id, cast_user_id: @cast2.id } }
+    post assign_cast_admin_booth_path(@booth), params: { booth_cast: { cast_user_id: @cast2.id } }
     assert_response :redirect
     assert_redirected_to admin_booths_path
 
