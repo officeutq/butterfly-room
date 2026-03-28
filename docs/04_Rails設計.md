@@ -67,11 +67,13 @@ app/
       base_controller.rb
       booth_casts_controller.rb
       booths_controller.rb
+      cast_invitations_controller.rb
       casts_controller.rb
       current_stores_controller.rb
       drink_items_controller.rb
       metrics_controller.rb
       settlements_controller.rb
+      store_admin_invitations_controller.rb
       store_bans_controller.rb
       store_payout_accounts_controller.rb
       stores_controller.rb
@@ -272,6 +274,8 @@ app/
         index.html.erb
         new.html.erb
         show.html.erb
+      cast_invitations/
+        index.html.erb
       casts/
         index.html.erb
       drink_items/
@@ -283,6 +287,8 @@ app/
       settlements/
         index.html.erb
         show.html.erb
+      store_admin_invitations/
+        index.html.erb
       store_bans/
         index.html.erb
       store_payout_accounts/
