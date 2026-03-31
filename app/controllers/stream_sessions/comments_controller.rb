@@ -6,7 +6,9 @@ module StreamSessions
 
     before_action :authenticate_user!
     before_action :set_stream_session
-    before_action :reject_banned_customer_for_stream_session!
+    before_action :set_comment, only: %i[hide unhide]
+    before_action :reject_banned_customer_for_stream_session!, only: %i[create]
+    before_action :ensure_comment_moderator!, only: %i[hide unhide]
 
     def create
       policy = Authorization::ViewerPolicy.new(current_user, @stream_session)
@@ -40,14 +42,38 @@ module StreamSessions
       render_comment_form_error("入力が不正です", status: :unprocessable_entity)
     end
 
+    def hide
+      @comment.hide_by!(current_user)
+      CommentNotifier.replace(@comment)
+      head :ok
+    rescue ActiveRecord::RecordInvalid, ArgumentError
+      head :unprocessable_entity
+    end
+
+    def unhide
+      @comment.unhide!
+      CommentNotifier.replace(@comment)
+      head :ok
+    rescue ActiveRecord::RecordInvalid, ArgumentError
+      head :unprocessable_entity
+    end
+
     private
 
     def set_stream_session
       @stream_session = StreamSession.find(params[:stream_session_id])
     end
 
+    def set_comment
+      @comment = @stream_session.comments.find(params[:id])
+    end
+
     def reject_banned_customer_for_stream_session!
       reject_banned_customer!(store: @stream_session.store)
+    end
+
+    def ensure_comment_moderator!
+      head :forbidden unless @stream_session.started_by_cast_user_id == current_user.id
     end
 
     def render_comment_form_error(message, status:)
