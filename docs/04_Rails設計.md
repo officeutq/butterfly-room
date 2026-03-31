@@ -431,6 +431,7 @@ config/
   locales/
     devise.en.yml
     en.yml
+  app_build.yml
   application.rb
   boot.rb
   bundler-audit.yml
