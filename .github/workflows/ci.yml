@@ -5,48 +5,37 @@ on:
   push:
     branches: [ main ]
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  scan_ruby:
+  quality:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - name: Make bin scripts executable (Windows-friendly)
         run: git ls-files -z bin/* | xargs -0 chmod +x
+
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: .ruby-version
           bundler-cache: true
+
       - name: Brakeman (Rails security scan)
         run: bundle exec brakeman --no-pager
 
-  scan_js:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Make bin scripts executable (Windows-friendly)
-        run: git ls-files -z bin/* | xargs -0 chmod +x
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: .ruby-version
-          bundler-cache: true
       - name: Importmap audit (JS deps)
         run: bin/importmap audit
 
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Make bin scripts executable (Windows-friendly)
-        run: git ls-files -z bin/* | xargs -0 chmod +x
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: .ruby-version
-          bundler-cache: true
       - name: Rubocop
         run: bundle exec rubocop -f github
 
   test:
     runs-on: ubuntu-latest
+
     services:
       postgres:
         image: postgres:16
@@ -77,17 +66,20 @@ jobs:
           ruby-version: .ruby-version
           bundler-cache: true
 
-      - name: Install system deps for pg/psych
+      - name: Install system deps
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y --no-install-recommends libpq-dev pkg-config libyaml-dev
+          sudo apt-get install -y --no-install-recommends \
+            libpq-dev \
+            pkg-config \
+            libyaml-dev \
+            imagemagick
 
-      # Node をセットアップ & npm 依存を入れる（bootstrap が必要）
       - name: Set up Node (for npm/sass)
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: Install npm deps
         run: |
@@ -105,20 +97,8 @@ jobs:
       - name: Make node_modules visible to Dart Sass
         run: echo "SASS_PATH=node_modules" >> $GITHUB_ENV
 
-      - name: Create DB
-        run: bundle exec rails db:create
-
       - name: Prepare DB
         run: bundle exec rails db:prepare
-
-      - name: Install system deps for pg/psych/ImageMagick
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y --no-install-recommends \
-            libpq-dev \
-            pkg-config \
-            libyaml-dev \
-            imagemagick
 
       - name: Show ImageMagick version
         run: |
