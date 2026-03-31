@@ -68,6 +68,7 @@ app/
       booths_controller.rb
       cast_invitations_controller.rb
       casts_controller.rb
+      comment_reports_controller.rb
       current_stores_controller.rb
       drink_items_controller.rb
       metrics_controller.rb
@@ -277,6 +278,8 @@ app/
       cast_invitations/
         index.html.erb
       casts/
+        index.html.erb
+      comment_reports/
         index.html.erb
       drink_items/
         _card.html.erb
