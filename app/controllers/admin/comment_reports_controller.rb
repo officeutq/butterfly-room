@@ -50,21 +50,25 @@ module Admin
     end
 
     def aggregated_reports_for_current_store
+      pending_status = quoted_comment_report_status(:pending)
+      resolved_status = quoted_comment_report_status(:resolved)
+      rejected_status = quoted_comment_report_status(:rejected)
+
       CommentReport
         .where(store_id: current_store.id)
         .group(:comment_id)
         .select(
           :comment_id,
-          "COUNT(*) AS reports_count",
-          "SUM(CASE WHEN status = #{CommentReport.statuses[:pending]} THEN 1 ELSE 0 END) AS pending_count",
-          "SUM(CASE WHEN status = #{CommentReport.statuses[:resolved]} THEN 1 ELSE 0 END) AS resolved_count",
-          "SUM(CASE WHEN status = #{CommentReport.statuses[:rejected]} THEN 1 ELSE 0 END) AS rejected_count",
-          "MAX(created_at) AS latest_reported_at"
+          Arel.sql("COUNT(*) AS reports_count"),
+          Arel.sql("SUM(CASE WHEN status = #{pending_status} THEN 1 ELSE 0 END) AS pending_count"),
+          Arel.sql("SUM(CASE WHEN status = #{resolved_status} THEN 1 ELSE 0 END) AS resolved_count"),
+          Arel.sql("SUM(CASE WHEN status = #{rejected_status} THEN 1 ELSE 0 END) AS rejected_count"),
+          Arel.sql("MAX(created_at) AS latest_reported_at")
         )
         .order(
           Arel.sql(<<~SQL.squish)
             CASE
-              WHEN SUM(CASE WHEN status = #{CommentReport.statuses[:pending]} THEN 1 ELSE 0 END) > 0 THEN 0
+              WHEN SUM(CASE WHEN status = #{pending_status} THEN 1 ELSE 0 END) > 0 THEN 0
               ELSE 1
             END ASC,
             MAX(created_at) DESC
@@ -80,6 +84,10 @@ module Admin
             latest_reported_at: row.read_attribute(:latest_reported_at)
           )
         end
+    end
+
+    def quoted_comment_report_status(status_key)
+      CommentReport.connection.quote(CommentReport.statuses.fetch(status_key))
     end
 
     def preload_comments(comment_ids)
