@@ -1,0 +1,8 @@
+builds:
+  '1':
+    issues:
+    - 1
+    - 2
+  '2':
+    issues:
+    - 3
