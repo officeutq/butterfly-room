@@ -142,6 +142,7 @@ app/
     admin/
       metrics_helper.rb
     application_helper.rb
+    build_helper.rb
     drink_items_helper.rb
   javascript/
     controllers/

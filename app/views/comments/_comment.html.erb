@@ -1,13 +1,49 @@
-<div class="comment comment-item">
+<div
+  id="comment_<%= comment.id %>"
+  class="comment comment-item
+    <%= "comment-from-broadcaster" if comment.user_id == comment.stream_session.started_by_cast_user_id %>">
   <% case comment.kind %>
   <% when Comment::KIND_CHAT %>
     <div class="comment-avatar">
       <%= user_avatar_badge(comment.user, size: 32, klass: "comment-avatar-badge") %>
     </div>
 
-    <div class="comment-text">
-      <span class="comment-author"><%= display_name_or_anonymous(comment.user) %></span>
-      <span class="comment-body"><%= comment.body %></span>
+    <div class="comment-main">
+      <div class="comment-text">
+        <span class="comment-author"><%= display_name_or_anonymous(comment.user) %></span>
+        <span class="comment-body"><%= comment.body %></span>
+      </div>
+
+      <div class="comment-actions dropdown">
+        <button
+          class="btn btn-sm btn-link comment-actions-toggle"
+          type="button"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+          aria-label="コメント操作">
+          <i class="bi bi-three-dots"></i>
+        </button>
+
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li class="comment-menu-item comment-menu-item-cast-normal">
+            <button type="button" class="dropdown-item" disabled>
+              このコメントを非表示
+            </button>
+          </li>
+
+          <li class="comment-menu-item comment-menu-item-cast-hidden">
+            <button type="button" class="dropdown-item" disabled>
+              非表示を解除
+            </button>
+          </li>
+
+          <li class="comment-menu-item comment-menu-item-viewer-normal">
+            <button type="button" class="dropdown-item" disabled>
+              このコメントを通報する
+            </button>
+          </li>
+        </ul>
+      </div>
     </div>
 
   <% when Comment::KIND_DRINK %>
@@ -19,18 +55,20 @@
       <%= user_avatar_badge(comment.user, size: 32, klass: "comment-avatar-badge") %>
     </div>
 
-    <div class="comment-text">
-      <div class="comment-line">
-        <span class="comment-author"><%= display_name_or_anonymous(comment.user) %></span>
+    <div class="comment-main">
+      <div class="comment-text">
+        <div class="comment-line">
+          <span class="comment-author"><%= display_name_or_anonymous(comment.user) %></span>
 
-        <% if drink_item.present? %>
-          <span class="comment-body d-inline-flex align-items-center gap-1">
-            <%= drink_item_display(drink_item, icon_size: 32, klass: "comment-drink-item-display") %>
-            を送りました
-          </span>
-        <% else %>
-          <span class="comment-body">ドリンクを送りました</span>
-        <% end %>
+          <% if drink_item.present? %>
+            <span class="comment-body d-inline-flex align-items-center gap-1">
+              <%= drink_item_display(drink_item, icon_size: 32, klass: "comment-drink-item-display") %>
+              を送りました
+            </span>
+          <% else %>
+            <span class="comment-body">ドリンクを送りました</span>
+          <% end %>
+        </div>
       </div>
     </div>
 
@@ -43,18 +81,20 @@
       <%= user_avatar_badge(comment.user, size: 32, klass: "comment-avatar-badge") %>
     </div>
 
-    <div class="comment-text">
-      <div class="comment-line">
-        <span class="comment-author"><%= display_name_or_anonymous(comment.user) %></span>
+    <div class="comment-main">
+      <div class="comment-text">
+        <div class="comment-line">
+          <span class="comment-author"><%= display_name_or_anonymous(comment.user) %></span>
 
-        <% if drink_item.present? %>
-          <span class="comment-body d-inline-flex align-items-center gap-1">
-            <%= drink_item_display(drink_item, icon_size: 32, klass: "comment-drink-item-display") %>
-            を消化しました
-          </span>
-        <% else %>
-          <span class="comment-body">ドリンクを消化しました</span>
-        <% end %>
+          <% if drink_item.present? %>
+            <span class="comment-body d-inline-flex align-items-center gap-1">
+              <%= drink_item_display(drink_item, icon_size: 32, klass: "comment-drink-item-display") %>
+              を消化しました
+            </span>
+          <% else %>
+            <span class="comment-body">ドリンクを消化しました</span>
+          <% end %>
+        </div>
       </div>
     </div>
 
@@ -63,11 +103,13 @@
       <%= user_avatar_badge(comment.user, size: 32, klass: "comment-avatar-badge") %>
     </div>
 
-    <div class="comment-text">
-      <span class="comment-author"><%= display_name_or_anonymous(comment.user) %></span>
-      <span class="comment-body">
-        <%= comment.body.presence || "イベントが発生しました" %>
-      </span>
+    <div class="comment-main">
+      <div class="comment-text">
+        <span class="comment-author"><%= display_name_or_anonymous(comment.user) %></span>
+        <span class="comment-body">
+          <%= comment.body.presence || "イベントが発生しました" %>
+        </span>
+      </div>
     </div>
   <% end %>
 </div>
