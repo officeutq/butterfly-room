@@ -214,6 +214,9 @@ app/
   queries/
     cast_metrics_query.rb
   services/
+    admin/
+      comment_reports/
+        reject_service.rb
     authorization/
       application_policy.rb
       booth_policy.rb
@@ -280,6 +283,7 @@ app/
       casts/
         index.html.erb
       comment_reports/
+        _card.html.erb
         index.html.erb
       drink_items/
         _card.html.erb

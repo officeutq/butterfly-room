@@ -42,6 +42,34 @@ module Admin
       end
     end
 
+    def ban
+      @include_resolved = params[:with_resolved].present?
+      comment = find_comment_for_current_store!
+
+      Admin::CommentReports::BanService.new(
+        comment: comment,
+        actor: current_user,
+        current_store: current_store
+      ).call
+
+      related_comment_ids = report_comment_ids_for_reported_user(comment.user_id)
+
+      respond_to do |format|
+        format.turbo_stream do
+          if @include_resolved
+            render turbo_stream: turbo_streams_for_reported_user_replace(related_comment_ids)
+          else
+            render turbo_stream: turbo_streams_for_reported_user_remove(related_comment_ids)
+          end
+        end
+
+        format.html do
+          redirect_to admin_comment_reports_path(with_resolved: params[:with_resolved].presence),
+                      notice: "BANしました"
+        end
+      end
+    end
+
     private
 
     ReportAggregate = Struct.new(
@@ -65,22 +93,21 @@ module Admin
     def report_cards_for_current_store
       aggregates = aggregated_reports_for_current_store
       comments_by_id = preload_comments(aggregates.map(&:comment_id))
+      banned_user_ids = banned_customer_user_ids(comments_by_id.values)
 
       cards =
         aggregates.filter_map do |aggregate|
-          comment = comments_by_id[aggregate.comment_id]
-          next if comment.blank?
-
-          {
-            comment: comment,
-            reports_count: aggregate.reports_count.to_i,
-            status_key: aggregate.status_key,
-            latest_reported_at: aggregate.latest_reported_at
-          }
+          build_report_card_from(
+            aggregate: aggregate,
+            comment: comments_by_id[aggregate.comment_id],
+            banned_user_ids: banned_user_ids
+          )
         end
 
       cards.select do |card|
-        @include_resolved || card[:status_key] == "pending"
+        next true if @include_resolved
+
+        card[:status_key] == "pending" && !card[:banned]
       end
     end
 
@@ -91,12 +118,64 @@ module Admin
       comment = preload_comments([ comment_id ])[comment_id]
       return nil if comment.blank?
 
+      banned_user_ids = banned_customer_user_ids([ comment ])
+
+      build_report_card_from(
+        aggregate: aggregate,
+        comment: comment,
+        banned_user_ids: banned_user_ids
+      )
+    end
+
+    def build_report_card_from(aggregate:, comment:, banned_user_ids:)
+      return nil if comment.blank?
+
+      reported_user = comment.user
+      banned = banned_user_ids.include?(reported_user.id)
+
       {
         comment: comment,
         reports_count: aggregate.reports_count.to_i,
         status_key: aggregate.status_key,
-        latest_reported_at: aggregate.latest_reported_at
+        latest_reported_at: aggregate.latest_reported_at,
+        banned: banned,
+        reportable_to_ops: !reported_user.customer?
       }
+    end
+
+    def banned_customer_user_ids(comments)
+      user_ids = comments.filter_map { |comment| comment.user_id }.uniq
+      return [] if user_ids.empty?
+
+      current_store.store_bans.where(customer_user_id: user_ids).pluck(:customer_user_id)
+    end
+
+    def report_comment_ids_for_reported_user(reported_user_id)
+      CommentReport
+        .where(store_id: current_store.id, reported_user_id: reported_user_id)
+        .distinct
+        .pluck(:comment_id)
+    end
+
+    def turbo_streams_for_reported_user_replace(comment_ids)
+      comment_ids.filter_map do |comment_id|
+        card = build_report_card(comment_id)
+        next if card.blank?
+
+        turbo_stream.replace(
+          helpers.dom_id(card[:comment], :report_card),
+          partial: "admin/comment_reports/card",
+          locals: { card: card }
+        )
+      end
+    end
+
+    def turbo_streams_for_reported_user_remove(comment_ids)
+      comment_ids.map do |comment_id|
+        turbo_stream.remove(
+          helpers.dom_id(Comment.new(id: comment_id), :report_card)
+        )
+      end
     end
 
     def find_comment_for_current_store!

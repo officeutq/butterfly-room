@@ -146,6 +146,7 @@ Rails.application.routes.draw do
     resources :store_bans, only: %i[index create destroy]
     resources :comment_reports, only: %i[index] do
       post :reject, on: :member
+      post :ban, on: :member
     end
 
     resources :casts, only: %i[index destroy]
