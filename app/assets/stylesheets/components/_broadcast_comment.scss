@@ -290,6 +290,11 @@ body.viewer-layout .comment-item.comment-from-broadcaster .comment-actions {
   display: none;
 }
 
+/* 視聴者画面: hidden コメントには通報を出さない */
+body.viewer-layout .comment-item.is-hidden-comment .comment-actions {
+  display: none;
+}
+
 .comment-avatar-hidden {
   width: 32px;
   height: 32px;
