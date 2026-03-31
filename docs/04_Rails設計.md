@@ -180,6 +180,7 @@ app/
     booth.rb
     booth_cast.rb
     comment.rb
+    comment_report.rb
     drink_item.rb
     drink_order.rb
     effect.rb
@@ -255,6 +256,7 @@ app/
     stream_sessions/
       comments/
         create_service.rb
+        report_service.rb
       end_service.rb
       force_end_service.rb
       start_service.rb
