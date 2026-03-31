@@ -15,76 +15,8 @@
 <% else %>
   <div class="row g-4">
     <% @report_cards.each do |card| %>
-      <% comment = card[:comment] %>
-      <% stream_session = comment.stream_session %>
-      <% booth = stream_session&.booth %>
-      <% broadcaster = stream_session&.started_by_cast_user %>
-      <% reported_user = comment.user %>
-      <% title_display = stream_session&.title.presence || booth&.name.presence || "(no name)" %>
-      <% status_key = card[:status_key] %>
-
       <div class="col-12 col-lg-6 col-xxl-4">
-        <div class="card h-100" data-bs-theme="light">
-          <div class="card-body d-flex flex-column">
-            <div class="d-flex justify-content-between gap-3">
-              <div class="small text-muted flex-shrink-0">配信名</div>
-              <div class="text-end"><%= title_display %></div>
-            </div>
-
-            <div class="mt-2 d-flex justify-content-between gap-3">
-              <div class="small text-muted flex-shrink-0">配信者</div>
-              <div class="d-flex align-items-center justify-content-end gap-2 text-end">
-                <%= user_avatar_badge(broadcaster, size: 32) %>
-                <span><%= display_name_or_anonymous(broadcaster) %></span>
-              </div>
-            </div>
-
-            <div class="mt-2 d-flex justify-content-between gap-3">
-              <div class="small text-muted flex-shrink-0">通報されたユーザー</div>
-              <div class="d-flex align-items-center justify-content-end gap-2 text-end">
-                <%= user_avatar_badge(reported_user, size: 32) %>
-                <span><%= display_name_or_anonymous(reported_user) %></span>
-              </div>
-            </div>
-
-            <div class="mt-2 d-flex justify-content-between gap-3">
-              <div class="small text-muted flex-shrink-0">コメント日時</div>
-              <div class="text-end"><%= comment.created_at.strftime("%Y/%m/%d %H:%M") %></div>
-            </div>
-
-            <div class="mt-2 d-flex justify-content-between gap-3">
-              <div class="small text-muted flex-shrink-0">通報数</div>
-              <div class="text-end"><%= "#{card[:reports_count]}件" %></div>
-            </div>
-
-            <div class="mt-3">
-              <div class="small text-muted mb-1">コメント本文</div>
-              <div class="border rounded px-3 py-2 bg-body-tertiary overflow-auto text-nowrap">
-                <%= comment.body.presence || "（本文なし）" %>
-              </div>
-            </div>
-
-            <div class="mt-auto pt-3 d-flex justify-content-between align-items-center gap-2 flex-wrap">
-              <div>
-                <% case status_key %>
-                <% when "pending" %>
-                  <span class="badge text-bg-warning">未対応</span>
-                <% when "resolved" %>
-                  <span class="badge text-bg-success">対応済み</span>
-                <% when "rejected" %>
-                  <span class="badge text-bg-secondary">却下</span>
-                <% else %>
-                  <span class="badge text-bg-dark">状態混在</span>
-                <% end %>
-              </div>
-
-              <div class="d-flex gap-2 flex-wrap justify-content-end">
-                <button type="button" class="btn btn-sm btn-outline-danger" disabled>BAN</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" disabled>却下</button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <%= render "card", card: card %>
       </div>
     <% end %>
   </div>

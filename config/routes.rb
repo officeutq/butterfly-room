@@ -144,7 +144,9 @@ Rails.application.routes.draw do
 
     resources :drink_items, only: %i[index create update destroy]
     resources :store_bans, only: %i[index create destroy]
-    resources :comment_reports, only: %i[index]
+    resources :comment_reports, only: %i[index] do
+      post :reject, on: :member
+    end
 
     resources :casts, only: %i[index destroy]
     resources :cast_invitations, only: %i[index create]
