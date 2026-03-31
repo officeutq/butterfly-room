@@ -2,9 +2,9 @@
 
 <div class="mb-4 d-flex gap-2 align-items-center flex-wrap">
   <% if @include_resolved %>
-    <%= link_to "未対応のみ表示", admin_comment_reports_path, class: "btn btn-outline-secondary" %>
+    <%= link_to "対応待ちのみ表示", admin_comment_reports_path, class: "btn btn-outline-secondary" %>
   <% else %>
-    <%= link_to "対応済みも表示", admin_comment_reports_path(with_resolved: 1), class: "btn btn-outline-secondary" %>
+    <%= link_to "全件表示", admin_comment_reports_path(with_resolved: 1), class: "btn btn-outline-secondary" %>
   <% end %>
 </div>
 
