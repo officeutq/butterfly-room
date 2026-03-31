@@ -33,6 +33,36 @@ class Comment < ApplicationRecord
     kind == KIND_CHAT
   end
 
+  def hidden?
+    return false unless chat?
+
+    metadata_hash["hidden"] == true || metadata_hash[:hidden] == true
+  end
+
+  def hide_by!(user)
+    raise ArgumentError, "chat comment only" unless chat?
+
+    update!(
+      metadata: metadata_hash.merge(
+        "hidden" => true,
+        "hidden_at" => Time.current.iso8601,
+        "hidden_by_user_id" => user.id
+      )
+    )
+  end
+
+  def unhide!
+    raise ArgumentError, "chat comment only" unless chat?
+
+    update!(
+      metadata: metadata_hash.merge(
+        "hidden" => false,
+        "hidden_at" => nil,
+        "hidden_by_user_id" => nil
+      )
+    )
+  end
+
   def metadata_hash
     metadata.is_a?(Hash) ? metadata : {}
   end

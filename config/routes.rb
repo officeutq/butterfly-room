@@ -71,7 +71,13 @@ Rails.application.routes.draw do
   end
 
   resources :stream_sessions, only: [] do
-    resources :comments, only: %i[create], module: :stream_sessions
+    resources :comments, only: %i[create], module: :stream_sessions do
+      member do
+        patch :hide
+        patch :unhide
+      end
+    end
+
     resources :drink_orders, only: %i[create], module: :stream_sessions
     resources :ivs_participant_tokens, only: %i[create], module: :stream_sessions
 
