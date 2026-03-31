@@ -19,6 +19,8 @@ class Comment < ApplicationRecord
   belongs_to :booth
   belongs_to :user
 
+  has_many :comment_reports, dependent: :restrict_with_error
+
   scope :alive, -> { where(deleted_at: nil) }
 
   before_validation :normalize_kind

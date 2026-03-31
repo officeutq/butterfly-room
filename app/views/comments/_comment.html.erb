@@ -57,9 +57,10 @@
         </li>
 
         <li class="comment-menu-item comment-menu-item-viewer-normal">
-          <button type="button" class="dropdown-item" disabled>
-            このコメントを通報する
-          </button>
+          <%= button_to "このコメントを通報する",
+                        report_stream_session_comment_path(comment.stream_session, comment),
+                        method: :post,
+                        class: "dropdown-item" %>
         </li>
       </ul>
     </div>
