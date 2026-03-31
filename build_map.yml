@@ -7,3 +7,6 @@ builds:
     issues:
     - 3
     - 574
+  '3':
+    issues:
+    - 566
