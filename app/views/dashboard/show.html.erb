@@ -214,6 +214,30 @@
 
       <div class="col-12 col-md-6 col-xl-4">
         <% if store.present? %>
+          <%= link_to admin_comment_reports_path, class: "text-decoration-none" do %>
+            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
+              <div class="card-body">
+                <h5 class="card-title mb-2">通報一覧</h5>
+                <p class="card-text mb-0">コメント通報の確認を行います</p>
+              </div>
+            </div>
+          <% end %>
+        <% else %>
+          <%= link_to select_modal_admin_stores_path(return_to: admin_comment_reports_path),
+                      data: { turbo_frame: "modal" },
+                      class: "text-decoration-none" do %>
+            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
+              <div class="card-body">
+                <h5 class="card-title mb-2">通報一覧</h5>
+                <p class="card-text mb-0">コメント通報の確認を行います</p>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+
+      <div class="col-12 col-md-6 col-xl-4">
+        <% if store.present? %>
           <%= link_to admin_store_bans_path, class: "text-decoration-none" do %>
             <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
               <div class="card-body">
