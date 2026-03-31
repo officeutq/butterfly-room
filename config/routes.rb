@@ -75,6 +75,7 @@ Rails.application.routes.draw do
       member do
         patch :hide
         patch :unhide
+        post :report
       end
     end
 

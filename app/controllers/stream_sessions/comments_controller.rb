@@ -6,7 +6,7 @@ module StreamSessions
 
     before_action :authenticate_user!
     before_action :set_stream_session
-    before_action :set_comment, only: %i[hide unhide]
+    before_action :set_comment, only: %i[hide unhide report]
     before_action :reject_banned_customer_for_stream_session!, only: %i[create]
     before_action :ensure_comment_moderator!, only: %i[hide unhide]
 
@@ -40,6 +40,46 @@ module StreamSessions
       render_comment_form_error(message, status: :unprocessable_entity)
     rescue ActionController::ParameterMissing, KeyError
       render_comment_form_error("入力が不正です", status: :unprocessable_entity)
+    end
+
+    def report
+      StreamSessions::Comments::ReportService.new(
+        comment: @comment,
+        reporter_user: current_user
+      ).call
+
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.append(
+            "flash_inner",
+            partial: "shared/flash_message",
+            locals: { level: "success", message: "通報しました" }
+          )
+        end
+        format.html { redirect_back fallback_location: root_path, notice: "通報しました", status: :see_other }
+      end
+    rescue StreamSessions::Comments::ReportService::NotAllowedError
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.append(
+            "flash_inner",
+            partial: "shared/flash_message",
+            locals: { level: "danger", message: "このコメントは通報できません" }
+          ), status: :forbidden
+        end
+        format.html { redirect_back fallback_location: root_path, alert: "このコメントは通報できません", status: :see_other }
+      end
+    rescue StreamSessions::Comments::ReportService::AlreadyReportedError
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.append(
+            "flash_inner",
+            partial: "shared/flash_message",
+            locals: { level: "danger", message: "このコメントはすでに通報済みです" }
+          ), status: :unprocessable_entity
+        end
+        format.html { redirect_back fallback_location: root_path, alert: "このコメントはすでに通報済みです", status: :see_other }
+      end
     end
 
     def hide

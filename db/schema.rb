@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_25_023115) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_31_074213) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -69,6 +69,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_25_023115) do
     t.index ["store_id", "archived_at"], name: "index_booths_on_store_id_and_archived_at"
     t.index ["store_id", "status"], name: "index_booths_on_store_id_and_status"
     t.index ["store_id"], name: "index_booths_on_store_id"
+  end
+
+  create_table "comment_reports", force: :cascade do |t|
+    t.bigint "booth_id", null: false
+    t.bigint "comment_id", null: false
+    t.datetime "created_at", null: false
+    t.bigint "reported_user_id", null: false
+    t.bigint "reporter_user_id", null: false
+    t.integer "status", default: 0, null: false
+    t.bigint "store_id", null: false
+    t.bigint "stream_session_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["booth_id"], name: "index_comment_reports_on_booth_id"
+    t.index ["comment_id", "reporter_user_id"], name: "index_comment_reports_on_comment_id_and_reporter_user_id", unique: true
+    t.index ["comment_id"], name: "index_comment_reports_on_comment_id"
+    t.index ["reported_user_id"], name: "index_comment_reports_on_reported_user_id"
+    t.index ["reporter_user_id"], name: "index_comment_reports_on_reporter_user_id"
+    t.index ["store_id"], name: "index_comment_reports_on_store_id"
+    t.index ["stream_session_id"], name: "index_comment_reports_on_stream_session_id"
   end
 
   create_table "comments", force: :cascade do |t|
@@ -465,6 +484,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_25_023115) do
   add_foreign_key "booth_casts", "users", column: "cast_user_id"
   add_foreign_key "booths", "stores"
   add_foreign_key "booths", "stream_sessions", column: "current_stream_session_id"
+  add_foreign_key "comment_reports", "booths"
+  add_foreign_key "comment_reports", "comments"
+  add_foreign_key "comment_reports", "stores"
+  add_foreign_key "comment_reports", "stream_sessions"
+  add_foreign_key "comment_reports", "users", column: "reported_user_id"
+  add_foreign_key "comment_reports", "users", column: "reporter_user_id"
   add_foreign_key "comments", "booths"
   add_foreign_key "comments", "stream_sessions"
   add_foreign_key "comments", "users"
