@@ -1,0 +1,125 @@
+.booths-card {
+  overflow: hidden;
+}
+
+.booths-card[data-bs-theme="light"] {
+  color: var(--bs-body-color);
+}
+
+.booths-card-thumbnail-wrap {
+  position: relative;
+}
+
+.booths-card-thumbnail-button {
+  display: block;
+}
+
+.booths-card-thumbnail {
+  display: block;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.booths-card-thumbnail-placeholder {
+  background: var(--bs-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.booths-card-overlay-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.42) 0%,
+    rgba(0, 0, 0, 0.22) 55%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+.booths-card-overlay-live-badge {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}
+
+.booths-card-overlay-live-badge .badge {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.2);
+}
+
+.booths-card-overlay-title {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.9),
+    0 0 8px rgba(0, 0, 0, 0.55);
+}
+
+.booths-card-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.booths-card-row-main {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.booths-card-label {
+  flex: 0 0 auto;
+  color: var(--bs-secondary-color);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.booths-card-value {
+  min-width: 0;
+  flex: 0 1 auto;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.booths-card-action {
+  flex: 0 0 auto;
+}
+
+.booths-card-value-emphasis {
+  font-weight: 600;
+}
+
+.booths-card-name-button {
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+.booths-card-placeholder-btn[disabled] {
+  opacity: 0.65;
+  cursor: default;
+}

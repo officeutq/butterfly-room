@@ -1,0 +1,104 @@
+<%# locals: booth:, booth_favorited:, store_favorited: %>
+<% open_in_modal =
+     user_signed_in? && (
+       current_user.system_admin? ||
+       (current_user.store_admin? && current_user.admin_of_store?(booth.store_id))
+     ) %>
+<% primary_cast = booth.primary_cast_user %>
+<% stream_title = booth.current_stream_session&.title.to_s.strip %>
+
+<div class="card h-100 shadow-sm booths-card" data-bs-theme="light">
+  <div class="booths-card-thumbnail-wrap">
+    <%= button_to enter_booth_path(booth),
+          method: :get,
+          class: "w-100 p-0 border-0 bg-transparent text-start booths-card-thumbnail-button",
+          form: {
+            class: "d-block w-100 m-0",
+            data: (
+              (open_in_modal ? { turbo_frame: "modal" } : {})
+                .merge(turbo_confirm: enter_booth_switch_confirm_message(booth))
+            )
+          } do %>
+      <% if booth.thumbnail_image.attached? %>
+        <%= image_tag booth.thumbnail_image, class: "card-img-top booths-card-thumbnail" %>
+      <% else %>
+        <div class="booths-card-thumbnail booths-card-thumbnail-placeholder">
+          <span class="text-muted small">no thumbnail</span>
+        </div>
+      <% end %>
+    <% end %>
+
+    <% if (booth.live? || booth.away?) && stream_title.present? %>
+      <div class="booths-card-overlay-top">
+        <div class="booths-card-overlay-live-badge">
+          <%= booth_status_badge(booth) %>
+        </div>
+        <div class="booths-card-overlay-title"><%= stream_title %></div>
+      </div>
+    <% else %>
+      <div class="booths-card-overlay-top">
+        <div class="booths-card-overlay-live-badge">
+          <%= booth_status_badge(booth) %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="card-body d-flex flex-column">
+    <div class="booths-card-row">
+      <div class="booths-card-label">ブース名</div>
+
+      <div class="booths-card-value booths-card-value-emphasis">
+        <%= button_to booth.name,
+              enter_booth_path(booth),
+              method: :get,
+              class: "btn btn-link p-0 text-decoration-none text-reset align-baseline text-start fw-semibold booths-card-name-button",
+              form: {
+                class: "d-inline",
+                data: (
+                  (open_in_modal ? { turbo_frame: "modal" } : {})
+                    .merge(turbo_confirm: enter_booth_switch_confirm_message(booth))
+                )
+              } %>
+      </div>
+
+      <div class="booths-card-action">
+        <%= render "favorites/booths/button_home", booth: booth, favorited: booth_favorited %>
+      </div>
+    </div>
+
+    <div class="booths-card-row">
+      <div class="booths-card-label">所属キャスト名</div>
+
+      <div class="booths-card-value">
+        <% if primary_cast.present? %>
+          <%= display_name_or_anonymous(primary_cast) %>
+        <% else %>
+          <span class="text-muted">（未設定）</span>
+        <% end %>
+      </div>
+
+      <div class="booths-card-action">
+        <button type="button"
+                class="viewer-favorite-btn booths-card-placeholder-btn"
+                title="未実装"
+                aria-label="所属キャストお気に入り（未実装）"
+                disabled>
+          <i class="bi bi-star" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="booths-card-row">
+      <div class="booths-card-label">所属店舗名</div>
+
+      <div class="booths-card-value">
+        <%= booth.store&.name %>
+      </div>
+
+      <div class="booths-card-action">
+        <%= render "favorites/stores/button_home", store: booth.store, favorited: store_favorited %>
+      </div>
+    </div>
+  </div>
+</div>

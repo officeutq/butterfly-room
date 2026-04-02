@@ -216,6 +216,7 @@ app/
   services/
     admin/
       comment_reports/
+        ban_service.rb
         reject_service.rb
     authorization/
       application_policy.rb

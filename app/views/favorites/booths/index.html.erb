@@ -17,42 +17,15 @@
       お気に入りブースはありません。
     </div>
   <% else %>
-    <div class="list-group">
+    <div class="row row-cols-1 row-cols-md-3 g-3">
       <% @favorite_booths.each do |favorite| %>
         <% booth = favorite.booth %>
-        <div class="list-group-item">
-          <div class="d-flex justify-content-between align-items-center gap-3">
-            <div class="flex-grow-1">
-              <div class="fw-semibold">
-                <%= button_to booth.name,
-                      enter_booth_path(booth),
-                      method: :get,
-                      class: "btn btn-link p-0 text-decoration-none align-baseline",
-                      form: {
-                        class: "d-inline",
-                        data: {
-                          turbo_confirm: enter_booth_switch_confirm_message(booth)
-                        }
-                      } %>
-              </div>
-              <div class="text-muted small">
-                store: <%= booth.store&.name %>
-              </div>
-            </div>
 
-            <div class="text-end">
-              <%= button_to "開く",
-                    enter_booth_path(booth),
-                    method: :get,
-                    class: "btn btn-outline-primary btn-sm",
-                    form: {
-                      class: "d-inline",
-                      data: {
-                        turbo_confirm: enter_booth_switch_confirm_message(booth)
-                      }
-                    } %>
-            </div>
-          </div>
+        <div class="col">
+          <%= render "booths/card",
+                booth: booth,
+                booth_favorited: true,
+                store_favorited: @favorite_store_ids.include?(booth.store_id) %>
         </div>
       <% end %>
     </div>

@@ -15,4 +15,5 @@ builds:
     - 569
     - 570
   '4':
-    issues: []
+    issues:
+    - 584

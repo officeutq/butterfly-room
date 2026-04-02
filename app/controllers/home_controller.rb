@@ -85,6 +85,7 @@ class HomeController < ApplicationController
       booths
         .includes(
           :store,
+          :current_stream_session,
           { booth_casts: :cast_user },
           thumbnail_image_attachment: :blob
         )
@@ -107,9 +108,12 @@ class HomeController < ApplicationController
     if user_signed_in?
       @favorite_booth_ids =
         current_user.favorite_booths.where(booth_id: @booths.select(:id)).pluck(:booth_id).to_set
+
+      @favorite_store_ids =
+        current_user.favorite_stores.where(store_id: @booths.select(:store_id)).pluck(:store_id).to_set
     else
       @favorite_booth_ids = Set.new
+      @favorite_store_ids = Set.new
     end
-    @favorite_store_ids = Set.new
   end
 end
