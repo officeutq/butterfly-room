@@ -1,0 +1,103 @@
+.stores-card {
+  overflow: hidden;
+}
+
+.stores-card[data-bs-theme="light"] {
+  color: var(--bs-body-color);
+}
+
+.stores-card-thumbnail-wrap {
+  position: relative;
+}
+
+.stores-card-thumbnail-link {
+  display: block;
+  text-decoration: none;
+}
+
+.stores-card-thumbnail {
+  display: block;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.stores-card-thumbnail-placeholder {
+  background: var(--bs-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stores-card-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.stores-card-row + .stores-card-row {
+  margin-top: 0.5rem;
+}
+
+.stores-card-row-summary {
+  align-items: flex-start;
+}
+
+.stores-card-label {
+  flex: 0 0 auto;
+  color: var(--bs-secondary-color);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.stores-card-value {
+  min-width: 0;
+  flex: 0 1 auto;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stores-card-value-emphasis {
+  font-weight: 600;
+}
+
+.stores-card-action {
+  flex: 0 0 auto;
+}
+
+.stores-card-name-link {
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+.stores-card-summary {
+  flex: 1 1 auto;
+}
+
+.stores-card-row-split {
+  display: flex;
+  gap: 0.75rem;
+  min-width: 0;
+  width: 100%;
+  padding-bottom: 0.4rem;
+}
+
+.stores-card-split-col {
+  min-width: 0;
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stores-card-split-col .stores-card-value {
+  min-width: 0;
+  flex: 1 1 auto;
+}
