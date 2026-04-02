@@ -49,17 +49,7 @@
           <% favorited = @favorite_store_ids.include?(store.id) %>
 
           <div class="col">
-            <div class="card h-100">
-              <div class="card-body">
-                <div class="fw-semibold">
-                  <%= link_to store.name, store_path(store), class: "text-decoration-none text-reset" %>
-                </div>
-              </div>
-
-              <div class="card-footer bg-white border-0 pt-0">
-                <%= render "favorites/stores/button_home", store: store, favorited: favorited %>
-              </div>
-            </div>
+            <%= render "stores/card", store: store, favorited: favorited %>
           </div>
         <% end %>
       </div>

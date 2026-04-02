@@ -45,6 +45,7 @@ app/
     stylesheets/
       components/
         _banuba_verification.scss
+        _booths_card.scss
         _booths_index.scss
         _broadcast_comment.scss
         _broadcast_drink.scss
@@ -306,6 +307,7 @@ app/
         index.html.erb
         select_modal.html.erb
     booths/
+      _card.html.erb
       _comment_section.html.erb
       _drink_menu.html.erb
       _drink_menu_panel.html.erb

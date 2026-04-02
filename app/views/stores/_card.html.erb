@@ -1,0 +1,55 @@
+<%# locals: store:, favorited: %>
+
+<div class="card h-100 shadow-sm stores-card" data-bs-theme="light">
+  <div class="stores-card-thumbnail-wrap">
+    <%= link_to store_path(store), class: "d-block stores-card-thumbnail-link" do %>
+      <% if store.thumbnail.attached? %>
+        <%= image_tag store.thumbnail, class: "card-img-top stores-card-thumbnail" %>
+      <% else %>
+        <div class="stores-card-thumbnail stores-card-thumbnail-placeholder">
+          <span class="text-muted small">no thumbnail</span>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+
+  <div class="card-body d-flex flex-column">
+    <div class="stores-card-row">
+      <div class="stores-card-label">店舗名</div>
+
+      <div class="stores-card-value stores-card-value-emphasis">
+        <%= link_to store.name,
+              store_path(store),
+              class: "stores-card-name-link text-decoration-none text-reset" %>
+      </div>
+
+      <div class="stores-card-action">
+        <%= render "favorites/stores/button_home", store: store, favorited: favorited %>
+      </div>
+    </div>
+
+    <div class="stores-card-row-split">
+      <div class="stores-card-split-col">
+        <div class="stores-card-label">地域</div>
+        <div class="stores-card-value">
+          <%= store.area.presence || "-" %>
+        </div>
+      </div>
+
+      <div class="stores-card-split-col">
+        <div class="stores-card-label">業態</div>
+        <div class="stores-card-value">
+          <%= Store::BUSINESS_TYPE_LABELS[store.business_type&.to_sym] || "-" %>
+        </div>
+      </div>
+    </div>
+
+    <div class="stores-card-row stores-card-row-summary">
+      <div class="stores-card-label">概要</div>
+
+      <div class="stores-card-value stores-card-summary">
+        <%= store.description.presence || "-" %>
+      </div>
+    </div>
+  </div>
+</div>
