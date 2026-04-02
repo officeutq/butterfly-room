@@ -10,6 +10,7 @@ Rails.application.routes.draw do
   if Rails.env.development?
     namespace :dev do
       resource :banuba_verification, only: %i[show], controller: "banuba_verifications"
+      resource :deepar_verification, only: %i[show], controller: "deepar_verifications"
     end
   end
 

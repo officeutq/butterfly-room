@@ -1,0 +1,140 @@
+<% content_for :title, "DeepAR 検証" %>
+
+<% content_for :head do %>
+  <script
+    src="<%= @deepar_script_url %>"
+    data-turbo-track="reload">
+  </script>
+<% end %>
+
+<div class="container py-4">
+  <div class="row g-4">
+    <div class="col-12">
+      <div class="card" data-bs-theme="light">
+        <div class="card-body">
+          <h1 class="h4 mb-3">DeepAR Web SDK 検証</h1>
+
+          <p class="text-body-secondary mb-3">
+            development 限定の検証ページです。self-hosted の DeepAR SDK を
+            Rails 上で起動し、カメラ映像・effect 適用・顔追従の基本動作を確認します。
+          </p>
+
+          <div class="small text-body-secondary">
+            <div>SDK script: <code><%= @deepar_script_url %></code></div>
+            <div>Root path: <code><%= @deepar_root_path %></code></div>
+            <div>Default effect: <code><%= @deepar_default_effect_url %></code></div>
+          </div>
+
+          <% if @deepar_license_key.blank? %>
+            <div class="alert alert-danger mt-3 mb-0" role="alert">
+              DEEPAR_LICENSE_KEY が未設定です。.env を確認してください。
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-xl-8">
+      <div
+        class="card h-100"
+        data-bs-theme="light"
+        data-controller="deepar-verification"
+        data-deepar-verification-license-key-value="<%= @deepar_license_key %>"
+        data-deepar-verification-root-path-value="<%= @deepar_root_path %>"
+        data-deepar-verification-default-effect-url-value="<%= @deepar_default_effect_url %>">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span>プレビュー</span>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge text-bg-secondary" data-deepar-verification-target="state">idle</span>
+            <span class="badge text-bg-dark" data-deepar-verification-target="faceState">face: unknown</span>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div
+            class="border rounded overflow-hidden bg-dark d-flex align-items-center justify-content-center"
+            style="min-height: 480px;">
+            <div
+              data-deepar-verification-target="preview"
+              style="width: 100%; height: 480px;">
+            </div>
+          </div>
+
+          <div
+            class="text-danger small mt-3"
+            data-deepar-verification-target="error">
+          </div>
+
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <button
+              type="button"
+              class="btn btn-primary"
+              data-action="deepar-verification#start"
+              data-deepar-verification-target="startBtn">
+              起動
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-outline-secondary d-none"
+              data-action="deepar-verification#stop"
+              data-deepar-verification-target="stopBtn">
+              停止
+            </button>
+          </div>
+
+          <hr class="my-4">
+
+          <div class="fw-semibold mb-2">effect 切替</div>
+          <div class="d-flex flex-wrap gap-2">
+            <% @deepar_effect_options.each_with_index do |effect, index| %>
+              <button
+                type="button"
+                class="btn <%= index.zero? ? "btn-primary" : "btn-outline-primary" %>"
+                data-action="deepar-verification#selectEffect"
+                data-effect-url="<%= effect[:url] %>">
+                <%= effect[:label] %>
+              </button>
+            <% end %>
+          </div>
+
+          <div class="small text-body-secondary mt-3">
+            選択中 effect:
+            <code data-deepar-verification-target="effectLabel"><%= @deepar_default_effect_url %></code>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-xl-4">
+      <div class="card h-100" data-bs-theme="light">
+        <div class="card-header">確認メモ</div>
+        <div class="card-body">
+          <div class="mb-3">
+            <div class="fw-semibold">基本動作</div>
+            <ul class="mb-0">
+              <li>カメラ権限が取れる</li>
+              <li>映像が表示される</li>
+              <li>effect を切り替えると見た目が変わる</li>
+              <li>顔追従が動く</li>
+            </ul>
+          </div>
+
+          <div class="mb-3">
+            <div class="fw-semibold">安定性</div>
+            <ul class="mb-0">
+              <li>数分放置で console error が出ない</li>
+              <li>停止 → 起動 を繰り返しても壊れない</li>
+              <li>Turbo 遷移後にカメラが残らない</li>
+            </ul>
+          </div>
+
+          <div class="mb-0">
+            <div class="fw-semibold">URL</div>
+            <code><%= dev_deepar_verification_path %></code>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
