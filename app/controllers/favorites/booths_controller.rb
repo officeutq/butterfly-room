@@ -11,7 +11,14 @@ module Favorites
           .favorite_booths
           .joins(:booth)
           .merge(Booth.active)
-          .includes(booth: :store)
+          .includes(
+            booth: [
+              :store,
+              :current_stream_session,
+              { booth_casts: :cast_user },
+              { thumbnail_image_attachment: :blob }
+            ]
+          )
           .order(created_at: :desc, id: :desc)
 
       # Home と同じ「可能な範囲で予防」：customer のみ BAN store を除外
@@ -21,6 +28,13 @@ module Favorites
       end
 
       @favorite_booths = scope
+
+      @favorite_store_ids =
+        current_user
+          .favorite_stores
+          .where(store_id: @favorite_booths.select("booths.store_id"))
+          .pluck(:store_id)
+          .to_set
     end
 
     def create

@@ -24,4 +24,12 @@ class Booth < ApplicationRecord
   def primary_cast_user_id
     booth_casts.order(created_at: :desc, id: :desc).pick(:cast_user_id)
   end
+
+  def primary_cast_user
+    if booth_casts.loaded?
+      booth_casts.max_by { |booth_cast| [ booth_cast.created_at, booth_cast.id ] }&.cast_user
+    else
+      booth_casts.includes(:cast_user).order(created_at: :desc, id: :desc).first&.cast_user
+    end
+  end
 end

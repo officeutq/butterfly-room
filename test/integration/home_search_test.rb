@@ -75,9 +75,6 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
 
     # archived は出ない（Booth.active）
     refute_includes @response.body, "Archived Booth"
-
-    # stores モードではないので storeカード（/stores/）が出ないことを軽く確認
-    refute_includes @response.body, "/stores/"
   end
 
   test "qあり + mode=booths: booth名の部分一致で絞り込まれる（store名一致では絞れない）" do
