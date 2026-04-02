@@ -19,7 +19,7 @@ services:
       DATABASE_URL: postgres://postgres:postgres@db:5432/butterfly_room_development
       # Windows でファイル監視を安定させるため:
       WEB_CONCURRENCY: "0"
-      APP_HOST: localhost
+      APP_HOST: app.localhost
       APP_PORT: "3000"
       AWS_REGION: ap-northeast-1
       AWS_PROFILE: default
