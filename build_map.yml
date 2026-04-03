@@ -21,3 +21,6 @@ builds:
   '5':
     issues:
     - 528
+  '6':
+    issues:
+    - 592

@@ -1,5 +1,5 @@
 default: &default
-  build_number: 5
+  build_number: 6
 
 development:
   <<: *default
