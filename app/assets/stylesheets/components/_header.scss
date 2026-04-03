@@ -1,0 +1,70 @@
+.app-header {
+  width: 100%;
+}
+
+.app-header-inner {
+  min-height: 64px;
+  width: 100%;
+}
+
+.header-right {
+  min-width: 0;
+  white-space: nowrap;
+  flex-wrap: nowrap;
+}
+
+.header-wallet {
+  color: var(--bs-secondary-color);
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.header-trigger {
+  background: transparent;
+  border: none;
+  color: var(--bs-body-color);
+  min-width: 0;
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+.header-trigger:hover,
+.header-trigger:focus,
+.header-trigger:active,
+.show > .header-trigger {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--bs-body-color);
+  border: none;
+  box-shadow: none;
+}
+
+.header-trigger-name,
+.header-trigger-email {
+  min-width: 0;
+  vertical-align: middle;
+}
+
+.header-trigger-name {
+  max-width: 120px;
+}
+
+.header-trigger-email {
+  max-width: 180px;
+  color: var(--bs-secondary-color);
+}
+
+.header-trigger-caret {
+  font-size: 0.75rem;
+  color: var(--bs-secondary-color);
+  flex-shrink: 0;
+}
+
+.dropdown-menu .button_to {
+  margin: 0;
+}
+
+@media (max-width: 767.98px) {
+  .app-header-inner {
+    min-height: 56px;
+  }
+}

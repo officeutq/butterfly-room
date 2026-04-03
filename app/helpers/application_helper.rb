@@ -57,6 +57,22 @@ module ApplicationHelper
     content_tag(:span, label, class: "badge text-bg-secondary")
   end
 
+  def header_role_label(user)
+    return "" if user.blank?
+    return "" if user.customer?
+
+    case user.role.to_sym
+    when :cast
+      "CAST"
+    when :store_admin
+      "STORE"
+    when :system_admin
+      "ADMIN"
+    else
+      user.role.to_s.upcase
+    end
+  end
+
   def dashboard_path_for(_user)
     dashboard_path
   end

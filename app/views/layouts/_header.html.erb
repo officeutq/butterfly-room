@@ -1,121 +1,147 @@
 <%# --- Header (common) --- %>
 <header id="app_header" class="border-bottom bg-body sticky-top">
-  <div class="container app-header">
-    <div class="d-flex justify-content-between align-items-center gap-3 app-header-inner">
-      <div class="d-flex align-items-center gap-2 flex-wrap">
-        <%# 1) アプリ名（ロゴ） %>
-        <div class="fw-semibold">
-          <%= image_tag "logo.png", class: "header-logo", alt: (content_for(:title).presence || "App") %>
+  <div class="container-fluid app-header">
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center gap-3 app-header-inner">
+        <%# 左領域 %>
+        <div class="d-flex align-items-center gap-2">
+          <div class="fw-semibold">
+            <%= image_tag "logo.png", class: "header-logo", alt: (content_for(:title).presence || "App") %>
+          </div>
         </div>
 
-        <% if user_signed_in? %>
-          <%# 2) ポイント（アイコン + pt / Turbo更新維持） %>
-          <%= turbo_stream_from [current_user, :wallet] %>
-          <%= link_to new_wallet_purchase_path(return_to: request.fullpath),
-                data: { turbo_frame: "modal" },
-                class: "text-muted small text-decoration-none d-inline-flex align-items-center gap-1",
-                id: "wallet_balance" do %>
-            <%= render "wallets/balance", wallet: current_user.wallet %>
-          <% end %>
+        <%# 右領域 %>
+        <div class="d-flex align-items-center gap-2 header-right">
+          <% if user_signed_in? %>
+            <%= turbo_stream_from [current_user, :wallet] %>
 
-          <%# 3) アバター（fallback: 頭文字 / 共通ヘルパ） %>
-          <%= user_avatar_badge(current_user, size: 24) %>
+            <%= link_to new_wallet_purchase_path(return_to: request.fullpath),
+                  data: { turbo_frame: "modal" },
+                  class: "header-wallet text-decoration-none d-inline-flex align-items-center gap-1",
+                  id: "wallet_balance" do %>
+              <%= render "wallets/balance", wallet: current_user.wallet %>
+            <% end %>
 
-          <%# 4) 名前（dropdownトグル） %>
-          <div class="dropdown">
-            <button
-              class="btn btn-sm btn-link text-muted small p-0 text-decoration-none dropdown-toggle"
-              type="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false">
-              <%= display_name_or_anonymous(current_user) %>
-            </button>
+            <% unless current_user.customer? %>
+              <span class="badge text-bg-secondary">
+                <%= header_role_label(current_user) %>
+              </span>
+            <% end %>
 
-            <ul class="dropdown-menu dropdown-menu-end">
-              <%# ロールバッジ（常に表示） %>
-              <li>
-                <span class="dropdown-item-text text-muted small">
-                  <%= role_badge(current_user) %>
+            <div class="dropdown">
+              <button
+                class="btn btn-sm header-trigger d-flex align-items-center gap-2"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false">
+                <%= user_avatar_badge(current_user, size: 24) %>
+
+                <span class="d-none d-md-inline-block header-trigger-name text-truncate">
+                  <%= display_name_or_anonymous(current_user) %>
                 </span>
-              </li>
 
-              <%# e-mail（常に表示） %>
-              <li>
-                <span class="dropdown-item-text text-muted small">
+                <span class="d-none d-lg-inline-block header-trigger-email text-truncate">
                   <%= current_user.email %>
                 </span>
-              </li>
 
-              <% unless current_user.customer? %>
-                <% store = layout_current_store %>
-                <li>
-                  <span class="dropdown-item-text text-muted small">
-                    store:
-                    <% if current_user.at_least?(:store_admin) %>
-                      <%= link_to select_modal_admin_stores_path(return_to: request.fullpath),
-                            data: { turbo_frame: "modal" },
-                            class: "link-secondary link-underline-opacity-0 link-underline-opacity-100-hover" do %>
+                <i class="bi bi-chevron-down header-trigger-caret" aria-hidden="true"></i>
+              </button>
+
+              <ul class="dropdown-menu dropdown-menu-end" data-bs-theme="dark">
+                <% if current_user.customer? %>
+                  <li class="d-md-none">
+                    <span class="dropdown-item-text small">
+                      <%= display_name_or_anonymous(current_user) %>
+                    </span>
+                  </li>
+
+                  <li class="d-lg-none">
+                    <span class="dropdown-item-text small">
+                      <%= current_user.email %>
+                    </span>
+                  </li>
+
+                  <% if request.variant.present? %>
+                  <% end %>
+
+                  <%# customer: md以下では名前/メールの後に区切り線を出すが、lg以上では出さない %>
+                  <li class="d-lg-none"><hr class="dropdown-divider"></li>
+                <% else %>
+                  <li class="d-md-none">
+                    <span class="dropdown-item-text small">
+                      <%= display_name_or_anonymous(current_user) %>
+                    </span>
+                  </li>
+
+                  <li class="d-lg-none">
+                    <span class="dropdown-item-text small">
+                      <%= current_user.email %>
+                    </span>
+                  </li>
+
+                  <% store = layout_current_store %>
+                  <li>
+                    <span class="dropdown-item-text small">
+                      store:
+                      <% if current_user.at_least?(:store_admin) %>
+                        <%= link_to select_modal_admin_stores_path(return_to: request.fullpath),
+                              data: { turbo_frame: "modal" },
+                              class: "link-secondary link-underline-opacity-0 link-underline-opacity-100-hover" do %>
+                          <% if store.present? %>
+                            <strong><%= store.name.presence || "(no name)" %></strong>
+                          <% else %>
+                            <span class="text-danger">未選択</span>
+                          <% end %>
+                        <% end %>
+                      <% else %>
                         <% if store.present? %>
                           <strong><%= store.name.presence || "(no name)" %></strong>
                         <% else %>
                           <span class="text-danger">未選択</span>
                         <% end %>
                       <% end %>
-                    <% else %>
-                      <% if store.present? %>
-                        <strong><%= store.name.presence || "(no name)" %></strong>
-                      <% else %>
-                        <span class="text-danger">未選択</span>
-                      <% end %>
-                    <% end %>
-                  </span>
-                </li>
+                    </span>
+                  </li>
 
-                <% booth = layout_current_booth %>
+                  <% booth = layout_current_booth %>
+                  <li>
+                    <span class="dropdown-item-text small">
+                      booth:
+                      <%= link_to select_modal_cast_booths_path(return_to: request.fullpath),
+                            data: { turbo_frame: "modal" },
+                            class: "link-secondary link-underline-opacity-0 link-underline-opacity-100-hover" do %>
+                        <% if booth.present? %>
+                          <strong><%= booth.name.presence || "(no name)" %></strong>
+                        <% else %>
+                          <span class="text-danger">未選択</span>
+                        <% end %>
+                      <% end %>
+                    </span>
+                  </li>
+
+                  <li><hr class="dropdown-divider"></li>
+                <% end %>
+
                 <li>
-                  <span class="dropdown-item-text text-muted small">
-                    booth:
-                    <%= link_to select_modal_cast_booths_path(return_to: request.fullpath),
-                          data: { turbo_frame: "modal" },
-                          class: "link-secondary link-underline-opacity-0 link-underline-opacity-100-hover" do %>
-                      <% if booth.present? %>
-                        <strong><%= booth.name.presence || "(no name)" %></strong>
-                      <% else %>
-                        <span class="text-danger">未選択</span>
-                      <% end %>
-                    <% end %>
+                  <span class="dropdown-item-text small">
+                    <%= current_build_label %>
                   </span>
                 </li>
-              <% end %>
 
-              <li><hr class="dropdown-divider"></li>
+                <li><hr class="dropdown-divider"></li>
 
-              <li>
-                <span class="dropdown-item-text text-muted small">
-                  <%= current_build_label %>
-                </span>
-              </li>
-
-              <li><hr class="dropdown-divider"></li>
-
-              <%# ログアウト（フッターと同一実装を移植：confirm等も追加しない） %>
-              <li>
-                <%= button_to "ログアウト",
-                      destroy_user_session_path,
-                      method: :delete,
-                      class: "dropdown-item" %>
-              </li>
-            </ul>
-          </div>
-        <% else %>
-          <span class="text-muted small">未ログイン</span>
-        <% end %>
-      </div>
-
-      <div class="d-flex align-items-center gap-2">
-        <% unless user_signed_in? %>
-          <%= link_to "ログイン", new_user_session_path, class: "btn btn-sm btn-primary" %>
-        <% end %>
+                <li>
+                  <%= button_to destroy_user_session_path,
+                        method: :delete,
+                        class: "dropdown-item text-danger d-flex align-items-center gap-2" do %>
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>ログアウト</span>
+                  <% end %>
+                </li>
+              </ul>
+            </div>
+          <% end %>
+        </div>
       </div>
     </div>
   </div>
