@@ -1,88 +1,84 @@
 <%# locals: booth: %>
 
-<% primary_cast = booth.booth_casts.max_by { |bc| [bc.created_at, bc.id] }&.cast_user %>
-<% cast_name = primary_cast&.display_name.presence || "ななしさん" %>
+<% primary_cast = booth.primary_cast_user %>
 
 <div class="viewer-waiting-shell">
-  <div class="viewer-waiting-panel" data-bs-theme="light">
+  <div class="viewer-waiting-thumbnail-block">
     <div class="viewer-waiting-thumbnail-wrap">
       <% if booth.thumbnail_image.attached? %>
-        <%= image_tag rails_blob_path(booth.thumbnail_image, only_path: true), class: "viewer-waiting-thumbnail", alt: booth.name %>
+        <%= image_tag booth.thumbnail_image, class: "viewer-waiting-thumbnail", alt: booth.name %>
       <% else %>
         <div class="viewer-waiting-thumbnail-placeholder">
-          <span>no thumbnail</span>
+          <span class="text-muted small">no thumbnail</span>
         </div>
       <% end %>
     </div>
+  </div>
 
-    <div class="viewer-waiting-title-row">
-      <div class="viewer-waiting-title-main">
-        <div class="viewer-waiting-title-text"><%= booth.name %></div>
-        <div class="viewer-waiting-title-badge">
-          <%= booth_status_badge(booth) %>
-        </div>
-      </div>
+  <div class="viewer-waiting-main">
+    <div class="viewer-waiting-container">
+      <div class="viewer-waiting-meta-list">
+        <div class="viewer-waiting-meta-row">
+          <div class="viewer-waiting-meta-label">ブース名</div>
 
-      <div
-        class="viewer-waiting-favorite-anchor"
-        data-viewer-page-target="boothFavoriteAnchor"
-        aria-hidden="true"
-      ></div>
-    </div>
-
-    <div class="viewer-waiting-description">
-      <% if booth.description.present? %>
-        <div class="viewer-waiting-description-inner">
-          <%= simple_format(booth.description) %>
-        </div>
-      <% else %>
-        <div class="viewer-waiting-description-empty text-body-secondary">
-          ブース説明はまだ設定されていません。
-        </div>
-      <% end %>
-    </div>
-
-    <div class="viewer-waiting-info-card">
-      <div class="viewer-waiting-info-row">
-        <div class="viewer-waiting-info-label">所属キャスト</div>
-
-        <div class="viewer-waiting-info-value">
-          <% if primary_cast.present? %>
-            <%= link_to user_path(primary_cast), class: "viewer-waiting-cast-link text-decoration-none" do %>
-              <% if primary_cast.avatar.attached? %>
-                <%= image_tag rails_blob_path(primary_cast.avatar, only_path: true), class: "viewer-waiting-cast-avatar", alt: cast_name %>
-              <% else %>
-                <span class="viewer-waiting-cast-avatar viewer-waiting-cast-avatar-placeholder">
-                  <i class="bi bi-person-fill" aria-hidden="true"></i>
-                </span>
-              <% end %>
-
-              <span class="viewer-waiting-cast-name"><%= cast_name %></span>
-            <% end %>
-          <% else %>
-            <span class="text-body-secondary">（未設定）</span>
-          <% end %>
-        </div>
-      </div>
-
-      <div class="viewer-waiting-info-row">
-        <div class="viewer-waiting-info-label">所属店舗</div>
-
-        <div class="viewer-waiting-info-value viewer-waiting-store-line">
-          <%= link_to booth.store.name, store_path(booth.store), class: "viewer-waiting-store-link text-decoration-none" %>
+          <div class="viewer-waiting-meta-value viewer-waiting-title-text">
+            <%= booth.name %>
+          </div>
 
           <div
             class="viewer-waiting-favorite-anchor"
-            data-viewer-page-target="storeFavoriteAnchor"
+            data-viewer-page-target="boothFavoriteAnchor"
             aria-hidden="true"
           ></div>
         </div>
+
+        <div class="viewer-waiting-meta-row">
+          <div class="viewer-waiting-meta-label">所属キャスト名</div>
+
+          <div class="viewer-waiting-meta-value">
+            <% if primary_cast.present? %>
+              <%= link_to user_path(primary_cast), class: "viewer-waiting-cast-link text-decoration-none" do %>
+                <%= user_avatar_badge(primary_cast, size: 28, klass: "viewer-waiting-cast-avatar") %>
+                <span class="viewer-waiting-cast-name"><%= display_name_or_anonymous(primary_cast) %></span>
+              <% end %>
+            <% else %>
+              <span class="text-muted">（未設定）</span>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="viewer-waiting-meta-row">
+          <div class="viewer-waiting-meta-label">所属ストア名</div>
+
+          <div class="viewer-waiting-meta-value">
+            <div class="viewer-waiting-store-row">
+              <%= link_to booth.store.name,
+                    store_path(booth.store),
+                    class: "viewer-waiting-store-link text-decoration-none" %>
+
+              <div
+                class="viewer-waiting-favorite-anchor"
+                data-viewer-page-target="storeFavoriteAnchor"
+                aria-hidden="true"
+              ></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-
-    <div class="viewer-waiting-message">
-      <div class="viewer-waiting-message-title">現在配信は行われていません</div>
-      <div class="viewer-waiting-message-text">配信開始をお待ちください</div>
-    </div>
   </div>
+
+  <% if booth.description.present? %>
+    <div class="viewer-waiting-description-block">
+      <div class="viewer-waiting-container">
+        <div class="viewer-waiting-section-title">ブース説明</div>
+
+        <div class="card" data-bs-theme="light">
+          <div class="card-body viewer-waiting-description-body">
+            <%= simple_format(booth.description) %>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
 </div>
