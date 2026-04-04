@@ -13,7 +13,7 @@
 }
 
 .app-main-with-footer {
-  padding-bottom: calc(var(--app-footer-h) + 1rem);
+  padding-bottom: var(--app-footer-h);
 }
 
 .app-footer-shell {
@@ -278,10 +278,6 @@
 }
 
 @media (max-width: 575.98px) {
-  .app-main-with-footer {
-    padding-bottom: calc(var(--app-footer-h) + 0.75rem);
-  }
-
   .app-footer-nav {
     gap: 0.125rem;
     min-height: 60px;

@@ -4,7 +4,13 @@
   --live-stage-h: 0px;
   --viewer-stage-h: 0px;
   --app-header-h: 0px;
-  --app-footer-h: 0px;
+  --app-footer-h: 64px;
+}
+
+@media (max-width: 575.98px) {
+  :root {
+    --app-footer-h: 60px;
+  }
 }
 
 @import "components/layout";
