@@ -12,6 +12,170 @@
   margin: 0 auto;
 }
 
+.app-main-with-footer {
+  padding-bottom: calc(var(--app-footer-h) + 1rem);
+}
+
+.app-footer-shell {
+  width: 100%;
+}
+
+.app-footer-nav {
+  display: grid;
+  align-items: stretch;
+  gap: 0.25rem;
+  width: 100%;
+  min-width: 0;
+  min-height: 64px;
+  padding-top: 0.25rem;
+  padding-bottom: calc(0.25rem + env(safe-area-inset-bottom));
+}
+
+.app-footer-nav--4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.app-footer-nav--5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.app-footer-nav-slot {
+  min-width: 0;
+  width: 100%;
+}
+
+.app-footer-nav-slot--center {
+  position: relative;
+}
+
+.app-footer-nav-form {
+  margin: 0;
+}
+
+.app-footer-nav-form .app-footer-nav-item {
+  width: 100%;
+}
+
+.app-footer-nav-item {
+  width: 100%;
+  min-width: 0;
+  min-height: 56px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--bs-secondary-color);
+  text-decoration: none;
+  box-shadow: none;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.app-footer-nav-item:hover,
+.app-footer-nav-item:focus,
+.app-footer-nav-item:active {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--bs-body-color);
+  text-decoration: none;
+  box-shadow: none;
+}
+
+.app-footer-nav-item--live-broadcast {
+  color: #4fd17a;
+}
+
+.app-footer-nav-item--live-broadcast:hover,
+.app-footer-nav-item--live-broadcast:focus,
+.app-footer-nav-item--live-broadcast:active {
+  color: #63db8a;
+  background: rgba(79, 209, 122, 0.14);
+}
+
+.app-footer-nav-item:active {
+  transform: scale(0.98);
+}
+
+.app-footer-nav-item.is-active {
+  background: rgba(var(--bs-primary-rgb), 0.14);
+  color: var(--bs-body-color);
+}
+
+.app-footer-nav-item--placeholder {
+  cursor: default;
+  opacity: 0.92;
+}
+
+.app-footer-nav-item--placeholder:hover,
+.app-footer-nav-item--placeholder:focus,
+.app-footer-nav-item--placeholder:active {
+  background: transparent;
+  color: var(--bs-secondary-color);
+  transform: none;
+}
+
+.app-footer-nav-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.app-footer-nav-label {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 0.7rem;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-footer-nav-item--live {
+  min-height: 64px;
+  margin-top: -4px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.app-footer-nav-item--live .app-footer-nav-icon {
+  font-size: 1.45rem;
+}
+
+.app-footer-nav-item--live .app-footer-nav-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.app-footer-nav-item--live-start {
+  color: var(--bs-danger);
+}
+
+.app-footer-nav-item--live-start:hover,
+.app-footer-nav-item--live-start:focus,
+.app-footer-nav-item--live-start:active {
+  color: var(--bs-danger);
+  background: rgba(var(--bs-danger-rgb), 0.12);
+}
+
+.app-footer-nav-item--live-end {
+  color: var(--bs-primary);
+}
+
+.app-footer-nav-item--live-end:hover,
+.app-footer-nav-item--live-end:focus,
+.app-footer-nav-item--live-end:active {
+  color: var(--bs-primary);
+  background: rgba(var(--bs-primary-rgb), 0.14);
+}
+
 .referral-codes-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
@@ -114,6 +278,43 @@
 }
 
 @media (max-width: 575.98px) {
+  .app-main-with-footer {
+    padding-bottom: calc(var(--app-footer-h) + 0.75rem);
+  }
+
+  .app-footer-nav {
+    gap: 0.125rem;
+    min-height: 60px;
+    padding-top: 0.2rem;
+  }
+
+  .app-footer-nav-item {
+    min-height: 52px;
+    border-radius: 10px;
+    padding-inline: 2px;
+  }
+
+  .app-footer-nav-icon {
+    font-size: 1.1rem;
+  }
+
+  .app-footer-nav-label {
+    font-size: 0.66rem;
+  }
+
+  .app-footer-nav-item--live {
+    min-height: 60px;
+    margin-top: -3px;
+  }
+
+  .app-footer-nav-item--live .app-footer-nav-icon {
+    font-size: 1.32rem;
+  }
+
+  .app-footer-nav-item--live .app-footer-nav-label {
+    font-size: 0.68rem;
+  }
+
   .referral-code-row {
     gap: 0.5rem;
   }

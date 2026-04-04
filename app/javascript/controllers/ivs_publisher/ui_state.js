@@ -91,7 +91,11 @@ export function syncUI(ctx) {
   if (ctx.hasStartBtnTarget) {
     const normal = ctx.startBtnTarget.dataset.labelNormal || "配信開始"
     const resume = ctx.startBtnTarget.dataset.labelResume || "配信に戻る"
-    ctx.startBtnTarget.textContent = ctx._resumable ? resume : normal
+    const label = ctx.startBtnTarget.querySelector(".app-footer-nav-label")
+
+    if (label) {
+      label.textContent = ctx._resumable ? resume : normal
+    }
   }
 
   if (ctx.hasMetaPanelTarget) {

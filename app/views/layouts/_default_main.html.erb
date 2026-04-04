@@ -1,4 +1,4 @@
-<main class="flex-grow-1 pb-5">
+<main class="flex-grow-1 app-main-with-footer">
   <div class="container mt-3">
     <%# ★常時存在する flash の箱（StoreBanGuard の turbo_stream target） %>
     <div id="flash_inner">
@@ -19,45 +19,55 @@
 
 <%# --- Footer (common top-level navigation) --- %>
 <footer id="app_footer" class="border-top bg-body fixed-bottom">
-  <div class="container py-2">
-    <div class="d-flex justify-content-between align-items-center">
-      <div class="d-flex gap-3">
-        <%= link_to "ホーム", root_path, class: "btn btn-sm btn-outline-secondary" %>
-        <%= link_to "お気に入り", favorites_booths_path, class: "btn btn-sm btn-outline-secondary" %>
-      </div>
+  <div class="container-fluid app-footer-shell">
+    <div class="container">
+      <nav class="app-footer-nav app-footer-nav--5" aria-label="フッターナビゲーション">
+        <%= link_to root_path, class: footer_nav_item_classes(active: footer_home_active?) do %>
+          <i class="bi bi-house-fill app-footer-nav-icon" aria-hidden="true"></i>
+          <span class="app-footer-nav-label">ホーム</span>
+        <% end %>
 
-      <div>
-        <% if user_signed_in? && current_user.at_least?(:cast) %>
-          <% booth = layout_current_booth %>
+        <%= link_to favorites_booths_path, class: footer_nav_item_classes(active: footer_favorites_active?) do %>
+          <i class="bi bi-star-fill app-footer-nav-icon" aria-hidden="true"></i>
+          <span class="app-footer-nav-label">お気に入り</span>
+        <% end %>
 
-          <% if booth.present? %>
-            <%= button_to "配信",
-                  enter_booth_path(booth),
-                  method: :get,
-                  class: "btn btn-sm btn-primary",
-                  form: {
-                    class: "d-inline",
-                    data: { turbo_confirm: enter_booth_switch_confirm_message(booth) }
-                  } %>
-          <% else %>
-            <%= link_to "配信",
-                  select_modal_cast_booths_path(return_to_key: "booth_live"),
-                  data: { turbo_frame: "modal" },
-                  class: "btn btn-sm btn-primary" %>
+        <div class="app-footer-nav-slot app-footer-nav-slot--center">
+          <% if user_signed_in? && current_user.at_least?(:cast) %>
+            <% booth = layout_current_booth %>
+
+            <% if booth.present? %>
+              <%= button_to enter_booth_path(booth),
+                    method: :get,
+                    class: "app-footer-nav-item app-footer-nav-item--live app-footer-nav-item--live-broadcast",
+                    form: {
+                      class: "app-footer-nav-form",
+                      data: { turbo_confirm: enter_booth_switch_confirm_message(booth) }
+                    } do %>
+                <i class="bi bi-broadcast app-footer-nav-icon" aria-hidden="true"></i>
+                <span class="app-footer-nav-label">配信</span>
+              <% end %>
+            <% else %>
+              <%= link_to select_modal_cast_booths_path(return_to_key: "booth_live"),
+                    data: { turbo_frame: "modal" },
+                    class: "app-footer-nav-item app-footer-nav-item--live app-footer-nav-item--live-broadcast" do %>
+                <i class="bi bi-broadcast app-footer-nav-icon" aria-hidden="true"></i>
+                <span class="app-footer-nav-label">配信</span>
+              <% end %>
+            <% end %>
           <% end %>
-        <% end %>
-      </div>
+        </div>
 
-      <div class="d-flex gap-2 align-items-center">
-        <%= link_to "ダッシュボード", dashboard_path_for(current_user), class: "btn btn-sm btn-outline-secondary" %>
+        <div class="<%= footer_nav_item_classes(extra: 'app-footer-nav-item--placeholder') %>" aria-disabled="true">
+          <i class="bi bi-bell-fill app-footer-nav-icon" aria-hidden="true"></i>
+          <span class="app-footer-nav-label">お知らせ</span>
+        </div>
 
-        <% if user_signed_in? %>
-          <%= button_to "ログアウト",
-                destroy_user_session_path,
-                method: :delete,
-                class: "btn btn-sm btn-outline-secondary" %>
+        <%= link_to dashboard_path_for(current_user), class: footer_nav_item_classes(active: footer_dashboard_active?) do %>
+          <i class="bi bi-list app-footer-nav-icon" aria-hidden="true"></i>
+          <span class="app-footer-nav-label">ダッシュボード</span>
         <% end %>
-      </div>
+      </nav>
     </div>
   </div>
 </footer>

@@ -25,34 +25,60 @@ body.cast-live-layout #app_footer.cast-live-footer {
   right: 0;
   bottom: 0;
   z-index: 30;
-
   background: rgba(0, 0, 0, 0.35) !important;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-
   border-top-color: rgba(255, 255, 255, 0.16) !important;
 }
 
-body.cast-live-layout #app_footer.cast-live-footer .container {
-  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+body.cast-live-layout #app_footer.cast-live-footer .app-footer-shell {
+  padding-bottom: 0;
 }
 
-body.cast-live-layout #app_footer.cast-live-footer .btn-outline-secondary {
-  color: rgba(255, 255, 255, 0.92);
-  border-color: rgba(255, 255, 255, 0.32);
-  background: rgba(255, 255, 255, 0.08);
+body.cast-live-layout #app_footer.cast-live-footer .app-footer-nav-item {
+  color: rgba(255, 255, 255, 0.86);
 }
 
-body.cast-live-layout #app_footer.cast-live-footer .btn-outline-secondary:hover,
-body.cast-live-layout #app_footer.cast-live-footer .btn-outline-secondary:focus,
-body.cast-live-layout #app_footer.cast-live-footer .btn-outline-secondary:active {
+body.cast-live-layout #app_footer.cast-live-footer .app-footer-nav-item:hover,
+body.cast-live-layout #app_footer.cast-live-footer .app-footer-nav-item:focus,
+body.cast-live-layout #app_footer.cast-live-footer .app-footer-nav-item:active {
   color: rgba(255, 255, 255, 0.98);
-  border-color: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+body.cast-live-layout #app_footer.cast-live-footer .app-footer-nav-item.is-active {
+  color: rgba(255, 255, 255, 0.98);
   background: rgba(255, 255, 255, 0.16);
 }
 
-body.cast-live-layout #app_footer.cast-live-footer .button_to {
-  margin: 0;
+body.cast-live-layout #app_footer.cast-live-footer .app-footer-nav-item--placeholder,
+body.cast-live-layout #app_footer.cast-live-footer .app-footer-nav-item--placeholder:hover,
+body.cast-live-layout #app_footer.cast-live-footer .app-footer-nav-item--placeholder:focus,
+body.cast-live-layout #app_footer.cast-live-footer .app-footer-nav-item--placeholder:active {
+  color: rgba(255, 255, 255, 0.78);
+  background: transparent;
+}
+
+body.cast-live-layout #app_footer.cast-live-footer .app-footer-nav-item--live-start {
+  color: #ff6b6b;
+}
+
+body.cast-live-layout #app_footer.cast-live-footer .app-footer-nav-item--live-start:hover,
+body.cast-live-layout #app_footer.cast-live-footer .app-footer-nav-item--live-start:focus,
+body.cast-live-layout #app_footer.cast-live-footer .app-footer-nav-item--live-start:active {
+  color: #ff7b7b;
+  background: rgba(255, 107, 107, 0.16);
+}
+
+body.cast-live-layout #app_footer.cast-live-footer .app-footer-nav-item--live-end {
+  color: #66b3ff;
+}
+
+body.cast-live-layout #app_footer.cast-live-footer .app-footer-nav-item--live-end:hover,
+body.cast-live-layout #app_footer.cast-live-footer .app-footer-nav-item--live-end:focus,
+body.cast-live-layout #app_footer.cast-live-footer .app-footer-nav-item--live-end:active {
+  color: #82c0ff;
+  background: rgba(102, 179, 255, 0.16);
 }
 
 .cast-live-screen {
