@@ -36,7 +36,7 @@
           <% if user_signed_in? && current_user.at_least?(:cast) %>
             <% booth = layout_current_booth %>
 
-            <% if booth.present? %>
+            <% if booth.present? && current_user.cast? %>
               <%= button_to enter_booth_path(booth),
                     method: :get,
                     class: "app-footer-nav-item app-footer-nav-item--live app-footer-nav-item--live-broadcast",
