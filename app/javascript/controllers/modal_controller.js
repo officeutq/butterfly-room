@@ -5,9 +5,25 @@ export default class extends Controller {
   connect() {
     this.modal = null
     this._onHidden = null
+    this._redirectTimeout = null
   }
 
   open() {
+    const redirectEl = this.element.querySelector("[data-redirect-url]")
+    const redirectUrl = redirectEl?.dataset?.redirectUrl
+    const redirectDelay = Number(redirectEl?.dataset?.redirectDelay || 120)
+
+    if (redirectUrl) {
+      this._redirectTimeout = window.setTimeout(() => {
+        if (window.Turbo && typeof window.Turbo.visit === "function") {
+          window.Turbo.visit(redirectUrl)
+        } else {
+          window.location.assign(redirectUrl)
+        }
+      }, redirectDelay)
+      return
+    }
+
     const modalEl = this.element.querySelector(".modal")
     if (!modalEl) return
 
@@ -22,6 +38,8 @@ export default class extends Controller {
     })
 
     this._onHidden = () => {
+      this._clearRedirectTimeout()
+
       try { this.modal?.dispose() } catch (_) {}
       this.modal = null
       this.element.innerHTML = ""
@@ -39,6 +57,8 @@ export default class extends Controller {
   }
 
   close() {
+    this._clearRedirectTimeout()
+
     if (this.modal) {
       try {
         this.modal.hide()
@@ -54,6 +74,8 @@ export default class extends Controller {
   }
 
   disconnect() {
+    this._clearRedirectTimeout()
+
     const modalEl = this.element.querySelector(".modal")
 
     if (modalEl && this._onHidden) {
@@ -67,6 +89,13 @@ export default class extends Controller {
 
     this._onHidden = null
     this._cleanupBootstrapModalState()
+  }
+
+  _clearRedirectTimeout() {
+    if (this._redirectTimeout) {
+      window.clearTimeout(this._redirectTimeout)
+      this._redirectTimeout = null
+    }
   }
 
   _cleanupBootstrapModalState() {

@@ -1,0 +1,23 @@
+<%= turbo_frame_tag "modal",
+      data: {
+        controller: "modal",
+        action: "turbo:frame-load->modal#open"
+      } do %>
+  <div
+    data-redirect-url="<%= @redirect_path %>"
+    data-redirect-delay="120"
+    class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+    style="z-index: 2000; background: rgba(0, 0, 0, 0.35);">
+    <div class="card shadow-sm border-0" style="width: min(92vw, 360px);">
+      <div class="card-body py-4 px-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
+          <div>
+            <div class="fw-semibold">移動中</div>
+            <div class="text-muted small">画面を切り替えています…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
