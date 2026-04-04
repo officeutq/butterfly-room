@@ -15,8 +15,10 @@ module Cast
     def select_modal
       load_selectable_booths
 
-      if @booths.size == 1
-        booth = @booths.first
+      booth = @booths.find { |b| b.live? || b.away? }
+      booth ||= @booths.first if @booths.size == 1
+
+      if booth.present?
         result = ::Booths::EnterAsCastService.new(
           booth: booth,
           actor: current_user

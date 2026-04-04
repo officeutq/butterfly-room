@@ -37,6 +37,29 @@ class Cast::BoothsSelectModalTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "配信中ブースがある場合: 2件以上でも modal を出さず live に遷移" do
+    store = create_store!(name: "s")
+    live_booth = create_booth!(store: store, name: "live")
+    other_booth = create_booth!(store: store, name: "other")
+
+    cast = create_cast_with_booths!(booths: [ live_booth, other_booth ])
+    sign_in cast, scope: :user
+
+    session = StreamSessions::StartService.new(booth: live_booth, actor: cast).call
+    live_booth.update!(status: :live)
+
+    assert_no_difference "StreamSession.count" do
+      get select_modal_cast_booths_path(return_to_key: "booth_live")
+    end
+
+    assert_response :redirect
+    assert_redirected_to live_cast_booth_path(live_booth)
+
+    assert_equal live_booth.id, @request.session[:current_booth_id]
+    assert_equal store.id, @request.session[:current_store_id]
+    assert_equal session.id, live_booth.reload.current_stream_session_id
+  end
+
   test "1件: 自動選択され live に遷移" do
     store = create_store!(name: "s")
     booth = create_booth!(store: store, name: "b")
