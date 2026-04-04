@@ -4,26 +4,29 @@
 
 <%# --- Footer (viewer main) --- %>
 <footer id="app_footer" class="border-top bg-body fixed-bottom">
-  <div class="container py-2">
-    <div class="d-flex justify-content-between align-items-center">
-      <div class="d-flex gap-3">
-        <%= link_to "ホーム", root_path, class: "btn btn-sm btn-outline-secondary" %>
-        <%= link_to "お気に入り", favorites_booths_path, class: "btn btn-sm btn-outline-secondary" %>
-      </div>
-
-      <div>
-      </div>
-
-      <div class="d-flex gap-2 align-items-center">
-        <%= link_to "ダッシュボード", dashboard_path_for(current_user), class: "btn btn-sm btn-outline-secondary" %>
-
-        <% if user_signed_in? %>
-          <%= button_to "ログアウト",
-                destroy_user_session_path,
-                method: :delete,
-                class: "btn btn-sm btn-outline-secondary" %>
+  <div class="container-fluid app-footer-shell">
+    <div class="container">
+      <nav class="app-footer-nav app-footer-nav--4" aria-label="フッターナビゲーション">
+        <%= link_to root_path, class: footer_nav_item_classes(active: footer_home_active?) do %>
+          <i class="bi bi-house-fill app-footer-nav-icon" aria-hidden="true"></i>
+          <span class="app-footer-nav-label">ホーム</span>
         <% end %>
-      </div>
+
+        <%= link_to favorites_booths_path, class: footer_nav_item_classes(active: footer_favorites_active?) do %>
+          <i class="bi bi-star-fill app-footer-nav-icon" aria-hidden="true"></i>
+          <span class="app-footer-nav-label">お気に入り</span>
+        <% end %>
+
+        <div class="<%= footer_nav_item_classes(extra: 'app-footer-nav-item--placeholder') %>" aria-disabled="true">
+          <i class="bi bi-bell-fill app-footer-nav-icon" aria-hidden="true"></i>
+          <span class="app-footer-nav-label">お知らせ</span>
+        </div>
+
+        <%= link_to dashboard_path_for(current_user), class: footer_nav_item_classes(active: footer_dashboard_active?) do %>
+          <i class="bi bi-list app-footer-nav-icon" aria-hidden="true"></i>
+          <span class="app-footer-nav-label">ダッシュボード</span>
+        <% end %>
+      </nav>
     </div>
   </div>
 </footer>

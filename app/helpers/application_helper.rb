@@ -145,4 +145,20 @@ module ApplicationHelper
 
     "配信中（または離席中）のブースから切り替えます。よろしいですか？"
   end
+
+  def footer_nav_item_classes(active: false, extra: nil)
+    [ "app-footer-nav-item", ("is-active" if active), extra ].compact.join(" ")
+  end
+
+  def footer_home_active?
+    current_page?(root_path)
+  end
+
+  def footer_favorites_active?
+    controller_path.start_with?("favorites/")
+  end
+
+  def footer_dashboard_active?
+    current_page?(dashboard_path_for(current_user))
+  end
 end

@@ -1088,7 +1088,11 @@ export default class extends Controller {
     if (this.hasStartBtnTarget) {
       const normal = this.startBtnTarget.dataset.labelNormal || "配信開始"
       const resume = this.startBtnTarget.dataset.labelResume || "配信に戻る"
-      this.startBtnTarget.textContent = this._resumable ? resume : normal
+      const label = this.startBtnTarget.querySelector(".app-footer-nav-label")
+
+      if (label) {
+        label.textContent = this._resumable ? resume : normal
+      }
     }
 
     if (this.hasMetaPanelTarget) {

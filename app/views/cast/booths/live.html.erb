@@ -181,43 +181,49 @@
   </div>
 
   <footer id="app_footer" class="cast-live-footer border-top bg-white fixed-bottom">
-    <div class="container py-2">
-      <div class="d-flex justify-content-between align-items-center">
-        <div class="d-flex gap-3">
-          <%= link_to "ホーム", root_path, class: "btn btn-sm btn-outline-secondary" %>
-          <%= link_to "お気に入り", favorites_booths_path, class: "btn btn-sm btn-outline-secondary" %>
-        </div>
-
-        <div class="d-flex gap-2">
-          <button type="button"
-                  class="btn btn-sm btn-primary"
-                  data-action="ivs-publisher#startBroadcast"
-                  data-ivs-publisher-target="startBtn"
-                  data-label-normal="配信開始"
-                  data-label-resume="配信に戻る">
-            配信開始
-          </button>
-
-          <button type="button"
-                  class="btn btn-sm btn-danger d-none"
-                  data-action="ivs-publisher#endBroadcast"
-                  data-ivs-publisher-target="endBtn">
-            配信終了
-          </button>
-        </div>
-
-        <div class="d-flex gap-2 align-items-center">
-          <%= link_to "ダッシュボード",
-                dashboard_path_for(current_user),
-                class: "btn btn-sm btn-outline-secondary" %>
-
-          <% if user_signed_in? %>
-            <%= button_to "ログアウト",
-                  destroy_user_session_path,
-                  method: :delete,
-                  class: "btn btn-sm btn-outline-secondary" %>
+    <div class="container-fluid app-footer-shell">
+      <div class="container">
+        <nav class="app-footer-nav app-footer-nav--5" aria-label="配信画面フッターナビゲーション">
+          <%= link_to root_path, class: footer_nav_item_classes do %>
+            <i class="bi bi-house-fill app-footer-nav-icon" aria-hidden="true"></i>
+            <span class="app-footer-nav-label">ホーム</span>
           <% end %>
-        </div>
+
+          <%= link_to favorites_booths_path, class: footer_nav_item_classes do %>
+            <i class="bi bi-star-fill app-footer-nav-icon" aria-hidden="true"></i>
+            <span class="app-footer-nav-label">お気に入り</span>
+          <% end %>
+
+          <div class="app-footer-nav-slot app-footer-nav-slot--center">
+            <button type="button"
+                    class="app-footer-nav-item app-footer-nav-item--live app-footer-nav-item--live-start"
+                    data-action="ivs-publisher#startBroadcast"
+                    data-ivs-publisher-target="startBtn"
+                    data-label-normal="配信開始"
+                    data-label-resume="配信に戻る">
+              <i class="bi bi-record-fill app-footer-nav-icon" aria-hidden="true"></i>
+              <span class="app-footer-nav-label">配信開始</span>
+            </button>
+
+            <button type="button"
+                    class="app-footer-nav-item app-footer-nav-item--live app-footer-nav-item--live-end d-none"
+                    data-action="ivs-publisher#endBroadcast"
+                    data-ivs-publisher-target="endBtn">
+              <i class="bi bi-stop-fill app-footer-nav-icon" aria-hidden="true"></i>
+              <span class="app-footer-nav-label">配信終了</span>
+            </button>
+          </div>
+
+          <div class="<%= footer_nav_item_classes(extra: 'app-footer-nav-item--placeholder') %>" aria-disabled="true">
+            <i class="bi bi-bell-fill app-footer-nav-icon" aria-hidden="true"></i>
+            <span class="app-footer-nav-label">お知らせ</span>
+          </div>
+
+          <%= link_to dashboard_path_for(current_user), class: footer_nav_item_classes do %>
+            <i class="bi bi-list app-footer-nav-icon" aria-hidden="true"></i>
+            <span class="app-footer-nav-label">ダッシュボード</span>
+          <% end %>
+        </nav>
       </div>
     </div>
   </footer>
