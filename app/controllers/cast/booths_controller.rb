@@ -44,6 +44,13 @@ module Cast
           else
             redirect_to cast_booths_path, alert: "このブースはすでに配信中です"
           end
+        when :already_live_elsewhere
+          if turbo_frame_request?
+            flash[:alert] = "他のブースで配信中のため開始できません"
+            render_select_modal_redirect(path: cast_booths_path)
+          else
+            redirect_to cast_booths_path, alert: "他のブースで配信中のため開始できません"
+          end
         else
           if turbo_frame_request?
             flash[:alert] = "ブースを開けませんでした"

@@ -39,6 +39,8 @@ module Cast
         redirect_to resolve_redirect_path(result.booth), notice: "ブースを選択しました"
       when :occupied_by_other
         redirect_to cast_booths_path, alert: "このブースはすでに配信中です"
+      when :already_live_elsewhere
+        redirect_to cast_booths_path, alert: "他のブースで配信中のため開始できません"
       else
         redirect_to cast_booths_path, alert: "ブースを開けませんでした"
       end

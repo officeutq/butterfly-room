@@ -6,6 +6,7 @@ module StreamSessions
     class NotAuthorized < Error; end
     class NoCurrentSession < Error; end
     class InvalidTransition < Error; end
+    class AnotherBoothAlreadyLive < Error; end
 
     def initialize(booth:, actor:, to_status:)
       @booth = booth
@@ -23,6 +24,10 @@ module StreamSessions
         raise InvalidTransition, "to_status must be live or away" unless %i[live away].include?(@to_status)
 
         from = booth.status.to_sym
+
+        if @to_status == :live && another_live_booth_exists?(booth)
+          raise AnotherBoothAlreadyLive, "他のブースで配信中のため開始できません"
+        end
 
         # Issue #78 遷移
         # standby -> live（配信開始後にサーバ側でliveへ）
@@ -49,6 +54,15 @@ module StreamSessions
 
     def authorize!
       raise NotAuthorized unless @actor.at_least?(:cast)
+    end
+
+    def another_live_booth_exists?(booth)
+      Booth.active
+           .joins(:current_stream_session)
+           .where(stream_sessions: { started_by_cast_user_id: @actor.id })
+           .where(status: %i[live away])
+           .where.not(id: booth.id)
+           .exists?
     end
   end
 end

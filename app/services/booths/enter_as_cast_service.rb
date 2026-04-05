@@ -6,6 +6,7 @@ module Booths
     class NotAuthorized < Error; end
 
     Result = Struct.new(:action, :booth, :stream_session, keyword_init: true)
+    ACTION_ALREADY_LIVE_ELSEWHERE = :already_live_elsewhere
 
     def initialize(booth:, actor:)
       @booth = booth
@@ -69,6 +70,8 @@ module Booths
 
       stream_session = StreamSessions::StartService.new(booth: booth, actor: @actor).call
       Result.new(action: :redirect_live, booth: booth.reload, stream_session: stream_session)
+    rescue StreamSessions::StartService::AnotherBoothAlreadyLive
+      Result.new(action: ACTION_ALREADY_LIVE_ELSEWHERE, booth: booth, stream_session: current_stream_session)
     end
 
     def handle_standby!(booth, current_stream_session)
@@ -80,6 +83,9 @@ module Booths
 
       stream_session = StreamSessions::StartService.new(booth: booth, actor: @actor).call
       Result.new(action: :redirect_live, booth: booth.reload, stream_session: stream_session)
+    rescue StreamSessions::StartService::AnotherBoothAlreadyLive
+      booth.update!(status: :standby, current_stream_session_id: current_stream_session.id) if current_stream_session.present?
+      Result.new(action: ACTION_ALREADY_LIVE_ELSEWHERE, booth: booth, stream_session: current_stream_session)
     end
 
     def handle_live_or_away(booth, current_stream_session)

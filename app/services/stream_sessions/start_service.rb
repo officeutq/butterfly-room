@@ -7,6 +7,7 @@ module StreamSessions
     class NotAuthorized < Error; end
     class BoothStageNotBound < Error; end
     class BoothArchived < Error; end
+    class AnotherBoothAlreadyLive < Error; end
 
     def initialize(booth:, actor:)
       @booth = booth
@@ -22,6 +23,7 @@ module StreamSessions
         raise BoothArchived, "booth is archived" if booth.archived?
 
         raise BoothNotOffline, "booth is #{booth.status}" unless booth.offline?
+        raise AnotherBoothAlreadyLive, "他のブースで配信中のため開始できません" if another_live_booth_exists?(booth)
 
         raise BoothStageNotBound, "booth.ivs_stage_arn is blank" if booth.ivs_stage_arn.blank?
 
@@ -65,6 +67,15 @@ module StreamSessions
         end
 
       raise NotAuthorized, "選択できないブースです" unless allowed
+    end
+
+    def another_live_booth_exists?(booth)
+      Booth.active
+           .joins(:current_stream_session)
+           .where(stream_sessions: { started_by_cast_user_id: @actor.id })
+           .where(status: %i[live away])
+           .where.not(id: booth.id)
+           .exists?
     end
   end
 end
