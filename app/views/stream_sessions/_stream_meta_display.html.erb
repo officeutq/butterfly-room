@@ -2,6 +2,12 @@
 <% title_display = stream_session.title.presence || stream_session.booth.name %>
 
 <div class="live-meta-row viewer-meta-row">
+  <% if stream_session.booth.live? || stream_session.booth.away? %>
+    <div class="meta-live-badge">
+      <%= booth_status_badge(stream_session.booth) %>
+    </div>
+  <% end %>
+
   <!-- avatar -->
   <div class="meta-avatar">
     <%= user_avatar_badge(user, size: 28) %>
