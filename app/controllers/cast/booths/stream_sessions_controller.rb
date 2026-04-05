@@ -20,6 +20,8 @@ module Cast
           redirect_to live_cast_booth_path(result.booth), notice: "配信画面を開きました"
         when :occupied_by_other
           redirect_to cast_booths_path, alert: "このブースはすでに配信中です"
+        when :already_live_elsewhere
+          redirect_to cast_booths_path, alert: "他のブースで配信中のため開始できません"
         else
           redirect_to cast_booths_path, alert: "配信導線の開始に失敗しました"
         end

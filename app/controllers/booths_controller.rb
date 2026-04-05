@@ -60,6 +60,8 @@ class BoothsController < ApplicationController
         case result.action
         when :redirect_live
           redirect_to live_cast_booth_path(result.booth)
+        when :already_live_elsewhere
+          redirect_back fallback_location: root_path, alert: "他のブースで配信中のため開始できません"
         when :occupied_by_other
           redirect_back fallback_location: root_path, alert: "このブースはすでに配信中です"
         else
@@ -111,6 +113,8 @@ class BoothsController < ApplicationController
     case result.action
     when :redirect_live
       redirect_to live_cast_booth_path(result.booth)
+    when :already_live_elsewhere
+      redirect_back fallback_location: root_path, alert: "他のブースで配信中のため開始できません"
     when :occupied_by_other
       redirect_back fallback_location: root_path, alert: "このブースはすでに配信中です"
     else
