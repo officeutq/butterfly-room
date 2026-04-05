@@ -4,12 +4,12 @@
   .order(:created_at, :id) %>
 
 <div id="pending_drink_orders">
-  <div class="vstack gap-2">
+  <div class="vstack gap-2 pending-drink-orders-stack">
     <% if pending.empty? %>
       <div class="text-muted">未消化のドリンクはありません</div>
     <% else %>
       <% pending.each do |order| %>
-        <%= drink_item_display(order.drink_item, klass: "pending-drink-item-display") %>
+        <%= drink_item_display(order.drink_item, icon_size: 32, klass: "pending-drink-item-display") %>
       <% end %>
     <% end %>
   </div>
