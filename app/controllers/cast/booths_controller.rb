@@ -108,6 +108,10 @@ module Cast
 
       @banuba_effect_url = "/banuba/effects/beauty_base.zip"
       @banuba_effect_name = "beauty_base.zip"
+
+      @auto_resume_publish =
+        @stream_session.started_by_cast_user_id == current_user.id &&
+        (@booth.live? || @booth.away?)
     end
 
     def edit

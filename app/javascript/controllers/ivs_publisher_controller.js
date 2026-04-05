@@ -19,6 +19,7 @@ export default class extends Controller {
     "banubaSurface",
     "canvas",
     "error",
+    "errorMessage",
     "state",
     "startBtn",
     "endBtn",
@@ -49,6 +50,7 @@ export default class extends Controller {
     mirror: { type: Boolean, default: true },
     initialMode: { type: String, default: "normal" },
     initialBoothStatus: String,
+    autoResumeOnEntry: { type: Boolean, default: false },
 
     banubaClientToken: String,
     banubaSdkBaseUrl: String,
@@ -99,6 +101,7 @@ export default class extends Controller {
     this._micEnabled = true
     this._lastManualMicEnabled = true
     this._switchingVideoSource = false
+    this._autoResumeAttempted = false
 
     this._measuredVideo = {
       width: 1280,
@@ -128,9 +131,6 @@ export default class extends Controller {
     this._lastBeautyAdjustBtnVisible = null
 
     this._beforeCache = async () => {
-      if (this._broadcasting) {
-        sessionStorage.setItem(this._resumeKey(), "1")
-      }
       this.closeEffectPanel()
       this.closeBeautyPanel()
       await this.endBroadcast({ skipFinish: true })
@@ -161,6 +161,11 @@ export default class extends Controller {
 
     if (this._boothStatus === "standby") {
       this._startPreviewOnlyIfNeeded()
+      return
+    }
+
+    if (this._shouldAutoResumeOnEntry()) {
+      void this._tryAutoResumeOnEntry()
     }
   }
 
@@ -169,10 +174,6 @@ export default class extends Controller {
 
     if (window.publisher === this) {
       delete window.publisher
-    }
-
-    if (this._broadcasting) {
-      sessionStorage.setItem(this._resumeKey(), "1")
     }
 
     this.closeEffectPanel()
@@ -186,8 +187,11 @@ export default class extends Controller {
     void this._cleanupMediaAndCanvas()
   }
 
-  async startBroadcast() {
+  async startBroadcast(opts = {}) {
+    const { autoResume = false } = opts
+
     if (this._stage) return
+    if (this._state === "starting" || this._state === "joining") return
 
     if (!this.hasTokenUrlValue) {
       this._setError("スタンバイを開始してください（配信セッションがありません）。")
@@ -215,10 +219,18 @@ export default class extends Controller {
         throw new Error("IVS SDK not loaded (IVSBroadcastClient is missing)")
       }
 
-      this._banubaStageStream = this._banubaVideoTrack ? new LocalStageStream(this._banubaVideoTrack) : null
-      this._audioStageStream = this._audioTrack ? new LocalStageStream(this._audioTrack) : null
+      const shouldResumeToLive =
+        this.autoResumeOnEntryValue &&
+        (this._boothStatus === "live" || this._boothStatus === "away")
+
+      if (shouldResumeToLive) {
+        this._mode = "normal"
+      }
 
       this._applyManualMicState()
+
+      this._banubaStageStream = this._banubaVideoTrack ? new LocalStageStream(this._banubaVideoTrack) : null
+      this._audioStageStream = this._audioTrack ? new LocalStageStream(this._audioTrack) : null
 
       if (this._mode === "away") {
         this._ensureCanvasPublishTrack()
@@ -270,7 +282,13 @@ export default class extends Controller {
       this._syncBeautyPanelUI()
     } catch (e) {
       this._setState("error")
-      this._setError(this._humanizeError(e))
+
+      if (autoResume) {
+        this._setError("復帰に失敗しました。配信に戻るボタンを押して再度復帰を試してください。")
+      } else {
+        this._setError(this._humanizeError(e))
+      }
+
       this._cleanupStage()
       await this._cleanupMediaAndCanvas()
     }
@@ -320,6 +338,10 @@ export default class extends Controller {
     this._lastManualMicEnabled = !this._lastManualMicEnabled
     this._applyManualMicState()
     this._syncMicUI()
+  }
+
+  closeError() {
+    this._clearError()
   }
 
   openEffectPanel() {
@@ -633,6 +655,20 @@ export default class extends Controller {
     } finally {
       this._syncUI()
     }
+  }
+
+  _shouldAutoResumeOnEntry() {
+    if (!this.autoResumeOnEntryValue) return false
+    if (this._autoResumeAttempted) return false
+    if (this._stage || this._broadcasting) return false
+    return true
+  }
+
+  async _tryAutoResumeOnEntry() {
+    if (!this._shouldAutoResumeOnEntry()) return
+
+    this._autoResumeAttempted = true
+    await this.startBroadcast({ autoResume: true })
   }
 
   _applyBeautyConfig() {
@@ -1126,9 +1162,5 @@ export default class extends Controller {
 
   _applyCurrentMode() {
     applyCurrentMode(this)
-  }
-
-  _resumeKey() {
-    return `ivs:resume:${window.location.pathname}`
   }
 }

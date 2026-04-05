@@ -35,7 +35,7 @@
 #live_flash_layer,
 #viewer_flash_layer {
   position: absolute;
-  top: 12px;
+  top: var(--app-header-h);
   left: 50%;
   transform: translateX(-50%);
   width: min(640px, calc(100vw - 24px));

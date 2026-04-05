@@ -1,9 +1,25 @@
 export function clearError(ctx) {
-  if (ctx.hasErrorTarget) ctx.errorTarget.textContent = ""
+  if (!ctx.hasErrorTarget) return
+
+  if (ctx.hasErrorMessageTarget) {
+    ctx.errorMessageTarget.textContent = ""
+  } else {
+    ctx.errorTarget.textContent = ""
+  }
+
+  ctx.errorTarget.classList.add("d-none")
 }
 
 export function setError(ctx, msg) {
-  if (ctx.hasErrorTarget) ctx.errorTarget.textContent = msg
+  if (!ctx.hasErrorTarget) return
+
+  if (ctx.hasErrorMessageTarget) {
+    ctx.errorMessageTarget.textContent = msg
+  } else {
+    ctx.errorTarget.textContent = msg
+  }
+
+  ctx.errorTarget.classList.remove("d-none")
 }
 
 export function humanizeError(err) {
