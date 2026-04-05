@@ -99,7 +99,7 @@
 .live-overlay-main-row,
 .viewer-overlay-main-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(137px, 32vw, 280px);
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 #live_overlay .live-overlay-ui,
@@ -179,6 +179,8 @@
 .viewer-overlay-drink-slot {
   display: flex;
   align-items: flex-start;
+  justify-content: flex-end;
+  max-width: 100%;
 }
 
 .live-overlay-comment-slot,

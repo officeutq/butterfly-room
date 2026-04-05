@@ -9,7 +9,7 @@
   <% else %>
     <% head_id = pending.first.id %>
 
-    <div class="vstack gap-2">
+    <div class="vstack gap-2 pending-drink-orders-stack">
       <% pending.each do |order| %>
         <% if order.id == head_id %>
           <%= button_to consume_cast_drink_order_path(order),
@@ -19,7 +19,7 @@
           <% end %>
         <% else %>
           <div class="cast-pending-drink-order-disabled">
-            <%= drink_item_display(order.drink_item, klass: "pending-drink-item-display") %>
+            <%= drink_item_display(order.drink_item, icon_size: 32, klass: "pending-drink-item-display") %>
           </div>
         <% end %>
       <% end %>

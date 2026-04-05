@@ -52,6 +52,8 @@
   align-items: center;
   gap: 0.75rem;
   min-width: 0;
+  width: fit-content;
+  max-width: 100%;
   padding: 0 14px 0 0;
   border: 1px solid transparent;
   border-radius: 9999px;
@@ -65,13 +67,13 @@
 .drink-item-display-body {
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  min-width: max-content;
 }
 
 .drink-item-display-name {
   font-weight: 600;
   line-height: 1.2;
-  word-break: break-word;
+  white-space: nowrap;
 }
 
 .drink-item-display-points {
