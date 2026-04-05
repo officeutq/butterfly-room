@@ -21,7 +21,7 @@
       </div>
   <% else %>
     <div class="comment-avatar">
-      <%= user_avatar_badge(comment.user, size: 32, klass: "comment-avatar-badge") %>
+      <%= user_avatar_badge(comment.user, size: 30, klass: "comment-avatar-badge") %>
     </div>
 
     <div class="comment-main"> 
@@ -72,7 +72,7 @@
     <% drink_item = DrinkItem.find_by(id: drink_item_id) %>
 
     <div class="comment-avatar">
-      <%= user_avatar_badge(comment.user, size: 32, klass: "comment-avatar-badge") %>
+      <%= user_avatar_badge(comment.user, size: 30, klass: "comment-avatar-badge") %>
     </div>
 
     <div class="comment-main">
@@ -82,7 +82,7 @@
 
           <% if drink_item.present? %>
             <span class="comment-body d-inline-flex align-items-center gap-1">
-              <%= drink_item_display(drink_item, icon_size: 32, klass: "comment-drink-item-display") %>
+              <%= drink_item_display(drink_item, icon_size: 26, klass: "comment-drink-item-display") %>
               を送りました
             </span>
           <% else %>
@@ -98,7 +98,7 @@
     <% drink_item = DrinkItem.find_by(id: drink_item_id) %>
 
     <div class="comment-avatar">
-      <%= user_avatar_badge(comment.user, size: 32, klass: "comment-avatar-badge") %>
+      <%= user_avatar_badge(comment.user, size: 30, klass: "comment-avatar-badge") %>
     </div>
 
     <div class="comment-main">
@@ -108,7 +108,7 @@
 
           <% if drink_item.present? %>
             <span class="comment-body d-inline-flex align-items-center gap-1">
-              <%= drink_item_display(drink_item, icon_size: 32, klass: "comment-drink-item-display") %>
+              <%= drink_item_display(drink_item, icon_size: 26, klass: "comment-drink-item-display") %>
               を消化しました
             </span>
           <% else %>
@@ -120,7 +120,7 @@
 
   <% else %>
     <div class="comment-avatar">
-      <%= user_avatar_badge(comment.user, size: 32, klass: "comment-avatar-badge") %>
+      <%= user_avatar_badge(comment.user, size: 30, klass: "comment-avatar-badge") %>
     </div>
 
     <div class="comment-main">
