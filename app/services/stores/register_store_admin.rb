@@ -28,6 +28,8 @@ module Stores
           referral_code: rc
         )
 
+        create_default_drink_items!(store)
+
         user = User.create!(
           email: @email,
           password: @password,
@@ -43,6 +45,27 @@ module Stores
       end
 
       Result.new(store: store, user: user)
+    end
+
+    private
+
+    def create_default_drink_items!(store)
+      load_default_drink_items_attributes.each do |attrs|
+        store.drink_items.create!(
+          name: attrs.fetch("name"),
+          price_points: attrs.fetch("price_points"),
+          position: attrs.fetch("position"),
+          enabled: attrs.fetch("enabled"),
+          icon_key: attrs["icon_key"]
+        )
+      end
+    end
+
+    def load_default_drink_items_attributes
+      YAML.safe_load(
+        File.read(Rails.root.join("config/default_drink_items.yml")),
+        aliases: true
+      ).fetch(Rails.env).fetch("items")
     end
   end
 end
