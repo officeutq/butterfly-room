@@ -7,7 +7,7 @@ module Booths
 
     DEFAULT_PREFIX = "br".freeze
 
-    def initialize(booth:, ivs_client: Ivs::Client.new)
+    def initialize(booth:, ivs_client: Ivs::Client.build)
       @booth = booth
       @ivs_client = ivs_client
     end
