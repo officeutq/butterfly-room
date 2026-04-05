@@ -40,6 +40,18 @@
         <% if alert.present? %>
           <%= render "shared/flash_message", level: "danger", message: alert %>
         <% end %>
+
+        <div
+          class="alert alert-danger alert-dismissible fade show d-none mt-2"
+          role="alert"
+          data-ivs-publisher-target="error">
+          <span data-ivs-publisher-target="errorMessage"></span>
+          <button
+            type="button"
+            class="btn-close"
+            aria-label="Close"
+            data-action="ivs-publisher#closeError"></button>
+        </div>
       </div>
     </div>
 
