@@ -4,7 +4,20 @@ require "test_helper"
 
 module Stores
   class RegisterStoreAdminTest < ActiveSupport::TestCase
-    test "creates default drink_items when store registration succeeds" do
+    setup do
+      fake_ivs_client = Object.new
+      fake_ivs_client.define_singleton_method(:create_stage!) do |name:, tags: {}|
+        "arn:aws:ivs:ap-northeast-1:123456789012:stage/test-stage"
+      end
+
+      Ivs::Client.factory = ->(region:) { fake_ivs_client }
+    end
+
+    teardown do
+      Ivs::Client.reset_factory!
+    end
+
+    test "creates default drink_items and booth when store registration succeeds" do
       rc = ReferralCode.create!(
         code: "STORE-REG-OK",
         enabled: true,
@@ -20,6 +33,7 @@ module Stores
 
       store = result.store
       drink_items = store.drink_items.order(:position)
+      booths = store.booths.order(:id)
 
       assert_equal 6, drink_items.count
 
@@ -37,9 +51,15 @@ module Stores
 
       assert_equal [ "mug", "mug", "mug", "champagne", "angel", "cocktail" ],
                    drink_items.pluck(:icon_key)
+
+      assert_equal 1, booths.count
+      assert_equal "テスト店舗のブース", booths.first.name
+      assert_equal store.id, booths.first.store_id
+      assert booths.first.offline?
+      assert_equal "arn:aws:ivs:ap-northeast-1:123456789012:stage/test-stage", booths.first.ivs_stage_arn
     end
 
-    test "rolls back store, user, membership, and drink_items when default drink_item creation fails" do
+    test "rolls back store, user, membership, drink_items, and booth when default drink_item creation fails" do
       rc = ReferralCode.create!(
         code: "STORE-REG-NG",
         enabled: true,
@@ -67,9 +87,35 @@ module Stores
         invalid_items
       end
 
-      assert_no_difference [ "Store.count", "User.count", "StoreMembership.count", "DrinkItem.count" ] do
+      assert_no_difference [ "Store.count", "User.count", "StoreMembership.count", "DrinkItem.count", "Booth.count" ] do
         assert_raises ActiveRecord::RecordInvalid do
           service.call!
+        end
+      end
+    end
+
+    test "rolls back store, user, membership, drink_items, and booth when ivs stage provisioning fails" do
+      rc = ReferralCode.create!(
+        code: "STORE-REG-IVS-NG",
+        enabled: true,
+        expires_at: 1.day.from_now
+      )
+
+      fake_ivs_client = Object.new
+      fake_ivs_client.define_singleton_method(:create_stage!) do |name:, tags: {}|
+        raise Aws::Errors::ServiceError.new(nil, "ivs failed")
+      end
+
+      Ivs::Client.factory = ->(region:) { fake_ivs_client }
+
+      assert_no_difference [ "Store.count", "User.count", "StoreMembership.count", "DrinkItem.count", "Booth.count" ] do
+        assert_raises Booths::ProvisionIvsStageService::StageProvisionFailed do
+          RegisterStoreAdmin.call!(
+            store_name: "IVS失敗店舗",
+            email: "store_registration_ivs_rollback@example.com",
+            password: "password",
+            referral_code: rc.code
+          )
         end
       end
     end
