@@ -1,45 +1,29 @@
 <% if user_signed_in? %>
   <%# --- Search (Input group / GET) --- %>
   <div class="mb-3">
-    <%= form_with url: root_path, method: :get, scope: nil do |f| %>
+  <%= form_with url: root_path, method: :get, scope: nil, class: "d-flex flex-grow-1" do |f| %>
+    <div class="input-group">
+      <%= link_to "ブース",
+            root_path(mode: "booths", q: @q.presence),
+            class: ["btn", (@mode == "stores" ? "btn-outline-secondary" : "btn-secondary")] %>
+
+      <%= link_to "店舗",
+            root_path(mode: "stores", q: @q.presence),
+            class: ["btn", (@mode == "stores" ? "btn-secondary" : "btn-outline-secondary")] %>
       <%= f.hidden_field :mode, value: @mode %>
 
-      <div class="input-group">
-        <div class="btn-group">
-          <button
-            class="btn btn-outline-secondary dropdown-toggle"
-            type="button"
-            data-bs-toggle="dropdown"
-            aria-expanded="false">
-            <%= @mode == "stores" ? "店舗" : "ブース" %>
-          </button>
+      <%= f.text_field :q,
+            value: @q,
+            class: "form-control",
+            placeholder: "検索（部分一致）",
+            autocomplete: "off" %>
 
-          <ul class="dropdown-menu">
-            <li>
-              <%= link_to "ブース",
-                    root_path(mode: "booths", q: @q.presence),
-                    class: "dropdown-item" %>
-            </li>
-            <li>
-              <%= link_to "店舗",
-                    root_path(mode: "stores", q: @q.presence),
-                    class: "dropdown-item" %>
-            </li>
-          </ul>
-        </div>
-
-        <%= f.text_field :q,
-              value: @q,
-              class: "form-control",
-              placeholder: "ブース名 / ストア名で検索（部分一致）",
-              autocomplete: "off" %>
-
-        <button class="btn btn-primary" type="submit" aria-label="検索">
-          <i class="bi bi-search"></i>
-        </button>
-      </div>
-    <% end %>
+      <button class="btn btn-primary" type="submit" aria-label="検索">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
   </div>
+  <% end %>
 
   <%# --- Results (cards) --- %>
   <% if @mode == "stores" %>
