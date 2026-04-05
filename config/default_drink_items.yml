@@ -1,0 +1,46 @@
+default: &default
+  items:
+    - name: "ドリンク（大）"
+      price_points: 5000
+      position: 1
+      enabled: true
+      icon_key: "mug"
+
+    - name: "ドリンク（中）"
+      price_points: 3000
+      position: 2
+      enabled: true
+      icon_key: "mug"
+
+    - name: "ドリンク（小）"
+      price_points: 1000
+      position: 3
+      enabled: true
+      icon_key: "mug"
+
+    - name: "オリジナルシャンパン"
+      price_points: 30000
+      position: 4
+      enabled: true
+      icon_key: "champagne"
+
+    - name: "エンジェル"
+      price_points: 150000
+      position: 5
+      enabled: true
+      icon_key: "angel"
+
+    - name: "ショット"
+      price_points: 1000
+      position: 6
+      enabled: true
+      icon_key: "cocktail"
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+
+production:
+  <<: *default
