@@ -179,18 +179,18 @@ body.viewer-layout.viewer-keyboard-open .viewer-comment-panel #comment_form .btn
 }
 
 .comment-avatar {
-  width: 32px;
-  height: 32px;
-  flex: 0 0 32px;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
   display: flex;
   align-items: flex-start;
   justify-content: center;
 }
 
 .comment-avatar-badge {
-  width: 32px !important;
-  height: 32px !important;
-  flex: 0 0 32px;
+  width: 30px !important;
+  height: 30px !important;
+  flex: 0 0 30px;
   object-fit: cover;
 }
 
@@ -278,6 +278,14 @@ body.viewer-layout .comment-item.is-hidden-comment .comment-menu-item-viewer-nor
   opacity: 0.8;
 }
 
+.comment-drink-item-display .drink-item-display-name {
+  font-size: 0.7rem;
+}
+
+.comment-drink-item-display .drink-item-display-points {
+  font-size: 0.7rem;
+}
+
 .live-comment-list .comment-drink-item-display,
 .live-comment-list .comment-drink-item-display *,
 .viewer-comment-list .comment-drink-item-display,
@@ -296,8 +304,8 @@ body.viewer-layout .comment-item.is-hidden-comment .comment-actions {
 }
 
 .comment-avatar-hidden {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 9999px;
   display: flex;
   align-items: center;
