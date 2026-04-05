@@ -80,6 +80,7 @@
   grid-template-rows:
     minmax(40px, 40px)
     minmax(0px, 1fr)
+    var(--overlay-view-row-h)
     minmax(0px, 1fr);
 
   overflow: hidden;
@@ -99,6 +100,18 @@
 .viewer-overlay-main-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) clamp(137px, 32vw, 280px);
+}
+
+#live_overlay .live-overlay-ui,
+#viewer_overlay .viewer-overlay-ui {
+  --overlay-view-row-h: 220px;
+}
+
+@media (pointer: coarse) and (max-width: 932px) and (orientation: landscape) {
+  #live_overlay .live-overlay-ui,
+  #viewer_overlay .viewer-overlay-ui {
+    --overlay-view-row-h: 0px;
+  }
 }
 
 .live-overlay-bottom-row,
