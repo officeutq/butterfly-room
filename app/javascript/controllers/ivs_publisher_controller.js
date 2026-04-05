@@ -50,6 +50,7 @@ export default class extends Controller {
     mirror: { type: Boolean, default: true },
     initialMode: { type: String, default: "normal" },
     initialBoothStatus: String,
+    autoResumeOnEntry: { type: Boolean, default: false },
 
     banubaClientToken: String,
     banubaSdkBaseUrl: String,
@@ -130,9 +131,6 @@ export default class extends Controller {
     this._lastBeautyAdjustBtnVisible = null
 
     this._beforeCache = async () => {
-      if (this._broadcasting) {
-        sessionStorage.setItem(this._resumeKey(), "1")
-      }
       this.closeEffectPanel()
       this.closeBeautyPanel()
       await this.endBroadcast({ skipFinish: true })
@@ -166,8 +164,8 @@ export default class extends Controller {
       return
     }
 
-    if (this._shouldAutoResume()) {
-      void this._tryAutoResume()
+    if (this._shouldAutoResumeOnEntry()) {
+      void this._tryAutoResumeOnEntry()
     }
   }
 
@@ -176,10 +174,6 @@ export default class extends Controller {
 
     if (window.publisher === this) {
       delete window.publisher
-    }
-
-    if (this._broadcasting) {
-      sessionStorage.setItem(this._resumeKey(), "1")
     }
 
     this.closeEffectPanel()
@@ -226,15 +220,14 @@ export default class extends Controller {
       }
 
       const shouldResumeToLive =
-        this._resumable &&
+        this.autoResumeOnEntryValue &&
         (this._boothStatus === "live" || this._boothStatus === "away")
 
       if (shouldResumeToLive) {
         this._mode = "normal"
-        this._applyManualMicState()
-      } else {
-        this._applyManualMicState()
       }
+
+      this._applyManualMicState()
 
       this._banubaStageStream = this._banubaVideoTrack ? new LocalStageStream(this._banubaVideoTrack) : null
       this._audioStageStream = this._audioTrack ? new LocalStageStream(this._audioTrack) : null
@@ -664,20 +657,17 @@ export default class extends Controller {
     }
   }
 
-  _shouldAutoResume() {
-    if (!this._resumable) return false
+  _shouldAutoResumeOnEntry() {
+    if (!this.autoResumeOnEntryValue) return false
     if (this._autoResumeAttempted) return false
     if (this._stage || this._broadcasting) return false
-
-    return sessionStorage.getItem(this._resumeKey()) === "1"
+    return true
   }
 
-  async _tryAutoResume() {
-    if (!this._shouldAutoResume()) return
+  async _tryAutoResumeOnEntry() {
+    if (!this._shouldAutoResumeOnEntry()) return
 
     this._autoResumeAttempted = true
-    sessionStorage.removeItem(this._resumeKey())
-
     await this.startBroadcast({ autoResume: true })
   }
 
@@ -1172,9 +1162,5 @@ export default class extends Controller {
 
   _applyCurrentMode() {
     applyCurrentMode(this)
-  }
-
-  _resumeKey() {
-    return `ivs:resume:${window.location.pathname}`
   }
 }
