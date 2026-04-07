@@ -13,13 +13,7 @@ class ProfilesController < ApplicationController
   def update
     @user = current_user
 
-    begin
-      success = @user.update(profile_params)
-    rescue NormalizedImageAttachment::InvalidImageAttachment => e
-      @user.assign_attributes(profile_params.except(:avatar))
-      @user.errors.add(:avatar, e.message)
-      success = false
-    end
+    success = @user.update(profile_params)
 
     if success
       unless ensure_attachment_persisted!(record: @user, attachment_name: :avatar)

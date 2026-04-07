@@ -1,0 +1,30 @@
+.profile-avatar-field {
+  .filepond--root {
+    margin-bottom: 0;
+  }
+
+  .filepond--drop-label {
+    min-height: 180px;
+  }
+
+  .filepond--label-action {
+    display: none;
+  }
+
+  .filepond--panel-root {
+    background-color: #f8f9fa;
+    border-radius: 16px;
+  }
+
+  .profile-avatar-picker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+  }
+
+  .profile-avatar-picker__icon {
+    font-size: 2rem;
+    color: #6c757d;
+  }
+}
