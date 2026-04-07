@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_31_074213) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_07_082424) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -175,6 +175,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_31_074213) do
     t.index ["store_id"], name: "index_favorite_stores_on_store_id"
     t.index ["user_id", "store_id"], name: "index_favorite_stores_on_user_id_and_store_id", unique: true
     t.index ["user_id"], name: "index_favorite_stores_on_user_id"
+  end
+
+  create_table "filepond_test_uploads", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "title"
+    t.datetime "updated_at", null: false
   end
 
   create_table "presences", force: :cascade do |t|

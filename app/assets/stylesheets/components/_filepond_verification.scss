@@ -1,0 +1,20 @@
+@import url("/vendor/filepond/filepond.min.css");
+@import url("/vendor/filepond/filepond-plugin-image-preview.min.css");
+
+.filepond-verification-page {
+  .filepond-verification-card {
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .filepond-verification-preview {
+    max-width: 360px;
+  }
+
+  .filepond--root {
+    margin-bottom: 0;
+  }
+
+  .filepond--panel-root {
+    background-color: #f8f9fa;
+  }
+}

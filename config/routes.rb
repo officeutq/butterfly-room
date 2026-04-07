@@ -11,6 +11,7 @@ Rails.application.routes.draw do
     namespace :dev do
       resource :banuba_verification, only: %i[show], controller: "banuba_verifications"
       resource :deepar_verification, only: %i[show], controller: "deepar_verifications"
+      resource :filepond_verification, only: %i[show create], controller: "filepond_verifications"
     end
   end
 

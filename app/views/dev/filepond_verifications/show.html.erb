@@ -1,0 +1,133 @@
+<% content_for :title, "FilePond 検証" %>
+
+<script src="/vendor/filepond/filepond.min.js" defer></script>
+<script src="/vendor/filepond/filepond-plugin-image-preview.min.js" defer></script>
+<script src="/vendor/filepond/filepond-plugin-image-resize.min.js" defer></script>
+<script src="/vendor/filepond/filepond-plugin-image-transform.min.js" defer></script>
+
+<div class="container py-4 filepond-verification-page">
+  <div class="row g-4">
+    <div class="col-12">
+      <div class="card filepond-verification-card" data-bs-theme="light">
+        <div class="card-body">
+          <h1 class="h4 mb-3">FilePond 検証</h1>
+
+          <p class="text-body-secondary mb-3">
+            development 限定の検証ページです。FilePond による画像プレビュー、
+            クライアント側縮小、JPEG 変換、Active Storage 保存を確認します。
+          </p>
+
+          <div class="small text-body-secondary">
+            <div>URL: <code><%= dev_filepond_verification_path %></code></div>
+            <div>最大サイズ: <code>1920x1080</code></div>
+            <div>出力形式: <code>image/jpeg</code></div>
+            <div>品質: <code>0.8</code></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-xl-7">
+      <div
+        class="card filepond-verification-card h-100"
+        data-bs-theme="light"
+        data-controller="filepond-verification">
+        <div class="card-header">アップロード検証</div>
+
+        <div class="card-body">
+          <%= form_with model: @form_upload,
+                        url: dev_filepond_verification_path,
+                        local: true,
+                        html: { multipart: true } do |f| %>
+            <% if @form_upload.errors.any? %>
+              <div class="alert alert-danger" role="alert">
+                <ul class="mb-0">
+                  <% @form_upload.errors.full_messages.each do |msg| %>
+                    <li><%= msg %></li>
+                  <% end %>
+                </ul>
+              </div>
+            <% end %>
+
+            <div class="mb-3">
+              <%= f.label :title, "タイトル", class: "form-label" %>
+              <%= f.text_field :title, class: "form-control", maxlength: 100 %>
+            </div>
+
+            <div class="mb-3">
+              <%= f.label :image, "画像", class: "form-label" %>
+              <%= f.file_field :image,
+                               class: "form-control",
+                               accept: ".jpg,.jpeg,.png,.webp,.heic,.heif",
+                               data: { filepond_verification_target: "input" } %>
+              <div class="form-text">
+                jpg / png / webp / heic を選択できます。クライアント側で最大 1920x1080 に縮小し、
+                JPEG に変換して送信します。
+              </div>
+            </div>
+
+            <div class="d-flex gap-2">
+              <%= f.submit "送信する", class: "btn btn-primary" %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-xl-5">
+      <div class="card filepond-verification-card h-100" data-bs-theme="light">
+        <div class="card-header">保存結果</div>
+
+        <div class="card-body">
+          <% if @upload&.persisted? && @upload.image.attached? %>
+            <div class="mb-3">
+              <div class="fw-semibold mb-2">タイトル</div>
+              <div><%= @upload.title.presence || "-" %></div>
+            </div>
+
+            <div class="mb-3">
+              <div class="fw-semibold mb-2">サムネイル</div>
+              <div class="filepond-verification-preview">
+                <%= image_tag @upload.image, alt: "保存画像", class: "img-fluid rounded border" %>
+              </div>
+            </div>
+
+            <div class="mb-0">
+              <div class="fw-semibold mb-2">メタ情報</div>
+              <dl class="row mb-0">
+                <dt class="col-sm-4">content_type</dt>
+                <dd class="col-sm-8"><code><%= @upload.image.blob.content_type %></code></dd>
+
+                <dt class="col-sm-4">byte_size</dt>
+                <dd class="col-sm-8">
+                  <code><%= @upload.image.blob.byte_size %></code>
+                  <span class="text-body-secondary">(<%= number_to_human_size(@upload.image.blob.byte_size) %>)</span>
+                </dd>
+              </dl>
+            </div>
+          <% else %>
+            <p class="text-body-secondary mb-0">
+              まだ保存された画像はありません。
+            </p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="card filepond-verification-card" data-bs-theme="light">
+        <div class="card-header">確認項目</div>
+        <div class="card-body">
+          <ul class="mb-0">
+            <li>画像選択時にプレビューが表示される</li>
+            <li>選び直しができる</li>
+            <li>縮小後にフォーム送信できる</li>
+            <li>保存後画像が表示される</li>
+            <li>content_type / byte_size を確認できる</li>
+            <li>mini_magick を使わずに成立する</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
