@@ -16,8 +16,6 @@ class Store < ApplicationRecord
   has_one :active_payout_account, -> { active }, class_name: "StorePayoutAccount"
   has_one_attached :thumbnail
 
-  normalizes_image_attachment :thumbnail
-
   enum :business_type, {
     cabaret: 0,
     girls_bar: 1,

@@ -1,66 +1,14 @@
+<script src="/vendor/filepond/filepond.min.js" defer></script>
+<script src="/vendor/filepond/filepond-plugin-image-preview.min.js" defer></script>
+<script src="/vendor/filepond/filepond-plugin-image-resize.min.js" defer></script>
+<script src="/vendor/filepond/filepond-plugin-image-transform.min.js" defer></script>
+
 <h1>店舗設定</h1>
 
 <%= form_with model: [:admin, @store] do |f| %>
-  <% if @store.errors.any? %>
-    <div class="alert alert-danger" role="alert">
-      <ul class="mb-0">
-        <% @store.errors.full_messages.each do |msg| %>
-          <li><%= msg %></li>
-        <% end %>
-      </ul>
-    </div>
-  <% end %>
-
-  <div class="mb-3">
-    <%= f.label :name, "店舗名（必須）", class: "form-label" %>
-    <%= f.text_field :name, class: "form-control", required: true %>
-  </div>
-
-  <div class="mb-3">
-    <%= f.label :description, "概要", class: "form-label" %>
-    <%= f.text_area :description, class: "form-control", rows: 6 %>
-    <div class="form-text">最大1000文字</div>
-  </div>
-
-  <div class="mb-3">
-    <%= f.label :area, "地域", class: "form-label" %>
-    <%= f.text_field :area, class: "form-control" %>
-    <div class="form-text">最大50文字（例：渋谷 / 福岡市中央区 など）</div>
-  </div>
-
-  <div class="mb-3">
-    <%= f.label :business_type, "業態", class: "form-label" %>
-    <%= f.select :business_type,
-          options_for_select(Store.business_type_select_options, @store.business_type),
-          { include_blank: true },
-          class: "form-select" %>
-  </div>
-
-  <div class="mb-3">
-    <%= f.label :thumbnail, "サムネイル画像", class: "form-label" %>
-
-    <% if @store.thumbnail.attached? %>
-      <div class="mb-2">
-        <%= image_tag @store.thumbnail, style: "max-width: 240px; height: auto;" %>
-      </div>
-
-      <div class="form-check mb-2">
-        <%= check_box_tag "store[remove_thumbnail]", "1", false,
-                          class: "form-check-input", id: "remove_thumbnail" %>
-        <%= label_tag "remove_thumbnail", "画像なし", class: "form-check-label" %>
-      </div>
-
-      <div class="text-muted small mb-2">
-        画像を差し替える場合は新しいファイルを選択してください
-      </div>
-    <% end %>
-
-    <%= f.file_field :thumbnail, class: "form-control" %>
-    <div class="form-text">png / jpg / webp、最大 1024x1024 に縮小保存</div>
-  </div>
-
-  <div class="d-flex gap-2">
-    <%= f.submit "更新する", class: "btn btn-primary" %>
-    <%= link_to "戻る", dashboard_path, class: "btn btn-outline-secondary" %>
-  </div>
+  <%= render "form",
+            f: f,
+            store: @store,
+            submit_label: "更新する",
+            back_path: dashboard_path %>
 <% end %>
