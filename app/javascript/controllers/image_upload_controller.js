@@ -10,6 +10,7 @@ export default class extends Controller {
 
   connect() {
     this.hadInitialFile = this.hasInitialUrlValue && this.initialUrlValue.length > 0
+    this.setupAttempts = 0
 
     setTimeout(() => {
       this.setupFilePond()
@@ -17,12 +18,23 @@ export default class extends Controller {
   }
 
   disconnect() {
+    if (this.setupTimer) clearTimeout(this.setupTimer)
     if (this.pond) this.pond.destroy()
   }
 
   setupFilePond() {
-    if (!window.FilePond) return
+    if (this.pond) return
     if (!this.hasInputTarget) return
+
+    if (!window.FilePond) {
+      if (this.setupAttempts >= 40) return
+
+      this.setupAttempts += 1
+      this.setupTimer = setTimeout(() => {
+        this.setupFilePond()
+      }, 50)
+      return
+    }
 
     this.registerPlugins()
 
