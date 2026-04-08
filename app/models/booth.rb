@@ -10,8 +10,6 @@ class Booth < ApplicationRecord
   has_many :favorite_booths, dependent: :destroy
   has_one_attached :thumbnail_image
 
-  normalizes_image_attachment :thumbnail_image
-
   enum :status, { offline: 0, live: 1, away: 2, standby: 3 }
 
   scope :active, -> { where(archived_at: nil) }

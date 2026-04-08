@@ -1,4 +1,4 @@
-<%# locals: f:, booth:, submit_label:, back_path:, remove_thumbnail_checkbox_id: %>
+<%# locals: f:, booth:, submit_label:, back_path: %>
 
 <% if booth.errors.any? %>
   <div class="alert alert-danger">
@@ -20,25 +20,16 @@
   <%= f.text_area :description, class: "form-control", rows: 6 %>
 </div>
 
-<div class="mb-3">
+<div class="mb-3 profile-avatar-field" data-controller="profile-avatar">
   <%= f.label :thumbnail_image, "サムネ画像", class: "form-label" %>
 
-  <% if booth.thumbnail_image.attached? %>
-    <div class="mb-2">
-      <%= image_tag booth.thumbnail_image, style: "max-width: 240px; height: auto;" %>
-    </div>
-
-    <div class="form-check mb-2">
-      <%= check_box_tag "booth[remove_thumbnail_image]", "1", false,
-                        class: "form-check-input", id: remove_thumbnail_checkbox_id %>
-      <%= label_tag remove_thumbnail_checkbox_id, "画像なし", class: "form-check-label" %>
-    </div>
-  <% end %>
+  <%= f.hidden_field :remove_thumbnail_image,
+        value: "0",
+        data: { profile_avatar_target: "removeFlag" } %>
 
   <%= f.file_field :thumbnail_image,
-                  class: "form-control",
-                  accept: "image/png,image/jpeg,image/webp" %>
-  <div class="form-text">png / jpg / webp、最大 1024x1024 に縮小保存</div>
+        accept: ".jpg,.jpeg,.png,.webp,.heic,.heif",
+        data: { profile_avatar_target: "input" } %>
 </div>
 
 <div class="d-flex gap-2">

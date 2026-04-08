@@ -1,3 +1,8 @@
+<script src="/vendor/filepond/filepond.min.js" defer></script>
+<script src="/vendor/filepond/filepond-plugin-image-preview.min.js" defer></script>
+<script src="/vendor/filepond/filepond-plugin-image-resize.min.js" defer></script>
+<script src="/vendor/filepond/filepond-plugin-image-transform.min.js" defer></script>
+
 <h1>ブース編集</h1>
 
 <%= form_with model: [:admin, @booth] do |f| %>
@@ -5,6 +10,5 @@
             f: f,
             booth: @booth,
             submit_label: "更新する",
-            back_path: dashboard_path_for(current_user),
-            remove_thumbnail_checkbox_id: "admin_edit_remove_thumbnail_image" %>
+            back_path: dashboard_path_for(current_user) %>
 <% end %>
