@@ -2,17 +2,27 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   static targets = ["input", "removeFlag"]
+  static values = {
+    initialUrl: String,
+    width: Number,
+    height: Number,
+  }
 
   connect() {
-    this.initialize()
+    this.hadInitialFile = this.hasInitialUrlValue && this.initialUrlValue.length > 0
+
+    setTimeout(() => {
+      this.setupFilePond()
+    }, 0)
   }
 
   disconnect() {
     if (this.pond) this.pond.destroy()
   }
 
-  initialize() {
+  setupFilePond() {
     if (!window.FilePond) return
+    if (!this.hasInputTarget) return
 
     this.registerPlugins()
 
@@ -22,30 +32,39 @@ export default class extends Controller {
       allowImagePreview: true,
       allowImageResize: true,
       allowImageTransform: true,
+      allowReorder: false,
+      allowProcess: false,
+      allowRevert: false,
 
-      imageResizeTargetWidth: 1024,
-      imageResizeTargetHeight: 1024,
+      imageResizeTargetWidth: this.widthValue || 1024,
+      imageResizeTargetHeight: this.heightValue || 1024,
       imageResizeMode: "contain",
       imageResizeUpscale: false,
 
       imageTransformOutputMimeType: "image/jpeg",
       imageTransformOutputQuality: 94,
+      imageTransformCanvasBackgroundColor: "#ffffff",
 
       acceptedFileTypes: [
         "image/jpeg",
         "image/png",
         "image/webp",
         "image/heic",
+        "image/heif",
       ],
 
       labelIdle: `
-        <div class="profile-avatar-picker">
-          <i class="bi bi-camera-fill profile-avatar-picker__icon" aria-hidden="true"></i>
+        <div class="image-upload-picker">
+          <i class="bi bi-camera-fill image-upload-picker__icon" aria-hidden="true"></i>
         </div>
       `,
     })
 
     this.bindEvents()
+
+    if (this.hadInitialFile) {
+      this.pond.addFile(this.initialUrlValue).catch(() => {})
+    }
   }
 
   bindEvents() {
@@ -54,7 +73,14 @@ export default class extends Controller {
     })
 
     this.pond.on("removefile", () => {
-      this.removeFlagTarget.value = "1"
+      const currentFilesCount = this.pond.getFiles().length
+
+      if (currentFilesCount > 0) {
+        this.removeFlagTarget.value = "0"
+        return
+      }
+
+      this.removeFlagTarget.value = this.hadInitialFile ? "1" : "0"
     })
   }
 
@@ -67,7 +93,10 @@ export default class extends Controller {
       window.FilePondPluginImageTransform,
     ].filter(Boolean)
 
-    plugins.forEach((p) => window.FilePond.registerPlugin(p))
+    plugins.forEach((plugin) => {
+      window.FilePond.registerPlugin(plugin)
+    })
+
     window.__filepondRegistered = true
   }
 }

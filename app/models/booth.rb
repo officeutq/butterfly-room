@@ -1,6 +1,4 @@
 class Booth < ApplicationRecord
-  include NormalizedImageAttachment
-
   belongs_to :store
   belongs_to :current_stream_session, class_name: "StreamSession", optional: true
 

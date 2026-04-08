@@ -1,7 +1,6 @@
-<script src="/vendor/filepond/filepond.min.js" defer></script>
-<script src="/vendor/filepond/filepond-plugin-image-preview.min.js" defer></script>
-<script src="/vendor/filepond/filepond-plugin-image-resize.min.js" defer></script>
-<script src="/vendor/filepond/filepond-plugin-image-transform.min.js" defer></script>
+<% content_for :head do %>
+  <%= render "shared/filepond_head" %>
+<% end %>
 
 <h1>プロフィール編集</h1>
 
@@ -28,14 +27,23 @@
     <div class="form-text">最大500文字</div>
   </div>
 
-  <div class="mb-3 profile-avatar-field" data-controller="profile-avatar">
+  <div
+    class="mb-3 image-upload-field"
+    data-controller="image-upload"
+    data-image-upload-width-value="1024"
+    data-image-upload-height-value="1024"
+    <% if @user.avatar.attached? %>
+      data-image-upload-initial-url-value="<%= url_for(@user.avatar) %>"
+    <% end %>>
     <%= f.label :avatar, "プロフィール画像", class: "form-label" %>
 
-    <%= f.hidden_field :remove_avatar, value: "0", data: { profile_avatar_target: "removeFlag" } %>
+    <%= f.hidden_field :remove_avatar,
+          value: "0",
+          data: { "image-upload-target": "removeFlag" } %>
 
     <%= f.file_field :avatar,
           accept: ".jpg,.jpeg,.png,.webp,.heic,.heif",
-          data: { profile_avatar_target: "input" } %>
+          data: { "image-upload-target": "input" } %>
   </div>
 
   <div class="d-flex gap-2">

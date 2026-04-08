@@ -1,4 +1,4 @@
-.profile-avatar-field {
+.image-upload-field {
   .filepond--root {
     margin-bottom: 0;
   }
@@ -16,14 +16,14 @@
     border-radius: 16px;
   }
 
-  .profile-avatar-picker {
+  .image-upload-picker {
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 140px;
   }
 
-  .profile-avatar-picker__icon {
+  .image-upload-picker__icon {
     font-size: 2rem;
     color: #6c757d;
   }
