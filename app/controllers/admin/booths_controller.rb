@@ -67,15 +67,6 @@ module Admin
       @booth.errors.add(:base, "IVS Stage の作成に失敗しました: #{e.message}")
       render :new, status: :unprocessable_entity
 
-    rescue NormalizedImageAttachment::InvalidImageAttachment => e
-      Rails.logger.error("[BoothCreate] #{e.class}: #{e.message}")
-
-      @booth ||= current_store.booths.new
-      @booth.assign_attributes(booth_create_params.except(:thumbnail_image))
-      @booth.errors.add(:thumbnail_image, e.message)
-
-      render :new, status: :unprocessable_entity
-
     rescue => e
       Rails.logger.error("[BoothCreate] #{e.class}: #{e.message}")
 
@@ -89,28 +80,19 @@ module Admin
     end
 
     def update
-      begin
-        if @booth.update(booth_params)
-          unless ensure_attachment_persisted!(record: @booth, attachment_name: :thumbnail_image)
-            return render :edit, status: :unprocessable_entity
-          end
-
-          purge_attachment_if_requested(
-            record: @booth,
-            attachment_name: :thumbnail_image,
-            remove_param_name: :remove_thumbnail_image
-          )
-
-          redirect_to helpers.dashboard_path_for(current_user), notice: "更新しました"
-        else
-          render :edit, status: :unprocessable_entity
+      if @booth.update(booth_params)
+        unless ensure_attachment_persisted!(record: @booth, attachment_name: :thumbnail_image)
+          return render :edit, status: :unprocessable_entity
         end
 
-      rescue => e
-        Rails.logger.error("[BoothUpdate] #{e.class}: #{e.message}")
+        purge_attachment_if_requested(
+          record: @booth,
+          attachment_name: :thumbnail_image,
+          remove_param_name: :remove_thumbnail_image
+        )
 
-        @booth.errors.add(:thumbnail_image, "の処理に失敗しました。png / jpg / webp の画像で再度お試しください")
-
+        redirect_to helpers.dashboard_path_for(current_user), notice: "更新しました"
+      else
         render :edit, status: :unprocessable_entity
       end
     end
