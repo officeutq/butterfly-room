@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class Store < ApplicationRecord
-  include NormalizedImageAttachment
-
   belongs_to :referral_code, optional: true
 
   has_many :booths, dependent: :destroy
