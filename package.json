@@ -17,6 +17,6 @@
     "filepond-plugin-image-transform": "^3.8.7"
   },
   "devDependencies": {
-    "sass": "^1.97.2"
+    "sass": "^1.99.0"
   }
 }
