@@ -17,7 +17,7 @@ class ProfilesController < ApplicationController
 
     if success
       unless ensure_attachment_persisted!(record: @user, attachment_name: :avatar)
-        return render :edit, status: :unprocessable_entity
+        return respond_profile_update_error(@user.errors.full_messages)
       end
 
       purge_attachment_if_requested(
@@ -28,7 +28,7 @@ class ProfilesController < ApplicationController
 
       redirect_to root_path, notice: "プロフィールを更新しました"
     else
-      render :edit, status: :unprocessable_entity
+      respond_profile_update_error(@user.errors.full_messages)
     end
   end
 
@@ -36,5 +36,25 @@ class ProfilesController < ApplicationController
 
   def profile_params
     params.require(:user).permit(:display_name, :bio, :avatar)
+  end
+
+  def respond_profile_update_error(messages)
+    message = messages.join(" / ")
+
+    respond_to do |format|
+      format.turbo_stream do
+        flash.now[:alert] = message
+
+        render turbo_stream: turbo_stream.update(
+          "flash_inner",
+          partial: "shared/flash_message",
+          locals: { level: "danger", message: flash.now[:alert] }
+        ), status: :unprocessable_entity
+      end
+
+      format.html do
+        redirect_to edit_profile_path, alert: message
+      end
+    end
   end
 end

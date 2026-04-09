@@ -5,16 +5,6 @@
 <h1>プロフィール編集</h1>
 
 <%= form_with model: @user, url: profile_path do |f| %>
-  <% if @user.errors.any? %>
-    <div class="alert alert-danger" role="alert">
-      <ul class="mb-0">
-        <% @user.errors.full_messages.each do |msg| %>
-          <li><%= msg %></li>
-        <% end %>
-      </ul>
-    </div>
-  <% end %>
-
   <div class="mb-3">
     <%= f.label :display_name, "表示名", class: "form-label" %>
     <%= f.text_field :display_name, class: "form-control" %>
@@ -32,7 +22,7 @@
     data-controller="image-upload"
     data-image-upload-width-value="1024"
     data-image-upload-height-value="1024"
-    <% if @user.avatar.attached? %>
+    <% if @user.avatar.attached? && @user.avatar.blob&.persisted? %>
       data-image-upload-initial-url-value="<%= url_for(@user.avatar) %>"
     <% end %>>
     <%= f.label :avatar, "プロフィール画像", class: "form-label" %>
