@@ -26,7 +26,7 @@ class ProfilesController < ApplicationController
         remove_param_name: :remove_avatar
       )
 
-      redirect_to edit_profile_path, notice: "プロフィールを更新しました"
+      redirect_to root_path, notice: "プロフィールを更新しました"
     else
       render :edit, status: :unprocessable_entity
     end
