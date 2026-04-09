@@ -49,3 +49,6 @@ builds:
   '9':
     issues:
     - 636
+  '10':
+    issues:
+    - 638

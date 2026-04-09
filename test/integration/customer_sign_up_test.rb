@@ -29,9 +29,10 @@ class CustomerSignUpTest < ActionDispatch::IntegrationTest
     user = User.find_by!(email: email)
     assert_equal "customer", user.role
 
-    assert_response :redirect
+    assert_redirected_to edit_profile_path
     follow_redirect!
     assert_response :success
-    assert_includes @response.body, email
+    assert_includes @response.body, "プロフィール編集"
+    assert_includes @response.body, "アカウントを作成しました。プロフィールを作成してください。"
   end
 end
