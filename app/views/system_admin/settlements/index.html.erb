@@ -2,11 +2,8 @@
 
 <div class="alert alert-secondary" role="alert">
   状態遷移：draft → confirmed → exported → paid<br>
-  CSV生成は「confirmed を複数選択 → 1ファイル生成」です（partial成功禁止）。
-</div>
-
-<div class="mb-3 d-flex gap-2">
-  <%= link_to "ダッシュボードへ戻る", dashboard_path, class: "btn btn-outline-secondary" %>
+  CSV生成は「confirmed を複数選択 → 1ファイル生成」です（partial成功禁止）。<br>
+  confirmed のカードだけにチェックボックスが出ます。
 </div>
 
 <%= form_with url: export_csv_system_admin_settlements_path, method: :post do %>
@@ -54,65 +51,93 @@
     </div>
   </div>
 
-  <table class="table table-sm align-middle">
-    <thead>
-      <tr>
-        <th style="width: 36px;"></th>
-        <th>期間</th>
-        <th>store</th>
-        <th>kind</th>
-        <th>status</th>
-        <th class="text-end">gross</th>
-        <th class="text-end">share</th>
-        <th class="text-end">fee</th>
-        <th class="text-muted small">confirmed/exported</th>
-        <th></th>
-      </tr>
-    </thead>
-
-    <tbody>
+  <% if @settlements.blank? %>
+    <div class="alert alert-warning" role="alert">
+      表示できる精算はありません。
+    </div>
+  <% else %>
+    <div class="referral-codes-list">
       <% @settlements.each do |s| %>
-        <tr>
-          <td>
-            <% if s.confirmed? %>
-              <%= check_box_tag "settlement_ids[]", s.id, false %>
-            <% end %>
-          </td>
+        <div class="card referral-code-card">
+          <div class="card-body">
+            <div class="referral-code-row">
+              <div class="referral-code-label">選択</div>
+              <div class="referral-code-value">
+                <% if s.confirmed? %>
+                  <div class="form-check m-0">
+                    <%= check_box_tag "settlement_ids[]", s.id, false, class: "form-check-input" %>
+                  </div>
+                <% else %>
+                  <span class="text-muted small">対象外</span>
+                <% end %>
+              </div>
+            </div>
 
-          <td class="text-muted small">
-            <%= l(s.period_from) %>〜<%= l(s.period_to) %>
-          </td>
+            <div class="referral-code-row">
+              <div class="referral-code-label">期間</div>
+              <div class="referral-code-value text-muted small">
+                <%= l(s.period_from) %>〜<%= l(s.period_to) %>
+              </div>
+            </div>
 
-          <td class="fw-semibold"><%= s.store.name %></td>
-          <td><%= s.kind %></td>
-          <td><%= s.status %></td>
+            <div class="referral-code-row">
+              <div class="referral-code-label">store</div>
+              <div class="referral-code-value fw-semibold"><%= s.store.name %></div>
+            </div>
 
-          <td class="text-end"><%= s.gross_yen %></td>
-          <td class="text-end"><%= s.store_share_yen %></td>
-          <td class="text-end"><%= s.platform_fee_yen %></td>
+            <div class="referral-code-row">
+              <div class="referral-code-label">kind</div>
+              <div class="referral-code-value"><%= s.kind %></div>
+            </div>
 
-          <td class="text-muted small">
-            <% if s.confirmed_at.present? %>
-              c:<%= l(s.confirmed_at) %>
-            <% end %>
-            <% if s.exported_at.present? %>
-              <br>e:<%= l(s.exported_at) %>
-            <% end %>
-          </td>
+            <div class="referral-code-row">
+              <div class="referral-code-label">status</div>
+              <div class="referral-code-value"><%= s.status %></div>
+            </div>
 
-          <td class="d-flex justify-content-end gap-2">
-            <%= link_to "詳細", system_admin_settlement_path(s), class: "btn btn-outline-secondary btn-sm" %>
-          </td>
-        </tr>
+            <div class="referral-code-row">
+              <div class="referral-code-label">gross</div>
+              <div class="referral-code-value"><%= s.gross_yen %></div>
+            </div>
+
+            <div class="referral-code-row">
+              <div class="referral-code-label">share</div>
+              <div class="referral-code-value"><%= s.store_share_yen %></div>
+            </div>
+
+            <div class="referral-code-row">
+              <div class="referral-code-label">fee</div>
+              <div class="referral-code-value"><%= s.platform_fee_yen %></div>
+            </div>
+
+            <div class="referral-code-row">
+              <div class="referral-code-label">confirmed</div>
+              <div class="referral-code-value text-muted small">
+                <%= s.confirmed_at.present? ? l(s.confirmed_at) : "-" %>
+              </div>
+            </div>
+
+            <div class="referral-code-row">
+              <div class="referral-code-label">exported</div>
+              <div class="referral-code-value text-muted small">
+                <%= s.exported_at.present? ? l(s.exported_at) : "-" %>
+              </div>
+            </div>
+
+            <div class="pt-3">
+              <div class="referral-code-inline-actions justify-content-end">
+                <%= link_to "詳細", system_admin_settlement_path(s), class: "btn btn-outline-secondary btn-sm" %>
+              </div>
+            </div>
+          </div>
+        </div>
       <% end %>
-    </tbody>
-  </table>
+    </div>
+  <% end %>
 
-  <div class="d-flex gap-2">
-    <%= button_to "選択したconfirmedをCSV生成（1ファイル）",
-          export_csv_system_admin_settlements_path,
-          method: :post,
-          params: {},
+  <div class="d-flex gap-2 mt-3">
+    <%= button_tag "選択したconfirmedをCSV生成（1ファイル）",
+          type: "submit",
           class: "btn btn-primary",
           data: { turbo_confirm: "選択した confirmed を対象に、振込CSVを1ファイル生成します。よろしいですか？" } %>
   </div>
