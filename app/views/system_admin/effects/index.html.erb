@@ -2,45 +2,67 @@
 
 <div class="mb-3 d-flex gap-2">
   <%= link_to "新規作成", new_system_admin_effect_path, class: "btn btn-primary" %>
-  <%= link_to "ダッシュボードへ戻る", dashboard_path, class: "btn btn-outline-secondary" %>
 </div>
 
-<table class="table table-sm align-middle">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>表示名</th>
-      <th>key</th>
-      <th>zip</th>
-      <th>icon</th>
-      <th>position</th>
-      <th>enabled</th>
-      <th></th>
-    </tr>
-  </thead>
-
-  <tbody>
+<% if @effects.blank? %>
+  <div class="alert alert-warning" role="alert">
+    表示できるEffectはありません。
+  </div>
+<% else %>
+  <div class="referral-codes-list">
     <% @effects.each do |e| %>
-      <tr class="<%= "text-muted" unless e.enabled %>">
-        <td><%= e.id %></td>
-        <td class="fw-semibold"><%= e.name %></td>
-        <td><%= e.key %></td>
-        <td><%= e.zip_filename %></td>
-        <td><%= e.icon_path.presence || "-" %></td>
-        <td><%= e.position %></td>
+      <div class="card referral-code-card <%= "text-muted" unless e.enabled %>">
+        <div class="card-body">
+          <div class="referral-code-row">
+            <div class="referral-code-label">ID</div>
+            <div class="referral-code-value"><%= e.id %></div>
+          </div>
 
-        <td>
-          <%= form_with model: [:system_admin, e], method: :patch, class: "d-inline" do |f| %>
-            <%= f.hidden_field :enabled, value: (!e.enabled).to_s %>
-            <%= f.submit(e.enabled ? "有効" : "無効",
-                  class: "btn btn-sm #{e.enabled ? "btn-success" : "btn-outline-secondary"}") %>
-          <% end %>
-        </td>
+          <div class="referral-code-row">
+            <div class="referral-code-label">表示名</div>
+            <div class="referral-code-value fw-semibold"><%= e.name %></div>
+          </div>
 
-        <td class="d-flex justify-content-end gap-2">
-          <%= link_to "編集", edit_system_admin_effect_path(e), class: "btn btn-outline-secondary btn-sm" %>
-        </td>
-      </tr>
+          <div class="referral-code-row">
+            <div class="referral-code-label">key</div>
+            <div class="referral-code-value"><%= e.key %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">zip</div>
+            <div class="referral-code-value text-break"><%= e.zip_filename %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">icon</div>
+            <div class="referral-code-value text-break"><%= e.icon_path.presence || "-" %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">position</div>
+            <div class="referral-code-value"><%= e.position %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">enabled</div>
+            <div class="referral-code-value">
+              <%= form_with model: [:system_admin, e], method: :patch, class: "d-inline" do |f| %>
+                <%= f.hidden_field :enabled, value: (!e.enabled).to_s %>
+                <%= f.submit(
+                      e.enabled ? "有効" : "無効",
+                      class: "btn btn-sm #{e.enabled ? "btn-success" : "btn-outline-secondary"}"
+                    ) %>
+              <% end %>
+            </div>
+          </div>
+
+          <div class="pt-3">
+            <div class="referral-code-inline-actions justify-content-end">
+              <%= link_to "編集", edit_system_admin_effect_path(e), class: "btn btn-outline-secondary btn-sm" %>
+            </div>
+          </div>
+        </div>
+      </div>
     <% end %>
-  </tbody>
-</table>
+  </div>
+<% end %>
