@@ -1,4 +1,6 @@
 <% if user_signed_in? %>
+  <%= render "install_prompt" %>
+
   <%# --- Search (Input group / GET) --- %>
   <div class="mb-3">
   <%= form_with url: root_path, method: :get, scope: nil, class: "d-flex flex-grow-1" do |f| %>
@@ -61,6 +63,8 @@
     <% end %>
   <% end %>
 <% else %>
+  <%= render "install_prompt" %>
+
   <div style="max-width: 720px;">
     <h1 class="mb-3">ようこそ</h1>
     <p class="text-muted">視聴するにはログイン、または新規アカウント作成を行ってください。</p>
