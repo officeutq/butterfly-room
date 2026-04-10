@@ -1,0 +1,89 @@
+<div
+  class="mb-3"
+  data-controller="install-prompt">
+  <div class="card install-prompt-card bg-body-tertiary">
+    <div class="card-body">
+      <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+        <div class="d-flex align-items-start gap-3">
+          <div class="fs-3 lh-1 text-install" aria-hidden="true">
+            <i class="bi bi-house-heart"></i>
+          </div>
+
+          <div>
+            <h2 class="h5 mb-2">アプリのように使えます</h2>
+
+            <p class="mb-2 text-muted" data-install-prompt-target="safariOnly">
+              iPhone の Safari からホームに追加すると、次回からホーム画面からすぐ開けます。
+            </p>
+
+            <p class="mb-2 text-muted" data-install-prompt-target="genericOnly" hidden>
+              ホーム画面に追加すると、次回からアプリのようにすぐ開けます。
+            </p>
+
+            <div class="flex-shrink-0">
+              <button
+                type="button"
+                class="btn btn-outline-install"
+                data-action="install-prompt#openModal">
+                追加方法
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="modal fade"
+    tabindex="-1"
+    aria-labelledby="installPromptModalLabel"
+    aria-hidden="true"
+    data-install-prompt-target="modal">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" data-bs-theme="light">
+        <div class="modal-header">
+          <h2 class="modal-title fs-5" id="installPromptModalLabel">ホーム画面に追加する方法</h2>
+          <button
+            type="button"
+            class="btn-close"
+            aria-label="閉じる"
+            data-action="install-prompt#closeModal"></button>
+        </div>
+
+        <div class="modal-body">
+          <div data-install-prompt-target="safariOnly">
+            <ol class="mb-3 ps-3">
+              <li class="mb-2">Safari でこのページを開いた状態で、共有ボタンをタップします。</li>
+              <li class="mb-2">メニューから「ホーム画面に追加」を選びます。</li>
+              <li>確認画面で「追加」をタップします。</li>
+            </ol>
+
+            <p class="mb-0 text-muted">
+              追加後は、ホーム画面のアイコンからアプリのように起動できます。
+            </p>
+          </div>
+
+          <div data-install-prompt-target="genericOnly" hidden>
+            <p class="mb-3">
+              お使いのブラウザによっては、共有メニューやブラウザメニューからホーム画面に追加できる場合があります。
+            </p>
+
+            <p class="mb-0 text-muted">
+              追加後は、ホーム画面のアイコンからアプリのように起動できます。
+            </p>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-action="install-prompt#closeModal">
+            閉じる
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
