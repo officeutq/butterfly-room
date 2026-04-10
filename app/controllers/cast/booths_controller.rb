@@ -118,11 +118,9 @@ module Cast
     end
 
     def update
-      if @booth.update(booth_params)
-        unless ensure_attachment_persisted!(record: @booth, attachment_name: :thumbnail_image)
-          return render :edit, status: :unprocessable_entity
-        end
+      success = @booth.update(booth_params)
 
+      if success && ensure_attachment_persisted!(record: @booth, attachment_name: :thumbnail_image)
         purge_attachment_if_requested(
           record: @booth,
           attachment_name: :thumbnail_image,
@@ -131,7 +129,7 @@ module Cast
 
         redirect_to helpers.dashboard_path_for(current_user), notice: "ブースを更新しました"
       else
-        render :edit, status: :unprocessable_entity
+        respond_booth_update_error(@booth.errors.full_messages)
       end
     end
 
@@ -289,6 +287,26 @@ module Cast
 
     def booth_params
       params.require(:booth).permit(:name, :description, :thumbnail_image)
+    end
+
+    def respond_booth_update_error(messages)
+      message = messages.join(" / ")
+
+      respond_to do |format|
+        format.turbo_stream do
+          flash.now[:alert] = message
+
+          render turbo_stream: turbo_stream.update(
+            "flash_inner",
+            partial: "shared/flash_message",
+            locals: { level: "danger", message: flash.now[:alert] }
+          ), status: :unprocessable_entity
+        end
+
+        format.html do
+          redirect_to edit_cast_booth_path(@booth), alert: message
+        end
+      end
     end
   end
 end
