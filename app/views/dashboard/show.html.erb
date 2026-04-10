@@ -1,8 +1,7 @@
+<% content_for :title, "ダッシュボード" %>
 <div class="container px-0">
   <% store = layout_current_store %>
   <% booth = layout_current_booth %>
-
-  <h1 class="mb-4">ダッシュボード</h1>
 
   <div class="row g-3">
     <% if current_user.at_least?(:customer) %>
@@ -61,7 +60,7 @@
         <%= link_to admin_stores_path, class: "text-decoration-none" do %>
           <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
             <div class="card-body">
-              <h5 class="card-title mb-2">店舗一覧</h5>
+              <h5 class="card-title mb-2">店舗を選択</h5>
               <p class="card-text mb-0">操作対象の店舗を選択します</p>
             </div>
           </div>
@@ -73,7 +72,7 @@
           <%= link_to edit_admin_store_path(store), class: "text-decoration-none" do %>
             <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
               <div class="card-body">
-                <h5 class="card-title mb-2">店舗編集</h5>
+                <h5 class="card-title mb-2">店舗設定編集</h5>
                 <p class="card-text mb-0">店舗情報を編集します</p>
               </div>
             </div>
@@ -84,7 +83,7 @@
                       class: "text-decoration-none" do %>
             <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
               <div class="card-body">
-                <h5 class="card-title mb-2">店舗編集</h5>
+                <h5 class="card-title mb-2">店舗設定編集</h5>
                 <p class="card-text mb-0">店舗情報を編集します</p>
               </div>
             </div>

@@ -1,14 +1,10 @@
-<h1 class="mb-4">店舗管理者招待</h1>
-
-<div class="mb-4 d-flex gap-2 align-items-center flex-wrap">
-  <%= link_to "ダッシュボードへ戻る", dashboard_path, class: "btn btn-outline-secondary" %>
-</div>
+<% content_for :title, "店舗管理者招待" %>
 
 <div class="card mb-4" data-bs-theme="light">
   <div class="card-body">
     <p class="text-muted mb-3">
-      招待URLを発行し、store_admin ロールのユーザーが承認した場合のみ、
-      店舗管理者所属（store_memberships: admin）が作成されます（ロール付け替えは行いません）。
+      招待URLを発行し、店舗管理者が承認した場合のみ、
+      店舗に所属します。
     </p>
 
     <%= button_to "招待URLを発行",

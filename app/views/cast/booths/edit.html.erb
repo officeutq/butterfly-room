@@ -1,8 +1,7 @@
 <% content_for :head do %>
   <%= render "shared/filepond_head" %>
 <% end %>
-
-<h1>ブース編集</h1>
+<% content_for :title, "ブース編集" %>
 
 <%= form_with model: [:cast, @booth] do |f| %>
   <%= render "booths/form",

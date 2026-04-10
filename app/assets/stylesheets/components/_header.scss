@@ -68,3 +68,18 @@
     min-height: 56px;
   }
 }
+
+.header-brand {
+  min-width: 0;
+}
+
+.header-title {
+  display: block;
+  max-width: 100%;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

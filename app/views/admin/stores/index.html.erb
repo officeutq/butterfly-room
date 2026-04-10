@@ -1,4 +1,4 @@
-<h1>店舗を選択</h1>
+<% content_for :title, "店舗を選択" %>
 
 <% if @stores.blank? %>
   <div class="alert alert-warning" role="alert">
@@ -19,7 +19,7 @@
           <td><%= store.id %></td>
           <td><%= store.name.presence || "(no name)" %></td>
           <td class="text-end">
-            <%= button_to "この店舗を開く",
+            <%= button_to "この店舗に切替",
                   admin_current_store_path,
                   method: :post,
                   params: {
@@ -34,7 +34,3 @@
     </tbody>
   </table>
 <% end %>
-
-<p class="mt-3">
-  <%= link_to "管理者トップへ", dashboard_path, class: "btn btn-outline-secondary" %>
-</p>

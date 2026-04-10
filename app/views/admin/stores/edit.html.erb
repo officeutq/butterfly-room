@@ -2,7 +2,7 @@
   <%= render "shared/filepond_head" %>
 <% end %>
 
-<h1>店舗設定</h1>
+<% content_for :title, "店舗設定編集" %>
 
 <%= form_with model: [:admin, @store] do |f| %>
   <%= render "form",
