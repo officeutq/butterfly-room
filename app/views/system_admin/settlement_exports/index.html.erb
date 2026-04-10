@@ -7,35 +7,54 @@
 
 <div class="mb-3 d-flex gap-2">
   <%= link_to "精算一覧へ", system_admin_settlements_path, class: "btn btn-primary" %>
-  <%= link_to "ダッシュボードへ戻る", dashboard_path, class: "btn btn-outline-secondary" %>
 </div>
 
-<table class="table table-sm align-middle">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Format</th>
-      <th>Seq</th>
-      <th>Records</th>
-      <th>Total</th>
-      <th>Generated</th>
-      <th></th>
-    </tr>
-  </thead>
-
-  <tbody>
+<% if @exports.blank? %>
+  <div class="alert alert-warning" role="alert">
+    表示できる振込CSVはありません。
+  </div>
+<% else %>
+  <div class="referral-codes-list">
     <% @exports.each do |e| %>
-      <tr>
-        <td class="fw-semibold"><%= e.id %></td>
-        <td><%= e.format %></td>
-        <td><%= e.file_seq %></td>
-        <td><%= e.record_count %></td>
-        <td><%= e.total_amount_yen %></td>
-        <td class="text-muted small"><%= l(e.created_at) %></td>
-        <td class="d-flex justify-content-end gap-2">
-          <%= link_to "詳細", system_admin_settlement_export_path(e), class: "btn btn-outline-secondary btn-sm" %>
-        </td>
-      </tr>
+      <div class="card referral-code-card">
+        <div class="card-body">
+          <div class="referral-code-row">
+            <div class="referral-code-label">ID</div>
+            <div class="referral-code-value fw-semibold"><%= e.id %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">Format</div>
+            <div class="referral-code-value"><%= e.format %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">Seq</div>
+            <div class="referral-code-value"><%= e.file_seq %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">Records</div>
+            <div class="referral-code-value"><%= e.record_count %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">Total</div>
+            <div class="referral-code-value fw-semibold"><%= e.total_amount_yen %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">Generated</div>
+            <div class="referral-code-value text-muted small"><%= l(e.created_at) %></div>
+          </div>
+
+          <div class="pt-3">
+            <div class="referral-code-inline-actions justify-content-end">
+              <%= link_to "詳細", system_admin_settlement_export_path(e), class: "btn btn-outline-secondary btn-sm" %>
+            </div>
+          </div>
+        </div>
+      </div>
     <% end %>
-  </tbody>
-</table>
+  </div>
+<% end %>
