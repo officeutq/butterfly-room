@@ -23,7 +23,7 @@ class AdminBoothForceEndTest < ActionDispatch::IntegrationTest
       store: @store1,
       started_by_cast_user: @cast,
       status: :live,
-      started_at: Time.current # ★追加
+      started_at: Time.current
     )
 
     @booth1.update!(current_stream_session_id: @session1.id)
@@ -33,7 +33,7 @@ class AdminBoothForceEndTest < ActionDispatch::IntegrationTest
       store: @store2,
       started_by_cast_user: @cast,
       status: :live,
-      started_at: Time.current # ★追加
+      started_at: Time.current
     )
 
     @booth2.update!(current_stream_session_id: @session2.id)
@@ -44,7 +44,7 @@ class AdminBoothForceEndTest < ActionDispatch::IntegrationTest
 
     post force_end_admin_booth_path(@booth1)
     assert_response :redirect
-    assert_redirected_to admin_booth_path(@booth1)
+    assert_redirected_to admin_booths_path
 
     @booth1.reload
     @session1.reload
@@ -65,14 +65,13 @@ class AdminBoothForceEndTest < ActionDispatch::IntegrationTest
   test "system_admin can force_end any booth" do
     sign_in @system_admin, scope: :user
 
-    # #206: admin配下は current_store 必須なので、先に選択する
     post admin_current_store_path, params: { store_id: @store1.id }
     assert_response :redirect
     assert_redirected_to dashboard_path
 
     post force_end_admin_booth_path(@booth2)
     assert_response :redirect
-    assert_redirected_to admin_booth_path(@booth2)
+    assert_redirected_to admin_booths_path
 
     @booth2.reload
     @session2.reload
@@ -137,7 +136,7 @@ class AdminBoothForceEndTest < ActionDispatch::IntegrationTest
     post force_end_admin_booth_path(@booth2)
 
     assert_response :redirect
-    assert_redirected_to admin_booth_path(@booth2)
+    assert_redirected_to admin_booths_path
 
     assert_equal 1, fake_client.list_participants_calls.size
     assert_equal 1, fake_client.disconnect_participant_calls.size
