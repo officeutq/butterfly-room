@@ -10,6 +10,7 @@ class Booth < ApplicationRecord
 
   enum :status, { offline: 0, live: 1, away: 2, standby: 3 }
 
+  validates :name, length: { maximum: 100 }
   validates :description, length: { maximum: 1000 }, allow_nil: true
 
   scope :active, -> { where(archived_at: nil) }

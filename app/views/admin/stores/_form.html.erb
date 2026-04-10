@@ -1,15 +1,5 @@
 <%# locals: f:, store:, submit_label:, back_path: %>
 
-<% if store.errors.any? %>
-  <div class="alert alert-danger" role="alert">
-    <ul class="mb-0">
-      <% store.errors.full_messages.each do |msg| %>
-        <li><%= msg %></li>
-      <% end %>
-    </ul>
-  </div>
-<% end %>
-
 <div class="mb-3">
   <%= f.label :name, "店舗名（必須）", class: "form-label" %>
   <%= f.text_field :name, class: "form-control", required: true %>

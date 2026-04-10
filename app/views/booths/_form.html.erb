@@ -1,15 +1,5 @@
 <%# locals: f:, booth:, submit_label:, back_path: %>
 
-<% if booth.errors.any? %>
-  <div class="alert alert-danger">
-    <ul class="mb-0">
-      <% booth.errors.full_messages.each do |msg| %>
-        <li><%= msg %></li>
-      <% end %>
-    </ul>
-  </div>
-<% end %>
-
 <div class="mb-3">
   <%= f.label :name, "ブース名", class: "form-label" %>
   <%= f.text_field :name, class: "form-control", required: true %>

@@ -40,11 +40,7 @@ module Admin
     def update
       success = @store.update(store_params)
 
-      if success
-        unless ensure_attachment_persisted!(record: @store, attachment_name: :thumbnail)
-          return render :edit, status: :unprocessable_entity
-        end
-
+      if success && ensure_attachment_persisted!(record: @store, attachment_name: :thumbnail)
         purge_attachment_if_requested(
           record: @store,
           attachment_name: :thumbnail,
@@ -53,7 +49,7 @@ module Admin
 
         redirect_to dashboard_path, notice: "店舗情報を更新しました"
       else
-        render :edit, status: :unprocessable_entity
+        respond_store_update_error(@store.errors.full_messages)
       end
     end
 
@@ -148,6 +144,26 @@ module Admin
         :business_type,
         :thumbnail
       )
+    end
+
+    def respond_store_update_error(messages)
+      message = messages.join(" / ")
+
+      respond_to do |format|
+        format.turbo_stream do
+          flash.now[:alert] = message
+
+          render turbo_stream: turbo_stream.update(
+            "flash_inner",
+            partial: "shared/flash_message",
+            locals: { level: "danger", message: flash.now[:alert] }
+          ), status: :unprocessable_entity
+        end
+
+        format.html do
+          redirect_to edit_admin_store_path(@store), alert: message
+        end
+      end
     end
   end
 end
