@@ -2,8 +2,7 @@
 
 class CastMetricsQuery
   Row = Struct.new(
-    :cast_user_id,
-    :cast_display_name,
+    :cast_user,
     :stream_sales_points,
     :stream_seconds,
     :sales_per_hour,
@@ -32,12 +31,11 @@ class CastMetricsQuery
       secs  = seconds_by_cast[u.id] || 0
 
       Row.new(
-        cast_user_id: u.id,
-        cast_display_name: u.display_name.presence || u.email,
+        cast_user: u,
         stream_sales_points: sales,
         stream_seconds: secs,
         sales_per_hour: calc_sales_per_hour(sales, secs),
-        real_store_sales_yen: nil # Phase1: 参照は未実装でOK
+        real_store_sales_yen: nil
       )
     end
   end
