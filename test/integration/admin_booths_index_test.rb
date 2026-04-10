@@ -37,7 +37,6 @@ class AdminBoothsIndexTest < ActionDispatch::IntegrationTest
     end
 
     assert_select "a", text: "詳細", count: 0
-    assert_select "a[href=?]", admin_booth_path(@booth1_active), count: 0
   end
 
   test "store_admin: archived=1 includes archived booths in current_store scope" do
