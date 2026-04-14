@@ -1,0 +1,55 @@
+ja:
+  devise:
+    failure:
+      already_authenticated: すでにログインしています
+      inactive: アカウントが有効化されていません
+      invalid: "%{authentication_keys}またはパスワードが正しくありません"
+      locked: アカウントはロックされています
+      last_attempt: 残り1回でアカウントがロックされます
+      not_found_in_database: "%{authentication_keys}またはパスワードが正しくありません"
+      timeout: セッションの有効期限が切れました。再度ログインしてください
+      unauthenticated: ログインまたは新規登録をしてください
+      unconfirmed: メールアドレスの確認が必要です
+
+    sessions:
+      signed_in: ログインしました
+      signed_out: ログアウトしました
+      already_signed_out: すでにログアウトしています
+
+    passwords:
+      no_token: パスワード再設定メールのURLからアクセスしてください
+      send_instructions: パスワード再設定方法を記載したメールを送信しました
+      send_paranoid_instructions: 該当するメールアドレスが存在する場合、パスワード再設定方法を記載したメールを送信しました
+      updated: パスワードを変更しました。現在ログイン中です
+      updated_not_active: パスワードを変更しました
+
+    confirmations:
+      confirmed: メールアドレスを確認しました
+      send_instructions: メールアドレス確認用のメールを送信しました
+      send_paranoid_instructions: 該当するメールアドレスが存在する場合、メールアドレス確認用のメールを送信しました
+
+    registrations:
+      destroyed: アカウントを削除しました。ご利用ありがとうございました
+      signed_up: アカウント登録が完了しました
+      signed_up_but_inactive: アカウント登録は完了しましたが、まだ有効化されていないためログインできません
+      signed_up_but_locked: アカウント登録は完了しましたが、アカウントがロックされているためログインできません
+      signed_up_but_unconfirmed: 確認用メールを送信しました。メール内のリンクから有効化してください
+      update_needs_confirmation: アカウント情報を更新しました。新しいメールアドレスの確認が必要です
+      updated: アカウント情報を更新しました
+      updated_but_not_signed_in: アカウント情報を更新しました。パスワード変更のため再ログインしてください
+
+    unlocks:
+      send_instructions: アカウントのロック解除方法を記載したメールを送信しました
+      send_paranoid_instructions: 該当するアカウントが存在する場合、ロック解除方法を記載したメールを送信しました
+      unlocked: アカウントのロックを解除しました。ログインしてください
+
+  errors:
+    messages:
+      already_confirmed: はすでに確認済みです
+      confirmation_period_expired: は%{period}以内に確認が必要です。再度リクエストしてください
+      expired: の有効期限が切れています。再度リクエストしてください
+      not_found: が見つかりません
+      not_locked: はロックされていません
+      not_saved:
+        one: "%{resource}を保存できませんでした。1件のエラーがあります"
+        other: "%{resource}を保存できませんでした。%{count}件のエラーがあります"

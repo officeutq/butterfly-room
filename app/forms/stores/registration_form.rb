@@ -35,7 +35,9 @@ module Stores
       @user  = result.user
       true
     rescue ActiveRecord::RecordInvalid => e
-      errors.add(:base, e.record.errors.full_messages.join(", "))
+      e.record.errors.each do |error|
+        errors.add(error.attribute, error.type, **error.options.except(:message))
+      end
       false
     end
 
@@ -43,17 +45,16 @@ module Stores
 
     def referral_code_must_be_usable
       rc = ReferralCode.find_by(code: referral_code)
-      if rc.nil? || !rc.usable?
-        errors.add(:referral_code, "が無効です")
-      end
+      return if rc.present? && rc.usable?
+
+      errors.add(:referral_code, :invalid)
     end
 
     def email_must_be_unique
       return if email.blank?
+      return unless User.exists?(email: email)
 
-      if User.exists?(email: email)
-        errors.add(:email, "このemailアドレスはすでに使われています")
-      end
+      errors.add(:email, :taken)
     end
   end
 end
