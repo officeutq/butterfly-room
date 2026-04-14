@@ -47,9 +47,18 @@
       </div>
     <% end %>
 
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 mb-3">
       <%= f.submit "ログイン", class: "btn btn-primary" %>
       <%= link_to "ホーム", root_path, class: "btn btn-outline-secondary" %>
     </div>
   <% end %>
+
+  <hr class="my-4">
+
+  <div>
+    <h2 class="h5 mb-3">電話番号でログイン</h2>
+    <p class="text-muted mb-3">メールアドレスを忘れた場合は、認証済み電話番号でログインできます。</p>
+
+    <%= link_to "電話番号でログイン", phone_session_path, class: "btn btn-outline-primary" %>
+  </div>
 </div>

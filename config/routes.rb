@@ -29,6 +29,14 @@ Rails.application.routes.draw do
     post :verify
   end
 
+  # --- Phone session (guest login) ---
+  resource :phone_session, only: [] do
+    get :new
+    post :create
+    get :confirm
+    post :verify
+  end
+
   # --- Public user profiles (login required) ---
   resources :users, only: %i[show]
 
