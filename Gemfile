@@ -69,5 +69,6 @@ gem "devise", "~> 4.9"
 gem "stripe"
 gem "aws-sdk-ivsrealtime"
 gem "aws-sdk-s3", require: false
+gem "aws-sdk-sns"
 gem "mini_magick"
 gem "rails-i18n"
