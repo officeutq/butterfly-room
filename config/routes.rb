@@ -21,33 +21,41 @@ Rails.application.routes.draw do
   # --- Common profile (login required) ---
   resource :profile, only: %i[edit update]
 
+  # --- Phone verification (login required) ---
+  resource :phone_verification, only: [] do
+    get :new
+    post :create
+    get :confirm
+    post :verify
+  end
+
   # --- Public user profiles (login required) ---
   resources :users, only: %i[show]
 
   # --- Public (customer registration) ---
-  get  "/sign_up", to: "customers/registrations#new",    as: :sign_up
+  get  "/sign_up", to: "customers/registrations#new", as: :sign_up
   post "/sign_up", to: "customers/registrations#create"
 
   # --- Cast registration (invite only) ---
-  get  "/cast/sign_up", to: "casts/registrations#new",    as: :cast_sign_up
+  get  "/cast/sign_up", to: "casts/registrations#new", as: :cast_sign_up
   post "/cast/sign_up", to: "casts/registrations#create"
 
   # --- StoreAdmin registration (invite only) ---
-  get  "/store_admin/sign_up", to: "store_admins/registrations#new",    as: :store_admin_sign_up
+  get  "/store_admin/sign_up", to: "store_admins/registrations#new", as: :store_admin_sign_up
   post "/store_admin/sign_up", to: "store_admins/registrations#create"
 
   # --- Public (store registration) ---
   namespace :stores do
     get  :new_registration, to: "registrations#new"
-    post :registrations,    to: "registrations#create"
+    post :registrations, to: "registrations#create"
   end
 
   # --- Public (cast invitation) ---
-  get  "/cast_invitations/:token", to: "cast_invitations#show",   as: :cast_invitation
+  get  "/cast_invitations/:token", to: "cast_invitations#show", as: :cast_invitation
   post "/cast_invitations/:token/accept", to: "cast_invitations#accept", as: :accept_cast_invitation
 
   # --- Public (store_admin invitation) ---
-  get  "/store_admin_invitations/:token", to: "store_admin_invitations#show",   as: :store_admin_invitation
+  get  "/store_admin_invitations/:token", to: "store_admin_invitations#show", as: :store_admin_invitation
   post "/store_admin_invitations/:token/accept", to: "store_admin_invitations#accept", as: :accept_store_admin_invitation
 
   # --- Favorites (login required) ---
@@ -167,9 +175,9 @@ Rails.application.routes.draw do
 
     resources :settlements, only: %i[index show] do
       collection do
-        get  "manual/new",     to: "settlements#new_manual",     as: :new_manual
+        get  "manual/new", to: "settlements#new_manual", as: :new_manual
         post "manual/preview", to: "settlements#preview_manual", as: :preview_manual
-        post "manual",         to: "settlements#create_manual",  as: :create_manual
+        post "manual", to: "settlements#create_manual", as: :create_manual
 
         post :export_csv
       end

@@ -17,6 +17,30 @@
       </div>
     <% end %>
 
+    <% if current_user.at_least?(:customer) %>
+      <div class="col-12 col-md-6 col-xl-4">
+        <%= link_to phone_verification_path, class: "text-decoration-none" do %>
+          <div class="card h-100 dashboard-role-card dashboard-role-card-customer" data-bs-theme="light">
+            <div class="card-body">
+              <h5 class="card-title mb-2">
+                電話番号認証
+                <% if current_user.phone_verified? %>
+                  <span class="badge text-bg-success ms-2">認証済み</span>
+                <% end %>
+              </h5>
+              <p class="card-text mb-0">
+                <% if current_user.phone_verified? %>
+                  認証済み電話番号の確認・変更を行います
+                <% else %>
+                  電話番号を登録して認証します。電話番号でもログインできるようになります。
+                <% end %>
+              </p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
     <% if current_user.at_least?(:cast) %>
       <div class="col-12 col-md-6 col-xl-4">
         <%= link_to(current_user.at_least?(:store_admin) ? admin_booths_path : cast_booths_path,
