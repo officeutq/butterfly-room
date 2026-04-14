@@ -1,0 +1,28 @@
+<% content_for :title, "電話番号でログイン" %>
+
+<div class="row justify-content-center">
+  <div class="col-12 col-md-8 col-lg-6">
+    <div class="card" data-bs-theme="light">
+      <div class="card-body">
+        <h1 class="h4 mb-3">電話番号でログイン</h1>
+
+        <p class="text-muted mb-3">
+          認証済みの電話番号を入力してください。<br>
+          登録済みの場合のみ、認証コードをSMSで送信します。
+        </p>
+
+        <%= form_with url: phone_session_path, method: :post do %>
+          <div class="mb-3">
+            <%= label_tag :phone_number, "電話番号", class: "form-label" %>
+            <%= telephone_field_tag :phone_number, @phone_number, class: "form-control", placeholder: "09012345678" %>
+          </div>
+
+          <div class="d-flex gap-2">
+            <%= submit_tag "認証コードを送信", class: "btn btn-primary" %>
+            <%= link_to "メールログインへ戻る", new_user_session_path, class: "btn btn-outline-secondary" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
