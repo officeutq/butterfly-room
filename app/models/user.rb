@@ -4,6 +4,7 @@ class User < ApplicationRecord
   enum :role, { customer: 0, cast: 1, store_admin: 2, system_admin: 3 }
 
   validates :bio, length: { maximum: 500 }, allow_nil: true
+  validates :phone_number, uniqueness: true, allow_nil: true
 
   ROLE_LEVELS = {
     customer: 0,
@@ -48,5 +49,9 @@ class User < ApplicationRecord
   def admin_of_store?(store_id)
     return false if store_id.blank?
     store_memberships.admin_only.exists?(store_id: store_id)
+  end
+
+  def phone_verified?
+    phone_number.present? && phone_verified_at.present?
   end
 end
