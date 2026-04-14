@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_07_082424) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_14_112527) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -181,6 +181,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_07_082424) do
     t.datetime "created_at", null: false
     t.string "title"
     t.datetime "updated_at", null: false
+  end
+
+  create_table "phone_verifications", force: :cascade do |t|
+    t.integer "attempts_count", default: 0, null: false
+    t.datetime "consumed_at"
+    t.datetime "created_at", null: false
+    t.datetime "expires_at", null: false
+    t.datetime "invalidated_at"
+    t.datetime "last_sent_at", null: false
+    t.string "otp_code_digest", null: false
+    t.string "phone_number", null: false
+    t.string "purpose", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id"
+    t.datetime "verified_at"
+    t.index ["phone_number", "purpose", "created_at"], name: "index_phone_verifications_on_phone_and_purpose_and_created_at"
+    t.index ["phone_number"], name: "index_phone_verifications_on_phone_number"
+    t.index ["purpose"], name: "index_phone_verifications_on_purpose"
+    t.index ["user_id"], name: "index_phone_verifications_on_user_id"
+    t.check_constraint "attempts_count >= 0", name: "phone_verifications_attempts_count_non_negative"
   end
 
   create_table "presences", force: :cascade do |t|
@@ -509,6 +529,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_07_082424) do
   add_foreign_key "favorite_booths", "users"
   add_foreign_key "favorite_stores", "stores"
   add_foreign_key "favorite_stores", "users"
+  add_foreign_key "phone_verifications", "users"
   add_foreign_key "presences", "stream_sessions"
   add_foreign_key "presences", "users", column: "customer_user_id"
   add_foreign_key "settlement_carryovers", "settlements", column: "applied_settlement_id"
