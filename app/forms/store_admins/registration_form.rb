@@ -27,7 +27,9 @@ module StoreAdmins
       @user = result.user
       true
     rescue ActiveRecord::RecordInvalid => e
-      errors.add(:base, e.record.errors.full_messages.join(", "))
+      e.record.errors.each do |error|
+        errors.add(error.attribute, error.type, **error.options.except(:message))
+      end
       false
     end
 
@@ -35,10 +37,9 @@ module StoreAdmins
 
     def email_must_be_unique
       return if email.blank?
+      return unless User.exists?(email: email)
 
-      if User.exists?(email: email)
-        errors.add(:email, "このemailアドレスはすでに使われています")
-      end
+      errors.add(:email, :taken)
     end
   end
 end

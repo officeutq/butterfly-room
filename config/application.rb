@@ -8,6 +8,8 @@ module App
   class Application < Rails::Application
     config.load_defaults 8.1
 
+    config.i18n.default_locale = :ja
+
     # Propshaft の assets load path を早い段階で確定（testでも効かせる）
     config.assets.paths << Rails.root.join("app/assets/builds")
     config.assets.paths << Rails.root.join("node_modules")

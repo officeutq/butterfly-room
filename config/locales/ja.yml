@@ -1,0 +1,76 @@
+ja:
+  activerecord:
+    models:
+      user: ユーザー
+      store: 店舗
+      booth: ブース
+      drink_item: ドリンク
+      store_admin_invitation: 店舗管理者招待
+      store_cast_invitation: キャスト招待
+
+    attributes:
+      user:
+        email: メールアドレス
+        password: パスワード
+        password_confirmation: パスワード（確認）
+        bio: 自己紹介
+        role: 権限
+
+      store:
+        name: 店舗名
+        description: 店舗説明
+        area: エリア
+        business_type: 業種
+        referral_code: 紹介コード
+
+      booth:
+        name: ブース名
+        description: ブース説明
+        status: 配信状態
+
+      drink_item:
+        name: ドリンク名
+        price_points: ポイント
+        position: 表示順
+        icon_key: アイコン
+
+      store_admin_invitation:
+        expires_at: 有効期限
+        token_digest: トークン
+
+      store_cast_invitation:
+        expires_at: 有効期限
+        token_digest: トークン
+
+  activemodel:
+    models:
+      customers/registration_form: 顧客登録
+      casts/registration_form: キャスト登録
+      store_admins/registration_form: 店舗管理者登録
+      stores/registration_form: 店舗登録
+
+    attributes:
+      customers/registration_form:
+        email: メールアドレス
+        password: パスワード
+        password_confirmation: パスワード（確認）
+
+      casts/registration_form:
+        email: メールアドレス
+        password: パスワード
+        password_confirmation: パスワード（確認）
+
+      store_admins/registration_form:
+        email: メールアドレス
+        password: パスワード
+        password_confirmation: パスワード（確認）
+
+      stores/registration_form:
+        store_name: 店舗名
+        email: メールアドレス
+        password: パスワード
+        password_confirmation: パスワード（確認）
+        referral_code: 紹介コード
+
+  errors:
+    format: "%{attribute}%{message}"

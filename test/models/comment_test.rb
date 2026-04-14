@@ -30,7 +30,7 @@ class CommentTest < ActiveSupport::TestCase
     )
 
     assert_not comment.valid?
-    assert_includes comment.errors[:body], "can't be blank"
+    assert_includes comment.errors.details[:body], { error: :blank }
   end
 
   test "event 系 kind は body なしでも有効" do
@@ -83,6 +83,6 @@ class CommentTest < ActiveSupport::TestCase
     )
 
     assert_not comment.valid?
-    assert_includes comment.errors[:kind], "is not included in the list"
+    assert comment.errors.details[:kind].any? { |detail| detail[:error] == :inclusion }
   end
 end

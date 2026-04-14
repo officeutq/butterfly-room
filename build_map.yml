@@ -70,3 +70,6 @@ builds:
   '12':
     issues:
     - 667
+  '13':
+    issues:
+    - 674

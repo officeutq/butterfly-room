@@ -70,3 +70,4 @@ gem "stripe"
 gem "aws-sdk-ivsrealtime"
 gem "aws-sdk-s3", require: false
 gem "mini_magick"
+gem "rails-i18n"

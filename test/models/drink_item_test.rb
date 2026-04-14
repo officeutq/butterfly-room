@@ -46,6 +46,6 @@ class DrinkItemTest < ActiveSupport::TestCase
     )
 
     assert_not drink_item.valid?
-    assert_includes drink_item.errors[:icon_key], "is not included in the list"
+    assert drink_item.errors.details[:icon_key].any? { |detail| detail[:error] == :inclusion }
   end
 end

@@ -41,11 +41,11 @@ class StorePayoutAccountTest < ActiveSupport::TestCase
     )
 
     assert_not spa.valid?
-    assert_includes spa.errors[:bank_code], "can't be blank"
-    assert_includes spa.errors[:branch_code], "can't be blank"
-    assert_includes spa.errors[:account_type], "can't be blank"
-    assert_includes spa.errors[:account_number], "can't be blank"
-    assert_includes spa.errors[:account_holder_kana], "can't be blank"
+    assert_includes spa.errors.details[:bank_code], { error: :blank }
+    assert_includes spa.errors.details[:branch_code], { error: :blank }
+    assert_includes spa.errors.details[:account_type], { error: :blank }
+    assert_includes spa.errors.details[:account_number], { error: :blank }
+    assert_includes spa.errors.details[:account_holder_kana], { error: :blank }
   end
 
   test "manual_bank validates code formats and account_number length" do
@@ -63,9 +63,9 @@ class StorePayoutAccountTest < ActiveSupport::TestCase
     )
 
     assert_not spa.valid?
-    assert_includes spa.errors[:bank_code], "is invalid"
-    assert_includes spa.errors[:branch_code], "is invalid"
-    assert_includes spa.errors[:account_number], "is invalid"
+    assert spa.errors.details[:bank_code].any? { |detail| detail[:error] == :invalid }
+    assert spa.errors.details[:branch_code].any? { |detail| detail[:error] == :invalid }
+    assert spa.errors.details[:account_number].any? { |detail| detail[:error] == :invalid }
   end
 
   test "stripe_connect requires stripe_account_id (future-proof)" do
@@ -79,7 +79,7 @@ class StorePayoutAccountTest < ActiveSupport::TestCase
     )
 
     assert_not spa.valid?
-    assert_includes spa.errors[:stripe_account_id], "can't be blank"
+    assert_includes spa.errors.details[:stripe_account_id], { error: :blank }
 
     spa.stripe_account_id = "acct_123"
     assert spa.valid?
