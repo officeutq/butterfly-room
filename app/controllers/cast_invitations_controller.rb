@@ -51,7 +51,13 @@ class CastInvitationsController < ApplicationController
     session[:current_booth_id] = result.booth.id
     session[:current_store_id] = result.booth.store_id
 
-    redirect_to root_path, notice: "キャスト招待を承認しました（#{@invitation.store.name}）"
+    if session.delete(:just_registered_via_cast_invitation)
+      session[:redirect_to_booth_edit_after_profile_update] = true
+      redirect_to edit_profile_path, notice: "キャスト招待を承認しました（#{@invitation.store.name}）"
+    else
+      session[:redirect_to_home_after_cast_booth_update] = true
+      redirect_to edit_cast_booth_path(result.booth), notice: "キャスト招待を承認しました（#{@invitation.store.name}）"
+    end
   rescue StoreCastInvitations::AcceptInvitation::NotUsable => e
     redirect_to cast_invitation_path(params[:token]), alert: e.message
   rescue StoreCastInvitations::AcceptInvitation::NotAuthorized => e

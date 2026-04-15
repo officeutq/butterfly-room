@@ -27,7 +27,23 @@ class ProfilesController < ApplicationController
         remove_param_name: :remove_avatar
       )
 
-      redirect_to root_path, notice: "プロフィールを更新しました"
+      if session.delete(:redirect_to_booth_edit_after_profile_update)
+        booth = current_booth_for_invitation_flow
+
+        if booth.present?
+          # ★追加：初回プロフィール入力時のみブース名を補完
+          if booth.name == "ななしさんのブース" && @user.display_name.present?
+            booth.update!(name: "#{@user.display_name}のブース")
+          end
+
+          session[:redirect_to_home_after_cast_booth_update] = true
+          redirect_to edit_cast_booth_path(booth), notice: "プロフィールを更新しました"
+        else
+          redirect_to root_path, notice: "プロフィールを更新しました"
+        end
+      else
+        redirect_to root_path, notice: "プロフィールを更新しました"
+      end
     else
       respond_profile_update_error(@user.errors.full_messages)
     end
@@ -106,6 +122,14 @@ class ProfilesController < ApplicationController
 
   def verify_phone_otp_params
     params.permit(:phone_number, :otp_code)
+  end
+
+  def current_booth_for_invitation_flow
+    booth_id = session[:current_booth_id]
+    return nil if booth_id.blank?
+
+    Booth.active.joins(:booth_casts)
+         .find_by(id: booth_id, booth_casts: { cast_user_id: current_user.id })
   end
 
   def respond_profile_update_error(messages)

@@ -15,6 +15,7 @@ module Casts
 
       if @form.save
         sign_in(@form.user) # Devise
+        session[:just_registered_via_cast_invitation] = true
         redirect_to cast_invitation_path(@token), notice: "cast アカウントを作成しました。招待を承認してください。"
       else
         render :new, status: :unprocessable_entity

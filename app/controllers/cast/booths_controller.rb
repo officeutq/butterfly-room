@@ -127,7 +127,14 @@ module Cast
           remove_param_name: :remove_thumbnail_image
         )
 
-        redirect_to helpers.dashboard_path_for(current_user), notice: "ブースを更新しました"
+        redirect_path =
+          if session.delete(:redirect_to_home_after_cast_booth_update)
+            root_path
+          else
+            helpers.dashboard_path_for(current_user)
+          end
+
+        redirect_to redirect_path, notice: "ブースを更新しました"
       else
         respond_booth_update_error(@booth.errors.full_messages)
       end
