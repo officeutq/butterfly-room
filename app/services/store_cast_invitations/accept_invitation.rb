@@ -2,7 +2,7 @@
 
 module StoreCastInvitations
   class AcceptInvitation
-    Result = Struct.new(:invitation, keyword_init: true)
+    Result = Struct.new(:invitation, :booth, keyword_init: true)
 
     class NotUsable < StandardError; end
     class NotAuthorized < StandardError; end
@@ -19,6 +19,8 @@ module StoreCastInvitations
     def call!
       raise NotAuthorized, "cast でログインしてください" unless @actor&.cast?
 
+      booth = nil
+
       ActiveRecord::Base.transaction do
         @invitation.lock!
 
@@ -34,13 +36,29 @@ module StoreCastInvitations
           # すでに所属済みでも、承認済みとして扱う（安全側・冪等）
         end
 
+        booth = Booth.create!(
+          store: @invitation.store,
+          name: booth_name_for(@actor)
+        )
+
+        BoothCast.create!(
+          booth: booth,
+          cast_user: @actor
+        )
+
         @invitation.update!(
           used_at: Time.current,
           accepted_by_user: @actor
         )
       end
 
-      Result.new(invitation: @invitation)
+      Result.new(invitation: @invitation, booth: booth)
+    end
+
+    private
+
+    def booth_name_for(user)
+      "#{ApplicationController.helpers.display_name_or_anonymous(user)}のブース"
     end
   end
 end

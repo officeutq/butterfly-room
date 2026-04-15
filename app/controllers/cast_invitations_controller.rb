@@ -16,14 +16,12 @@ class CastInvitationsController < ApplicationController
       return
     end
 
-    # --- 追加: すでに在籍しているかチェック ---
     @already_member = StoreMembership.exists?(
       store_id: @invitation.store_id,
       user_id: current_user.id,
       membership_role: :cast
     )
 
-    # 在籍済み かつ 招待がまだ usable なら closed 扱いにする
     if @already_member && @invitation.usable?
       ActiveRecord::Base.transaction do
         @invitation.lock!
@@ -48,7 +46,10 @@ class CastInvitationsController < ApplicationController
       return
     end
 
-    StoreCastInvitations::AcceptInvitation.call!(invitation: @invitation, actor: current_user)
+    result = StoreCastInvitations::AcceptInvitation.call!(invitation: @invitation, actor: current_user)
+
+    session[:current_booth_id] = result.booth.id
+    session[:current_store_id] = result.booth.store_id
 
     redirect_to root_path, notice: "キャスト招待を承認しました（#{@invitation.store.name}）"
   rescue StoreCastInvitations::AcceptInvitation::NotUsable => e
