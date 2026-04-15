@@ -61,4 +61,92 @@ class CastInvitationFlowTest < ActionDispatch::IntegrationTest
     booth = Booth.order(:id).last
     assert_equal "ななしさんのブース", booth.name
   end
+
+  test "existing cast is redirected to booth edit after accepting invitation, then to home after booth update" do
+    store = Store.create!(name: "Invite Store")
+    inviter = User.create!(email: "inviter_cast3@example.com", password: "password", role: :store_admin)
+    StoreMembership.create!(store: store, user: inviter, membership_role: :admin)
+
+    cast_user = User.create!(
+      email: "cast_user3@example.com",
+      password: "password",
+      password_confirmation: "password",
+      role: :cast,
+      display_name: "愛"
+    )
+
+    result = StoreCastInvitations::IssueInvitation.call!(store: store, invited_by_user: inviter)
+    token = result.token
+
+    sign_in cast_user, scope: :user
+
+    post accept_cast_invitation_path(token)
+    booth = Booth.order(:id).last
+
+    assert_redirected_to edit_cast_booth_path(booth)
+    follow_redirect!
+    assert_response :success
+    assert_includes @response.body, "ブース編集"
+
+    patch cast_booth_path(booth), params: {
+      booth: {
+        name: "更新後ブース名",
+        description: "更新後説明"
+      }
+    }
+
+    assert_redirected_to root_path
+  end
+
+  test "new cast via invitation is redirected to profile edit, then booth edit, then home" do
+    store = Store.create!(name: "Invite Store")
+    inviter = User.create!(email: "inviter_cast4@example.com", password: "password", role: :store_admin)
+    StoreMembership.create!(store: store, user: inviter, membership_role: :admin)
+
+    result = StoreCastInvitations::IssueInvitation.call!(store: store, invited_by_user: inviter)
+    token = result.token
+
+    post cast_sign_up_path, params: {
+      token: token,
+      cast_registration: {
+        email: "new_cast_user@example.com",
+        password: "password",
+        password_confirmation: "password"
+      }
+    }
+
+    assert_redirected_to cast_invitation_path(token)
+    follow_redirect!
+    assert_response :success
+
+    post accept_cast_invitation_path(token)
+    assert_redirected_to edit_profile_path
+    follow_redirect!
+    assert_response :success
+    assert_includes @response.body, "プロフィール編集"
+
+    booth = Booth.order(:id).last
+
+    patch profile_path, params: {
+      user: {
+        display_name: "新規キャスト名",
+        bio: "自己紹介です"
+      }
+    }
+
+    assert_equal "新規キャスト名のブース", booth.reload.name
+    assert_redirected_to edit_cast_booth_path(booth)
+    follow_redirect!
+    assert_response :success
+    assert_includes @response.body, "ブース編集"
+
+    patch cast_booth_path(booth), params: {
+      booth: {
+        name: "新しいブース名",
+        description: "新しい説明"
+      }
+    }
+
+    assert_redirected_to root_path
+  end
 end
