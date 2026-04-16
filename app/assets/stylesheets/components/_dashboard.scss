@@ -35,3 +35,106 @@
   color: inherit;
   opacity: 0.85;
 }
+
+.tutorial-highlight {
+  position: relative;
+  border-radius: 8px;
+  animation: tutorial-glow 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes tutorial-glow {
+  from {
+    box-shadow:
+      0 0 0 1px rgba(127, 0, 127, 0.7),
+      0 0 6px rgba(127, 0, 127, 0.5),
+      0 0 7px rgba(127, 0, 127, 0.34),
+      0 0 8px rgba(127, 0, 127, 0.14);
+  }
+  to {
+    box-shadow:
+      0 0 0 1px rgba(255, 0, 255, 0.95),
+      0 0 10px rgba(255, 0, 255, 0.63),
+      0 0 16px rgba(255, 0, 255, 0.52),
+      0 0 20px rgba(255, 0, 255, 0.3);
+  }
+}
+
+.tutorial-popover {
+  --bs-popover-max-width: 360px;
+  --bs-popover-border-color: rgba(160, 120, 255, 0.55);
+  --bs-popover-header-bg: transparent;
+  --bs-popover-body-padding-x: 0;
+  --bs-popover-body-padding-y: 0;
+  --bs-popover-bg: transparent;
+  --bs-popover-border-radius: 12px;
+  --bs-popover-box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  --bs-popover-arrow-border: rgba(255, 255, 255, 0.7);
+  z-index: auto;
+}
+
+.tutorial-popover-inner {
+  padding: 8px 8px 4px 0;
+  color: #212529;
+  background: rgba(235, 180, 235, 0.3);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+}
+
+.tutorial-popover-layout {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: 4px;
+  align-items: start;
+}
+
+.tutorial-popover-media {
+  width: 80px;
+  min-width: 80px;
+}
+
+.tutorial-popover-image {
+  display: block;
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.tutorial-popover-image--placeholder {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.tutorial-popover-content {
+  min-width: 0;
+  padding-top: 8px;
+}
+
+.tutorial-popover .popover-body {
+  padding: 0;
+}
+
+.tutorial-popover-body-text {
+  margin-bottom: 12px;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.5;
+  -webkit-text-stroke-width: thin;
+}
+
+.tutorial-popover-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tutorial-popover-skip {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--bs-primary-color);
+  text-decoration: underline;
+  font-size: 0.875rem;
+}
+
+.tutorial-popover-skip:hover {
+  color: var(--bs-body-color);
+}

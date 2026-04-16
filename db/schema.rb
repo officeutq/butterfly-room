@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_14_114618) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_15_093817) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -408,8 +408,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_14_114618) do
     t.datetime "created_at", null: false
     t.text "description"
     t.string "name", null: false
+    t.datetime "onboarding_invite_copied_at"
+    t.integer "onboarding_step"
     t.bigint "referral_code_id"
     t.datetime "updated_at", null: false
+    t.index ["onboarding_invite_copied_at"], name: "index_stores_on_onboarding_invite_copied_at"
+    t.index ["onboarding_step"], name: "index_stores_on_onboarding_step"
     t.index ["referral_code_id"], name: "index_stores_on_referral_code_id"
   end
 

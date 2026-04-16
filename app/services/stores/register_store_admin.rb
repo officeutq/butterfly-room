@@ -25,7 +25,8 @@ module Stores
       ActiveRecord::Base.transaction do
         store = Store.create!(
           name: @store_name,
-          referral_code: rc
+          referral_code: rc,
+          onboarding_step: :invite_cast
         )
 
         create_default_drink_items!(store)

@@ -27,7 +27,13 @@ export default class extends Controller {
         document.body.removeChild(ta)
       }
 
+      const step = await this.notifyOnboardingCopyIfNeeded()
+
       this.showFlash("success", successMessage)
+
+      if (step) {
+        window.dispatchEvent(new CustomEvent("onboarding:update", { detail: { step } }))
+      }
     } catch (_e) {
       this.showFlash("danger", failureMessage)
     } finally {
@@ -35,6 +41,28 @@ export default class extends Controller {
         this.element.disabled = false
       }, 300)
     }
+  }
+
+  async notifyOnboardingCopyIfNeeded() {
+    const url = this.element.dataset.clipboardOnboardingCopyUrlValue
+    if (!url) return null
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content
+    if (!csrfToken) return null
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "X-CSRF-Token": csrfToken,
+        "Accept": "application/json"
+      },
+      credentials: "same-origin"
+    })
+
+    if (!response.ok) return null
+
+    const json = await response.json()
+    return json.step
   }
 
   showFlash(level, message) {

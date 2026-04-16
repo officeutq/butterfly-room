@@ -5,6 +5,8 @@ module Admin
     before_action :require_current_store!
 
     def index
+      current_store.advance_onboarding_to_create_invite!
+
       @store_cast_invitations =
         StoreCastInvitation
           .includes(:invited_by_user, :accepted_by_user)
@@ -30,7 +32,7 @@ module Admin
       result.invitation.update!(issued_url: url)
 
       redirect_to admin_cast_invitations_path,
-                  notice: "招待を発行しました: #{url}"
+                  notice: "招待を発行しました"
     rescue ActionController::ParameterMissing
       redirect_to admin_cast_invitations_path, alert: "パラメータが不正です"
     rescue ActiveRecord::RecordInvalid => e
