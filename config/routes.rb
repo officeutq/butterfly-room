@@ -151,6 +151,11 @@ Rails.application.routes.draw do
     resource :payout_account, only: %i[edit update], controller: "store_payout_accounts"
     resource :current_store, only: %i[create], controller: "current_stores"
 
+    resource :onboarding, only: [] do
+      post :skip
+      post :cast_invitation_copied
+    end
+
     resources :booths, only: %i[index new create] do
       member do
         patch :archive

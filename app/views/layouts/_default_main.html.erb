@@ -10,6 +10,19 @@
         <%= render "shared/flash_message", level: "danger", message: alert %>
       <% end %>
     </div>
+
+    <% onboarding_store = layout_current_store %>
+    <% if onboarding_store&.onboarding_active? %>
+      <div
+        data-controller="onboarding"
+        data-onboarding-step-value="<%= onboarding_store.onboarding_step %>"
+        data-onboarding-skip-url-value="<%= skip_admin_onboarding_path %>"
+        data-onboarding-invite-cast-image-url-value="<%= asset_path('onboarding/invite_cast.png') %>"
+        data-onboarding-create-invite-image-url-value="<%= asset_path('onboarding/create_invite.png') %>"
+        data-onboarding-go-dashboard-image-url-value="<%= asset_path('onboarding/go_dashboard_for_drinks.png') %>"
+        data-onboarding-setup-drinks-image-url-value="<%= asset_path('onboarding/setup_drinks.png') %>">
+      </div>
+    <% end %>
   </div>
 
   <div class="container my-4">
@@ -63,7 +76,9 @@
           <span class="app-footer-nav-label">お知らせ</span>
         </div>
 
-        <%= link_to dashboard_path_for(current_user), class: footer_nav_item_classes(active: footer_dashboard_active?) do %>
+        <%= link_to dashboard_path_for(current_user),
+              class: footer_nav_item_classes(active: footer_dashboard_active?),
+              data: { onboarding_target_element: "footer-dashboard" } do %>
           <i class="bi bi-list app-footer-nav-icon" aria-hidden="true"></i>
           <span class="app-footer-nav-label">ダッシュボード</span>
         <% end %>

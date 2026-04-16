@@ -15,7 +15,17 @@ module Admin
       @drink_item = current_store.drink_items.new(drink_item_params)
 
       if @drink_item.save
-        redirect_to admin_drink_items_path, notice: "作成しました"
+        onboarding_completed = current_store.onboarding_step_setup_drinks?
+        current_store.complete_onboarding!
+
+        notice =
+          if onboarding_completed
+            "ドリンクを作成しました。初回セットアップのチュートリアルが完了しました。お疲れさまでした！"
+          else
+            "作成しました"
+          end
+
+        redirect_to admin_drink_items_path, notice: notice
       else
         @drink_items = current_store.drink_items.ordered
         @editing_drink_item_id = nil
@@ -25,7 +35,17 @@ module Admin
 
     def update
       if @drink_item.update(drink_item_params)
-        redirect_to admin_drink_items_path, notice: "更新しました"
+        onboarding_completed = current_store.onboarding_step_setup_drinks?
+        current_store.complete_onboarding!
+
+        notice =
+          if onboarding_completed
+            "ドリンクを更新しました。初回セットアップのチュートリアルが完了しました。"
+          else
+            "更新しました"
+          end
+
+        redirect_to admin_drink_items_path, notice: notice
       else
         @drink_items = current_store.drink_items.ordered
         @editing_drink_item_id = @drink_item.id

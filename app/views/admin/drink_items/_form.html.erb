@@ -1,5 +1,5 @@
 <%= form_with model: drink_item, url: url, method: method do |f| %>
-  <div class="card drink-item-card drink-item-form-card <%= "text-muted drink-item-card-disabled" unless drink_item.enabled %>" data-bs-theme="light">
+  <div class="card drink-item-card drink-item-form-card <%= "text-muted drink-item-card-disabled" unless drink_item.enabled %>" data-bs-theme="light" data-onboarding-target-element="create-drink-card">
     <div class="card-body">
       <% if drink_item.errors.any? %>
         <div class="alert alert-danger">
@@ -92,8 +92,11 @@
           </div>
           <div class="col-8 col-sm-9">
             <div class="d-flex justify-content-end gap-2 flex-wrap mt-3">
-              <%= f.submit submit_label, class: "btn btn-sm btn-primary" %>
-
+              <%= f.submit submit_label,
+                    class: "btn btn-sm btn-primary",
+                    data: {
+                      onboarding_target_element: (method.to_s == "post" ? nil : "update-drink-submit")
+                    } %>
               <% if cancel_url.present? %>
                 <%= link_to "キャンセル", cancel_url, class: "btn btn-sm btn-outline-secondary" %>
               <% end %>

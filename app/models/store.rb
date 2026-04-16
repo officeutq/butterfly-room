@@ -11,6 +11,8 @@ class Store < ApplicationRecord
   has_many :store_payout_accounts, dependent: :restrict_with_error
   has_many :settlements, dependent: :restrict_with_error
   has_many :settlement_carryovers, dependent: :restrict_with_error
+  has_many :store_cast_invitations, dependent: :destroy
+  has_many :store_admin_invitations, dependent: :destroy
   has_one :active_payout_account, -> { active }, class_name: "StorePayoutAccount"
   has_one_attached :thumbnail
 
@@ -22,6 +24,15 @@ class Store < ApplicationRecord
     concept_cafe: 4,
     other: 5
   }
+
+  enum :onboarding_step, {
+    invite_cast: 0,
+    create_invite: 1,
+    go_dashboard_for_drinks: 2,
+    setup_drinks: 3,
+    completed: 4,
+    skipped: 5
+  }, prefix: true
 
   validates :name, presence: true
   validates :description, length: { maximum: 1000 }, allow_nil: true
@@ -67,5 +78,42 @@ class Store < ApplicationRecord
     return nil if pa.account_number.blank?
 
     pa.account_number.to_s.last(4)
+  end
+
+  def onboarding_active?
+    onboarding_step.present? && !onboarding_step_completed? && !onboarding_step_skipped?
+  end
+
+  def advance_onboarding_to_create_invite!
+    return unless onboarding_step_invite_cast?
+
+    update!(onboarding_step: :create_invite)
+  end
+
+  def mark_onboarding_invite_copied!
+    return unless onboarding_step_create_invite?
+
+    update!(
+      onboarding_invite_copied_at: Time.current,
+      onboarding_step: :go_dashboard_for_drinks
+    )
+  end
+
+  def advance_onboarding_to_setup_drinks!
+    return unless onboarding_step_go_dashboard_for_drinks?
+
+    update!(onboarding_step: :setup_drinks)
+  end
+
+  def complete_onboarding!
+    return unless onboarding_step_setup_drinks?
+
+    update!(onboarding_step: :completed)
+  end
+
+  def skip_onboarding!
+    return unless onboarding_active?
+
+    update!(onboarding_step: :skipped)
   end
 end

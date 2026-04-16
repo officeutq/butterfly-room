@@ -141,8 +141,11 @@
 
       <div class="col-12 col-md-6 col-xl-4">
         <% if store.present? %>
-          <%= link_to admin_cast_invitations_path, class: "text-decoration-none" do %>
-            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
+          <%= link_to admin_cast_invitations_path,
+                      class: "text-decoration-none" do %>
+            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin"
+                data-bs-theme="light"
+                data-onboarding-target-element="invite-cast-card">
               <div class="card-body">
                 <h5 class="card-title mb-2">キャスト招待</h5>
                 <p class="card-text mb-0">キャスト招待URLの発行と確認を行います</p>
@@ -213,8 +216,11 @@
 
       <div class="col-12 col-md-6 col-xl-4">
         <% if store.present? %>
-          <%= link_to admin_drink_items_path, class: "text-decoration-none" do %>
-            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
+          <%= link_to admin_drink_items_path,
+                      class: "text-decoration-none" do %>
+            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin"
+                data-bs-theme="light"
+                data-onboarding-target-element="setup-drinks-card">
               <div class="card-body">
                 <h5 class="card-title mb-2">ドリンクメニュー</h5>
                 <p class="card-text mb-0">ドリンクメニューを管理します</p>

@@ -14,10 +14,16 @@
       <div class="row g-2 align-items-end">
         <div class="col-12 col-md-8">
           <%= f.label :note, "メモ（任意）", class: "form-label" %>
-          <%= f.text_area :note, class: "form-control", rows: 2, placeholder: "例）◯◯さん用 / SNSのアカウント名など" %>
+          <%= f.text_area :note,
+                class: "form-control",
+                rows: 2,
+                placeholder: "例）◯◯さん用 / SNSのアカウント名など",
+                data: { onboarding_target_element: "invite-note-field" } %>
         </div>
         <div class="col-12 col-md-auto">
-          <%= f.submit "招待URLを発行", class: "btn btn-primary" %>
+          <%= f.submit "招待URLを発行",
+                class: "btn btn-primary",
+                data: { onboarding_target_element: "issue-invite-button" } %>
         </div>
       </div>
     <% end %>
@@ -104,8 +110,9 @@
                     data-clipboard-text="<%= inv.issued_url %>"
                     data-clipboard-success-message="招待URLをコピーしました"
                     data-clipboard-failure-message="招待URLのコピーに失敗しました"
+                    data-clipboard-onboarding-copy-url-value="<%= cast_invitation_copied_admin_onboarding_path %>"
+                    data-onboarding-target-element="copy-invite-button"
                     aria-label="招待URLをコピー"
-                    title="招待URLをコピー"
                   >
                     <i class="bi bi-copy" aria-hidden="true"></i>
                   </button>
