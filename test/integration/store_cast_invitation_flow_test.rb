@@ -3,6 +3,19 @@
 require "test_helper"
 
 class StoreCastInvitationFlowTest < ActionDispatch::IntegrationTest
+  setup do
+    fake_ivs_client = Object.new
+    fake_ivs_client.define_singleton_method(:create_stage!) do |name:, tags: {}|
+      "arn:aws:ivsrealtime:ap-northeast-1:123456789012:stage/FAKE"
+    end
+
+    Ivs::Client.factory = ->(region:) { fake_ivs_client }
+  end
+
+  teardown do
+    Ivs::Client.reset_factory!
+  end
+
   test "guest visiting invitation is redirected to login and can sign up cast via invitation" do
     store = Store.create!(name: "Invite Store")
     inviter = User.create!(email: "inviter@example.com", password: "password", role: :store_admin)
