@@ -15,10 +15,8 @@
   }
 }
 
-@media (display-mode: standalone) and (max-width: 575.98px) {
-  :root {
-    --safe-area-standalone: 12px;
-  }
+html.is-standalone {
+  --safe-area-standalone: 12px;
 }
 
 @import "components/layout";
