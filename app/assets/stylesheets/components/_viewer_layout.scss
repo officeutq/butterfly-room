@@ -88,7 +88,11 @@ body.viewer-layout .viewer-main:has(.viewer-page:not(.is-live)) {
 .viewer-waiting-shell {
   width: 100%;
   min-height: var(--viewer-stage-h);
-  padding-bottom: var(--app-footer-h);
+  padding-bottom: calc(
+    var(--app-footer-base-h) +
+    env(safe-area-inset-bottom, 0px) +
+    var(--safe-area-standalone)
+  );
 }
 
 .viewer-waiting-container {

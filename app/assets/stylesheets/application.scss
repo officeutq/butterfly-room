@@ -4,12 +4,20 @@
   --live-stage-h: 0px;
   --viewer-stage-h: 0px;
   --app-header-h: 0px;
-  --app-footer-h: 64px;
+  --app-footer-h: 0px;
+  --app-footer-base-h: 64px;
+  --safe-area-standalone: 0px;
 }
 
 @media (max-width: 575.98px) {
   :root {
-    --app-footer-h: 60px;
+    --app-footer-base-h: 60px;
+  }
+}
+
+@media (display-mode: standalone) and (max-width: 575.98px) {
+  :root {
+    --safe-area-standalone: 12px;
   }
 }
 
