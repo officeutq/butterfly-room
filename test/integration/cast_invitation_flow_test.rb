@@ -3,6 +3,19 @@
 require "test_helper"
 
 class CastInvitationFlowTest < ActionDispatch::IntegrationTest
+  setup do
+    fake_ivs_client = Object.new
+    fake_ivs_client.define_singleton_method(:create_stage!) do |name:, tags: {}|
+      "arn:aws:ivsrealtime:ap-northeast-1:123456789012:stage/FAKE"
+    end
+
+    Ivs::Client.factory = ->(region:) { fake_ivs_client }
+  end
+
+  teardown do
+    Ivs::Client.reset_factory!
+  end
+
   test "cast can accept invitation and booth is auto created, linked, and set as current_booth" do
     store = Store.create!(name: "Invite Store")
     inviter = User.create!(email: "inviter_cast@example.com", password: "password", role: :store_admin)
@@ -30,6 +43,7 @@ class CastInvitationFlowTest < ActionDispatch::IntegrationTest
     booth = Booth.order(:id).last
     assert_equal store.id, booth.store_id
     assert_equal "愛のブース", booth.name
+    assert booth.ivs_stage_arn.present?
 
     booth_cast = BoothCast.order(:id).last
     assert_equal booth.id, booth_cast.booth_id
