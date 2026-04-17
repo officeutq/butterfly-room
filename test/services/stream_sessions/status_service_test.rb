@@ -118,4 +118,97 @@ class StreamSessions::StatusServiceTest < ActiveSupport::TestCase
     StreamSessions::StatusService.new(booth: booth, actor: cast, to_status: :live).call
     assert booth.reload.live?
   end
+
+test "go_live updates last_online_at" do
+  store = Store.create!(name: "Test Store")
+  cast = User.create!(email: "status_last_online_live@example.com", password: "password", role: :cast)
+
+  booth = Booth.create!(
+    store: store,
+    name: "Test Booth",
+    status: :offline,
+    ivs_stage_arn: "arn:aws:ivs:ap-northeast-1:123456789012:stage/last-online-live"
+  )
+
+  BoothCast.create!(booth: booth, cast_user: cast)
+
+  StreamSessions::StartService.new(booth: booth, actor: cast).call
+  booth.reload
+  assert booth.standby?
+  assert_nil booth.last_online_at
+
+  freeze_time do
+    now = Time.current
+
+    StreamSessions::StatusService.new(
+      booth: booth,
+      actor: cast,
+      to_status: :live
+    ).call
+
+    assert_equal now.to_i, booth.reload.last_online_at.to_i
+    assert booth.live?
+  end
+end
+
+test "go_away updates last_online_at" do
+  store = Store.create!(name: "Test Store")
+  cast = User.create!(email: "status_last_online_away@example.com", password: "password", role: :cast)
+
+  booth = Booth.create!(
+    store: store,
+    name: "Test Booth",
+    status: :offline,
+    ivs_stage_arn: "arn:aws:ivs:ap-northeast-1:123456789012:stage/last-online-away"
+  )
+
+  BoothCast.create!(booth: booth, cast_user: cast)
+
+  StreamSessions::StartService.new(booth: booth, actor: cast).call
+  StreamSessions::StatusService.new(booth: booth, actor: cast, to_status: :live).call
+
+  freeze_time do
+    now = Time.current
+
+    StreamSessions::StatusService.new(
+      booth: booth.reload,
+      actor: cast,
+      to_status: :away
+    ).call
+
+    assert_equal now.to_i, booth.reload.last_online_at.to_i
+    assert booth.away?
+  end
+end
+
+  test "back updates last_online_at" do
+    store = Store.create!(name: "Test Store")
+    cast = User.create!(email: "status_last_online_back@example.com", password: "password", role: :cast)
+
+    booth = Booth.create!(
+      store: store,
+      name: "Test Booth",
+      status: :offline,
+      ivs_stage_arn: "arn:aws:ivs:ap-northeast-1:123456789012:stage/last-online-back"
+    )
+
+    BoothCast.create!(booth: booth, cast_user: cast)
+
+    StreamSessions::StartService.new(booth: booth, actor: cast).call
+    StreamSessions::StatusService.new(booth: booth, actor: cast, to_status: :live).call
+    StreamSessions::StatusService.new(booth: booth.reload, actor: cast, to_status: :away).call
+
+    freeze_time do
+      now = Time.current
+
+      StreamSessions::StatusService.new(
+        booth: booth.reload,
+        actor: cast,
+        to_status: :live
+      ).call
+
+      assert_equal now.to_i, booth.reload.last_online_at.to_i
+      assert booth.live?
+    end
+  end
 end

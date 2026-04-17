@@ -16,12 +16,13 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     Store.create!(name: name)
   end
 
-  def create_booth!(store:, name:, status:, archived_at: nil)
+  def create_booth!(store:, name:, status:, archived_at: nil, last_online_at: nil)
     Booth.create!(
       store: store,
       name: name,
       status: status,
-      archived_at: archived_at
+      archived_at: archived_at,
+      last_online_at: last_online_at
     )
   end
 
@@ -145,12 +146,23 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "No Booth Store"
   end
 
-  test "mode=stores: archived boothしかない店舗も表示されるが active booth数 0件扱いになる" do
-    store_active = create_store!(name: "Active Booth Store")
+  test "mode=stores: archived boothしかない店舗は online 扱いされず、last_online_at がないため後ろに来る" do
+    store_recent = create_store!(name: "Recent Offline Store")
     store_archived_only = create_store!(name: "Archived Only Store")
 
-    create_booth!(store: store_active, name: "Active Booth", status: :offline)
-    create_booth!(store: store_archived_only, name: "Archived Booth", status: :live, archived_at: Time.current)
+    create_booth!(
+      store: store_recent,
+      name: "Recent Offline Booth",
+      status: :offline,
+      last_online_at: Time.current - 1.day
+    )
+
+    create_booth!(
+      store: store_archived_only,
+      name: "Archived Booth",
+      status: :live,
+      archived_at: Time.current
+    )
 
     customer = create_user!(email: "customer_archived_store@example.com", role: :customer)
     login_as(customer, scope: :user)
@@ -160,9 +172,9 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
 
     body = @response.body
 
-    assert_includes body, "Active Booth Store"
+    assert_includes body, "Recent Offline Store"
     assert_includes body, "Archived Only Store"
-    assert_operator body.index("Active Booth Store"), :<, body.index("Archived Only Store")
+    assert_operator body.index("Recent Offline Store"), :<, body.index("Archived Only Store")
   end
 
   test "archived は検索しても出ない（mode=booths）" do
@@ -209,7 +221,7 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     assert_operator body.index("Live Old"), :<, body.index("Standby Booth")
   end
 
-  test "並び順: stores は online優先 → active booth数 desc → id desc" do
+  test "並び順: stores は online優先 → online_started_at desc → offlineは last_online_at desc → id desc" do
     store_a = create_store!(name: "Alpha Store")
     store_b = create_store!(name: "Beta Store")
     store_c = create_store!(name: "Gamma Store")
@@ -217,20 +229,18 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
 
     actor = create_user!(email: "cast_actor2@example.com", role: :cast)
 
-    # store_a: online 1件 + offline 1件 => active booth 2件
+    # onlineあり（started_at が新しい）
     booth_a_live = create_booth!(store: store_a, name: "A Live", status: :live)
-    create_booth!(store: store_a, name: "A Offline", status: :offline)
-
-    # store_b: online 1件 => active booth 1件
-    booth_b_away = create_booth!(store: store_b, name: "B Away", status: :away)
-
-    # store_c: offline 1件 => onlineなし, active booth 1件
-    create_booth!(store: store_c, name: "C Offline", status: :offline)
-
-    # store_d: booth 0件
     attach_current_stream_session!(booth: booth_a_live, started_at: Time.current - 5.minutes, actor: actor)
+
+    # onlineあり（started_at が古い）
+    booth_b_away = create_booth!(store: store_b, name: "B Away", status: :away)
     attach_current_stream_session!(booth: booth_b_away, started_at: Time.current - 3.hours, actor: actor)
 
+    # onlineなし、last_online_at あり
+    create_booth!(store: store_c, name: "C Offline", status: :offline, last_online_at: Time.current - 1.day)
+
+    # booth 0件
     customer = create_user!(email: "customer_store_order@example.com", role: :customer)
     login_as(customer, scope: :user)
 
@@ -239,13 +249,13 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
 
     body = @response.body
 
-    # online優先。その中で active booth数 desc
+    # online優先。その中では started_at が新しい順
     assert_operator body.index("Alpha Store"), :<, body.index("Beta Store")
 
     # onlineなしグループは onlineありより後ろ
     assert_operator body.index("Beta Store"), :<, body.index("Gamma Store")
 
-    # booth 0件の店舗も表示され、active booth 1件の店舗より後ろ
+    # booth 0件の店舗は、last_online_at がある店舗より後ろ
     assert_operator body.index("Gamma Store"), :<, body.index("Delta Store")
   end
 

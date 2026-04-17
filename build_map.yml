@@ -85,3 +85,6 @@ builds:
   '15':
     issues:
     - 690
+  '16':
+    issues:
+    - 328
