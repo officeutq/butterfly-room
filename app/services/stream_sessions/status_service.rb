@@ -29,17 +29,19 @@ module StreamSessions
           raise AnotherBoothAlreadyLive, "他のブースで配信中のため開始できません"
         end
 
+        now = Time.current
+
         # Issue #78 遷移
         # standby -> live（配信開始後にサーバ側でliveへ）
         # live <-> away
         # 同一はno-op
         case [ from, @to_status ]
         when %i[standby live]
-          booth.update!(status: :live)
+          booth.update!(status: :live, last_online_at: now)
         when %i[live away]
-          booth.update!(status: :away)
+          booth.update!(status: :away, last_online_at: now)
         when %i[away live]
-          booth.update!(status: :live)
+          booth.update!(status: :live, last_online_at: now)
         when [ @to_status, @to_status ]
           # no-op
         else

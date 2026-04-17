@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_15_093817) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_17_073227) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -59,6 +59,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_15_093817) do
     t.bigint "current_stream_session_id"
     t.text "description"
     t.string "ivs_stage_arn"
+    t.datetime "last_online_at"
     t.string "name", null: false
     t.integer "status", default: 0, null: false
     t.bigint "store_id", null: false
@@ -66,6 +67,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_15_093817) do
     t.index ["archived_at"], name: "index_booths_on_archived_at"
     t.index ["current_stream_session_id"], name: "index_booths_on_current_stream_session_id"
     t.index ["ivs_stage_arn"], name: "index_booths_on_ivs_stage_arn"
+    t.index ["last_online_at"], name: "index_booths_on_last_online_at"
     t.index ["store_id", "archived_at"], name: "index_booths_on_store_id_and_archived_at"
     t.index ["store_id", "status"], name: "index_booths_on_store_id_and_status"
     t.index ["store_id"], name: "index_booths_on_store_id"
