@@ -30,6 +30,7 @@ class CastInvitationFlowTest < ActionDispatch::IntegrationTest
     booth = Booth.order(:id).last
     assert_equal store.id, booth.store_id
     assert_equal "愛のブース", booth.name
+    assert booth.ivs_stage_arn.present?
 
     booth_cast = BoothCast.order(:id).last
     assert_equal booth.id, booth_cast.booth_id
