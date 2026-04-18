@@ -37,7 +37,7 @@ module StreamSessions
         ended_booth = booth
       end
 
-      StreamSessionNotifier.broadcast_ended(ended_session)
+      StreamSessionNotifier.broadcast_ended(ended_session, forced: false)
 
       StreamSessionNotifier.broadcast_stream_state(
         booth: ended_booth,

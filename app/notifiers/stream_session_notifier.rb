@@ -21,12 +21,15 @@ class StreamSessionNotifier
     )
   end
 
-  def self.broadcast_ended(stream_session)
+  def self.broadcast_ended(stream_session, forced: false)
     Turbo::StreamsChannel.broadcast_replace_to(
       [ stream_session, :cast_pending_drink_orders ],
       target: "cast_pending_drink_orders",
       partial: "cast/stream_sessions/ended",
-      locals: { stream_session: stream_session }
+      locals: {
+        stream_session: stream_session,
+        forced: forced
+      }
     )
 
     Turbo::StreamsChannel.broadcast_append_to(
