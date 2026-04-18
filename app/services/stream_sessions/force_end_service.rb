@@ -9,7 +9,12 @@ module StreamSessions
 
     def call
       disconnect_publisher_participant
-      StreamSessions::EndService.new(stream_session: @stream_session, actor: @actor).call
+      ended_session = StreamSessions::EndService.new(
+        stream_session: @stream_session,
+        actor: @actor
+      ).call
+
+      StreamSessionNotifier.broadcast_ended(ended_session, forced: true)
     end
 
     private

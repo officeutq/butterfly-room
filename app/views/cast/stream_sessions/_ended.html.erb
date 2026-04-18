@@ -1,3 +1,17 @@
-<div id="cast_pending_drink_orders" class="alert alert-secondary mb-0" role="alert">
-  配信は終了しました（未消化は返却済み）。
+<%# locals: stream_session:, forced: %>
+<% forced = local_assigns.fetch(:forced, false) %>
+
+<div id="cast_pending_drink_orders"
+     class="alert mb-0 <%= forced ? "alert-danger" : "alert-secondary" %>"
+     role="alert"
+     <% if forced %>
+       data-controller="auto-redirect"
+       data-auto-redirect-url-value="<%= cast_stream_session_path(stream_session) %>"
+       data-auto-redirect-delay-value="1000"
+     <% end %>>
+  <% if forced %>
+    強制終了されました。
+  <% else %>
+    配信は終了しました（未消化は返却済み）。
+  <% end %>
 </div>
