@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_17_073227) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_19_084917) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -421,6 +421,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_17_073227) do
 
   create_table "stream_sessions", force: :cascade do |t|
     t.bigint "booth_id", null: false
+    t.datetime "broadcast_started_at"
     t.datetime "created_at", null: false
     t.datetime "ended_at"
     t.string "ivs_stage_arn"
@@ -432,6 +433,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_17_073227) do
     t.datetime "updated_at", null: false
     t.index ["booth_id", "started_at"], name: "index_stream_sessions_on_booth_id_and_started_at"
     t.index ["booth_id"], name: "index_stream_sessions_on_booth_id"
+    t.index ["broadcast_started_at"], name: "index_stream_sessions_on_broadcast_started_at"
     t.index ["ended_at"], name: "index_stream_sessions_on_ended_at"
     t.index ["ivs_stage_arn"], name: "index_stream_sessions_on_ivs_stage_arn"
     t.index ["started_by_cast_user_id"], name: "index_stream_sessions_on_started_by_cast_user_id"

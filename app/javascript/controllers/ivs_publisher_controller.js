@@ -1,6 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import { clearError, humanizeError, setError } from "controllers/ivs_publisher/errors"
-import { fetchParticipantToken, patchBoothStatus, postFinish, reloadMetaDisplay } from "controllers/ivs_publisher/api_client"
+import { fetchParticipantToken, patchBoothStatus, patchBroadcastStartedAt, postFinish, reloadMetaDisplay } from "controllers/ivs_publisher/api_client"
 import { syncCanvasResolutionToMeasured, startCanvasRenderLoop, stopCanvasRenderLoop } from "controllers/ivs_publisher/away_canvas"
 import {
   applyBeautyConfig,
@@ -47,6 +47,7 @@ export default class extends Controller {
     finishUrl: String,
     statusUrl: String,
     metaDisplayUrl: String,
+    startBroadcastUrl: String,
     mirror: { type: Boolean, default: true },
     initialMode: { type: String, default: "normal" },
     initialBoothStatus: String,
@@ -266,6 +267,8 @@ export default class extends Controller {
       this._setState("joining")
       await this._stage.join()
       this._setState("live")
+
+      await this._patchBroadcastStartedAt()
 
       this._broadcasting = true
       this._previewOnly = false
@@ -1162,5 +1165,9 @@ export default class extends Controller {
 
   _applyCurrentMode() {
     applyCurrentMode(this)
+  }
+
+  _patchBroadcastStartedAt() {
+    return patchBroadcastStartedAt(this)
   }
 }

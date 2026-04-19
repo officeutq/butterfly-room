@@ -10,4 +10,12 @@ class StreamSession < ApplicationRecord
   validates :title, length: { maximum: 64 }, allow_nil: true
 
   delegate :current_stream_session_id, :status, to: :booth, prefix: true
+
+  def broadcast_duration_seconds
+    return 0 if broadcast_started_at.blank?
+    return 0 if ended_at.blank?
+    return 0 if ended_at < broadcast_started_at
+
+    (ended_at - broadcast_started_at).to_i
+  end
 end
