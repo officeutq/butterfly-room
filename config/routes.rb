@@ -133,6 +133,7 @@ Rails.application.routes.draw do
       get  :pending_drink_orders, on: :member
       get  :meta_display, on: :member
       patch :metadata, on: :member
+      patch :start_broadcast, on: :member
     end
 
     resources :drink_orders, only: [] do

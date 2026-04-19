@@ -2,8 +2,8 @@
 
 module Cast
   class StreamSessionsController < Cast::BaseController
-    before_action :set_stream_session, only: %i[show finish pending_drink_orders meta_display metadata]
-    before_action :authorize_stream_session_access!, only: %i[show finish pending_drink_orders meta_display metadata]
+    before_action :set_stream_session, only: %i[show finish pending_drink_orders meta_display metadata start_broadcast]
+    before_action :authorize_stream_session_access!, only: %i[show finish pending_drink_orders meta_display metadata start_broadcast]
 
     def show
       booth = @stream_session.booth
@@ -54,7 +54,7 @@ module Cast
           0
         end
 
-      @started_at = @stream_session.started_at
+      @started_at = @stream_session.broadcast_started_at
       @ended_at = @stream_session.ended_at
       @duration_seconds =
         if @started_at.present? && @ended_at.present? && @ended_at >= @started_at
@@ -140,6 +140,23 @@ module Cast
       end
     rescue ActiveRecord::RecordNotFound
       head :not_found
+    end
+
+    def start_broadcast
+      booth = @stream_session.booth
+
+      unless booth.current_stream_session_id == @stream_session.id
+        return head :forbidden
+      end
+
+      if @stream_session.broadcast_started_at.blank?
+        @stream_session.update!(broadcast_started_at: Time.current)
+      end
+
+      render json: { ok: true }, status: :ok
+    rescue ActiveRecord::RecordInvalid => e
+      message = e.record.errors.full_messages.join(", ").presence || "配信開始時刻の保存に失敗しました"
+      render json: { error: message }, status: :unprocessable_entity
     end
 
     private

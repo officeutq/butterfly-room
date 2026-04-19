@@ -9,7 +9,10 @@
       <div class="card-body">
         <div class="d-flex flex-column gap-2">
           <div><span class="text-body-secondary">配信名：</span><%= @stream_session.title.presence || @booth.name %></div>
-          <div><span class="text-body-secondary">配信開始：</span><%= l(@started_at, format: :long) if @started_at.present? %></div>
+          <div>
+            <span class="text-body-secondary">配信開始：</span>
+            <%= @started_at.present? ? l(@started_at, format: :long) : "-" %>
+          </div>
           <div><span class="text-body-secondary">配信終了：</span><%= l(@ended_at, format: :long) if @ended_at.present? %></div>
           <div>
             <span class="text-body-secondary">配信時間：</span>

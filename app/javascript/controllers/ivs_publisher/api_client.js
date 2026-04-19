@@ -55,6 +55,23 @@ export async function patchBoothStatus(ctx, to) {
   }
 }
 
+export async function patchBroadcastStartedAt(ctx) {
+  if (!ctx.hasStartBroadcastUrlValue) return
+
+  const resp = await fetch(ctx.startBroadcastUrlValue, {
+    method: "PATCH",
+    credentials: "same-origin",
+    headers: {
+      "Accept": "application/json",
+      "X-CSRF-Token": csrfToken(),
+    },
+  })
+
+  if (!resp.ok) {
+    throw new Error(`start_broadcast_failed(${resp.status})`)
+  }
+}
+
 export async function reloadMetaDisplay(ctx) {
   if (!ctx.hasMetaDisplayUrlValue) return
 
