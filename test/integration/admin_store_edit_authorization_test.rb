@@ -80,6 +80,18 @@ class AdminStoreEditAuthorizationTest < ActionDispatch::IntegrationTest
   test "store_admin can update basic info fields" do
     sign_in @store_admin, scope: :user
 
+    result = Struct.new(:latitude, :longitude, :coordinates).new(
+      32.8061463,
+      130.7058304,
+      [32.8061463, 130.7058304]
+    )
+
+    original_search = Geocoder.method(:search)
+
+    Geocoder.define_singleton_method(:search) do |*_args|
+      [ result ]
+    end
+
     patch admin_store_path(@store1), params: {
       store: {
         name: "store1 updated",
@@ -115,5 +127,7 @@ class AdminStoreEditAuthorizationTest < ActionDispatch::IntegrationTest
     assert_equal "https://www.youtube.com/@SleepRelaxingHealingMusic", @store1.youtube_url
     assert_not_nil @store1.latitude
     assert_not_nil @store1.longitude
+  ensure
+    Geocoder.define_singleton_method(:search, original_search)
   end
 end
