@@ -1,8 +1,11 @@
 <%# locals: store:, favorited: %>
+<% dom_id_value = local_assigns[:dom_id] %>
+<% button_params = dom_id_value.present? ? { dom_id: dom_id_value } : {} %>
 
 <% if favorited %>
   <%= button_to store_favorite_path(store),
         method: :delete,
+        params: button_params,
         class: "viewer-favorite-btn is-active",
         form_class: "viewer-favorite-form",
         aria: { label: "店舗のお気に入りを解除" },
@@ -21,6 +24,7 @@
 <% else %>
   <%= button_to store_favorite_path(store),
         method: :post,
+        params: button_params,
         class: "viewer-favorite-btn",
         form_class: "viewer-favorite-form",
         aria: { label: "店舗をお気に入り" },

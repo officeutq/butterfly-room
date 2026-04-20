@@ -99,7 +99,10 @@
       </div>
 
       <div class="booths-card-action">
-        <%= render "favorites/stores/button_home", store: booth.store, favorited: store_favorited %>
+        <%= render "favorites/stores/button_home",
+              store: booth.store,
+              favorited: store_favorited,
+              dom_id: "store_#{booth.store_id}_favorite_button_booth_#{booth.id}" %>
       </div>
     </div>
   </div>

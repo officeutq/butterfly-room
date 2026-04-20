@@ -45,6 +45,8 @@ module Favorites
     def render_favorite_button(favorited:)
       respond_to do |format|
         format.turbo_stream do
+          home_dom_id = params[:dom_id].presence || "store_#{@store.id}_favorite_button"
+
           streams = [
             turbo_stream.replace(
               "store_favorite_button",
@@ -53,10 +55,10 @@ module Favorites
               locals: { store: @store, favorited: favorited }
             ),
             turbo_stream.replace(
-              "store_#{@store.id}_favorite_button",
+              home_dom_id,
               partial: "favorites/stores/button_home",
               formats: [ :html ],
-              locals: { store: @store, favorited: favorited }
+              locals: { store: @store, favorited: favorited, dom_id: home_dom_id }
             )
           ]
           render turbo_stream: streams
