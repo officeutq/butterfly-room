@@ -81,13 +81,20 @@
       </div>
 
       <div class="booths-card-action">
-        <button type="button"
-                class="viewer-favorite-btn booths-card-placeholder-btn"
-                title="未実装"
-                aria-label="所属キャストお気に入り（未実装）"
-                disabled>
-          <i class="bi bi-star" aria-hidden="true"></i>
-        </button>
+        <% if primary_cast.present? %>
+          <%= render "favorites/users/button_home",
+                user: primary_cast,
+                favorited: (@favorite_user_ids || Set.new).include?(primary_cast.id),
+                dom_id: "user_#{primary_cast.id}_favorite_button_booth_#{booth.id}" %>
+        <% else %>
+          <button type="button"
+                  class="viewer-favorite-btn booths-card-placeholder-btn"
+                  title="未設定"
+                  aria-label="所属キャスト未設定"
+                  disabled>
+            <i class="bi bi-star" aria-hidden="true"></i>
+          </button>
+        <% end %>
       </div>
     </div>
 
