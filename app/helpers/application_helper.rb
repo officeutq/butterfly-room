@@ -1,6 +1,20 @@
 # frozen_string_literal: true
 
+require "uri"
+
 module ApplicationHelper
+  def safe_external_url(url)
+    value = url.to_s.strip
+    return nil if value.blank?
+
+    uri = URI.parse(value)
+    return nil unless uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)
+
+    uri.to_s
+  rescue URI::InvalidURIError
+    nil
+  end
+
   def booth_status_badge(booth)
     return "" if booth.blank?
 
