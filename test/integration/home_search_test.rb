@@ -303,4 +303,68 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     # store カードが出る
     assert_includes @response.body, "Alpha Store"
   end
+
+  test "mode=users: cast と store_admin のみ表示され、customer/system_admin は表示されない" do
+    cast_user = create_user!(email: "cast_search@example.com", role: :cast)
+    cast_user.update!(display_name: "Cast Search User")
+
+    store_admin_user = create_user!(email: "store_admin_search@example.com", role: :store_admin)
+    store_admin_user.update!(display_name: "Store Admin Search User")
+
+    hidden_customer_user = create_user!(email: "hidden_customer_search@example.com", role: :customer)
+    hidden_customer_user.update!(display_name: "Hidden Customer Search User")
+
+    system_admin_user = create_user!(email: "system_admin_search@example.com", role: :system_admin)
+    system_admin_user.update!(display_name: "System Admin Search User")
+
+    login_user = create_user!(email: "login_customer_search@example.com", role: :customer)
+    login_user.update!(display_name: "Login Customer Search User")
+    login_as(login_user, scope: :user)
+
+    get root_path, params: { mode: "users" }
+    assert_response :success
+
+    body = @response.body
+
+    assert_includes body, "value=\"users\""
+    assert_includes body, ">ユーザー<"
+
+    assert_includes body, "Cast Search User"
+    assert_includes body, "Store Admin Search User"
+
+    refute_includes body, "Hidden Customer Search User"
+    refute_includes body, "System Admin Search User"
+  end
+
+  test "qあり + mode=users: display_name の部分一致で絞り込まれる" do
+    cast_hit = create_user!(email: "users_hit@example.com", role: :cast)
+    cast_hit.update!(display_name: "Rose User")
+
+    cast_miss = create_user!(email: "users_miss@example.com", role: :cast)
+    cast_miss.update!(display_name: "Tulip User")
+
+    customer = create_user!(email: "users_search_customer@example.com", role: :customer)
+    login_as(customer, scope: :user)
+
+    get root_path, params: { mode: "users", q: "Ros" }
+    assert_response :success
+
+    body = @response.body
+
+    assert_includes body, "Rose User"
+    refute_includes body, "Tulip User"
+  end
+
+  test "mode=users: ユーザー名クリックで user詳細に遷移できるリンクが含まれる" do
+    user = create_user!(email: "users_link@example.com", role: :cast)
+    user.update!(display_name: "Link User")
+
+    customer = create_user!(email: "users_link_customer@example.com", role: :customer)
+    login_as(customer, scope: :user)
+
+    get root_path, params: { mode: "users" }
+    assert_response :success
+
+    assert_includes @response.body, user_path(user)
+  end
 end

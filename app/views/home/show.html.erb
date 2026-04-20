@@ -7,11 +7,16 @@
     <div class="input-group">
       <%= link_to "ブース",
             root_path(mode: "booths", q: @q.presence),
-            class: ["btn", (@mode == "stores" ? "btn-outline-secondary" : "btn-secondary")] %>
+            class: ["btn", (@mode == "booths" ? "btn-secondary" : "btn-outline-secondary")] %>
 
       <%= link_to "店舗",
             root_path(mode: "stores", q: @q.presence),
             class: ["btn", (@mode == "stores" ? "btn-secondary" : "btn-outline-secondary")] %>
+
+      <%= link_to "ユーザー",
+            root_path(mode: "users", q: @q.presence),
+            class: ["btn", (@mode == "users" ? "btn-secondary" : "btn-outline-secondary")] %>
+
       <%= f.hidden_field :mode, value: @mode %>
 
       <%= f.text_field :q,
@@ -28,7 +33,21 @@
   <% end %>
 
   <%# --- Results (cards) --- %>
-  <% if @mode == "stores" %>
+  <% if @mode == "users" %>
+    <% if @users.present? %>
+      <div class="row row-cols-1 row-cols-md-3 g-3">
+        <% @users.each do |user| %>
+          <div class="col">
+            <%= render "users/card", user: user %>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="alert alert-secondary" role="alert">
+        表示できるユーザーがありません。
+      </div>
+    <% end %>
+  <% elsif @mode == "stores" %>
     <% if @stores.present? %>
       <div class="row row-cols-1 row-cols-md-3 g-3">
         <% @stores.each do |store| %>
