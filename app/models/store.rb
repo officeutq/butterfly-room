@@ -38,6 +38,9 @@ class Store < ApplicationRecord
   validates :description, length: { maximum: 1000 }, allow_nil: true
   validates :area, length: { maximum: 50 }, allow_nil: true
 
+  geocoded_by :address
+  after_validation :geocode, if: :will_save_change_to_address?
+
   BUSINESS_TYPE_LABELS = {
     cabaret: "キャバクラ",
     girls_bar: "ガールズバー",
