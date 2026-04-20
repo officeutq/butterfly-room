@@ -15,7 +15,9 @@
 
   <!-- name -->
   <div class="meta-name">
-    <%= display_name_or_anonymous(user) %>
+    <%= link_to display_name_or_anonymous(user),
+          user_path(user),
+          class: "text-decoration-none text-reset" %>
   </div>
 
   <!-- title -->
