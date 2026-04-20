@@ -83,7 +83,7 @@ class AdminStoreEditAuthorizationTest < ActionDispatch::IntegrationTest
     result = Struct.new(:latitude, :longitude, :coordinates).new(
       32.8061463,
       130.7058304,
-      [32.8061463, 130.7058304]
+      [ 32.8061463, 130.7058304 ]
     )
 
     original_search = Geocoder.method(:search)
