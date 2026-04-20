@@ -87,6 +87,22 @@ module ApplicationHelper
     end
   end
 
+  def user_role_label(user)
+    return "" if user.blank?
+
+    case user.role.to_sym
+    when :customer
+      "視聴者"
+    when :cast
+      "配信者"
+    when :store_admin
+      "店舗管理者"
+    when :system_admin
+      "運営"
+    else
+      user.role.to_s.upcase
+    end
+  end
   def dashboard_path_for(_user)
     dashboard_path
   end
