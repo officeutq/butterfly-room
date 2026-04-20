@@ -1,16 +1,7 @@
-app_name =
-  if Rails.env.production?
-    "Butterflyve"
-  else
-    "Butterflyve development"
-  end
-
 Geocoder.configure(
-  lookup: :nominatim,
+  lookup: :google,
+  api_key: ENV["GOOGLE_MAPS_API_KEY"],
   use_https: true,
   timeout: 5,
-  units: :km,
-  http_headers: {
-    "User-Agent" => "#{app_name} (contact: info@officeutq.co.jp)"
-  }
+  units: :km
 )
