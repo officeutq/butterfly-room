@@ -102,7 +102,13 @@
       <div class="booths-card-label">所属店舗名</div>
 
       <div class="booths-card-value">
-        <%= booth.store&.name %>
+        <% if booth.store.present? %>
+          <%= link_to booth.store.name,
+                store_path(booth.store),
+                class: "text-decoration-none text-reset" %>
+        <% else %>
+          <span class="text-muted">（未設定）</span>
+        <% end %>
       </div>
 
       <div class="booths-card-action">
