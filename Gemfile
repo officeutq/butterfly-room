@@ -72,3 +72,4 @@ gem "aws-sdk-s3", require: false
 gem "aws-sdk-sns"
 gem "mini_magick"
 gem "rails-i18n"
+gem "geocoder"
