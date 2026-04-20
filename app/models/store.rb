@@ -39,7 +39,7 @@ class Store < ApplicationRecord
   validates :area, length: { maximum: 50 }, allow_nil: true
 
   geocoded_by :address
-  after_validation :geocode, if: :will_save_change_to_address?
+  after_validation :geocode, if: :should_geocode?
 
   BUSINESS_TYPE_LABELS = {
     cabaret: "キャバクラ",
@@ -118,5 +118,11 @@ class Store < ApplicationRecord
     return unless onboarding_active?
 
     update!(onboarding_step: :skipped)
+  end
+
+  private
+
+  def should_geocode?
+    address.present? && (new_record? || will_save_change_to_address?)
   end
 end
