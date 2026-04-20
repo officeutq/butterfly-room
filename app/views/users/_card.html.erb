@@ -28,13 +28,10 @@
       </div>
 
       <div class="users-card-action">
-        <button type="button"
-                class="viewer-favorite-btn users-card-placeholder-btn"
-                title="未実装"
-                aria-label="ユーザーお気に入り（未実装）"
-                disabled>
-          <i class="bi bi-star" aria-hidden="true"></i>
-        </button>
+        <%= render "favorites/users/button_home",
+              user: user,
+              favorited: @favorite_user_ids.include?(user.id),
+              dom_id: "user_#{user.id}_favorite_button_card_#{user.id}" %>
       </div>
     </div>
 

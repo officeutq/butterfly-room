@@ -22,6 +22,8 @@ class User < ApplicationRecord
   has_many :cast_booths, through: :booth_casts, source: :booth
   has_many :favorite_booths, dependent: :destroy
   has_many :favorite_stores, dependent: :destroy
+  has_many :favorite_users, dependent: :destroy
+  has_many :favorited_users, through: :favorite_users, source: :target_user
 
   # --- Soft delete ---
   def deleted?

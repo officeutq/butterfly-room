@@ -38,7 +38,9 @@ Rails.application.routes.draw do
   end
 
   # --- Public user profiles (login required) ---
-  resources :users, only: %i[show]
+  resources :users, only: %i[show] do
+    resource :favorite, only: %i[create destroy], controller: "favorites/users"
+  end
 
   # --- Public (customer registration) ---
   get  "/sign_up", to: "customers/registrations#new", as: :sign_up
