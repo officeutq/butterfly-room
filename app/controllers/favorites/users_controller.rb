@@ -1,7 +1,17 @@
 module Favorites
   class UsersController < ApplicationController
     before_action -> { require_at_least!(:customer) }
-    before_action :set_user
+    before_action :set_user, only: %i[create destroy]
+
+    def index
+      @favorite_users =
+        current_user
+          .favorite_users
+          .includes(target_user: [ { avatar_attachment: :blob } ])
+          .order(created_at: :desc, id: :desc)
+
+      @favorite_user_ids = @favorite_users.map(&:target_user_id).to_set
+    end
 
     def create
       current_user.favorite_users.find_or_create_by!(target_user: @user)
