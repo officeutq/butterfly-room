@@ -25,6 +25,48 @@
         class: "form-select" %>
 </div>
 
+<div class="mb-3">
+  <%= f.label :address, "住所", class: "form-label" %>
+  <%= f.text_field :address, class: "form-control" %>
+  <div class="form-text">保存時に住所から座標を自動取得します</div>
+</div>
+
+<div class="mb-3">
+  <%= f.label :phone_number, "電話番号", class: "form-label" %>
+  <%= f.text_field :phone_number, class: "form-control" %>
+</div>
+
+<div class="mb-3">
+  <%= f.label :business_hours, "営業時間", class: "form-label" %>
+  <%= f.text_field :business_hours, class: "form-control" %>
+  <div class="form-text">例：20:00〜LAST / 平日 19:00〜1:00 など</div>
+</div>
+
+<div class="mb-3">
+  <%= f.label :website_url, "ホームページURL", class: "form-label" %>
+  <%= f.text_field :website_url, class: "form-control", placeholder: "https://example.com" %>
+</div>
+
+<div class="mb-3">
+  <%= f.label :x_url, "X URL", class: "form-label" %>
+  <%= f.text_field :x_url, class: "form-control", placeholder: "https://x.com/..." %>
+</div>
+
+<div class="mb-3">
+  <%= f.label :instagram_url, "Instagram URL", class: "form-label" %>
+  <%= f.text_field :instagram_url, class: "form-control", placeholder: "https://www.instagram.com/..." %>
+</div>
+
+<div class="mb-3">
+  <%= f.label :tiktok_url, "TikTok URL", class: "form-label" %>
+  <%= f.text_field :tiktok_url, class: "form-control", placeholder: "https://www.tiktok.com/..." %>
+</div>
+
+<div class="mb-3">
+  <%= f.label :youtube_url, "YouTube URL", class: "form-label" %>
+  <%= f.text_field :youtube_url, class: "form-control", placeholder: "https://www.youtube.com/..." %>
+</div>
+
 <div
   class="mb-3 image-upload-field"
   data-controller="image-upload"
