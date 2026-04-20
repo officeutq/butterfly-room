@@ -35,6 +35,19 @@ module Favorites
           .where(store_id: @favorite_booths.select("booths.store_id"))
           .pluck(:store_id)
           .to_set
+
+      cast_user_ids =
+        @favorite_booths
+          .map { |favorite| favorite.booth.primary_cast_user_id }
+          .compact
+          .uniq
+
+      @favorite_user_ids =
+        current_user
+          .favorite_users
+          .where(target_user_id: cast_user_ids)
+          .pluck(:target_user_id)
+          .to_set
     end
 
     def create
