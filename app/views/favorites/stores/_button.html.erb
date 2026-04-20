@@ -6,7 +6,16 @@
         class: "viewer-favorite-btn is-active",
         form_class: "viewer-favorite-form",
         aria: { label: "店舗のお気に入りを解除" },
-        title: "お気に入り解除" do %>
+        title: "お気に入り解除",
+        data: {
+          controller: "favorite-sync",
+          favorite_sync_key_value: "store-#{store.id}",
+          favorite_sync_active_value: true,
+          favorite_sync_active_title_value: "お気に入り解除",
+          favorite_sync_inactive_title_value: "お気に入り",
+          favorite_sync_active_aria_label_value: "店舗のお気に入りを解除",
+          favorite_sync_inactive_aria_label_value: "店舗をお気に入り"
+        } do %>
     <i class="bi bi-star-fill" aria-hidden="true"></i>
   <% end %>
 <% else %>
@@ -15,7 +24,16 @@
         class: "viewer-favorite-btn",
         form_class: "viewer-favorite-form",
         aria: { label: "店舗をお気に入り" },
-        title: "お気に入り" do %>
+        title: "お気に入り",
+        data: {
+          controller: "favorite-sync",
+          favorite_sync_key_value: "store-#{store.id}",
+          favorite_sync_active_value: false,
+          favorite_sync_active_title_value: "お気に入り解除",
+          favorite_sync_inactive_title_value: "お気に入り",
+          favorite_sync_active_aria_label_value: "店舗のお気に入りを解除",
+          favorite_sync_inactive_aria_label_value: "店舗をお気に入り"
+        } do %>
     <i class="bi bi-star" aria-hidden="true"></i>
   <% end %>
 <% end %>
