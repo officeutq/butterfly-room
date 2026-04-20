@@ -72,7 +72,9 @@
 
       <div class="booths-card-value">
         <% if primary_cast.present? %>
-          <%= display_name_or_anonymous(primary_cast) %>
+          <%= link_to display_name_or_anonymous(primary_cast),
+                user_path(primary_cast),
+                class: "text-decoration-none text-reset" %>
         <% else %>
           <span class="text-muted">（未設定）</span>
         <% end %>
