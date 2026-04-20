@@ -2,17 +2,17 @@
 <div style="max-width: 960px;">
   <%= render "favorites/nav" %>
 
-  <% if @favorite_stores.blank? %>
+  <% if @favorite_users.blank? %>
     <div class="alert alert-secondary" role="alert">
-      お気に入り店舗はありません。
+      お気に入りユーザーはありません。
     </div>
   <% else %>
     <div class="row row-cols-1 row-cols-md-3 g-3">
-      <% @favorite_stores.each do |favorite| %>
-        <% store = favorite.store %>
+      <% @favorite_users.each do |favorite| %>
+        <% user = favorite.target_user %>
 
         <div class="col">
-          <%= render "stores/card", store: store, favorited: true %>
+          <%= render "users/card", user: user %>
         </div>
       <% end %>
     </div>

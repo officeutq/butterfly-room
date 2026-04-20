@@ -1,0 +1,18 @@
+<div class="d-flex flex-column gap-3 mb-3">
+  <div class="btn-group" role="group" aria-label="お気に入り表示切り替え">
+    <%= link_to "ブース",
+          favorites_booths_path,
+          class: ["btn", (current_page?(favorites_booths_path) ? "btn-secondary active" : "btn-outline-secondary")],
+          "aria-current": (current_page?(favorites_booths_path) ? "page" : nil) %>
+
+    <%= link_to "店舗",
+          favorites_stores_path,
+          class: ["btn", (current_page?(favorites_stores_path) ? "btn-secondary active" : "btn-outline-secondary")],
+          "aria-current": (current_page?(favorites_stores_path) ? "page" : nil) %>
+
+    <%= link_to "ユーザー",
+          favorites_users_path,
+          class: ["btn", (current_page?(favorites_users_path) ? "btn-secondary active" : "btn-outline-secondary")],
+          "aria-current": (current_page?(favorites_users_path) ? "page" : nil) %>
+  </div>
+</div>

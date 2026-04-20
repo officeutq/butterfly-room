@@ -72,6 +72,7 @@ Rails.application.routes.draw do
   namespace :favorites do
     resources :booths, only: %i[index]
     resources :stores, only: %i[index]
+    resources :users, only: %i[index]
   end
 
   # --- Customer (login required) ---

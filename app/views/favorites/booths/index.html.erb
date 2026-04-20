@@ -1,17 +1,6 @@
 <% content_for :title, "お気に入り" %>
 <div style="max-width: 960px;">
-  <div class="d-flex flex-column gap-3 mb-3">
-    <div class="btn-group" role="group" aria-label="お気に入り表示切り替え">
-      <%= link_to "ブース",
-            favorites_booths_path,
-            class: "btn btn-secondary active",
-            "aria-current": "page" %>
-
-      <%= link_to "店舗",
-            favorites_stores_path,
-            class: "btn btn-outline-secondary" %>
-    </div>
-  </div>
+  <%= render "favorites/nav" %>
 
   <% if @favorite_booths.blank? %>
     <div class="alert alert-secondary" role="alert">
