@@ -3,7 +3,7 @@
 class HomeController < ApplicationController
   def show
     @mode = params[:mode].to_s
-    @mode = "booths" unless %w[booths stores].include?(@mode)
+    @mode = "booths" unless %w[booths stores users].include?(@mode)
 
     @q = params[:q].to_s.strip
     q_like =
@@ -12,9 +12,31 @@ class HomeController < ApplicationController
         "%#{escaped}%"
       end
 
-    if @mode == "stores"
-      @booths = Booth.none
+    @booths = Booth.none
+    @stores = Store.none
+    @users = User.none
 
+    if @mode == "users"
+      users =
+        User
+          .where(role: %i[cast store_admin])
+
+      users = users.where("users.display_name ILIKE ?", q_like) if q_like.present?
+
+      @users =
+        users
+          .order(
+            Arel.sql("CASE WHEN users.display_name IS NULL OR btrim(users.display_name) = '' THEN 1 ELSE 0 END ASC"),
+            id: :desc
+          )
+          .limit(30)
+
+      @favorite_booth_ids = Set.new
+      @favorite_store_ids = Set.new
+      return
+    end
+
+    if @mode == "stores"
       stores = Store.all
 
       stores = stores.where("stores.name ILIKE ?", q_like) if q_like.present?
@@ -64,8 +86,6 @@ class HomeController < ApplicationController
     end
 
     # --- mode=booths ---
-    @stores = Store.none
-
     booths = Booth.active
 
     booths =
