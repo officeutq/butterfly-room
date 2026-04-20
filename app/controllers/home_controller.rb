@@ -135,9 +135,14 @@ class HomeController < ApplicationController
 
       @favorite_store_ids =
         current_user.favorite_stores.where(store_id: @booths.select(:store_id)).pluck(:store_id).to_set
+
+      cast_user_ids = @booths.map(&:primary_cast_user_id).compact.uniq
+      @favorite_user_ids =
+        current_user.favorite_users.where(target_user_id: cast_user_ids).pluck(:target_user_id).to_set
     else
       @favorite_booth_ids = Set.new
       @favorite_store_ids = Set.new
+      @favorite_user_ids = Set.new
     end
   end
 end

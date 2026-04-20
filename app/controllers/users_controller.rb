@@ -10,6 +10,7 @@ class UsersController < ApplicationController
     @admin_stores = []
     @favorite_booth_ids = Set.new
     @favorite_store_ids = Set.new
+    @favorite_user_ids = Set.new
 
     if @user.cast?
       @cast_booths =
@@ -26,12 +27,16 @@ class UsersController < ApplicationController
 
       booth_ids = @cast_booths.map(&:id)
       store_ids = @cast_booths.map(&:store_id).uniq
+      cast_user_ids = @cast_booths.map(&:primary_cast_user_id).compact.uniq
 
       @favorite_booth_ids =
         current_user.favorite_booths.where(booth_id: booth_ids).pluck(:booth_id).to_set
 
       @favorite_store_ids =
         current_user.favorite_stores.where(store_id: store_ids).pluck(:store_id).to_set
+
+      @favorite_user_ids =
+        current_user.favorite_users.where(target_user_id: cast_user_ids).pluck(:target_user_id).to_set
     end
 
     if @user.store_admin?

@@ -16,6 +16,10 @@ class StoresController < ApplicationController
         .order(:id)
 
     @store_favorited = current_user.favorite_stores.exists?(store_id: @store.id)
+
+    cast_user_ids = @booths.map(&:primary_cast_user_id).compact.uniq
+    @favorite_user_ids =
+      current_user.favorite_users.where(target_user_id: cast_user_ids).pluck(:target_user_id).to_set
   end
 
   private
