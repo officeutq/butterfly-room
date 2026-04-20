@@ -1,4 +1,9 @@
-<%# locals: store:, favorited: %>
-<div id="store_<%= store.id %>_favorite_button">
-  <%= render "favorites/stores/button", store: store, favorited: favorited %>
+<%# locals: store:, favorited:, dom_id: nil %>
+<% dom_id ||= "store_#{store.id}_favorite_button" %>
+
+<div id="<%= dom_id %>">
+  <%= render "favorites/stores/button",
+        store: store,
+        favorited: favorited,
+        dom_id: dom_id %>
 </div>
