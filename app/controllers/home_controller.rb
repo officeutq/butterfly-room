@@ -33,6 +33,12 @@ class HomeController < ApplicationController
 
       @favorite_booth_ids = Set.new
       @favorite_store_ids = Set.new
+      if user_signed_in?
+        @favorite_user_ids =
+          current_user.favorite_users.where(target_user_id: @users.select(:id)).pluck(:target_user_id).to_set
+      else
+        @favorite_user_ids = Set.new
+      end
       return
     end
 

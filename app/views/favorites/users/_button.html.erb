@@ -1,0 +1,28 @@
+<% dom_id_value = local_assigns[:dom_id] %>
+<% button_params = dom_id_value.present? ? { dom_id: dom_id_value } : {} %>
+
+<% if favorited %>
+  <%= button_to user_favorite_path(user),
+        method: :delete,
+        params: button_params,
+        class: "viewer-favorite-btn is-active",
+        data: {
+          controller: "favorite-sync",
+          favorite_sync_key_value: "user-#{user.id}",
+          favorite_sync_active_value: true
+        } do %>
+    <i class="bi bi-star-fill"></i>
+  <% end %>
+<% else %>
+  <%= button_to user_favorite_path(user),
+        method: :post,
+        params: button_params,
+        class: "viewer-favorite-btn",
+        data: {
+          controller: "favorite-sync",
+          favorite_sync_key_value: "user-#{user.id}",
+          favorite_sync_active_value: false
+        } do %>
+    <i class="bi bi-star"></i>
+  <% end %>
+<% end %>

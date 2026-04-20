@@ -24,7 +24,11 @@
         </div>
       </div>
 
-      <div class="user-show-favorite"></div>
+      <div class="user-show-favorite">
+        <%= render "favorites/users/button_user_show",
+              user: @user,
+              favorited: current_user.favorite_users.exists?(target_user: @user) %>
+      </div>
     </div>
 
     <div class="user-show-description mt-4">

@@ -1,0 +1,8 @@
+<% dom_id ||= "user_#{user.id}_favorite_button" %>
+
+<div id="<%= dom_id %>">
+  <%= render "favorites/users/button",
+        user: user,
+        favorited: favorited,
+        dom_id: dom_id %>
+</div>

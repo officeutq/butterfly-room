@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_20_002349) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_20_091116) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -177,6 +177,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_20_002349) do
     t.index ["store_id"], name: "index_favorite_stores_on_store_id"
     t.index ["user_id", "store_id"], name: "index_favorite_stores_on_user_id_and_store_id", unique: true
     t.index ["user_id"], name: "index_favorite_stores_on_user_id"
+  end
+
+  create_table "favorite_users", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "target_user_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["target_user_id"], name: "index_favorite_users_on_target_user_id"
+    t.index ["user_id", "target_user_id"], name: "index_favorite_users_on_user_id_and_target_user_id", unique: true
+    t.index ["user_id"], name: "index_favorite_users_on_user_id"
   end
 
   create_table "filepond_test_uploads", force: :cascade do |t|
@@ -550,6 +560,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_20_002349) do
   add_foreign_key "favorite_booths", "users"
   add_foreign_key "favorite_stores", "stores"
   add_foreign_key "favorite_stores", "users"
+  add_foreign_key "favorite_users", "users"
+  add_foreign_key "favorite_users", "users", column: "target_user_id"
   add_foreign_key "phone_verifications", "users"
   add_foreign_key "presences", "stream_sessions"
   add_foreign_key "presences", "users", column: "customer_user_id"
