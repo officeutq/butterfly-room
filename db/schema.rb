@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_19_084917) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_20_002349) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -405,15 +405,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_19_084917) do
   end
 
   create_table "stores", force: :cascade do |t|
+    t.string "address"
     t.string "area"
+    t.string "business_hours"
     t.integer "business_type"
     t.datetime "created_at", null: false
     t.text "description"
+    t.string "instagram_url"
+    t.float "latitude"
+    t.float "longitude"
     t.string "name", null: false
     t.datetime "onboarding_invite_copied_at"
     t.integer "onboarding_step"
+    t.string "phone_number"
     t.bigint "referral_code_id"
+    t.string "tiktok_url"
     t.datetime "updated_at", null: false
+    t.string "website_url"
+    t.string "x_url"
+    t.string "youtube_url"
     t.index ["onboarding_invite_copied_at"], name: "index_stores_on_onboarding_invite_copied_at"
     t.index ["onboarding_step"], name: "index_stores_on_onboarding_step"
     t.index ["referral_code_id"], name: "index_stores_on_referral_code_id"
