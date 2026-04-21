@@ -8,6 +8,8 @@ Rails.application.routes.draw do
   root "home#show"
 
   if Rails.env.development?
+    mount LetterOpenerWeb::Engine, at: "/letter_opener"
+
     namespace :dev do
       resource :banuba_verification, only: %i[show], controller: "banuba_verifications"
       resource :deepar_verification, only: %i[show], controller: "deepar_verifications"
