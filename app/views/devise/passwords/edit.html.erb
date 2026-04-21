@@ -1,0 +1,22 @@
+<div style="max-width: 720px;">
+  <h1 class="h4 mb-3">新しいパスワードの設定</h1>
+
+  <%= form_for(resource, as: resource_name, url: password_path(resource_name), html: { method: :put }) do |f| %>
+    <%= f.hidden_field :reset_password_token %>
+
+    <div class="mb-3">
+      <%= f.label :password, "新しいパスワード", class: "form-label" %>
+      <%= f.password_field :password, autocomplete: "new-password", class: "form-control" %>
+    </div>
+
+    <div class="mb-3">
+      <%= f.label :password_confirmation, "新しいパスワード（確認）", class: "form-label" %>
+      <%= f.password_field :password_confirmation, autocomplete: "new-password", class: "form-control" %>
+    </div>
+
+    <div class="d-flex gap-2 mb-3">
+      <%= f.submit "パスワードを変更する", class: "btn btn-primary" %>
+      <%= link_to "ログインに戻る", new_session_path(resource_name), class: "btn btn-outline-secondary" %>
+    </div>
+  <% end %>
+</div>
