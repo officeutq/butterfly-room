@@ -43,6 +43,10 @@ ja:
       send_paranoid_instructions: 該当するアカウントが存在する場合、ロック解除方法を記載したメールを送信しました
       unlocked: アカウントのロックを解除しました。ログインしてください
 
+    mailer:
+      reset_password_instructions:
+        subject: "【Butterflyve】パスワード再設定のご案内"
+
   errors:
     messages:
       already_confirmed: はすでに確認済みです

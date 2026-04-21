@@ -47,6 +47,10 @@
       </div>
     <% end %>
 
+    <div class="mb-3">
+      <%= link_to "パスワードを忘れましたか？", new_user_password_path, class: "link-secondary" %>
+    </div>
+
     <div class="d-flex gap-2 mb-3">
       <%= f.submit "ログイン", class: "btn btn-primary" %>
       <%= link_to "ホーム", root_path, class: "btn btn-outline-secondary" %>
