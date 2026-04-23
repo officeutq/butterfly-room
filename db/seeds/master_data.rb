@@ -18,7 +18,7 @@ SEED_TARGETS.each do |target|
   rows = YAML.load_file(path) || []
 
   rows.each do |attrs|
-    finder = target[:find_by].to_h { |k| [k, attrs.fetch(k)] }
+    finder = target[:find_by].to_h { |k| [ k, attrs.fetch(k) ] }
     record = target[:model].find_or_initialize_by(finder)
     record.update!(attrs)
   end
