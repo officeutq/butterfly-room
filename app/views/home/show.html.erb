@@ -1,36 +1,41 @@
-<% if user_signed_in? %>
-  <%= render "install_prompt" %>
-
-  <%# --- Search (Input group / GET) --- %>
-  <div class="mb-3">
-  <%= form_with url: root_path, method: :get, scope: nil, class: "d-flex flex-grow-1" do |f| %>
-    <div class="input-group">
-      <%= link_to "ブース",
-            root_path(mode: "booths", q: @q.presence),
-            class: ["btn", (@mode == "booths" ? "btn-secondary" : "btn-outline-secondary")] %>
-
-      <%= link_to "店舗",
-            root_path(mode: "stores", q: @q.presence),
-            class: ["btn", (@mode == "stores" ? "btn-secondary" : "btn-outline-secondary")] %>
-
-      <%= link_to "ユーザー",
-            root_path(mode: "users", q: @q.presence),
-            class: ["btn", (@mode == "users" ? "btn-secondary" : "btn-outline-secondary")] %>
-
-      <%= f.hidden_field :mode, value: @mode %>
-
-      <%= f.text_field :q,
-            value: @q,
-            class: "form-control",
-            placeholder: "検索（部分一致）",
-            autocomplete: "off" %>
-
-      <button class="btn btn-primary" type="submit" aria-label="検索">
-        <i class="bi bi-search"></i>
-      </button>
+ <% if user_signed_in? %>
+   <%= render "install_prompt" %>
+ 
+  <%# --- Search --- %>
+  <div class="d-flex flex-column gap-2 mb-3">
+    <div class="btn-group" role="group" aria-label="home表示切り替え">
+       <%= link_to "ブース",
+             root_path(mode: "booths", q: @q.presence),
+            class: ["btn", (@mode == "booths" ? "btn-secondary active" : "btn-outline-secondary")],
+            "aria-current": (@mode == "booths" ? "page" : nil) %>
+ 
+       <%= link_to "店舗",
+             root_path(mode: "stores", q: @q.presence),
+            class: ["btn", (@mode == "stores" ? "btn-secondary active" : "btn-outline-secondary")],
+            "aria-current": (@mode == "stores" ? "page" : nil) %>
+ 
+       <%= link_to "ユーザー",
+             root_path(mode: "users", q: @q.presence),
+            class: ["btn", (@mode == "users" ? "btn-secondary active" : "btn-outline-secondary")],
+            "aria-current": (@mode == "users" ? "page" : nil) %>
     </div>
-  </div>
-  <% end %>
+ 
+    <%= form_with url: root_path, method: :get, scope: nil do |f| %>
+      <div class="input-group">
+        <%= f.hidden_field :mode, value: @mode %>
+
+        <%= f.text_field :q,
+              value: @q,
+              class: "form-control",
+              placeholder: "キーワード",
+              autocomplete: "off" %>
+
+        <button class="btn btn-primary" type="submit" aria-label="検索">
+          <i class="bi bi-search"></i>
+        </button>
+      </div>
+    <% end %>
+   </div>
 
   <%# --- Results (cards) --- %>
   <% if @mode == "users" %>
