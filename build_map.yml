@@ -132,4 +132,6 @@ builds:
     issues:
     - 767
   '22':
-    issues: []
+    issues:
+    - 627
+    - 628
