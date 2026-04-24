@@ -1,0 +1,46 @@
+<div class="mx-auto" style="max-width: 920px;">
+  <section>
+    <p class="text-uppercase text-primary fw-semibold small mb-2">Butterflyve</p>
+
+    <h1 class="display-6 fw-bold mb-3">
+      夜を、ライブ体験に。
+    </h1>
+
+    <p class="lead text-secondary mb-4">
+      Butterflyveは、視聴者・キャスト・店舗をつなぐライブ配信サービスです。
+      配信を見て、コメントし、ドリンクで応援できます。
+    </p>
+
+    <div class="d-grid gap-2 d-sm-flex">
+      <%= link_to "新規アカウント作成", sign_up_path, class: "btn btn-primary btn-lg" %>
+      <%= link_to "ログイン", new_user_session_path, class: "btn btn-outline-secondary btn-lg" %>
+    </div>
+  </section>
+
+  <section class="mt-4">
+    <div class="card bg-body-tertiary border-primary-subtle">
+      <div class="card-body p-4 p-md-5">
+        <div class="row g-4 align-items-center">
+          <div class="col-md-8">
+            <p class="text-primary fw-semibold mb-2">店舗様向け</p>
+
+            <h2 class="h3 fw-bold mb-3">
+              店舗の新しい売上導線をつくる。
+            </h2>
+
+            <p class="text-secondary mb-0">
+              店舗向けの仕組みや導入メリットは、専用ページでご案内しています。
+              配信、ドリンク送信、売上管理までを店舗単位で運用できます。
+            </p>
+          </div>
+
+          <div class="col-md-4">
+            <div class="d-grid">
+              <%= link_to "店舗の方はこちら", stores_lp_path, class: "btn btn-outline-primary btn-lg" %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

@@ -7,6 +7,8 @@ Rails.application.routes.draw do
 
   root "home#show"
 
+  get "/stores/lp", to: "store_lps#show", as: :stores_lp
+
   if Rails.env.development?
     mount LetterOpenerWeb::Engine, at: "/letter_opener"
 
