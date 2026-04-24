@@ -12,6 +12,10 @@
   margin: 0 auto;
 }
 
+.dropdown-menu {
+  z-index: 1050;
+}
+
 .app-main-with-footer {
   padding-bottom: calc(
     var(--app-footer-base-h) +
@@ -25,7 +29,7 @@
   top: 56px;
   left: 0;
   right: 0;
-  z-index: 1020;
+  z-index: 1010;
   background: var(--bs-body-bg);
   border-bottom: 1px solid var(--bs-border-color);
 }
