@@ -28,8 +28,11 @@
   <% cast_live_layout = (controller_path == "cast/booths" && action_name == "live") %>
   <% viewer_layout = (controller_path == "booths" && action_name == "show") %>
   <% fixed_subnav_layout =
-       (controller_path == "home" && action_name == "show") ||
-       controller_path.start_with?("favorites/") %>
+       user_signed_in? &&
+       (
+         (controller_path == "home" && action_name == "show") ||
+         controller_path.start_with?("favorites/")
+       ) %>
 
   <body class="<%= [ "d-flex", "flex-column", "min-vh-100", ("cast-live-layout" if cast_live_layout), ("viewer-layout" if viewer_layout) ].compact.join(" ") %>">
     <%= render "layouts/header" %>

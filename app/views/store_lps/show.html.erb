@@ -1,0 +1,71 @@
+<div class="mx-auto" style="max-width: 1040px;">
+  <section>
+    <p class="text-uppercase text-primary fw-semibold small mb-2">For Stores</p>
+
+    <h1 class="display-6 fw-bold mb-3">
+      固定費なしで、<br class="d-sm-none">
+      配信売上をつくる。
+    </h1>
+
+    <p class="lead text-secondary mb-4">
+      Butterflyveは、夜のお店向けに設計されたライブ配信プラットフォームです。
+      キャスト配信、ドリンク送信、消化による売上確定、店舗管理までをひとつの仕組みで運用できます。
+    </p>
+
+    <div class="d-grid gap-2 d-sm-flex">
+      <%= link_to "店舗としてはじめる",
+            "/stores/new_registration?ref=0000",
+            class: "btn btn-primary btn-lg" %>
+
+      <%= link_to "トップへ戻る",
+            root_path,
+            class: "btn btn-outline-secondary btn-lg" %>
+    </div>
+  </section>
+
+  <section class="mt-4">
+    <div class="d-flex align-items-end justify-content-between gap-3 mb-3">
+      <div>
+        <p class="text-primary fw-semibold mb-2">How it works</p>
+        <h2 class="h3 fw-bold mb-0">店舗運用に必要な機能をまとめて提供</h2>
+      </div>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-2 g-3">
+      <% [
+        "lp/store_pr_01.jpg",
+        "lp/store_pr_02.jpg",
+        "lp/store_pr_03.jpg",
+        "lp/store_pr_04.jpg",
+        "lp/store_pr_05.jpg",
+        "lp/store_pr_06.jpg"
+      ].each do |image_path| %>
+        <div class="col">
+          <div class="rounded-4 border bg-body overflow-hidden">
+            <%= image_tag image_path,
+                  class: "img-fluid w-100 d-block",
+                  alt: "" %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </section>
+
+  <section class="mt-5">
+    <div class="card border-primary-subtle bg-body-tertiary">
+      <div class="card-body p-4 p-md-5 text-center">
+        <h2 class="h3 fw-bold mb-3">
+          まずは店舗登録から始められます。
+        </h2>
+
+        <p class="text-secondary mb-4">
+          固定費なしで、店舗の新しいオンライン導線を作れます。
+        </p>
+
+        <%= link_to "店舗としてはじめる",
+              "/stores/new_registration?ref=0000",
+              class: "btn btn-primary btn-lg" %>
+      </div>
+    </div>
+  </section>
+</div>

@@ -45,7 +45,7 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     get root_path
     assert_response :success
 
-    assert_includes @response.body, "ようこそ"
+    assert_includes @response.body, "店舗の方はこちら"
     refute_includes @response.body, "input-group"
     refute_includes @response.body, "mode"
     refute_includes @response.body, "placeholder=\"ブース名 / ストア名で検索（部分一致）\""
