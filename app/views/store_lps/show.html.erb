@@ -14,7 +14,7 @@
 
     <div class="d-grid gap-2 d-sm-flex">
       <%= link_to "店舗としてはじめる",
-            "/stores/new_registration?ref=0000",
+            stores_new_registration_path(ref: lp_ref_code),
             class: "btn btn-primary btn-lg" %>
 
       <%= link_to "トップへ戻る",
@@ -63,7 +63,7 @@
         </p>
 
         <%= link_to "店舗としてはじめる",
-              "/stores/new_registration?ref=0000",
+              stores_new_registration_path(ref: lp_ref_code),
               class: "btn btn-primary btn-lg" %>
       </div>
     </div>
