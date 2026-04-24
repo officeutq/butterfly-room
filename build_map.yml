@@ -135,3 +135,5 @@ builds:
     issues:
     - 627
     - 628
+  '23':
+    issues: []
