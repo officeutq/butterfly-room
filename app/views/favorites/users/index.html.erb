@@ -1,12 +1,15 @@
 <% content_for :title, "お気に入り" %>
+<% content_for :fixed_subnav_body_class, "page-with-fixed-subnav" %>
 
-<div class="fixed-subnav">
-  <div class="container py-2">
-    <%= render "favorites/nav" %>
+<% content_for :fixed_subnav do %>
+  <div class="fixed-subnav">
+    <div class="container py-2">
+      <%= render "favorites/nav" %>
+    </div>
   </div>
-</div>
+<% end %>
 
-<div class="page-with-fixed-subnav" style="max-width: 960px;">
+<div style="max-width: 960px;">
   <% if @favorite_users.blank? %>
     <div class="alert alert-secondary" role="alert">
       お気に入りユーザーはありません。

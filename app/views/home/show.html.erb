@@ -1,97 +1,99 @@
 <% if user_signed_in? %>
-  <%# --- Search --- %>
-  <div class="fixed-subnav fixed-subnav--with-form">
-    <div class="container py-2">
-      <div class="d-flex flex-column gap-2">
-        <div class="btn-group" role="group" aria-label="home表示切り替え">
-          <%= link_to "ブース",
-                root_path(mode: "booths", q: @q.presence),
-                class: ["btn", (@mode == "booths" ? "btn-secondary active" : "btn-outline-secondary")],
-                "aria-current": (@mode == "booths" ? "page" : nil) %>
+  <% content_for :fixed_subnav_body_class, "home-with-fixed-subnav" %>
 
-          <%= link_to "店舗",
-                root_path(mode: "stores", q: @q.presence),
-                class: ["btn", (@mode == "stores" ? "btn-secondary active" : "btn-outline-secondary")],
-                "aria-current": (@mode == "stores" ? "page" : nil) %>
+  <% content_for :fixed_subnav do %>
+    <%# --- Search --- %>
+    <div class="fixed-subnav fixed-subnav--with-form">
+      <div class="container py-2">
+        <div class="d-flex flex-column gap-2">
+          <div class="btn-group" role="group" aria-label="home表示切り替え">
+            <%= link_to "ブース",
+                  root_path(mode: "booths", q: @q.presence),
+                  class: ["btn", (@mode == "booths" ? "btn-secondary active" : "btn-outline-secondary")],
+                  "aria-current": (@mode == "booths" ? "page" : nil) %>
 
-          <%= link_to "ユーザー",
-                root_path(mode: "users", q: @q.presence),
-                class: ["btn", (@mode == "users" ? "btn-secondary active" : "btn-outline-secondary")],
-                "aria-current": (@mode == "users" ? "page" : nil) %>
+            <%= link_to "店舗",
+                  root_path(mode: "stores", q: @q.presence),
+                  class: ["btn", (@mode == "stores" ? "btn-secondary active" : "btn-outline-secondary")],
+                  "aria-current": (@mode == "stores" ? "page" : nil) %>
+
+            <%= link_to "ユーザー",
+                  root_path(mode: "users", q: @q.presence),
+                  class: ["btn", (@mode == "users" ? "btn-secondary active" : "btn-outline-secondary")],
+                  "aria-current": (@mode == "users" ? "page" : nil) %>
+          </div>
+
+          <%= form_with url: root_path, method: :get, scope: nil do |f| %>
+            <div class="input-group">
+              <%= f.hidden_field :mode, value: @mode %>
+
+              <%= f.text_field :q,
+                    value: @q,
+                    class: "form-control",
+                    placeholder: "キーワード",
+                    autocomplete: "off" %>
+
+              <button class="btn btn-primary" type="submit" aria-label="検索">
+                <i class="bi bi-search"></i>
+              </button>
+            </div>
+          <% end %>
         </div>
+      </div>
+    </div>
+  <% end %>
 
-        <%= form_with url: root_path, method: :get, scope: nil do |f| %>
-          <div class="input-group">
-            <%= f.hidden_field :mode, value: @mode %>
+  <%= render "install_prompt" %>
 
-            <%= f.text_field :q,
-                  value: @q,
-                  class: "form-control",
-                  placeholder: "キーワード",
-                  autocomplete: "off" %>
-
-            <button class="btn btn-primary" type="submit" aria-label="検索">
-              <i class="bi bi-search"></i>
-            </button>
+  <%# --- Results (cards) --- %>
+  <% if @mode == "users" %>
+    <% if @users.present? %>
+      <div class="row row-cols-1 row-cols-md-3 g-3">
+        <% @users.each do |user| %>
+          <div class="col">
+            <%= render "users/card", user: user %>
           </div>
         <% end %>
       </div>
-    </div>
-  </div>
-
-  <div class="home-with-fixed-subnav">
-    <%= render "install_prompt" %>
-
-    <%# --- Results (cards) --- %>
-    <% if @mode == "users" %>
-      <% if @users.present? %>
-        <div class="row row-cols-1 row-cols-md-3 g-3">
-          <% @users.each do |user| %>
-            <div class="col">
-              <%= render "users/card", user: user %>
-            </div>
-          <% end %>
-        </div>
-      <% else %>
-        <div class="alert alert-secondary" role="alert">
-          表示できるユーザーがありません。
-        </div>
-      <% end %>
-    <% elsif @mode == "stores" %>
-      <% if @stores.present? %>
-        <div class="row row-cols-1 row-cols-md-3 g-3">
-          <% @stores.each do |store| %>
-            <% favorited = @favorite_store_ids.include?(store.id) %>
-
-            <div class="col">
-              <%= render "stores/card", store: store, favorited: favorited %>
-            </div>
-          <% end %>
-        </div>
-      <% else %>
-        <div class="alert alert-secondary" role="alert">
-          表示できる店舗がありません。
-        </div>
-      <% end %>
     <% else %>
-      <% if @booths.present? %>
-        <div class="row row-cols-1 row-cols-md-3 g-3">
-          <% @booths.each do |booth| %>
-            <div class="col">
-              <%= render "booths/card",
-                    booth: booth,
-                    booth_favorited: @favorite_booth_ids.include?(booth.id),
-                    store_favorited: @favorite_store_ids.include?(booth.store_id) %>
-            </div>
-          <% end %>
-        </div>
-      <% else %>
-        <div class="alert alert-secondary" role="alert">
-          表示できるブースがありません。
-        </div>
-      <% end %>
+      <div class="alert alert-secondary" role="alert">
+        表示できるユーザーがありません。
+      </div>
     <% end %>
-  </div>
+  <% elsif @mode == "stores" %>
+    <% if @stores.present? %>
+      <div class="row row-cols-1 row-cols-md-3 g-3">
+        <% @stores.each do |store| %>
+          <% favorited = @favorite_store_ids.include?(store.id) %>
+
+          <div class="col">
+            <%= render "stores/card", store: store, favorited: favorited %>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="alert alert-secondary" role="alert">
+        表示できる店舗がありません。
+      </div>
+    <% end %>
+  <% else %>
+    <% if @booths.present? %>
+      <div class="row row-cols-1 row-cols-md-3 g-3">
+        <% @booths.each do |booth| %>
+          <div class="col">
+            <%= render "booths/card",
+                  booth: booth,
+                  booth_favorited: @favorite_booth_ids.include?(booth.id),
+                  store_favorited: @favorite_store_ids.include?(booth.store_id) %>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="alert alert-secondary" role="alert">
+        表示できるブースがありません。
+      </div>
+    <% end %>
+  <% end %>
 <% else %>
   <%= render "install_prompt" %>
 
