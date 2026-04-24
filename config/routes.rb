@@ -7,6 +7,7 @@ Rails.application.routes.draw do
 
   root "home#show"
 
+  get "/sitemap.xml", to: "seo#sitemap", as: :sitemap, defaults: { format: :xml }
   get "/stores/lp", to: "store_lps#show", as: :stores_lp
 
   if Rails.env.development?
