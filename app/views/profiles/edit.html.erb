@@ -3,6 +3,17 @@
 <% end %>
 <% content_for :title, "プロフィール編集" %>
 
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="form-label mb-1">メールアドレス</div>
+    <div class="mb-3"><%= @user.email %></div>
+
+    <%= link_to "メールアドレスを変更",
+          edit_email_change_path,
+          class: "btn btn-outline-secondary btn-sm" %>
+  </div>
+</div>
+
 <%= form_with model: @user, url: profile_path do |f| %>
   <div class="mb-3">
     <%= f.label :display_name, "表示名", class: "form-label" %>

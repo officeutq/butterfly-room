@@ -13,6 +13,7 @@ ja:
         email: メールアドレス
         password: パスワード
         password_confirmation: パスワード（確認）
+        current_password: 現在のパスワード
         bio: 自己紹介
         role: 権限
 

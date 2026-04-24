@@ -87,4 +87,72 @@ class ProfileUpdateTest < ActionDispatch::IntegrationTest
     assert_not_equal "更新後の表示名", user.display_name
     assert_equal "初期bio", user.bio
   end
+
+  test "profile edit shows current email and email change link" do
+    user = User.create!(
+      email: "profile_email_link@example.com",
+      password: "password",
+      password_confirmation: "password",
+      role: :customer
+    )
+
+    sign_in user, scope: :user
+
+    get edit_profile_path
+
+    assert_response :success
+    assert_includes @response.body, "profile_email_link@example.com"
+    assert_includes @response.body, "メールアドレスを変更"
+    assert_includes @response.body, edit_email_change_path
+  end
+
+  test "email change updates email with current password" do
+    user = User.create!(
+      email: "old_email@example.com",
+      password: "password",
+      password_confirmation: "password",
+      role: :customer
+    )
+
+    sign_in user, scope: :user
+
+    patch email_change_path, params: {
+      user: {
+        email: "new_email@example.com",
+        current_password: "password"
+      }
+    }
+
+    assert_redirected_to edit_profile_path
+    follow_redirect!
+    assert_response :success
+    assert_includes @response.body, "メールアドレスを変更しました"
+
+    user.reload
+    assert_equal "new_email@example.com", user.email
+  end
+
+  test "email change does not update email with wrong current password" do
+    user = User.create!(
+      email: "unchanged_email@example.com",
+      password: "password",
+      password_confirmation: "password",
+      role: :customer
+    )
+
+    sign_in user, scope: :user
+
+    patch email_change_path, params: {
+      user: {
+        email: "changed_email@example.com",
+        current_password: "wrong-password"
+      }
+    }
+
+    assert_response :unprocessable_entity
+    assert_includes @response.body, "メールアドレス変更"
+
+    user.reload
+    assert_equal "unchanged_email@example.com", user.email
+  end
 end
