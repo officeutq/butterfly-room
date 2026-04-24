@@ -2,6 +2,8 @@
 
 class HomeController < ApplicationController
   def show
+    set_top_page_meta_tags unless user_signed_in?
+
     @mode = params[:mode].to_s
     @mode = "booths" unless %w[booths stores users].include?(@mode)
 
@@ -170,5 +172,29 @@ class HomeController < ApplicationController
       @favorite_store_ids = Set.new
       @favorite_user_ids = Set.new
     end
+  end
+
+  private
+
+  def set_top_page_meta_tags
+    description = "Butterflyveは、視聴者・キャスト・店舗をつなぐライブ配信サービスです。配信を見て、コメントし、ドリンクで応援できます。"
+
+    set_meta_tags(
+      title: "夜を、ライブ体験に。",
+      description: description,
+      noindex: false,
+      nofollow: false,
+      canonical: root_url,
+      og: {
+        title: "Butterflyve | 夜を、ライブ体験に。",
+        description: description,
+        type: "website",
+        url: root_url,
+        image: view_context.image_url("logo.png")
+      },
+      twitter: {
+        card: "summary_large_image"
+      }
+    )
   end
 end
