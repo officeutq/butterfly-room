@@ -22,6 +22,7 @@ Rails.application.routes.draw do
 
   # --- Common profile (login required) ---
   resource :profile, only: %i[edit update]
+  resource :email_change, only: %i[edit update]
 
   # --- Phone verification (login required) ---
   resource :phone_verification, only: [] do
