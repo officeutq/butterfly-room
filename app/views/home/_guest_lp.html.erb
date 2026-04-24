@@ -12,7 +12,7 @@
     </p>
 
     <div class="d-grid gap-2 d-sm-flex">
-      <%= link_to "新規アカウント作成", sign_up_path, class: "btn btn-primary btn-lg" %>
+      <%= link_to "視聴者アカウント 新規作成", sign_up_path, class: "btn btn-primary btn-lg" %>
       <%= link_to "ログイン", new_user_session_path, class: "btn btn-outline-secondary btn-lg" %>
     </div>
   </section>
@@ -36,7 +36,9 @@
 
           <div class="col-md-4">
             <div class="d-grid">
-              <%= link_to "店舗の方はこちら", stores_lp_path, class: "btn btn-outline-primary btn-lg" %>
+              <%= link_to "店舗の方はこちら",
+                    stores_lp_path(ref: lp_ref_code),
+                    class: "btn btn-outline-primary btn-lg" %>
             </div>
           </div>
         </div>

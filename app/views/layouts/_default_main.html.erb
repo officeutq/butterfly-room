@@ -30,4 +30,6 @@
   </div>
 </main>
 
-<%= render "layouts/footer" %>
+<% if user_signed_in? %>
+  <%= render "layouts/footer" %>
+<% end %>

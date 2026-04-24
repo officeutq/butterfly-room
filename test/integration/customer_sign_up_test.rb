@@ -8,7 +8,7 @@ class CustomerSignUpTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     assert_select "a", text: "ログイン", href: new_user_session_path
-    assert_select "a", text: "新規アカウント作成", href: sign_up_path
+    assert_select "a", text: "視聴者アカウント 新規作成", href: sign_up_path
   end
 
   test "customer can sign up with role fixed and becomes signed in" do

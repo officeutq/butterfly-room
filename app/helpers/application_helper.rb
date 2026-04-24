@@ -191,4 +191,8 @@ module ApplicationHelper
   def footer_dashboard_active?
     current_page?(dashboard_path_for(current_user))
   end
+
+  def lp_ref_code
+    params[:ref].presence || "0000"
+  end
 end
