@@ -1,4 +1,6 @@
 class ApplicationController < ActionController::Base
+  before_action :set_default_meta_tags
+
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   allow_browser versions: :modern
 
@@ -88,5 +90,27 @@ class ApplicationController < ActionController::Base
     booths.active
           .order(Arel.sql('"booths"."archived_at" ASC NULLS FIRST'), id: :desc)
           .to_a
+  end
+
+  def set_default_meta_tags
+    set_meta_tags(
+      site: "Butterflyve",
+      title: "Butterflyve",
+      description: "Butterflyveは、視聴者・キャスト・店舗をつなぐライブ配信サービスです。",
+      reverse: true,
+      separator: "|",
+      noindex: true,
+      nofollow: true,
+      og: {
+        site_name: "Butterflyve",
+        title: "Butterflyve",
+        description: "Butterflyveは、視聴者・キャスト・店舗をつなぐライブ配信サービスです。",
+        type: "website",
+        image: view_context.image_url("logo.png")
+      },
+      twitter: {
+        card: "summary_large_image"
+      }
+    )
   end
 end

@@ -131,3 +131,5 @@ builds:
   '21':
     issues:
     - 767
+  '22':
+    issues: []
