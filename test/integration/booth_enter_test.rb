@@ -11,13 +11,13 @@ class BoothEnterTest < ActionDispatch::IntegrationTest
     Booth.create!(store: store, name: name, status: status)
   end
 
-  test "guest: enter redirects to booth show" do
+  test "guest: enter redirects to login" do
     store = create_store!(name: "s")
     booth = create_booth!(store: store, name: "b", status: :offline)
 
     get enter_booth_path(booth)
     assert_response :redirect
-    assert_redirected_to booth_path(booth)
+    assert_redirected_to new_user_session_path
   end
 
   test "customer: enter redirects to booth show" do

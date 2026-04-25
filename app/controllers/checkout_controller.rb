@@ -1,11 +1,11 @@
 class CheckoutController < ApplicationController
-  before_action :authenticate_user!
+  skip_before_action :authenticate_user!, only: %i[return]
 
   def return
     @status = params[:status].to_s
     @return_to = safe_return_path(params[:return_to])
 
-    @wallet = Wallet.find_by(customer_user_id: current_user.id)
+    @wallet = Wallet.find_by(customer_user_id: current_user&.id)
 
     render :return
   end

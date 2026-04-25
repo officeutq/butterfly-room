@@ -138,3 +138,6 @@ builds:
   '23':
     issues:
     - 773
+  '24':
+    issues:
+    - 780
