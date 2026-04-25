@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class HomeController < ApplicationController
+  skip_before_action :authenticate_user!, only: %i[show]
+
   def show
     set_top_page_meta_tags unless user_signed_in?
 

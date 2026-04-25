@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class CastInvitationsController < ApplicationController
+  skip_before_action :authenticate_user!, only: %i[show]
   before_action :set_invitation_by_token
 
   def show
