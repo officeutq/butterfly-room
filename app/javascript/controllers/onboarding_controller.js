@@ -89,7 +89,7 @@ export default class extends Controller {
         if (document.querySelector('[data-onboarding-target-element="copy-invite-button"]')) {
           return {
             target: "copy-invite-button",
-            message: "このボタンで 招待URL をコピーできます。",
+            message: "このボタンで 招待URL を共有できます。",
             imageUrl: this.createInviteImageUrlValue
           }
         }
@@ -111,7 +111,7 @@ export default class extends Controller {
       case "go_dashboard_for_drinks":
         return {
           target: "footer-dashboard",
-          message: "招待 URL をコピーしました。LINE などで招待する「キャスト」に送信してください。次はダッシュボードに戻って、ドリンク設定を確認しましょう。",
+          message: "招待する「キャスト」に共有したら、次はダッシュボードに戻って、ドリンク設定を確認しましょう。",
           imageUrl: this.goDashboardImageUrlValue
         }
 

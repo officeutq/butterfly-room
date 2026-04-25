@@ -101,7 +101,22 @@
               <% if inv.issued_url.present? %>
                 <div class="referral-code-url-group">
                   <code class="referral-code-url-inline"><%= inv.issued_url %></code>
-
+                </div>
+                <div class="booth-show-actions mt-2 d-flex gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    class="btn btn-outline-primary btn-sm referral-code-copy-btn"
+                    data-controller="share"
+                    data-action="click->share#share"
+                    data-share-title="Butterflyve"
+                    data-share-text="Butterflyveのキャスト招待はこちら"
+                    data-share-url="<%= inv.issued_url %>"
+                    data-share-onboarding-share-url-value="<%= cast_invitation_copied_admin_onboarding_path %>"
+                    data-onboarding-target-element="copy-invite-button"
+                  >
+                    <i class="bi bi-share" aria-hidden="true"></i>
+                    <span>招待URLを共有</span>
+                  </button>
                   <button
                     type="button"
                     class="btn btn-outline-secondary btn-sm referral-code-copy-btn"
@@ -115,6 +130,7 @@
                     aria-label="招待URLをコピー"
                   >
                     <i class="bi bi-copy" aria-hidden="true"></i>
+                    <span>招待URLをコピー</span>
                   </button>
                 </div>
               <% else %>
