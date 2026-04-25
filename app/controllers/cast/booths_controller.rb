@@ -244,6 +244,8 @@ module Cast
       return nil if booth.blank?
 
       case key.to_s
+      when "booth_show"
+        cast_booth_path(booth)
       when "booth_edit"
         edit_cast_booth_path(booth)
       when "booth_live"
