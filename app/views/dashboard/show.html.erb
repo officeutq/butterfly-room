@@ -41,7 +41,7 @@
       </div>
     <% end %>
 
-    <% if current_user.at_least?(:cast) %>
+    <% if current_user.at_least?(:cast) && @selectable_booths_count >= 2 %>
       <div class="col-12 col-md-6 col-xl-4">
         <%= link_to(current_user.at_least?(:store_admin) ? admin_booths_path : cast_booths_path,
                     class: "text-decoration-none") do %>
@@ -53,7 +53,9 @@
           </div>
         <% end %>
       </div>
+    <% end %>
 
+    <% if current_user.at_least?(:cast) %>
       <div class="col-12 col-md-6 col-xl-4">
         <% if booth.present? %>
           <%= link_to cast_booth_path(booth), class: "text-decoration-none" do %>
@@ -103,7 +105,7 @@
       </div>
     <% end %>
 
-    <% if current_user.at_least?(:store_admin) %>
+    <% if current_user.at_least?(:store_admin) && @selectable_stores_count >= 2 %>
       <div class="col-12 col-md-6 col-xl-4">
         <%= link_to admin_stores_path, class: "text-decoration-none" do %>
           <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
@@ -114,7 +116,9 @@
           </div>
         <% end %>
       </div>
+    <% end %>
 
+    <% if current_user.at_least?(:store_admin) %>
       <div class="col-12 col-md-6 col-xl-4">
         <% if store.present? %>
           <%= link_to edit_admin_store_path(store), class: "text-decoration-none" do %>
