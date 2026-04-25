@@ -13,7 +13,8 @@ module Customers
 
       if @form.save
         sign_in(@form.user) # Devise
-        redirect_to edit_profile_path, notice: "アカウントを作成しました。プロフィールを作成してください。"
+        redirect_to stored_location_for(:user) || edit_profile_path,
+                    notice: "アカウントを作成しました。プロフィールを作成してください。"
       else
         render :new, status: :unprocessable_entity
       end
