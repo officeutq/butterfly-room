@@ -9,8 +9,10 @@ class ApplicationController < ActionController::Base
   stale_when_importmap_changes
 
   def after_sign_in_path_for(resource)
+    stored_location = stored_location_for(resource)
+
     auto_set_current_store_and_booth_on_sign_in(resource)
-    super
+    stored_location || super
   end
 
   private

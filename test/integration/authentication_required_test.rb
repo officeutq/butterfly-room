@@ -74,4 +74,46 @@ class AuthenticationRequiredTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to new_user_session_path
   end
+
+  test "未ログインでブース視聴ページへアクセス後、ログインすると元のブースへ戻る" do
+    store = Store.create!(name: "store-return-to-login")
+    booth = Booth.create!(store: store, name: "booth-return-to-login", status: :offline)
+    user = User.create!(
+      email: "customer-return-to@example.com",
+      password: "password",
+      role: :customer
+    )
+
+    get booth_path(booth)
+
+    assert_redirected_to new_user_session_path
+
+    post user_session_path, params: {
+      user: {
+        email: user.email,
+        password: "password"
+      }
+    }
+
+    assert_redirected_to booth_path(booth)
+  end
+
+  test "未ログインでブース視聴ページへアクセス後、顧客新規登録すると元のブースへ戻る" do
+    store = Store.create!(name: "store-return-to-sign-up")
+    booth = Booth.create!(store: store, name: "booth-return-to-sign-up", status: :offline)
+
+    get booth_path(booth)
+
+    assert_redirected_to new_user_session_path
+
+    post sign_up_path, params: {
+      customer_registration: {
+        email: "new-customer-return-to@example.com",
+        password: "password",
+        password_confirmation: "password"
+      }
+    }
+
+    assert_redirected_to booth_path(booth)
+  end
 end
