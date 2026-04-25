@@ -127,7 +127,7 @@ Rails.application.routes.draw do
   namespace :cast do
     resource :current_booth, only: %i[create]
 
-    resources :booths, only: %i[index edit update] do
+    resources :booths, only: %i[index show edit update] do
       collection do
         get :select_modal
       end

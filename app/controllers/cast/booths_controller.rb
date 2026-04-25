@@ -6,10 +6,14 @@ module Cast
     include AttachmentPersistenceChecker
 
     before_action :set_booth, only: %i[live status edit update]
+    before_action :set_booth_for_show, only: %i[show]
     before_action :authorize_update!, only: %i[edit update]
 
     def index
       load_selectable_booths
+    end
+
+    def show
     end
 
     def select_modal
@@ -314,6 +318,27 @@ module Cast
           redirect_to edit_cast_booth_path(@booth), alert: message
         end
       end
+    end
+
+    def set_booth_for_show
+      booth = Booth.find(params[:id])
+
+      allowed =
+        if current_user.system_admin?
+          true
+        elsif current_user.at_least?(:store_admin)
+          current_user.admin_of_store?(booth.store_id)
+        else
+          BoothCast.exists?(cast_user_id: current_user.id, booth_id: booth.id)
+        end
+
+      unless allowed
+        session.delete(:current_booth_id)
+        head :forbidden
+        return
+      end
+
+      @booth = booth
     end
   end
 end

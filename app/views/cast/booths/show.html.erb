@@ -1,0 +1,79 @@
+<% content_for :title, @booth.name.presence || "ブース情報" %>
+
+<div class="booth-show">
+  <div class="booth-show-hero">
+    <% if @booth.thumbnail_image.attached? %>
+      <%= image_tag @booth.thumbnail_image,
+            class: "booth-show-hero-image",
+            alt: @booth.name %>
+    <% else %>
+      <div class="booth-show-hero-placeholder">
+        <span class="text-muted">no thumbnail</span>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="container booth-show-container">
+
+    <div class="booth-show-header d-flex justify-content-between align-items-start gap-3">
+      <div class="min-w-0">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <h1 class="booth-show-title mb-0">
+            <%= @booth.name.presence || "(no name)" %>
+          </h1>
+
+          <%= booth_status_badge(@booth) %>
+
+          <% if @booth.archived? %>
+            <span class="badge text-bg-dark">閉鎖済み</span>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="booth-show-actions mt-4 d-flex gap-2 flex-wrap">
+      <button
+        class="btn btn-outline-primary d-inline-flex align-items-center gap-2"
+        data-controller="clipboard"
+        data-action="click->clipboard#copy"
+        data-clipboard-text="<%= booth_url(@booth) %>">
+        <i class="bi bi-share" aria-hidden="true"></i>
+        <span>共有</span>
+      </button>
+
+      <% unless @booth.archived? %>
+        <%= link_to edit_cast_booth_path(@booth),
+              class: "btn btn-outline-secondary d-inline-flex align-items-center gap-2" do %>
+          <i class="bi bi-pencil-square" aria-hidden="true"></i>
+          <span>編集</span>
+        <% end %>
+      <% else %>
+        <button class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" disabled>
+          <i class="bi bi-pencil-square" aria-hidden="true"></i>
+          <span>編集</span>
+        </button>
+      <% end %>
+
+      <button class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" disabled>
+        <i class="bi bi-clock-history" aria-hidden="true"></i>
+        <span>配信履歴</span>
+      </button>
+    </div>
+
+    <div class="booth-show-info mt-4">
+
+      <div class="booth-show-info-row">
+        <div class="booth-show-info-label">所属店舗</div>
+        <div class="booth-show-info-value">
+          <%= link_to @booth.store.name, store_path(@booth.store) %>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="booth-show-description mt-4">
+      <%= simple_format(@booth.description.presence || "-") %>
+    </div>
+
+  </div>
+</div>
