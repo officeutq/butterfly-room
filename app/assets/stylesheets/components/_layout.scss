@@ -26,12 +26,11 @@
 
 .fixed-subnav {
   position: fixed;
-  top: 56px;
+  top: 62px;
   left: 0;
   right: 0;
   z-index: 1010;
   background: var(--bs-body-bg);
-  border-bottom: 1px solid var(--bs-border-color);
 }
 
 .fixed-subnav--with-form {
@@ -281,7 +280,7 @@
   min-width: 0;
   margin: 0;
   padding: 0.5rem 0.75rem;
-  border-radius: 0.375rem 0 0 0.375rem;
+  border-radius: 0.375rem;
   background: rgba(var(--bs-secondary-rgb), 0.15);
   white-space: nowrap;
   overflow-x: auto;
@@ -293,8 +292,6 @@
 }
 
 .referral-code-copy-btn {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
   flex-shrink: 0;
 }
 
@@ -316,6 +313,10 @@
 
   .page-with-fixed-subnav {
     padding-top: 52px;
+  }
+
+  .fixed-subnav {
+    top: 56px;
   }
 }
 
