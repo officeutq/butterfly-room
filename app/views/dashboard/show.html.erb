@@ -26,6 +26,8 @@
                 電話番号認証
                 <% if current_user.phone_verified? %>
                   <span class="badge text-bg-success ms-2">認証済み</span>
+                <% else %>
+                  <span class="badge text-bg-warning ms-2">未認証</span>
                 <% end %>
               </h5>
               <p class="card-text mb-0">
@@ -41,14 +43,13 @@
       </div>
     <% end %>
 
-    <% if current_user.at_least?(:cast) && @selectable_booths_count >= 2 %>
+    <% if current_user.cast? && @cast_booths_count >= 2 %>
       <div class="col-12 col-md-6 col-xl-4">
-        <%= link_to(current_user.at_least?(:store_admin) ? admin_booths_path : cast_booths_path,
-                    class: "text-decoration-none") do %>
+        <%= link_to cast_booths_path, class: "text-decoration-none" do %>
           <div class="card h-100 dashboard-role-card dashboard-role-card-cast" data-bs-theme="light">
             <div class="card-body">
               <h5 class="card-title mb-2">ブース一覧</h5>
-              <p class="card-text mb-0">ブースの選択・管理を行います</p>
+              <p class="card-text mb-0">操作対象のブースを選択します</p>
             </div>
           </div>
         <% end %>
@@ -119,6 +120,17 @@
     <% end %>
 
     <% if current_user.at_least?(:store_admin) %>
+      <div class="col-12 col-md-6 col-xl-4">
+        <%= link_to admin_booths_path, class: "text-decoration-none" do %>
+          <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
+            <div class="card-body">
+              <h5 class="card-title mb-2">ブース管理</h5>
+              <p class="card-text mb-0">ブースの作成・紐づけ・アーカイブを管理します</p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
       <div class="col-12 col-md-6 col-xl-4">
         <% if store.present? %>
           <%= link_to edit_admin_store_path(store), class: "text-decoration-none" do %>

@@ -142,3 +142,6 @@ builds:
     issues:
     - 776
     - 780
+  '25':
+    issues:
+    - 789
