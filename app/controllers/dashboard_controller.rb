@@ -8,7 +8,7 @@ class DashboardController < ApplicationController
     store&.advance_onboarding_to_setup_drinks!
 
     @selectable_stores_count = selectable_stores.count
-    @selectable_booths_count = selectable_booths.count
+    @cast_booths_count = cast_booths.count
   end
 
   private
@@ -48,22 +48,11 @@ class DashboardController < ApplicationController
     end
   end
 
-  def selectable_booths
-    if current_user.system_admin?
-      Booth.all
-    elsif current_user.at_least?(:store_admin)
-      Booth
-        .joins(store: :store_memberships)
-        .where(store_memberships: {
-          user_id: current_user.id,
-          membership_role: StoreMembership.membership_roles[:admin]
-        })
-        .distinct
-    else
-      Booth
-        .joins(:booth_casts)
-        .where(booth_casts: { cast_user_id: current_user.id })
-        .distinct
-    end
+  def cast_booths
+    Booth
+      .joins(:booth_casts)
+      .where(booth_casts: { cast_user_id: current_user.id })
+      .active
+      .distinct
   end
 end
