@@ -16,7 +16,7 @@ class StoreCastInvitationFlowTest < ActionDispatch::IntegrationTest
     Ivs::Client.reset_factory!
   end
 
-  test "guest visiting invitation is redirected to login and can sign up cast via invitation" do
+  test "guest visiting invitation sees invitation actions and can sign up cast via invitation" do
     store = Store.create!(name: "Invite Store")
     inviter = User.create!(email: "inviter@example.com", password: "password", role: :store_admin)
     StoreMembership.create!(store: store, user: inviter, membership_role: :admin)
@@ -24,10 +24,12 @@ class StoreCastInvitationFlowTest < ActionDispatch::IntegrationTest
     result = StoreCastInvitations::IssueInvitation.call!(store: store, invited_by_user: inviter, note: "note")
     token = result.token
 
+    # 👇 ここが変更ポイント
     get cast_invitation_path(token)
-    assert_response :redirect
-    assert_match "/users/sign_in", response.location
-    assert_match "invite_token=#{token}", response.location
+    assert_response :ok
+    assert_includes response.body, "キャスト招待を受ける"
+    assert_includes response.body, "新規 cast アカウントを作成して招待を受ける"
+    assert_includes response.body, "既存の cast アカウントで招待を受ける"
 
     # 招待経由 cast 新規登録へ
     get cast_sign_up_path(token: token)
@@ -40,6 +42,7 @@ class StoreCastInvitationFlowTest < ActionDispatch::IntegrationTest
         password_confirmation: "password"
       }
     }
+
     assert_response :redirect
     follow_redirect!
     assert_response :ok

@@ -7,7 +7,7 @@ class CastInvitationsController < ApplicationController
   def show
     unless user_signed_in?
       store_location_for(:user, request.fullpath)
-      redirect_to new_user_session_path(invite_token: params[:token]), alert: "招待の承認には cast でログインしてください"
+      render :show, status: :ok
       return
     end
 

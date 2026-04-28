@@ -28,28 +28,45 @@
   </div>
 
   <% if !user_signed_in? %>
-    <%# showアクションでは未ログイン時はログインへリダイレクトされる設計（ここは基本到達しない想定） %>
-    <div class="alert alert-secondary" role="alert">
-      招待の承認には cast でログインしてください。
+    <div class="card mb-3">
+      <div class="card-body">
+        <h2 class="h5 mb-2">キャスト招待を受ける</h2>
+        <p class="text-muted mb-3">
+          この招待を受けるには cast アカウントが必要です。
+        </p>
+
+        <div class="d-grid gap-2">
+          <%= link_to "新規 cast アカウントを作成して招待を受ける",
+                cast_sign_up_path(token: params[:token]),
+                class: "btn btn-primary" %>
+
+          <%= link_to "既存の cast アカウントで招待を受ける",
+                new_user_session_path(invite_token: params[:token]),
+                class: "btn btn-outline-primary" %>
+        </div>
+      </div>
     </div>
 
   <% elsif !current_user.cast? %>
-    <div class="alert alert-warning" role="alert">
-      この招待は <strong>cast アカウント</strong>でのみ承認できます。<br>
-      現在は cast 以外でログインしています。ログアウトして cast でログインし直してください。
-    </div>
+    <div class="card mb-3">
+      <div class="card-body">
+        <h2 class="h5 mb-2">cast アカウントで招待を受けてください</h2>
+        <p class="text-muted mb-3">
+          この招待は cast アカウントでのみ承認できます。<br>
+          現在は cast 以外のアカウントでログインしています。
+        </p>
 
-    <div class="d-flex gap-2">
-      <%= button_to "ログアウト",
-            destroy_user_session_path,
-            method: :delete,
-            class: "btn btn-outline-secondary" %>
+        <div class="d-grid gap-2 d-sm-flex">
+          <%= button_to "ログアウトして cast アカウントでログインする",
+                destroy_user_session_path,
+                method: :delete,
+                class: "btn btn-primary" %>
 
-      <%= link_to "ログイン（cast）", new_user_session_path(invite_token: params[:token]), class: "btn btn-primary" %>
-
-      <%= link_to "招待経由で cast 新規作成",
-            cast_sign_up_path(token: params[:token]),
-            class: "btn btn-outline-primary" %>
+          <%= link_to "cast アカウントを新規作成する",
+                cast_sign_up_path(token: params[:token]),
+                class: "btn btn-outline-primary" %>
+        </div>
+      </div>
     </div>
 
   <% else %>

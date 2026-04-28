@@ -3,7 +3,7 @@
 require "test_helper"
 
 class StoreAdminInvitationFlowTest < ActionDispatch::IntegrationTest
-  test "guest visiting store_admin invitation is redirected to login and can sign up store_admin via invitation" do
+  test "guest visiting store_admin invitation sees invitation actions and can sign up store_admin via invitation" do
     store = Store.create!(name: "Invite Store")
     inviter = User.create!(email: "inviter_admin@example.com", password: "password", role: :store_admin)
     StoreMembership.create!(store: store, user: inviter, membership_role: :admin)
@@ -12,10 +12,10 @@ class StoreAdminInvitationFlowTest < ActionDispatch::IntegrationTest
     token = result.token
 
     get store_admin_invitation_path(token)
-    assert_response :redirect
-    assert_match "/users/sign_in", response.location
-    assert_match "invite_token=#{token}", response.location
-    assert_match "invite_kind=store_admin", response.location
+    assert_response :ok
+    assert_includes response.body, "store_admin 招待を受ける"
+    assert_includes response.body, "新規 store_admin アカウントを作成して招待を受ける"
+    assert_includes response.body, "既存の store_admin アカウントで招待を受ける"
 
     # 招待経由 store_admin 新規登録へ
     get store_admin_sign_up_path(token: token)
