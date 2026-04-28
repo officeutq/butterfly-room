@@ -16,6 +16,22 @@ class CastInvitationFlowTest < ActionDispatch::IntegrationTest
     Ivs::Client.reset_factory!
   end
 
+  test "guest visiting cast invitation sees invitation actions" do
+    store = Store.create!(name: "Invite Store")
+    inviter = User.create!(email: "inviter_cast_guest@example.com", password: "password", role: :store_admin)
+    StoreMembership.create!(store: store, user: inviter, membership_role: :admin)
+
+    result = StoreCastInvitations::IssueInvitation.call!(store: store, invited_by_user: inviter)
+    token = result.token
+
+    get cast_invitation_path(token)
+
+    assert_response :ok
+    assert_includes response.body, "キャスト招待を受ける"
+    assert_includes response.body, "新規 cast アカウントを作成して招待を受ける"
+    assert_includes response.body, "既存の cast アカウントで招待を受ける"
+  end
+
   test "cast can accept invitation and booth is auto created, linked, and set as current_booth" do
     store = Store.create!(name: "Invite Store")
     inviter = User.create!(email: "inviter_cast@example.com", password: "password", role: :store_admin)

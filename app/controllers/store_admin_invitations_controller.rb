@@ -7,8 +7,7 @@ class StoreAdminInvitationsController < ApplicationController
   def show
     unless user_signed_in?
       store_location_for(:user, request.fullpath)
-      redirect_to new_user_session_path(invite_token: params[:token], invite_kind: "store_admin"),
-                  alert: "招待の承認には store_admin でログインしてください"
+      render :show, status: :ok
       return
     end
 
@@ -18,14 +17,12 @@ class StoreAdminInvitationsController < ApplicationController
       return
     end
 
-    # すでに admin membership を持つかチェック
     @already_member = StoreMembership.exists?(
       store_id: @invitation.store_id,
       user_id: current_user.id,
       membership_role: :admin
     )
 
-    # 在籍済み かつ 招待がまだ usable なら closed 扱いにする
     if @already_member && @invitation.usable?
       ActiveRecord::Base.transaction do
         @invitation.lock!

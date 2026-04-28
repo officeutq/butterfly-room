@@ -21,30 +21,45 @@
   </div>
 
   <% if !user_signed_in? %>
-    <%# show では未ログイン時はログインへリダイレクト（基本到達しない想定） %>
-    <div class="alert alert-secondary" role="alert">
-      招待の承認には store_admin でログインしてください。
+    <div class="card mb-3">
+      <div class="card-body">
+        <h2 class="h5 mb-2">store_admin 招待を受ける</h2>
+        <p class="text-muted mb-3">
+          この招待を受けるには store_admin アカウントが必要です。
+        </p>
+
+        <div class="d-grid gap-2">
+          <%= link_to "新規 store_admin アカウントを作成して招待を受ける",
+                store_admin_sign_up_path(token: params[:token]),
+                class: "btn btn-primary" %>
+
+          <%= link_to "既存の store_admin アカウントで招待を受ける",
+                new_user_session_path(invite_token: params[:token], invite_kind: "store_admin"),
+                class: "btn btn-outline-primary" %>
+        </div>
+      </div>
     </div>
 
   <% elsif !current_user.store_admin? %>
-    <div class="alert alert-warning" role="alert">
-      この招待は <strong>store_admin アカウント</strong>でのみ承認できます。<br>
-      現在は store_admin 以外でログインしています。ログアウトして store_admin でログインし直してください。
-    </div>
+    <div class="card mb-3">
+      <div class="card-body">
+        <h2 class="h5 mb-2">store_admin アカウントで招待を受けてください</h2>
+        <p class="text-muted mb-3">
+          この招待は store_admin アカウントでのみ承認できます。<br>
+          現在は store_admin 以外のアカウントでログインしています。
+        </p>
 
-    <div class="d-flex gap-2 flex-wrap">
-      <%= button_to "ログアウト",
-            destroy_user_session_path,
-            method: :delete,
-            class: "btn btn-outline-secondary" %>
+        <div class="d-grid gap-2 d-sm-flex">
+          <%= button_to "ログアウトして store_admin アカウントでログインする",
+                destroy_user_session_path,
+                method: :delete,
+                class: "btn btn-primary" %>
 
-      <%= link_to "ログイン（store_admin）",
-            new_user_session_path(invite_token: params[:token], invite_kind: "store_admin"),
-            class: "btn btn-primary" %>
-
-      <%= link_to "招待経由で store_admin 新規作成",
-            store_admin_sign_up_path(token: params[:token]),
-            class: "btn btn-outline-primary" %>
+          <%= link_to "store_admin アカウントを新規作成する",
+                store_admin_sign_up_path(token: params[:token]),
+                class: "btn btn-outline-primary" %>
+        </div>
+      </div>
     </div>
 
   <% else %>
