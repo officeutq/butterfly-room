@@ -1,4 +1,4 @@
-import { destroyBanubaPlayer, stopBanubaSurfaceMediaStreams } from "controllers/ivs_publisher/banuba_session"
+import { stopBanubaSurfaceMediaStreams } from "controllers/ivs_publisher/banuba_session"
 import { startCanvasRenderLoop, stopCanvasRenderLoop, syncCanvasResolutionToMeasured } from "controllers/ivs_publisher/away_canvas"
 
 export async function ensureCameraVideoTrack(ctx) {
@@ -64,7 +64,7 @@ export function cleanupBanubaPublishTrack(ctx) {
   ctx._banubaVideoTrack = null
   ctx._banubaStageStream = null
   ctx._publishedVideoTrack = null
-  if (ctx._publishedVideoSource === "banuba") {
+  if (ctx._publishedVideoSource === "processed") {
     ctx._publishedVideoSource = null
   }
 }
@@ -97,7 +97,11 @@ export async function cleanupMediaAndCanvas(ctx) {
   }
 
   cleanupBanubaPublishTrack(ctx)
-  await destroyBanubaPlayer(ctx)
+
+  if (ctx._beautyProvider && typeof ctx._beautyProvider.stop === "function") {
+    await ctx._beautyProvider.stop()
+  }
+
   cleanupCameraMedia(ctx)
 
   ctx._audioTrack = null

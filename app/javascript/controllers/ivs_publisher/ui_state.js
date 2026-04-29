@@ -45,7 +45,7 @@ export function applyNormalMode(ctx) {
     stopCanvasRenderLoop(ctx)
   }
 
-  if (ctx._broadcasting && ctx._publishedVideoSource !== "banuba" && !ctx._switchingVideoSource) {
+  if (ctx._broadcasting && ctx._publishedVideoSource !== "processed" && !ctx._switchingVideoSource) {
     setError(ctx, "映像状態の同期が必要です。もう一度お試しください。")
   }
 }
