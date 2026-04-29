@@ -1,3 +1,11 @@
+<% if @beauty_provider == "deepar" %>
+  <% content_for :head do %>
+    <script
+      src="/deepar/js/deepar.js"
+      data-turbo-track="reload">
+    </script>
+  <% end %>
+<% end %>
 <div
   class="cast-live-screen"
   data-controller="ivs-publisher live-stage"
@@ -11,6 +19,9 @@
   data-ivs-publisher-initial-booth-status-value="<%= @booth.status %>"
   data-ivs-publisher-auto-resume-on-entry-value="<%= @auto_resume_publish %>"
   data-ivs-publisher-provider-value="<%= @beauty_provider %>"
+  data-ivs-publisher-deepar-license-key-value="<%= ENV['DEEPAR_LICENSE_KEY'] %>"
+  data-ivs-publisher-deepar-root-path-value="/deepar"
+  data-ivs-publisher-deepar-default-effect-url-value="/deepar/effects/aviators"
   data-ivs-publisher-banuba-client-token-value="<%= @banuba_client_token %>"
   data-ivs-publisher-banuba-sdk-base-url-value="<%= @banuba_sdk_base_url %>"
   data-ivs-publisher-banuba-face-tracker-url-value="<%= @banuba_face_tracker_url %>"
