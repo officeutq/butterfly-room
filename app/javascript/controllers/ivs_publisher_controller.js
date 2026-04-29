@@ -14,6 +14,7 @@ import {
 import { cleanupBanubaPublishTrack, cleanupCameraMedia, cleanupMediaAndCanvas, cleanupStage, ensureAudioTrack, ensureCameraVideoTrack, ensureCanvasPublishTrack } from "controllers/ivs_publisher/media_state"
 import { applyCurrentMode, syncMicUI } from "controllers/ivs_publisher/ui_state"
 import { BanubaProvider } from "controllers/ivs_publisher/beauty_providers/banuba_provider"
+import { DeepARProvider } from "controllers/ivs_publisher/beauty_providers/deepar_provider"
 
 export default class extends Controller {
   static targets = [
@@ -55,6 +56,9 @@ export default class extends Controller {
     autoResumeOnEntry: { type: Boolean, default: false },
     provider: { type: String, default: "banuba" },
 
+    deeparLicenseKey: String,
+    deeparRootPath: String,
+    deeparDefaultEffectUrl: String,
     banubaClientToken: String,
     banubaSdkBaseUrl: String,
     banubaFaceTrackerUrl: String,
@@ -613,7 +617,7 @@ export default class extends Controller {
     }
 
     if (provider === "deepar") {
-      throw new Error("DeepARProvider is not implemented yet")
+      return new DeepARProvider(this)
     }
 
     throw new Error(`Unknown beauty provider: ${provider}`)
