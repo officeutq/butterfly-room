@@ -100,6 +100,7 @@ module Cast
                .reverse
 
       @effects = Effect.enabled_only.ordered
+      @beauty_provider = Rails.configuration.x.beauty_provider
 
       @banuba_client_token = ENV["BANUBA_CLIENT_TOKEN"].to_s
       @banuba_sdk_base_url = "/banuba/sdk"
