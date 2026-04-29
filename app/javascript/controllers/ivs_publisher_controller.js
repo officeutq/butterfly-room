@@ -13,6 +13,7 @@ import {
 } from "controllers/ivs_publisher/banuba_session"
 import { cleanupBanubaPublishTrack, cleanupCameraMedia, cleanupMediaAndCanvas, cleanupStage, ensureAudioTrack, ensureCameraVideoTrack, ensureCanvasPublishTrack } from "controllers/ivs_publisher/media_state"
 import { applyCurrentMode, syncMicUI } from "controllers/ivs_publisher/ui_state"
+import { BanubaProvider } from "controllers/ivs_publisher/beauty_providers/banuba_provider"
 
 export default class extends Controller {
   static targets = [
@@ -85,6 +86,7 @@ export default class extends Controller {
     this._banubaStream = null
     this._banubaVideoTrack = null
     this._banubaEffects = {}
+    this._beautyProvider = new BanubaProvider(this)
 
     this._banubaStageStream = null
     this._canvasStageStream = null
@@ -208,9 +210,9 @@ export default class extends Controller {
     this._setState("starting")
 
     try {
-      await this._ensureInitialBeautyStateLoaded()
-      await this._ensureBanubaStarted()
-      await this._ensureBanubaPublishTrack()
+      await this._beautyProvider.ensureInitialBeautyStateLoaded()
+      await this._beautyProvider.start()
+      await this._beautyProvider.ensurePublishTrack()
       await this._ensureAudioTrack()
 
       const token = await this._fetchParticipantToken("publisher")
@@ -643,9 +645,9 @@ export default class extends Controller {
     this._clearError()
 
     try {
-      await this._ensureInitialBeautyStateLoaded()
-      await this._ensureBanubaStarted()
-      await this._ensureBanubaPublishTrack()
+      await this._beautyProvider.ensureInitialBeautyStateLoaded()
+      await this._beautyProvider.start()
+      await this._beautyProvider.ensurePublishTrack()
 
       this._previewOnly = true
       this._applyCurrentMode()
@@ -676,7 +678,7 @@ export default class extends Controller {
 
   _applyBeautyConfig() {
     try {
-      return applyBeautyConfig(this)
+      return this._beautyProvider.updateBeauty()
     } catch (e) {
       console.error("[ivs-publisher] apply beauty config failed", e)
       this._setError("Beauty 設定の反映に失敗しました。")
@@ -685,11 +687,11 @@ export default class extends Controller {
   }
 
   _applySelectedEffect() {
-    return applySelectedEffect(this)
+    return this._beautyProvider.applyEffect()
   }
 
   _ensureInitialBeautyStateLoaded() {
-    return ensureInitialBeautyStateLoaded(this)
+    return this._beautyProvider.ensureInitialBeautyStateLoaded()
   }
 
   setBeautyEnabled(value) {
@@ -1041,15 +1043,15 @@ export default class extends Controller {
   }
 
   _ensureBanubaStarted() {
-    return ensureBanubaStarted(this)
+    return this._beautyProvider.start()
   }
 
   _ensureBanubaPublishTrack() {
-    return ensureBanubaPublishTrack(this)
+    return this._beautyProvider.ensurePublishTrack()
   }
 
   _destroyBanubaPlayer() {
-    return destroyBanubaPlayer(this)
+    return this._beautyProvider.stop()
   }
 
   _waitForBanubaRenderedNode() {
