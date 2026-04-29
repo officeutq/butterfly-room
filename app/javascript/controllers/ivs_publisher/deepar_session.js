@@ -201,13 +201,36 @@ export async function destroyDeepAR(ctx) {
 export async function applyDeepAREffect(ctx, effect = null) {
   if (!ctx._deepAR) return
 
-  const effectUrl =
-    effect?.url ||
-    effect?.effectUrl ||
-    ctx.deeparDefaultEffectUrlValue ||
-    ""
+  const selectedEffect = ctx._selectedEffect || "deepar_aviators"
 
-  if (!effectUrl) return
+  if (selectedEffect === "none") {
+    if (typeof ctx._deepAR.clearEffect === "function") {
+      await ctx._deepAR.clearEffect()
+      return
+    }
+
+    if (typeof ctx._deepAR.switchEffect === "function") {
+      await ctx._deepAR.switchEffect("")
+      return
+    }
+
+    throw new Error("deepar_clear_effect_not_available")
+  }
+
+  let effectUrl = ""
+
+  if (selectedEffect === "deepar_aviators") {
+    effectUrl = ctx.deeparDefaultEffectUrlValue || ""
+  } else {
+    effectUrl =
+      effect?.url ||
+      effect?.effectUrl ||
+      ""
+  }
+
+  if (!effectUrl) {
+    throw new Error(`deepar_effect_url_missing(${selectedEffect})`)
+  }
 
   if (typeof ctx._deepAR.switchEffect !== "function") {
     throw new Error("deepar_switch_effect_not_available")

@@ -126,7 +126,7 @@ export default class extends Controller {
 
     this._effectPanelOpen = false
     this._beautyPanelOpen = false
-    this._selectedEffect = "beauty"
+    this._selectedEffect = this.providerValue === "deepar" ? "deepar_aviators" : "beauty"
     this._selectedBeautyControl = "softlight"
     this._lastBeautyAdjustBtnVisible = null
 
