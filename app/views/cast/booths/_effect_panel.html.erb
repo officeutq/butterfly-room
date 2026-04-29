@@ -77,19 +77,31 @@
       <% end %>
 
       <% if @beauty_provider == "deepar" %>
-        <input
-          type="radio"
-          class="btn-check"
-          name="cast_live_effect_mode"
-          id="cast_live_effect_mode_deepar_aviators"
-          value="deepar_aviators"
-          autocomplete="off"
-          checked
-          data-action="change->ivs-publisher#onEffectSelectionChanged">
+        <% [
+          ["deepar_aviators", "サングラス"],
+          ["deepar_lion", "ライオン"],
+          ["deepar_koala", "コアラ"],
+          ["deepar_dalmatian", "ダルメシアン"],
+          ["deepar_galaxy_background", "ギャラクシー"],
+          ["deepar_background_blur", "背景ぼかし"],
+          ["deepar_background_replacement", "背景差し替え"]
+        ].each do |value, label_text| %>
+          <% input_id = "cast_live_effect_mode_#{value}" %>
 
-        <label class="btn btn-outline-light live-effect-toggle-btn" for="cast_live_effect_mode_deepar_aviators">
-          サングラス
-        </label>
+          <input
+            type="radio"
+            class="btn-check"
+            name="cast_live_effect_mode"
+            id="<%= input_id %>"
+            value="<%= value %>"
+            autocomplete="off"
+            <%= "checked" if value == "deepar_aviators" %>
+            data-action="change->ivs-publisher#onEffectSelectionChanged">
+
+          <label class="btn btn-outline-light live-effect-toggle-btn" for="<%= input_id %>">
+            <%= label_text %>
+          </label>
+        <% end %>
       <% end %>
     </div>
   </div>

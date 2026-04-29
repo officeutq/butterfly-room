@@ -217,16 +217,21 @@ export async function applyDeepAREffect(ctx, effect = null) {
     throw new Error("deepar_clear_effect_not_available")
   }
 
-  let effectUrl = ""
-
-  if (selectedEffect === "deepar_aviators") {
-    effectUrl = ctx.deeparDefaultEffectUrlValue || ""
-  } else {
-    effectUrl =
-      effect?.url ||
-      effect?.effectUrl ||
-      ""
+  const effectUrls = {
+    deepar_aviators: ctx.deeparDefaultEffectUrlValue || "/deepar/effects/aviators",
+    deepar_lion: "/deepar/effects/lion",
+    deepar_koala: "/deepar/effects/koala",
+    deepar_dalmatian: "/deepar/effects/dalmatian",
+    deepar_galaxy_background: "/deepar/effects/galaxy_background",
+    deepar_background_blur: "/deepar/effects/background_blur.deepar",
+    deepar_background_replacement: "/deepar/effects/background_replacement.deepar",
   }
+
+  const effectUrl =
+    effectUrls[selectedEffect] ||
+    effect?.url ||
+    effect?.effectUrl ||
+    ""
 
   if (!effectUrl) {
     throw new Error(`deepar_effect_url_missing(${selectedEffect})`)
