@@ -34,19 +34,21 @@
         なし
       </label>
 
-      <input
-        type="radio"
-        class="btn-check"
-        name="cast_live_effect_mode"
-        id="cast_live_effect_mode_beauty"
-        value="beauty"
-        autocomplete="off"
-        checked
-        data-action="change->ivs-publisher#onEffectSelectionChanged">
+      <% if @beauty_provider == "banuba" %>
+        <input
+          type="radio"
+          class="btn-check"
+          name="cast_live_effect_mode"
+          id="cast_live_effect_mode_beauty"
+          value="beauty"
+          autocomplete="off"
+          checked
+          data-action="change->ivs-publisher#onEffectSelectionChanged">
 
-      <label class="btn btn-outline-light live-effect-toggle-btn" for="cast_live_effect_mode_beauty">
-        Beauty
-      </label>
+        <label class="btn btn-outline-light live-effect-toggle-btn" for="cast_live_effect_mode_beauty">
+          Beauty
+        </label>
+      <% end %>
 
       <% Array(effects).each do |effect| %>
         <% input_id = "cast_live_effect_mode_#{effect.key.to_s.parameterize(separator: "_")}" %>

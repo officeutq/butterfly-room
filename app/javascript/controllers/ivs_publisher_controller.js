@@ -884,7 +884,9 @@ export default class extends Controller {
   }
 
   _canOpenBeautyPanel() {
-    return this._canUseEffectUI() && this._selectedEffect === "beauty"
+    return this.providerValue === "banuba" &&
+          this._canUseEffectUI() &&
+          this._selectedEffect === "beauty"
   }
 
   _effectOptionInputs() {
@@ -910,7 +912,9 @@ export default class extends Controller {
   }
 
   _shouldShowBeautyAdjustBtn() {
-    return this._canUseEffectUI() && this._selectedEffect === "beauty"
+    return this.providerValue === "banuba" &&
+          this._canUseEffectUI() &&
+          this._selectedEffect === "beauty"
   }
 
   _syncEffectSelectionUI() {
