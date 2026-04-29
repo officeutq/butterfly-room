@@ -53,6 +53,7 @@ export default class extends Controller {
     initialMode: { type: String, default: "normal" },
     initialBoothStatus: String,
     autoResumeOnEntry: { type: Boolean, default: false },
+    provider: { type: String, default: "banuba" },
 
     banubaClientToken: String,
     banubaSdkBaseUrl: String,
@@ -86,7 +87,7 @@ export default class extends Controller {
     this._banubaStream = null
     this._banubaVideoTrack = null
     this._banubaEffects = {}
-    this._beautyProvider = new BanubaProvider(this)
+    this._beautyProvider = this._createBeautyProvider()
 
     this._banubaStageStream = null
     this._canvasStageStream = null
@@ -602,6 +603,20 @@ export default class extends Controller {
 
     console.warn("[ivs-publisher] stage.refreshStrategy is not available")
     throw new Error("stage_refresh_strategy_not_supported")
+  }
+
+  _createBeautyProvider() {
+    const provider = this.providerValue || "banuba"
+
+    if (provider === "banuba") {
+      return new BanubaProvider(this)
+    }
+
+    if (provider === "deepar") {
+      throw new Error("DeepARProvider is not implemented yet")
+    }
+
+    throw new Error(`Unknown beauty provider: ${provider}`)
   }
 
   _buildCameraVideoConstraints() {
