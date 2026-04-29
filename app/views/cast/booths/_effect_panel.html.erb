@@ -28,6 +28,7 @@
         id="cast_live_effect_mode_none"
         value="none"
         autocomplete="off"
+        <%= "checked" unless @beauty_provider == "deepar" %>
         data-action="change->ivs-publisher#onEffectSelectionChanged">
 
       <label class="btn btn-outline-light live-effect-toggle-btn" for="cast_live_effect_mode_none">
@@ -48,30 +49,46 @@
         <label class="btn btn-outline-light live-effect-toggle-btn" for="cast_live_effect_mode_beauty">
           Beauty
         </label>
+
+        <% Array(effects).each do |effect| %>
+          <% input_id = "cast_live_effect_mode_#{effect.key.to_s.parameterize(separator: "_")}" %>
+
+          <input
+            type="radio"
+            class="btn-check"
+            name="cast_live_effect_mode"
+            id="<%= input_id %>"
+            value="<%= effect.key %>"
+            data-effect-zip-filename="<%= effect.zip_filename %>"
+            autocomplete="off"
+            data-action="change->ivs-publisher#onEffectSelectionChanged">
+
+          <label class="btn btn-outline-light live-effect-toggle-btn" for="<%= input_id %>">
+            <% if effect.icon_path.present? %>
+              <%= image_tag effect.icon_path,
+                            class: "live-effect-toggle-icon",
+                            alt: effect.name %>
+              <span class="visually-hidden"><%= effect.name %></span>
+            <% else %>
+              <%= effect.name %>
+            <% end %>
+          </label>
+        <% end %>
       <% end %>
 
-      <% Array(effects).each do |effect| %>
-        <% input_id = "cast_live_effect_mode_#{effect.key.to_s.parameterize(separator: "_")}" %>
-
+      <% if @beauty_provider == "deepar" %>
         <input
           type="radio"
           class="btn-check"
           name="cast_live_effect_mode"
-          id="<%= input_id %>"
-          value="<%= effect.key %>"
-          data-effect-zip-filename="<%= effect.zip_filename %>"
+          id="cast_live_effect_mode_deepar_aviators"
+          value="deepar_aviators"
           autocomplete="off"
+          checked
           data-action="change->ivs-publisher#onEffectSelectionChanged">
 
-        <label class="btn btn-outline-light live-effect-toggle-btn" for="<%= input_id %>">
-          <% if effect.icon_path.present? %>
-            <%= image_tag effect.icon_path,
-                          class: "live-effect-toggle-icon",
-                          alt: effect.name %>
-            <span class="visually-hidden"><%= effect.name %></span>
-          <% else %>
-            <%= effect.name %>
-          <% end %>
+        <label class="btn btn-outline-light live-effect-toggle-btn" for="cast_live_effect_mode_deepar_aviators">
+          サングラス
         </label>
       <% end %>
     </div>
