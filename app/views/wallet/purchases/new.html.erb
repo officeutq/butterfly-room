@@ -12,6 +12,13 @@
             購入プランを選択してください（表示金額は税込）。
           </p>
 
+          <p class="small text-muted">
+            <%= link_to "特定商取引法に基づく表記",
+                  legal_path,
+                  data: { turbo_frame: "_top" },
+                  class: "link-secondary" %>
+          </p>
+
           <%= form_with url: wallet_purchases_path,
                 method: :post,
                 data: { turbo: false } do |f| %>
