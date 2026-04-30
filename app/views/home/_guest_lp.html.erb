@@ -18,6 +18,36 @@
   </section>
 
   <section class="mt-4">
+    <p class="text-primary fw-semibold small mb-2">ポイント購入</p>
+
+    <h2 class="h5 fw-bold mb-3">
+      配信をドリンクで応援できます。
+    </h2>
+
+    <p class="text-secondary mb-3">
+      Butterflyveでは、購入したポイントを使ってライブ配信中のキャストへドリンクを送信できます。
+    </p>
+
+    <div class="vstack gap-2 mb-3">
+      <div>1,000pt：1,100円（税込）</div>
+      <div>5,000pt：5,500円（税込）</div>
+      <div>10,000pt：11,000円（税込）</div>
+      <div>50,000pt：55,000円（税込）</div>
+      <div>100,000pt：110,000円（税込）</div>
+    </div>
+
+    <p class="small text-secondary mb-3">
+      ※本サービスは会員制サービスです。ポイントの購入および利用にはログインが必要です。
+    </p>
+
+    <div class="d-grid gap-2 d-sm-flex">
+      <%= link_to "ポイントを購入する",
+            new_user_session_path,
+            class: "btn btn-primary" %>
+    </div>
+  </section>
+
+  <section class="mt-4">
     <div class="card bg-body-tertiary border-primary-subtle">
       <div class="card-body p-4 p-md-5">
         <div class="row g-4 align-items-center">
