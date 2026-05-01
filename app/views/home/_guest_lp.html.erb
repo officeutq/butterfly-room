@@ -1,74 +1,136 @@
-<div class="mx-auto" style="max-width: 920px;">
-  <section>
-    <p class="text-primary fw-semibold small mb-2">Butterflyve（バタフライブ）</p>
+<div class="mx-auto lp-guest" style="max-width: 1040px;">
+  <section class="py-4 py-md-5">
+    <div class="row g-4 align-items-center">
+      <div class="col-lg-6">
+        <p class="text-primary fw-semibold small mb-2">Butterflyve（バタフライブ）</p>
 
-    <h1 class="display-6 fw-bold mb-3">
-      夜を、ライブ体験に。
-    </h1>
+        <h1 class="display-5 fw-bold mb-3">
+          来店しない日も、<br>
+          既存客から売上をつくる。
+        </h1>
 
-    <p class="lead text-secondary mb-4">
-      Butterflyve（バタフライブ）は、視聴者・キャスト・店舗をつなぐライブ配信サービスです。
-      配信を見て、コメントし、ドリンクで応援できます。
-    </p>
+        <p class="lead text-secondary mb-4">
+          Butterflyveは、夜のお店のための遠隔営業ツールです。
+          LINEなどで常連のお客様に配信URLを送り、オンライン上でドリンク売上をつくれます。
+        </p>
 
-    <div class="d-grid gap-2 d-sm-flex">
-      <%= link_to "視聴者アカウント 新規作成", sign_up_path, class: "btn btn-primary btn-lg" %>
-      <%= link_to "ログイン", new_user_session_path, class: "btn btn-outline-secondary btn-lg" %>
+        <div class="d-grid gap-2 d-sm-flex mb-3">
+          <%= link_to "店舗の方はこちら",
+                stores_new_registration_path(ref: lp_ref_code),
+                class: "btn btn-primary btn-lg" %>
+
+          <%= link_to "ログイン",
+                new_user_session_path,
+                class: "btn btn-outline-secondary btn-lg" %>
+        </div>
+
+        <p class="small text-secondary mb-0">
+          初期費用0円・月額費用0円。売上が発生した分だけ手数料がかかります。
+        </p>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card bg-body-tertiary border-0 shadow-sm overflow-hidden">
+          <%= image_tag "lp/store-hero.webp",
+                class: "img-fluid",
+                alt: "店舗がスマートフォンで配信URLを常連客に送るイメージ" %>
+        </div>
+      </div>
     </div>
   </section>
 
-  <section class="mt-4">
-    <p class="text-primary fw-semibold small mb-2">ポイント購入</p>
-
-    <h2 class="h5 fw-bold mb-3">
-      配信をドリンクで応援できます。
-    </h2>
-
-    <p class="text-secondary mb-3">
-      Butterflyveでは、購入したポイントを使ってライブ配信中のキャストへドリンクを送信できます。
-    </p>
-
-    <div class="vstack gap-2 mb-3">
-      <div>1,000pt：1,100円（税込）</div>
-      <div>5,000pt：5,500円（税込）</div>
-      <div>10,000pt：11,000円（税込）</div>
-      <div>50,000pt：55,000円（税込）</div>
-      <div>100,000pt：110,000円（税込）</div>
+  <section class="py-4">
+    <div class="text-center mb-4">
+      <p class="text-primary fw-semibold small mb-2">こんな悩みに</p>
+      <h2 class="h3 fw-bold mb-0">
+        来店だけに頼る売上、もったいなくないですか？
+      </h2>
     </div>
 
-    <p class="small text-secondary mb-3">
-      ※本サービスは会員制サービスです。ポイントの購入および利用にはログインが必要です。
-    </p>
-
-    <div class="d-grid gap-2 d-sm-flex">
-      <%= link_to "ポイントを購入する",
-            new_user_session_path,
-            class: "btn btn-primary" %>
-    </div>
-  </section>
-
-  <section class="mt-4">
-    <div class="card bg-body-tertiary border-primary-subtle">
-      <div class="card-body p-4 p-md-5">
-        <div class="row g-4 align-items-center">
-          <div class="col-md-8">
-            <p class="text-primary fw-semibold mb-2">店舗様向け</p>
-
-            <h2 class="h3 fw-bold mb-3">
-              店舗の新しい売上導線をつくる。
-            </h2>
-
+    <div class="row row-cols-1 row-cols-md-3 g-3">
+      <div class="col">
+        <div class="card h-100 bg-body-tertiary border-0">
+          <div class="card-body p-4">
+            <h3 class="h5 fw-bold">☔ 雨の日に弱い</h3>
             <p class="text-secondary mb-0">
-              店舗向けの仕組みや導入メリットは、専用ページでご案内しています。
-              配信、ドリンク送信、売上管理までを店舗単位で運用できます。
+              天候や曜日で来店が落ちる日でも、常連客とオンラインで接点を作れます。
             </p>
           </div>
+        </div>
+      </div>
 
-          <div class="col-md-4">
-            <div class="d-grid">
-              <%= link_to "店舗の方はこちら",
-                    stores_lp_path(ref: lp_ref_code),
-                    class: "btn btn-outline-primary btn-lg" %>
+      <div class="col">
+        <div class="card h-100 bg-body-tertiary border-0">
+          <div class="card-body p-4">
+            <h3 class="h5 fw-bold">📱 遠隔がバラバラ</h3>
+            <p class="text-secondary mb-0">
+              個別連絡や振込ではなく、配信・ドリンク・売上確認をひとつにまとめられます。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="card h-100 bg-body-tertiary border-0">
+          <div class="card-body p-4">
+            <h3 class="h5 fw-bold">💸 新規集客が重い</h3>
+            <p class="text-secondary mb-0">
+              まずは既存のお客様にURLを送るだけ。新規集客より低いハードルで始められます。
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-4 py-md-5">
+    <div class="row g-4 align-items-center">
+      <div class="col-lg-5">
+        <%= image_tag "lp/remote-sales-flow.webp",
+              class: "img-fluid rounded-4 shadow-sm",
+              alt: "LINEでURLを送り、配信でドリンク売上が発生する流れ" %>
+      </div>
+
+      <div class="col-lg-7">
+        <p class="text-primary fw-semibold small mb-2">使い方</p>
+        <h2 class="h3 fw-bold mb-4">
+          常連さんにURLを送るだけ。
+        </h2>
+
+        <div class="vstack gap-3">
+          <div class="d-flex gap-3 align-items-start">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary text-white fw-bold flex-shrink-0"
+       style="width: 2rem; height: 2rem;">1</div>
+            <div>
+              <h3 class="h6 fw-bold mb-1">お店・キャストが配信する</h3>
+              <p class="text-secondary mb-0">空き時間や来店前後に、店舗のブースから配信できます。</p>
+            </div>
+          </div>
+
+          <div class="d-flex gap-3 align-items-start">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary text-white fw-bold flex-shrink-0"
+       style="width: 2rem; height: 2rem;">2</div>
+            <div>
+              <h3 class="h6 fw-bold mb-1">常連さんへURLを送る</h3>
+              <p class="text-secondary mb-0">LINEやSNSで視聴ページを案内できます。</p>
+            </div>
+          </div>
+
+          <div class="d-flex gap-3 align-items-start">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary text-white fw-bold flex-shrink-0"
+       style="width: 2rem; height: 2rem;">3</div>
+            <div>
+              <h3 class="h6 fw-bold mb-1">お客様がドリンクで応援する</h3>
+              <p class="text-secondary mb-0">視聴しながらコメントし、アプリ内ドリンクを送れます。</p>
+            </div>
+          </div>
+
+          <div class="d-flex gap-3 align-items-start">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary text-white fw-bold flex-shrink-0"
+       style="width: 2rem; height: 2rem;">4</div>
+            <div>
+              <h3 class="h6 fw-bold mb-1">消化して売上が確定する</h3>
+              <p class="text-secondary mb-0">送られたドリンクは、キャストが消化して初めて売上になります。</p>
             </div>
           </div>
         </div>
@@ -76,9 +138,337 @@
     </div>
   </section>
 
-  <section class="mt-4 text-center">
-    <%= link_to "特定商取引法に基づく表記",
-          legal_path,
-          class: "link-secondary small" %>
+  <section class="py-4">
+    <div class="card border-primary-subtle bg-body-tertiary">
+      <div class="card-body p-4 p-md-5">
+        <div class="row g-4 align-items-center">
+          <div class="col-lg-7">
+            <p class="text-primary fw-semibold small mb-2">Butterflyveの特徴</p>
+            <h2 class="h3 fw-bold mb-3">
+              ただの投げ銭ではなく、<br>
+              「ドリンク売上」として管理できます。
+            </h2>
+
+            <p class="text-secondary mb-4">
+              お客様が送ったドリンクは未確定のまま保持され、キャストが消化した分だけ売上になります。
+              未消化分は売上に含めないため、店舗・キャスト・お客様にとって分かりやすい仕組みです。
+            </p>
+
+            <div class="row row-cols-1 row-cols-sm-3 g-3">
+              <div class="col">
+                <div class="p-3 rounded-3 bg-body">
+                  <div class="fw-bold">ドリンク送信</div>
+                  <div class="small text-secondary">応援が見える</div>
+                </div>
+              </div>
+              <div class="col">
+                <div class="p-3 rounded-3 bg-body">
+                  <div class="fw-bold">キャストが消化</div>
+                  <div class="small text-secondary">売上条件が明確</div>
+                </div>
+              </div>
+              <div class="col">
+                <div class="p-3 rounded-3 bg-body">
+                  <div class="fw-bold">売上確定</div>
+                  <div class="small text-secondary">店舗で確認</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-5">
+            <%= image_tag "lp/drink-consume-sales.webp",
+                  class: "img-fluid rounded-4 shadow-sm",
+                  alt: "ドリンク送信から消化、売上確定までの画面イメージ" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-4 py-md-5">
+    <div class="text-center mb-4">
+      <p class="text-primary fw-semibold small mb-2">導入リスク</p>
+      <h2 class="h3 fw-bold mb-0">
+        固定費なしで始められます。
+      </h2>
+    </div>
+
+    <div class="row row-cols-3 row-cols-md-3 g-1">
+      <div class="col">
+        <div class="card h-100 text-center bg-body-tertiary border-0">
+          <div class="card-body p-2">
+            <div class="d-flex align-items-center justify-content-center" style="min-height: 4rem;">
+              <div class="display-6 fw-bold text-primary">0円</div>
+            </div>
+            <div class="fw-bold mt-2">初期費用</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="card h-100 text-center bg-body-tertiary border-0">
+          <div class="card-body p-2">
+            <div class="d-flex align-items-center justify-content-center" style="min-height: 4rem;">
+              <div class="display-6 fw-bold text-primary">0円</div>
+            </div>
+            <div class="fw-bold mt-2">月額費用</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="card h-100 text-center bg-body-tertiary border-0">
+          <div class="card-body p-2">
+            <div class="d-flex align-items-center justify-content-center" style="min-height: 4rem;">
+              <div class="h2 fw-bold text-primary mb-0">
+                売上時<br>のみ
+              </div>
+            </div>
+            <div class="fw-bold mt-2">手数料</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-4">
+    <div class="card border-primary-subtle shadow-sm overflow-hidden"
+        style="background: linear-gradient(135deg, rgba(255, 84, 150, .14), rgba(138, 92, 246, .14));">
+      <div class="card-body p-4 p-md-5 text-center">
+        <p class="fw-semibold small mb-2">店舗様向け</p>
+
+        <h2 class="h3 fw-bold mb-3">
+          まずは、常連さん向けの遠隔営業から始めませんか？
+        </h2>
+
+        <p class="mb-4 opacity-75">
+          新規集客に頼らず、既存のお客様に配信URLを送るところから始められます。
+        </p>
+
+        <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+          <%= link_to "店舗として始める",
+                stores_new_registration_path(ref: lp_ref_code),
+                class: "btn btn-light btn-lg" %>
+
+          <%= link_to "ログイン",
+                new_user_session_path,
+                class: "btn btn-outline-light btn-lg" %>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="border-top pt-4 text-center">
+      <p class="text-secondary mb-3">
+        視聴者の方は、アカウント作成後に配信を視聴し、ドリンクで応援できます。
+      </p>
+
+      <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+        <%= link_to "視聴者アカウント 新規作成",
+              sign_up_path,
+              class: "btn btn-outline-primary" %>
+      </div>
+  </section>
+
+  <section class="py-4 py-md-5">
+    <div class="vstack gap-4">
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <%= image_tag "lp/store_2.webp", class: "img-fluid rounded-4 shadow-sm" %>
+        </div>
+        <div class="col-md-6">
+          <%= image_tag "lp/store_1.webp", class: "img-fluid rounded-4 shadow-sm" %>
+        </div>
+      </div>
+
+      <div>
+        <%= image_tag "lp/store_3.webp", class: "img-fluid rounded-4 shadow-sm" %>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <%= image_tag "lp/store_4.webp", class: "img-fluid rounded-4 shadow-sm" %>
+        </div>
+
+        <div class="col-md-6">
+          <%= image_tag "lp/store_5.webp", class: "img-fluid rounded-4 shadow-sm" %>
+        </div>
+      </div>
+
+      <div>
+        <%= image_tag "lp/store_6.webp", class: "img-fluid rounded-4 shadow-sm" %>
+      </div>
+
+      <div>
+        <%= image_tag "lp/store_7.webp", class: "img-fluid rounded-4 shadow-sm" %>
+      </div>
+
+      <div>
+        <%= image_tag "lp/store_8.webp", class: "img-fluid rounded-4 shadow-sm" %>
+      </div>
+
+      <div>
+        <%= image_tag "lp/store_9.webp", class: "img-fluid rounded-4 shadow-sm" %>
+      </div>
+
+      <div>
+        <%= image_tag "lp/store_10.webp", class: "img-fluid rounded-4 shadow-sm" %>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="py-4">
+    <div class="card border-primary-subtle shadow-sm overflow-hidden"
+        style="background: linear-gradient(135deg, rgba(255, 84, 150, .14), rgba(138, 92, 246, .14));">
+      <div class="card-body p-4 p-md-5 text-center">
+        <p class="text-primary fw-semibold small mb-2">店舗様向け</p>
+
+        <h2 class="h3 fw-bold mb-3">
+          固定費0円で、<br class="d-sm-none">
+          遠隔営業を始めてみませんか？
+        </h2>
+
+        <p class="text-secondary mb-4">
+          まずは常連さんに配信URLを送るだけ。
+          初期費用・月額費用なしで、ドリンク売上を作る導線を追加できます。
+        </p>
+
+        <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+          <%= link_to "無料で店舗登録する",
+                stores_new_registration_path(ref: lp_ref_code),
+                class: "btn btn-primary btn-lg fw-bold" %>
+
+          <%= link_to "ログイン",
+                new_user_session_path,
+                class: "btn btn-outline-secondary btn-lg" %>
+        </div>
+
+        <p class="small text-secondary mt-3 mb-0">
+          ※売上が発生した分のみ手数料がかかります。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="border-top pt-4 text-center">
+      <p class="text-secondary mb-3">
+        視聴者の方は、アカウント作成後に配信を視聴し、ドリンクで応援できます。
+      </p>
+
+      <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+        <%= link_to "視聴者アカウント 新規作成",
+              sign_up_path,
+              class: "btn btn-outline-primary" %>
+      </div>
+  </section>
+
+  <section class="mt-4">
+    <div class="border-top pt-4 d-flex align-items-end justify-content-between gap-3 mb-3">
+      <div>
+        <p class="text-primary fw-semibold mb-2">How it works</p>
+        <h2 class="h3 fw-bold mb-0">店舗運用に必要な機能をまとめて提供</h2>
+      </div>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-2 g-3">
+      <% [
+        "lp/store_pr_01.jpg",
+        "lp/store_pr_02.jpg",
+        "lp/store_pr_03.jpg",
+        "lp/store_pr_04.jpg",
+        "lp/store_pr_05.jpg",
+        "lp/store_pr_06.jpg"
+      ].each do |image_path| %>
+        <div class="col">
+          <div class="rounded-4 border bg-body overflow-hidden">
+            <%= image_tag image_path,
+                  class: "img-fluid w-100 d-block",
+                  alt: "" %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </section>
+
+  <section class="py-4">
+    <div class="card border-primary-subtle shadow-sm overflow-hidden"
+        style="background: linear-gradient(135deg, rgba(255, 84, 150, .14), rgba(138, 92, 246, .14));">
+      <div class="card-body p-4 p-md-5 text-center">
+        <p class="text-primary fw-semibold small mb-2">店舗様向け</p>
+
+        <h2 class="h3 fw-bold mb-3">
+          固定費0円で、<br class="d-sm-none">
+          遠隔営業を始めてみませんか？
+        </h2>
+
+        <p class="text-secondary mb-4">
+          まずは常連さんに配信URLを送るだけ。
+          初期費用・月額費用なしで、ドリンク売上を作る導線を追加できます。
+        </p>
+
+        <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+          <%= link_to "無料で店舗登録する",
+                stores_new_registration_path(ref: lp_ref_code),
+                class: "btn btn-primary btn-lg fw-bold" %>
+
+          <%= link_to "ログイン",
+                new_user_session_path,
+                class: "btn btn-outline-secondary btn-lg" %>
+        </div>
+
+        <p class="small text-secondary mt-3 mb-0">
+          ※売上が発生した分のみ手数料がかかります。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="border-top pt-4 text-center">
+      <p class="text-secondary mb-3">
+        視聴者の方は、アカウント作成後に配信を視聴し、ドリンクで応援できます。
+      </p>
+
+      <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+        <%= link_to "視聴者アカウント 新規作成",
+              sign_up_path,
+              class: "btn btn-outline-primary" %>
+      </div>
+  </section>
+
+  <section>
+    <div class="border-top pt-4 d-flex flex-column flex-sm-row gap-2 justify-content-center align-items-center flex-wrap">
+      <span class="text-secondary small">
+        運営会社：
+        <%= link_to "株式会社オフィスUTQ",
+              "https://officeutq.co.jp",
+              class: "link-secondary",
+              target: "_blank",
+              rel: "noopener" %>
+      </span>
+
+      <span class="text-secondary small d-none d-sm-inline">/</span>
+
+      <%= link_to "特定商取引法に基づく表記",
+            legal_path,
+            class: "link-secondary small" %>
+
+      <span class="text-secondary small d-none d-sm-inline">/</span>
+
+      <%= link_to "利用規約",
+            legal_path,
+            class: "link-secondary small" %>
+
+      <span class="text-secondary small d-none d-sm-inline">/</span>
+
+      <%= link_to "プライバシーポリシー",
+            legal_path,
+            class: "link-secondary small" %>
+    </div>
   </section>
 </div>
