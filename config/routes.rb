@@ -10,6 +10,8 @@ Rails.application.routes.draw do
   get "/sitemap.xml", to: "seo#sitemap", as: :sitemap, defaults: { format: :xml }
   get "/stores/lp", to: "store_lps#show", as: :stores_lp
   get "/legal", to: "legal#show", as: :legal
+  get "/terms", to: "legal#terms", as: :terms
+  get "/privacy_policy", to: "legal#privacy_policy", as: :privacy_policy
 
   if Rails.env.development?
     mount LetterOpenerWeb::Engine, at: "/letter_opener"

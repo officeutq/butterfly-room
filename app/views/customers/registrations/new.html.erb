@@ -29,6 +29,14 @@
           <%= f.password_field :password_confirmation, class: "form-control", required: true, autocomplete: "new-password" %>
         </div>
 
+        <p class="small text-secondary mb-3">
+          登録することで、
+          <%= link_to "利用規約", terms_path, target: "_blank", rel: "noopener" %>
+          および
+          <%= link_to "プライバシーポリシー", privacy_policy_path, target: "_blank", rel: "noopener" %>
+          に同意したものとみなします。
+        </p>
+ 
         <div class="d-flex gap-2">
           <%= f.submit "登録してはじめる", class: "btn btn-primary" %>
           <%= link_to "戻る", root_path, class: "btn btn-outline-secondary" %>
