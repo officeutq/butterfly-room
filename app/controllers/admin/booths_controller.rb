@@ -43,13 +43,9 @@ module Admin
       Booth.transaction do
         @booth.save!
         create_initial_booth_cast_if_requested!(@booth)
-        Booths::ProvisionIvsStageService.new(booth: @booth).call!
       end
 
-      unless ensure_attachment_persisted!(record: @booth, attachment_name: :thumbnail_image)
-        load_cast_memberships
-        return render :new, status: :unprocessable_entity
-      end
+      Booths::ProvisionIvsStageService.new(booth: @booth).call!
 
       purge_attachment_if_requested(
         record: @booth,
