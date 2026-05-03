@@ -30,7 +30,6 @@ module Stores
         )
 
         create_default_drink_items!(store)
-        create_default_booth!(store)
 
         user = User.create!(
           email: @email,
@@ -61,16 +60,6 @@ module Stores
           icon_key: attrs["icon_key"]
         )
       end
-    end
-
-    def create_default_booth!(store)
-      booth = store.booths.create!(
-        name: "#{store.name}のブース"
-      )
-
-      Booths::ProvisionIvsStageService.new(booth: booth).call!
-
-      booth
     end
 
     def load_default_drink_items_attributes
