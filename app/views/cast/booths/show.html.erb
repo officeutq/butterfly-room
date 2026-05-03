@@ -1,4 +1,5 @@
 <% content_for :title, "ブース情報" %>
+<% primary_cast = @booth.primary_cast_user %>
 
 <div class="booth-show">
   <div class="booth-show-hero">
@@ -31,6 +32,29 @@
       </div>
     </div>
 
+    <div class="booth-show-info mt-3">
+      <div class="booth-show-info-row">
+        <div class="booth-show-info-label">キャスト</div>
+        <div class="booth-show-info-value">
+          <% if primary_cast.present? %>
+            <%= link_to user_path(primary_cast), class: "text-decoration-none d-inline-flex align-items-center gap-2" do %>
+              <%= user_avatar_badge(primary_cast, size: 28) %>
+              <span><%= display_name_or_anonymous(primary_cast) %></span>
+            <% end %>
+          <% else %>
+            <span class="text-muted">（未設定）</span>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="booth-show-info-row">
+        <div class="booth-show-info-label">所属店舗</div>
+        <div class="booth-show-info-value">
+          <%= link_to @booth.store.name, store_path(@booth.store) %>
+        </div>
+      </div>
+    </div>
+
     <div class="booth-show-actions mt-4 d-flex gap-2 flex-wrap">
       <button
         type="button"
@@ -41,19 +65,7 @@
         data-share-text="Butterflyveのブースはこちら"
         data-share-url="<%= booth_url(@booth) %>">
         <i class="bi bi-share" aria-hidden="true"></i>
-        <span>ブースURLを共有</span>
-      </button>
-
-      <button
-        type="button"
-        class="btn btn-secondary d-inline-flex align-items-center gap-2"
-        data-controller="clipboard"
-        data-action="click->clipboard#copy"
-        data-clipboard-text="<%= booth_url(@booth) %>"
-        data-clipboard-success-message="ブースURLをコピーしました"
-        data-clipboard-failure-message="ブースURLのコピーに失敗しました">
-        <i class="bi bi-copy" aria-hidden="true"></i>
-        <span>ブースURLをコピー</span>
+        <span>ブースを共有</span>
       </button>
 
       <% unless @booth.archived? %>
@@ -73,17 +85,6 @@
         <i class="bi bi-clock-history" aria-hidden="true"></i>
         <span>配信履歴</span>
       </button>
-    </div>
-
-    <div class="booth-show-info mt-4">
-
-      <div class="booth-show-info-row">
-        <div class="booth-show-info-label">所属店舗</div>
-        <div class="booth-show-info-value">
-          <%= link_to @booth.store.name, store_path(@booth.store) %>
-        </div>
-      </div>
-
     </div>
 
     <div class="booth-show-description mt-4">
