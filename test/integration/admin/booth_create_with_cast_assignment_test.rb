@@ -3,6 +3,19 @@
 require "test_helper"
 
 class Admin::BoothCreateWithCastAssignmentTest < ActionDispatch::IntegrationTest
+  setup do
+    fake_ivs_client = Object.new
+    fake_ivs_client.define_singleton_method(:create_stage!) do |name:, tags: {}|
+      "arn:aws:ivsrealtime:ap-northeast-1:123456789012:stage/FAKE"
+    end
+
+    Ivs::Client.factory = ->(region:) { fake_ivs_client }
+  end
+
+  teardown do
+    Ivs::Client.reset_factory!
+  end
+
   test "store admin can create booth without cast assignment" do
     store_admin = User.create!(
       email: "store_admin_create_booth_without_cast@example.com",
