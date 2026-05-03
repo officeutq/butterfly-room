@@ -1,4 +1,4 @@
-<h1 class="mb-4">ブース一覧</h1>
+<h1 class="mb-4">ブース管理</h1>
 
 <div class="mb-4 d-flex gap-2 align-items-center flex-wrap">
   <%= link_to "新規作成", new_admin_booth_path, class: "btn btn-primary" %>
@@ -84,36 +84,17 @@
             </div>
 
             <div class="mt-3">
-              <div class="small text-muted mb-1">現在のキャスト</div>
+              <div class="small text-muted mb-1">所属キャスト</div>
 
               <% if booth_cast.present? %>
                 <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <%= user_avatar_badge(booth_cast.cast_user, size: 24) %>
                   <span><%= display_name_or_anonymous(booth_cast.cast_user) %></span>
                 </div>
               <% else %>
                 <div class="text-muted">未設定</div>
               <% end %>
             </div>
-
-            <% if !archived && booth_cast.blank? %>
-              <div class="mt-3">
-                <%= form_with url: assign_cast_admin_booth_path(booth), method: :post do %>
-                  <%= hidden_field_tag :return_to, switch_return_to %>
-
-                  <div class="d-flex gap-2 align-items-center flex-wrap">
-                    <%= select_tag "booth_cast[cast_user_id]",
-                          options_for_select(@cast_memberships.map { |m| [ display_name_or_anonymous(m.user), m.user.id ] }),
-                          include_blank: "キャストを選択",
-                          class: "form-select form-select-sm admin-booths-cast-select",
-                          required: true %>
-
-                    <%= submit_tag "紐づけ",
-                          class: "btn btn-primary btn-sm",
-                          data: { turbo_confirm: "このブースにキャストを紐づけます。紐づけ後は変更できません。よろしいですか？" } %>
-                  </div>
-                <% end %>
-              </div>
-            <% end %>
 
             <div class="mt-auto pt-3">
               <% if archived %>

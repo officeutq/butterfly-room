@@ -173,7 +173,6 @@ Rails.application.routes.draw do
       member do
         patch :archive
         post :force_end
-        post :assign_cast
       end
     end
 
