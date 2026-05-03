@@ -156,3 +156,6 @@ builds:
     issues:
     - 813
     - 821
+  '27':
+    issues:
+    - 828

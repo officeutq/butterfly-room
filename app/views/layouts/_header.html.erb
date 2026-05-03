@@ -158,4 +158,22 @@
       </div>
     </div>
   </div>
+  <% header_subnav_layout =
+       user_signed_in? &&
+       (
+         (controller_path == "home" && action_name == "show") ||
+         controller_path.start_with?("favorites/")
+       ) %>
+
+  <% if header_subnav_layout %>
+    <div class="border-top header-subnav">
+      <div class="container py-2">
+        <% if controller_path == "home" && action_name == "show" %>
+          <%= render "home/header_subnav" %>
+        <% elsif controller_path.start_with?("favorites/") %>
+          <%= render "favorites/header_subnav" %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
 </header>

@@ -1,13 +1,4 @@
 <% content_for :title, "お気に入り" %>
-<% content_for :fixed_subnav_body_class, "page-with-fixed-subnav" %>
-
-<% content_for :fixed_subnav do %>
-  <div class="fixed-subnav">
-    <div class="container py-2">
-      <%= render "favorites/nav" %>
-    </div>
-  </div>
-<% end %>
 
 <div style="max-width: 960px;">
   <% if @favorite_stores.blank? %>

@@ -24,29 +24,6 @@
   );
 }
 
-.fixed-subnav {
-  position: fixed;
-  top: 62px;
-  left: 0;
-  right: 0;
-  z-index: 1010;
-  background: var(--bs-body-bg);
-}
-
-.fixed-subnav--with-form {
-  .btn-group {
-    width: 100%;
-  }
-}
-
-.home-with-fixed-subnav {
-  padding-top: 96px;
-}
-
-.page-with-fixed-subnav {
-  padding-top: 56px;
-}
-
 .app-footer-shell {
   width: 100%;
 }
@@ -295,6 +272,10 @@
   flex-shrink: 0;
 }
 
+.header-subnav {
+  background: var(--bs-body-bg);
+}
+
 @media (max-width: 991.98px) {
   .referral-codes-list {
     grid-template-columns: 1fr;
@@ -303,20 +284,6 @@
   .referral-code-label {
     width: 84px;
     min-width: 84px;
-  }
-}
-
-@media (max-width: 767.98px) {
-  .home-with-fixed-subnav {
-    padding-top: 92px;
-  }
-
-  .page-with-fixed-subnav {
-    padding-top: 52px;
-  }
-
-  .fixed-subnav {
-    top: 56px;
   }
 }
 

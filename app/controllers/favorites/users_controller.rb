@@ -4,12 +4,21 @@ module Favorites
     before_action :set_user, only: %i[create destroy]
 
     def index
-      @favorite_users =
+      @q = params[:q].to_s.strip
+
+      scope =
         current_user
           .favorite_users
+          .joins(:target_user)
           .includes(target_user: [ { avatar_attachment: :blob } ])
           .order(created_at: :desc, id: :desc)
 
+      if @q.present?
+        q_like = "%#{ActiveRecord::Base.sanitize_sql_like(@q)}%"
+        scope = scope.where("users.display_name ILIKE :q OR users.bio ILIKE :q", q: q_like)
+      end
+
+      @favorite_users = scope
       @favorite_user_ids = @favorite_users.map(&:target_user_id).to_set
     end
 
