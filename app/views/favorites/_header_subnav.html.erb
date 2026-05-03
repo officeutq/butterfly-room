@@ -1,0 +1,32 @@
+<div class="d-flex flex-column gap-2">
+  <div class="btn-group w-100" role="group" aria-label="お気に入り表示切り替え">
+    <%= link_to "ブース",
+          favorites_booths_path(q: @q.presence),
+          class: ["btn", (controller_path == "favorites/booths" ? "btn-secondary active" : "btn-outline-secondary")],
+          "aria-current": (controller_path == "favorites/booths" ? "page" : nil) %>
+
+    <%= link_to "店舗",
+          favorites_stores_path(q: @q.presence),
+          class: ["btn", (controller_path == "favorites/stores" ? "btn-secondary active" : "btn-outline-secondary")],
+          "aria-current": (controller_path == "favorites/stores" ? "page" : nil) %>
+
+    <%= link_to "ユーザー",
+          favorites_users_path(q: @q.presence),
+          class: ["btn", (controller_path == "favorites/users" ? "btn-secondary active" : "btn-outline-secondary")],
+          "aria-current": (controller_path == "favorites/users" ? "page" : nil) %>
+  </div>
+
+  <%= form_with url: request.path, method: :get, scope: nil do |f| %>
+    <div class="input-group">
+      <%= f.text_field :q,
+            value: @q,
+            class: "form-control",
+            placeholder: "お気に入りを検索",
+            autocomplete: "off" %>
+
+      <button class="btn btn-primary" type="submit" aria-label="検索">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  <% end %>
+</div>

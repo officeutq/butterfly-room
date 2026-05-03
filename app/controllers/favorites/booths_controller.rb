@@ -6,10 +6,12 @@ module Favorites
     before_action :set_booth, only: %i[create destroy]
 
     def index
+      @q = params[:q].to_s.strip
+
       scope =
         current_user
           .favorite_booths
-          .joins(:booth)
+          .joins(booth: :store)
           .merge(Booth.active)
           .includes(
             booth: [
@@ -20,6 +22,11 @@ module Favorites
             ]
           )
           .order(created_at: :desc, id: :desc)
+
+      if @q.present?
+        q_like = "%#{ActiveRecord::Base.sanitize_sql_like(@q)}%"
+        scope = scope.where("booths.name ILIKE :q OR booths.description ILIKE :q OR stores.name ILIKE :q", q: q_like)
+      end
 
       # Home と同じ「可能な範囲で予防」：customer のみ BAN store を除外
       if current_user.customer?

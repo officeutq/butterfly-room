@@ -6,12 +6,23 @@ module Favorites
     before_action :set_store, only: %i[create destroy]
 
     def index
+      @q = params[:q].to_s.strip
+
       scope =
         current_user
           .favorite_stores
           .joins(:store)
           .includes(:store)
           .order(created_at: :desc, id: :desc)
+
+      if @q.present?
+        q_like = "%#{ActiveRecord::Base.sanitize_sql_like(@q)}%"
+        scope =
+          scope.where(
+            "stores.name ILIKE :q OR stores.description ILIKE :q OR stores.area ILIKE :q OR stores.address ILIKE :q",
+            q: q_like
+          )
+      end
 
       # customer のみ BAN store を除外（Home と同じ思想）
       if current_user.customer?
