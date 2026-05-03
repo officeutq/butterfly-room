@@ -8,5 +8,7 @@
             f: f,
             booth: @booth,
             submit_label: "更新する",
-            back_path: dashboard_path_for(current_user) %>
+            back_path: dashboard_path_for(current_user),
+            cast_memberships: @cast_memberships,
+            show_cast_assignment: current_user.at_least?(:store_admin) %>
 <% end %>

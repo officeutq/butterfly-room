@@ -9,5 +9,7 @@
             f: f,
             booth: @booth,
             submit_label: "作成する",
-            back_path: dashboard_path_for(current_user) %>
+            back_path: dashboard_path_for(current_user),
+            cast_memberships: @cast_memberships,
+            show_cast_assignment: true %>
 <% end %>

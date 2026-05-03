@@ -120,10 +120,24 @@ module Cast
     end
 
     def edit
+      load_cast_memberships_for_booth if current_user.at_least?(:store_admin)
     end
 
     def update
-      success = @booth.update(booth_params)
+      success = false
+
+      Booth.transaction do
+        ok = create_initial_booth_cast_if_requested(@booth)
+        raise ActiveRecord::Rollback unless ok
+
+        @booth.assign_attributes(booth_params)
+
+        if @booth.save
+          success = true
+        else
+          raise ActiveRecord::Rollback
+        end
+      end
 
       if success && ensure_attachment_persisted!(record: @booth, attachment_name: :thumbnail_image)
         purge_attachment_if_requested(
@@ -342,6 +356,44 @@ module Cast
       end
 
       @booth = booth
+    end
+
+    def load_cast_memberships_for_booth
+      @cast_memberships =
+        StoreMembership
+          .includes(:user)
+          .where(store_id: @booth.store_id, membership_role: :cast)
+          .order(:id)
+    end
+
+    def create_initial_booth_cast_if_requested(booth)
+      cast_user_id = requested_booth_cast_user_id
+      return true if cast_user_id.blank?
+
+      unless current_user.at_least?(:store_admin)
+        booth.errors.add(:base, "キャストを紐づける権限がありません")
+        return false
+      end
+
+      if booth.booth_casts.exists?
+        booth.errors.add(:base, "このブースには既にキャストが紐づいています（Phase1では差し替えできません）")
+        return false
+      end
+
+      unless StoreMembership.exists?(store_id: booth.store_id, membership_role: :cast, user_id: cast_user_id)
+        booth.errors.add(:base, "選択できないキャストです")
+        return false
+      end
+
+      BoothCast.create!(booth: booth, cast_user_id: cast_user_id)
+      true
+    rescue ActiveRecord::RecordInvalid => e
+      e.record.errors.full_messages.each { |message| booth.errors.add(:base, message) }
+      false
+    end
+
+    def requested_booth_cast_user_id
+      params.fetch(:booth_cast, {}).permit(:cast_user_id)[:cast_user_id].presence
     end
   end
 end
