@@ -17,14 +17,15 @@
       <!-- header -->
       <div class="booth-show-header d-flex justify-content-between align-items-start gap-3">
         <div class="min-w-0">
-          <h1 class="booth-show-title mb-0"><%= booth.name %></h1>
-        </div>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <h1 class="booth-show-title mb-0"><%= booth.name %></h1>
 
-        <div
-          class="booth-show-favorite"
-          data-viewer-page-target="boothFavoriteAnchor"
-          aria-hidden="true"
-        ></div>
+            <span
+              data-viewer-page-target="boothFavoriteAnchor"
+              aria-hidden="true"
+            ></span>
+          </div>
+        </div>
       </div>
 
       <!-- info -->
@@ -37,6 +38,11 @@
                 <%= user_avatar_badge(primary_cast, size: 28) %>
                 <span><%= display_name_or_anonymous(primary_cast) %></span>
               <% end %>
+
+              <span
+                data-viewer-page-target="userFavoriteAnchor"
+                aria-hidden="true"
+              ></span>
             <% else %>
               <span class="text-muted">（未設定）</span>
             <% end %>

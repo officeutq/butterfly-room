@@ -18,11 +18,18 @@ class BoothsController < ApplicationController
 
     @comments = load_viewer_comments
 
+    primary_cast = @booth.primary_cast_user
+
     @booth_favorited =
       user_signed_in? && current_user.favorite_booths.exists?(booth_id: @booth.id)
 
     @store_favorited =
       user_signed_in? && current_user.favorite_stores.exists?(store_id: @booth.store_id)
+
+    @user_favorited =
+      user_signed_in? &&
+      primary_cast.present? &&
+      current_user.favorite_users.exists?(target_user: primary_cast)
   end
 
   def viewer_drink_menu

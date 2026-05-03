@@ -7,6 +7,7 @@ export default class extends Controller {
     "waitingRoot",
     "boothFavoriteAnchor",
     "storeFavoriteAnchor",
+    "userFavoriteAnchor",
   ]
 
   connect() {
@@ -50,15 +51,12 @@ export default class extends Controller {
 
     const boothButton = this.element.querySelector("#booth_favorite_button")
     const storeButton = this.element.querySelector("#store_favorite_button")
+    const userButton = this.element.querySelector("#user_favorite_button")
 
     if (liveLike) {
-      if (boothButton && boothButton.parentElement !== this.favoritesDepotTarget) {
-        this.favoritesDepotTarget.appendChild(boothButton)
-      }
-
-      if (storeButton && storeButton.parentElement !== this.favoritesDepotTarget) {
-        this.favoritesDepotTarget.appendChild(storeButton)
-      }
+      this._moveToDepot(boothButton)
+      this._moveToDepot(storeButton)
+      this._moveToDepot(userButton)
 
       return
     }
@@ -69,6 +67,16 @@ export default class extends Controller {
 
     if (storeButton && this.hasStoreFavoriteAnchorTarget && storeButton.parentElement !== this.storeFavoriteAnchorTarget) {
       this.storeFavoriteAnchorTarget.replaceChildren(storeButton)
+    }
+
+    if (userButton && this.hasUserFavoriteAnchorTarget && userButton.parentElement !== this.userFavoriteAnchorTarget) {
+      this.userFavoriteAnchorTarget.replaceChildren(userButton)
+    }
+  }
+
+  _moveToDepot(button) {
+    if (button && button.parentElement !== this.favoritesDepotTarget) {
+      this.favoritesDepotTarget.appendChild(button)
     }
   }
 }

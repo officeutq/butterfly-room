@@ -11,6 +11,12 @@
     <div class="viewer-favorites-depot" data-viewer-page-target="favoritesDepot" hidden>
       <%= render "favorites/booths/button_booth_show", booth: @booth, favorited: @booth_favorited %>
       <%= render "favorites/stores/button_store_show", store: @booth.store, favorited: @store_favorited %>
+
+      <% if @booth.primary_cast_user.present? %>
+        <%= render "favorites/users/button_user_show",
+              user: @booth.primary_cast_user,
+              favorited: @user_favorited %>
+      <% end %>
     </div>
   <% end %>
 
