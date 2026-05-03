@@ -31,6 +31,7 @@ module Admin
     def new
       @booth = current_store.booths.new
       authorize_create!
+      load_cast_memberships
     end
 
     def create
@@ -41,12 +42,10 @@ module Admin
 
       Booth.transaction do
         @booth.save!
-        Booths::ProvisionIvsStageService.new(booth: @booth).call!
+        create_initial_booth_cast_if_requested!(@booth)
       end
 
-      unless ensure_attachment_persisted!(record: @booth, attachment_name: :thumbnail_image)
-        return render :new, status: :unprocessable_entity
-      end
+      Booths::ProvisionIvsStageService.new(booth: @booth).call!
 
       purge_attachment_if_requested(
         record: @booth,
@@ -57,10 +56,12 @@ module Admin
       redirect_to helpers.dashboard_path_for(current_user), notice: "ブースを作成しました"
 
     rescue ActiveRecord::RecordInvalid
+      load_cast_memberships
       render :new, status: :unprocessable_entity
 
     rescue Booths::ProvisionIvsStageService::StageProvisionFailed => e
       @booth.errors.add(:base, "IVS Stage の作成に失敗しました: #{e.message}")
+      load_cast_memberships
       render :new, status: :unprocessable_entity
 
     rescue => e
@@ -69,6 +70,7 @@ module Admin
       @booth ||= current_store.booths.new
       @booth.errors.add(:base, "ブースの作成に失敗しました")
 
+      load_cast_memberships
       render :new, status: :unprocessable_entity
     end
 
@@ -227,6 +229,35 @@ module Admin
       return admin_booths_path if path.include?("\0")
 
       path
+    end
+
+    def load_cast_memberships
+      @cast_memberships =
+        StoreMembership
+          .includes(:user)
+          .where(store_id: current_store.id, membership_role: :cast)
+          .order(:id)
+    end
+
+    def create_initial_booth_cast_if_requested!(booth)
+      cast_user_id = requested_booth_cast_user_id
+      return if cast_user_id.blank?
+
+      if booth.booth_casts.exists?
+        booth.errors.add(:base, "このブースには既にキャストが紐づいています（Phase1では差し替えできません）")
+        raise ActiveRecord::RecordInvalid.new(booth)
+      end
+
+      unless StoreMembership.exists?(store_id: booth.store_id, membership_role: :cast, user_id: cast_user_id)
+        booth.errors.add(:base, "選択できないキャストです")
+        raise ActiveRecord::RecordInvalid.new(booth)
+      end
+
+      BoothCast.create!(booth: booth, cast_user_id: cast_user_id)
+    end
+
+    def requested_booth_cast_user_id
+      params.fetch(:booth_cast, {}).permit(:cast_user_id)[:cast_user_id].presence
     end
   end
 end
