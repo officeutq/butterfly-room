@@ -20,12 +20,6 @@ module Admin
 
       @booths = scope.order(Arel.sql('"booths"."archived_at" ASC NULLS FIRST'), id: :desc)
       @current_booth_id = session[:current_booth_id]
-
-      @cast_memberships =
-        StoreMembership
-          .includes(:user)
-          .where(store_id: current_store.id, membership_role: :cast)
-          .order(:id)
     end
 
     def new
@@ -72,40 +66,6 @@ module Admin
 
       load_cast_memberships
       render :new, status: :unprocessable_entity
-    end
-
-    def assign_cast
-      booth = current_store.booths.find(params[:id])
-
-      policy = Authorization::BoothPolicy.new(current_user, booth)
-      head :forbidden and return unless policy.update?
-
-      cast_user_id = booth_cast_params[:cast_user_id]
-
-      if booth.archived?
-        redirect_to resolved_return_to, alert: "アーカイブ済みブースには紐づけできません"
-        return
-      end
-
-      if booth.booth_casts.exists?
-        redirect_to resolved_return_to, alert: "このブースには既にキャストが紐づいています（Phase1では差し替えできません）"
-        return
-      end
-
-      unless StoreMembership.exists?(store_id: current_store.id, membership_role: :cast, user_id: cast_user_id)
-        redirect_to resolved_return_to, alert: "選択できないキャストです"
-        return
-      end
-
-      BoothCast.create!(booth: booth, cast_user_id: cast_user_id)
-
-      redirect_to resolved_return_to, notice: "キャストを紐づけました"
-    rescue ActionController::ParameterMissing
-      redirect_to resolved_return_to, alert: "パラメータが不正です"
-    rescue ActiveRecord::RecordNotFound
-      head :not_found
-    rescue ActiveRecord::RecordInvalid => e
-      redirect_to resolved_return_to, alert: e.record.errors.full_messages.join(", ")
     end
 
     def force_end
