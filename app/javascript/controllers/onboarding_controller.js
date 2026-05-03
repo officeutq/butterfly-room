@@ -144,7 +144,12 @@ export default class extends Controller {
   }
 
   shouldAutoScroll(targetName) {
-    return ["invite-cast-card", "setup-drinks-card", "create-drink-card"].includes(targetName)
+    return [
+      "invite-cast-card",
+      "setup-drinks-card",
+      "create-drink-card",
+      "copy-invite-button"
+    ].includes(targetName)
   }
 
   scrollTargetIntoView(target) {
