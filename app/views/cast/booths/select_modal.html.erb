@@ -42,15 +42,18 @@
                     </div>
 
                     <div class="flex-grow-1" style="min-width: 0;">
-                      <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <div class="fw-semibold"><%= booth.name.presence || "(no name)" %></div>
+                      <div class="d-flex align-items-center gap-2 flex-nowrap" style="min-width: 0;">
+                        <div class="flex-grow-1" style="min-width: 0;">
+                          <div class="text-muted small text-truncate"><%= booth.store.name %></div>
+                          <div class="fw-semibold text-truncate"><%= booth.name.presence || "(no name)" %></div>
+                        </div>
+
                         <% if booth.id.to_s == @current_booth_id.to_s %>
-                          <span class="badge text-bg-success">選択中</span>
+                          <span class="badge text-bg-success flex-shrink-0">選択中</span>
                         <% end %>
                       </div>
 
                       <div class="d-flex align-items-center gap-2 flex-wrap mt-1">
-                        <span class="text-muted small">ID: <%= booth.id %></span>
                         <%= booth_status_badge(booth) %>
                       </div>
                     </div>

@@ -71,7 +71,8 @@
           <div class="card-body d-flex flex-column">
             <div class="cast-booths-card-title-row">
               <div class="cast-booths-card-title">
-                <h2 class="h5 mb-0 cast-booths-card-title-text"><%= booth.name.presence || "(no name)" %></h2>
+                <div class="text-muted small text-truncate"><%= booth.store.name %></div>
+                <h2 class="h5 mb-0 fw-bold cast-booths-card-title-text"><%= booth.name.presence || "(no name)" %></h2>
               </div>
 
               <div class="cast-booths-card-status d-flex align-items-center gap-2 flex-wrap justify-content-end">
