@@ -15,6 +15,24 @@ module ApplicationHelper
     nil
   end
 
+  def format_phone_number_for_display(phone_number)
+    value = phone_number.to_s.strip
+    return "" if value.blank?
+
+    digits = value.gsub(/\D/, "")
+
+    if digits.start_with?("81") && digits.length == 12
+      local = "0#{digits.delete_prefix("81")}"
+      return "#{local[0, 3]}-#{local[3, 4]}-#{local[7, 4]}"
+    end
+
+    if digits.start_with?("0") && digits.length == 11
+      return "#{digits[0, 3]}-#{digits[3, 4]}-#{digits[7, 4]}"
+    end
+
+    value
+  end
+
   def booth_status_badge(booth)
     return "" if booth.blank?
 
