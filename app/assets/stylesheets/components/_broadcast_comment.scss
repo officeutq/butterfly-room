@@ -252,12 +252,17 @@ body.viewer-layout.viewer-keyboard-open .viewer-comment-panel #comment_form .btn
 
 /* 通常コメント: cast は「非表示」だけ表示 */
 body.cast-live-layout .comment-item .comment-menu-item-cast-normal {
-  display: list-item;
+  display: block;
 }
 
 /* 通常コメント: viewer は「通報する」だけ表示 */
 body.viewer-layout .comment-item .comment-menu-item-viewer-normal {
-  display: list-item;
+  display: block;
+}
+
+/* 通常コメント: cast も「通報する」を表示 */
+body.cast-live-layout .comment-item .comment-menu-item-cast-report {
+  display: block;
 }
 
 /* hidden コメント化されたら cast は「解除」に切り替える想定 */
@@ -266,7 +271,7 @@ body.cast-live-layout .comment-item.is-hidden-comment .comment-menu-item-cast-no
 }
 
 body.cast-live-layout .comment-item.is-hidden-comment .comment-menu-item-cast-hidden {
-  display: list-item;
+  display: block;
 }
 
 /* hidden コメントでは viewer に操作を見せない想定 */
@@ -293,16 +298,6 @@ body.viewer-layout .comment-item.is-hidden-comment .comment-menu-item-viewer-nor
   text-shadow: none;
 }
 
-/* 視聴者画面: 配信者コメントには通報を出さない */
-body.viewer-layout .comment-item.comment-from-broadcaster .comment-actions {
-  display: none;
-}
-
-/* 視聴者画面: hidden コメントには通報を出さない */
-body.viewer-layout .comment-item.is-hidden-comment .comment-actions {
-  display: none;
-}
-
 .comment-avatar-hidden {
   width: 30px;
   height: 30px;
@@ -313,4 +308,61 @@ body.viewer-layout .comment-item.is-hidden-comment .comment-actions {
   background: rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* ------------------------------------------------------------
+   comment actions popover (#844)
+------------------------------------------------------------ */
+.comment-actions-popover {
+  --bs-popover-max-width: 220px;
+  --bs-popover-body-padding-x: 0;
+  --bs-popover-body-padding-y: 0;
+  z-index: 1080;
+}
+
+.comment-actions-popover-body {
+  min-width: 180px;
+  padding: 4px;
+}
+
+.comment-action-button {
+  width: 100%;
+  text-align: left;
+  text-decoration: none;
+  color: var(--bs-body-color);
+}
+
+.comment-action-button:hover,
+.comment-action-button:focus {
+  background: var(--bs-tertiary-bg);
+  text-decoration: none;
+}
+
+/* popover は body 直下に出るため、.comment-item 配下前提の表示制御を別途定義する */
+.comment-actions-popover .comment-menu-item {
+  display: none;
+}
+
+body.cast-live-layout .comment-actions-popover .comment-menu-item-cast-normal {
+  display: block;
+}
+
+body.cast-live-layout .comment-actions-popover .comment-menu-item-cast-report {
+  display: block;
+}
+
+body.viewer-layout .comment-actions-popover .comment-menu-item-viewer-normal {
+  display: block;
+}
+
+body.cast-live-layout .comment-actions-popover .comment-actions-popover-body.is-hidden-comment .comment-menu-item-cast-normal {
+  display: none;
+}
+
+body.cast-live-layout .comment-actions-popover .comment-actions-popover-body.is-hidden-comment .comment-menu-item-cast-hidden {
+  display: block;
+}
+
+body.viewer-layout .comment-actions-popover .comment-actions-popover-body.is-hidden-comment .comment-menu-item-viewer-normal {
+  display: none;
 }

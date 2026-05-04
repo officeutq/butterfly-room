@@ -207,3 +207,27 @@ body.cast-live-layout #app_footer.cast-live-footer .app-footer-nav-item--live-en
 
   display: block;
 }
+
+/* ------------------------------------------------------------
+   live flash layer
+------------------------------------------------------------ */
+#live_flash_layer {
+  position: fixed;
+  top: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 35;
+  width: min(100%, 720px);
+  padding: 0 12px;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+#live_flash_layer #flash_inner {
+  width: 100%;
+  pointer-events: auto;
+}
+
+#live_flash_layer .alert {
+  margin: 8px 0 0;
+}
