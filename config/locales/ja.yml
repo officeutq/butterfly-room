@@ -1,4 +1,12 @@
 ja:
+  time:
+    formats:
+      default: "%Y年%m月%d日 %H時%M分"
+
+  date:
+    formats:
+      default: "%Y年%m月%d日"
+
   activerecord:
     models:
       user: ユーザー
@@ -75,3 +83,4 @@ ja:
 
   errors:
     format: "%{attribute}%{message}"
+
