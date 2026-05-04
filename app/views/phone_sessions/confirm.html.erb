@@ -7,7 +7,7 @@
         <h1 class="h4 mb-3">認証コード入力</h1>
 
         <p class="mb-3">
-          <strong><%= @phone_number %></strong> 宛に認証コードを送信しました（登録済みの場合）。<br>
+          <strong><%= format_phone_number_for_display(@phone_number) %></strong> 宛に認証コードを送信しました（登録済みの場合）。<br>
           SMSに記載された6桁の認証コードを入力してください。
         </p>
 

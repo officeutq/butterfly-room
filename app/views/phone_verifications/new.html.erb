@@ -8,7 +8,7 @@
 
         <% if @user.phone_verified? %>
           <div class="alert alert-success">
-            現在の認証済み電話番号: <strong><%= @user.phone_number %></strong><br>
+            現在の認証済み電話番号: <strong><%= format_phone_number_for_display(@user.phone_number) %></strong><br>
             認証日時: <%= l(@user.phone_verified_at) %>
           </div>
           <p class="text-muted">
@@ -23,7 +23,7 @@
         <%= form_with url: phone_verification_path, method: :post do %>
           <div class="mb-3">
             <%= label_tag :phone_number, "電話番号", class: "form-label" %>
-            <%= telephone_field_tag :phone_number, @phone_number, class: "form-control", placeholder: "09012345678" %>
+            <%= telephone_field_tag :phone_number, format_phone_number_for_display(@phone_number), class: "form-control", placeholder: "090-1234-5678" %>
             <div class="form-text">入力した電話番号宛に認証コードを送信します。</div>
           </div>
 
