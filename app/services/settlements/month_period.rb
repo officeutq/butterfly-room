@@ -21,9 +21,10 @@ module Settlements
     end
 
     def self.parse_to_date(value)
-      return value.to_date if value.respond_to?(:to_date)
+      return value.to_date if value.is_a?(Date) || value.is_a?(Time)
 
       str = value.to_s.strip
+
       # "YYYY-MM" を許可
       if /\A\d{4}-\d{2}\z/.match?(str)
         Date.strptime("#{str}-01", "%Y-%m-%d")
