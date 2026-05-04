@@ -27,6 +27,13 @@ class CastMetricsQueryTest < ActiveSupport::TestCase
       display_name: "実績なしキャスト"
     )
 
+    @store_admin_performer = User.create!(
+      email: "store_admin_performer@example.com",
+      password: "password",
+      role: :store_admin,
+      display_name: "店舗管理者配信者"
+    )
+
     @customer = User.create!(
       email: "metrics_customer@example.com",
       password: "password",
@@ -130,6 +137,21 @@ class CastMetricsQueryTest < ActiveSupport::TestCase
 
     assert_equal [ @cast_with_stream_only.id, @cast_with_sales.id ], rows.map { |r| r.cast_user.id }
   end
+
+test "includes store_admin performer when they have stream session" do
+  create_stream_session!(
+    booth: @booth_sales,
+    cast_user: @store_admin_performer,
+    broadcast_started_at: @from + 3.days,
+    ended_at: @from + 3.days + 45.minutes
+  )
+
+  rows = CastMetricsQuery.new(store: @store, from: @from, to: @to).call
+
+  assert_equal [ @store_admin_performer.id ], rows.map { |r| r.cast_user.id }
+  assert_equal "store_admin", rows.first.cast_user.role
+  assert_equal 2700, rows.first.stream_seconds
+end
 
   private
 
