@@ -39,10 +39,7 @@ module StreamSessions
 
       StreamSessionNotifier.broadcast_ended(ended_session, forced: false)
 
-      StreamSessionNotifier.broadcast_stream_state(
-        booth: ended_booth,
-        flash_message: "配信が終了しました。未消化ドリンクは返却されました。"
-      )
+      StreamSessionNotifier.broadcast_stream_state(booth: ended_booth)
 
       WalletNotifier.broadcast_balance_for_wallet_ids(refund_result&.wallet_ids)
 
