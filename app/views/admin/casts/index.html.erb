@@ -28,7 +28,9 @@
 
               <div class="flex-grow-1 min-w-0">
                 <h2 class="h5 mb-1"><%= display_name_or_anonymous(user) %></h2>
-                <div class="small text-muted text-break"><%= user.email %></div>
+                <div class="small text-muted text-break">
+                  <%= truncate(user.bio.to_s.squish.presence || "紹介文未設定", length: 60) %>
+                </div>
               </div>
             </div>
 
