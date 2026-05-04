@@ -1,7 +1,41 @@
 <% content_for :title, "キャスト別数値一覧" %>
 
+<div class="mb-4">
+  <%= form_with url: admin_cast_metrics_path,
+        method: :get,
+        local: true,
+        class: "card",
+        data: { controller: "auto-submit" } do %>
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <%= label_tag :month, "対象月", class: "form-label" %>
+          <%= select_tag :month,
+                options_for_select(@month_options, @selected_month),
+                class: "form-select",
+                data: { action: "change->auto-submit#submit" } %>
+        </div>
+
+        <div class="col-md-5">
+          <div class="form-check">
+            <%= check_box_tag :all_casts,
+                  "1",
+                  @include_all_casts,
+                  class: "form-check-input",
+                  data: { action: "change->auto-submit#submit" } %>
+            <%= label_tag :all_casts, "配信実績がないキャストも表示する", class: "form-check-label" %>
+          </div>
+          <div class="form-text small px-4">
+            過去キャストも含みます。
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
 <p class="text-muted">
-  期間：直近30日
+  期間：<%= l(@period_from) %>〜<%= l(@period_to) %>
 </p>
 
 <% if @rows.blank? %>
@@ -22,23 +56,29 @@
           </div>
 
           <div class="referral-code-row">
-            <div class="referral-code-label">配信売上(pt)</div>
-            <div class="referral-code-value fw-bold"><%= r.stream_sales_points %></div>
+            <div class="referral-code-label">配信売上</div>
+            <div class="referral-code-value fw-bold">
+              <%= number_with_delimiter(r.stream_sales_points) %> pt
+            </div>
           </div>
 
           <div class="referral-code-row">
             <div class="referral-code-label">配信時間</div>
-            <div class="referral-code-value"><%= seconds_to_hhmm(r.stream_seconds) %></div>
+            <div class="referral-code-value"><%= seconds_to_human_time(r.stream_seconds) %></div>
           </div>
 
           <div class="referral-code-row">
             <div class="referral-code-label">売上/時間</div>
-            <div class="referral-code-value fw-semibold"><%= r.sales_per_hour || "-" %></div>
+            <div class="referral-code-value fw-semibold">
+              <%= r.sales_per_hour.present? ? number_with_delimiter(r.sales_per_hour.round) : "-" %> pt
+            </div>
           </div>
 
           <div class="referral-code-row">
-            <div class="referral-code-label">実店舗売上(参照)</div>
-            <div class="referral-code-value"><%= r.real_store_sales_yen || "-" %></div>
+            <div class="referral-code-label">実店舗売上</div>
+            <div class="referral-code-value">
+              <%= number_with_delimiter(r.real_store_sales_yen) %> 円
+            </div>
           </div>
         </div>
       </div>
