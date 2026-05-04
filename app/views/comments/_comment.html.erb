@@ -3,70 +3,75 @@
   class="comment comment-item
     <%= "comment-from-broadcaster" if comment.user_id == comment.stream_session.started_by_cast_user_id %>
     <%= "is-hidden-comment" if comment.hidden? %>">
-  <% case comment.kind %>
-  <% when Comment::KIND_CHAT %>
+    <% case comment.kind %>
+    <% when Comment::KIND_CHAT %>
 
 
-  <% if comment.hidden? %>
-    <div class="comment-avatar">
-      <div class="comment-avatar-hidden">
-        <i class="bi bi-eye-slash"></i>
+    <% if comment.hidden? %>
+      <div class="comment-avatar">
+        <div class="comment-avatar-hidden">
+          <i class="bi bi-eye-slash"></i>
+        </div>
       </div>
-    </div>
 
-    <div class="comment-main">
-      <div class="comment-text">
-        <span class="comment-author"></span>
-        <span class="comment-body">このコメントは非表示になっています</span>
+      <div class="comment-main">
+        <div class="comment-text">
+          <span class="comment-author"></span>
+          <span class="comment-body">このコメントは非表示になっています</span>
+        </div>
+    <% else %>
+      <div class="comment-avatar">
+        <%= user_avatar_badge(comment.user, size: 30, klass: "comment-avatar-badge") %>
       </div>
-  <% else %>
-    <div class="comment-avatar">
-      <%= user_avatar_badge(comment.user, size: 30, klass: "comment-avatar-badge") %>
-    </div>
 
-    <div class="comment-main"> 
-      <div class="comment-text">
-          <span class="comment-author">
-            <%= link_to display_name_or_anonymous(comment.user),
-                  user_path(comment.user),
-                  class: "text-decoration-none text-reset" %>
-          </span>
-          <span class="comment-body"><%= comment.body %></span>
-      </div>
-  <% end %>
+      <div class="comment-main"> 
+        <div class="comment-text">
+            <span class="comment-author">
+              <%= link_to display_name_or_anonymous(comment.user),
+                    user_path(comment.user),
+                    class: "text-decoration-none text-reset" %>
+            </span>
+            <span class="comment-body"><%= comment.body %></span>
+        </div>
+    <% end %>
 
-    <div class="comment-actions dropdown">
+    <div class="comment-actions" data-controller="comment-actions">
       <button
         class="btn btn-sm btn-link comment-actions-toggle"
         type="button"
-        data-bs-toggle="dropdown"
-        aria-expanded="false"
-        aria-label="コメント操作">
+        aria-label="コメント操作"
+        data-comment-actions-target="toggle"
+        data-action="comment-actions#toggle">
         <i class="bi bi-three-dots"></i>
       </button>
 
-      <ul class="dropdown-menu dropdown-menu-end">
-        <li class="comment-menu-item comment-menu-item-cast-normal">
-          <%= button_to "このコメントを非表示",
-                        hide_stream_session_comment_path(comment.stream_session, comment),
-                        method: :patch,
-                        class: "dropdown-item" %>
-        </li>
+      <template data-comment-actions-target="content">
+        <div class="comment-actions-popover-body <%= "is-hidden-comment" if comment.hidden? %>">
+          <div class="comment-menu-item comment-menu-item-cast-normal">
+            <%= button_to "このコメントを非表示",
+                          hide_stream_session_comment_path(comment.stream_session, comment),
+                          method: :patch,
+                          class: "btn btn-sm btn-link comment-action-button",
+                          form: { data: { turbo: true } } %>
+          </div>
 
-        <li class="comment-menu-item comment-menu-item-cast-hidden">
-          <%= button_to "非表示を解除",
-                        unhide_stream_session_comment_path(comment.stream_session, comment),
-                        method: :patch,
-                        class: "dropdown-item" %>
-        </li>
+          <div class="comment-menu-item comment-menu-item-cast-hidden">
+            <%= button_to "非表示を解除",
+                          unhide_stream_session_comment_path(comment.stream_session, comment),
+                          method: :patch,
+                          class: "btn btn-sm btn-link comment-action-button",
+                          form: { data: { turbo: true } } %>
+          </div>
 
-        <li class="comment-menu-item comment-menu-item-viewer-normal">
-          <%= button_to "このコメントを通報する",
-                        report_stream_session_comment_path(comment.stream_session, comment),
-                        method: :post,
-                        class: "dropdown-item" %>
-        </li>
-      </ul>
+          <div class="comment-menu-item comment-menu-item-viewer-normal comment-menu-item-cast-report">
+            <%= button_to "このコメントを通報",
+                          report_stream_session_comment_path(comment.stream_session, comment),
+                          method: :post,
+                          class: "btn btn-sm btn-link comment-action-button text-danger",
+                          form: { data: { turbo: true } } %>
+          </div>
+        </div>
+      </template>
     </div>
   </div>
 
