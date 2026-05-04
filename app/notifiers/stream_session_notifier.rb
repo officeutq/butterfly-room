@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class StreamSessionNotifier
-  def self.broadcast_stream_state(booth:, flash_message: nil)
+  def self.broadcast_stream_state(booth:)
     booth = Booth.find(booth.id)
     stream_session = booth.current_stream_session
 
@@ -15,8 +15,7 @@ class StreamSessionNotifier
         comments: stream_session ? Comment.alive.where(stream_session: stream_session)
                                      .order(created_at: :desc).limit(50).reverse : [],
         drink_items: booth.store.drink_items.enabled_only.ordered,
-        can_create_drink_order: false,
-        flash_message: flash_message
+        can_create_drink_order: false
       }
     )
   end
@@ -32,7 +31,7 @@ class StreamSessionNotifier
       }
     )
 
-    Turbo::StreamsChannel.broadcast_append_to(
+    Turbo::StreamsChannel.broadcast_update_to(
       [ stream_session.booth, :stream_state ],
       target: "flash_inner",
       partial: "shared/flash_message",
