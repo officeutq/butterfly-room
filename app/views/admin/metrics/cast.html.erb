@@ -1,4 +1,4 @@
-<% content_for :title, "キャスト別数値一覧" %>
+<% content_for :title, "配信者別数値一覧" %>
 
 <div class="mb-4">
   <%= form_with url: admin_cast_metrics_path,
@@ -23,10 +23,10 @@
                   @include_all_casts,
                   class: "form-check-input",
                   data: { action: "change->auto-submit#submit" } %>
-            <%= label_tag :all_casts, "配信実績がないキャストも表示する", class: "form-check-label" %>
+            <%= label_tag :all_casts, "配信実績がない配信者も表示する", class: "form-check-label" %>
           </div>
           <div class="form-text small px-4">
-            過去キャストも含みます。
+            削除済みキャストも含みます。
           </div>
         </div>
       </div>
@@ -40,7 +40,7 @@
 
 <% if @rows.blank? %>
   <div class="alert alert-warning" role="alert">
-    表示できるキャスト別数値はありません。
+    表示できる配信者別数値はありません。
   </div>
 <% else %>
   <div class="referral-codes-list">
@@ -48,10 +48,11 @@
       <div class="card referral-code-card">
         <div class="card-body">
           <div class="referral-code-row">
-            <div class="referral-code-label">キャスト</div>
-            <div class="referral-code-value d-flex align-items-center gap-2">
+            <div class="referral-code-label">配信者</div>
+            <div class="referral-code-value d-flex align-items-center gap-2 flex-wrap">
               <%= user_avatar_badge(r.cast_user, size: 28) %>
               <span class="fw-semibold"><%= display_name_or_anonymous(r.cast_user) %></span>
+              <span class="badge text-bg-secondary"><%= user_role_label(r.cast_user) %></span>
             </div>
           </div>
 

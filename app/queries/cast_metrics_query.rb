@@ -50,13 +50,21 @@ class CastMetricsQuery
   attr_reader :store, :from, :to, :now, :include_all_casts
 
   def store_cast_users
-    BoothCast
-      .joins(:booth)
-      .includes(:cast_user)
-      .where(booths: { store_id: store.id })
-      .map(&:cast_user)
-      .uniq
-      .sort_by(&:id)
+    booth_cast_user_ids =
+      BoothCast
+        .joins(:booth)
+        .where(booths: { store_id: store.id })
+        .pluck(:cast_user_id)
+
+    stream_actor_user_ids =
+      StreamSession
+        .where(store_id: store.id)
+        .where.not(started_by_cast_user_id: nil)
+        .pluck(:started_by_cast_user_id)
+
+    user_ids = (booth_cast_user_ids + stream_actor_user_ids).uniq
+
+    User.where(id: user_ids).order(:id)
   end
 
   def stream_sales_points_by_cast_user_id
