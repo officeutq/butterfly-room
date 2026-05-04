@@ -11,6 +11,8 @@ export default class extends Controller {
   ]
 
   connect() {
+    this._wasLiveLike = null
+
     this._observer = new MutationObserver(() => this._sync())
     this._observer.observe(this.element, {
       childList: true,
@@ -32,6 +34,7 @@ export default class extends Controller {
   _sync() {
     const marker = this.element.querySelector("#stream_state [data-live-like]")
     const liveLike = marker?.getAttribute("data-live-like") === "true"
+    const becameLive = this._wasLiveLike === false && liveLike
 
     this.element.classList.toggle("is-live", liveLike)
 
@@ -43,7 +46,20 @@ export default class extends Controller {
       this.waitingRootTarget.classList.toggle("d-none", liveLike)
     }
 
+    if (becameLive) {
+      this._clearFlash()
+    }
+
+    this._wasLiveLike = liveLike
+
     this._mountFavorites(liveLike)
+  }
+
+  _clearFlash() {
+    const flashInner = document.getElementById("flash_inner")
+    if (!flashInner) return
+
+    flashInner.replaceChildren()
   }
 
   _mountFavorites(liveLike) {
