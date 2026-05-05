@@ -11,7 +11,7 @@
           <div><span class="text-body-secondary">配信名：</span><%= @stream_session.title.presence || @booth.name %></div>
           <div>
             <span class="text-body-secondary">配信者：</span>
-            <%= display_name_or_anonymous(@cast_user) %>
+            <%= user_avatar_badge(@cast_user, size: 28) %>&nbsp;<%= display_name_or_anonymous(@cast_user) %>
           </div>
           <div>
             <span class="text-body-secondary">配信開始：</span>
