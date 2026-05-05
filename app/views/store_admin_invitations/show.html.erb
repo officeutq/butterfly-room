@@ -10,7 +10,7 @@
 
       <div class="mb-2">
         <span class="text-muted">期限：</span>
-        <span><%= @invitation.expires_at.strftime("%Y-%m-%d %H:%M") %></span>
+        <span><%= l(@invitation.expires_at) %></span>
       </div>
 
       <div class="mb-0">

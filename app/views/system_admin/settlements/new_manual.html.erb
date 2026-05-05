@@ -57,9 +57,9 @@
       <tr>
         <th style="width: 220px;">対象期間（JST）</th>
         <td>
-          <%= @preview[:period_from].in_time_zone("Asia/Tokyo").strftime("%Y-%m-%d %H:%M") %>
+          <%= l(@preview[:period_from].in_time_zone("Asia/Tokyo")) %>
           〜
-          <%= @preview[:period_to].in_time_zone("Asia/Tokyo").strftime("%Y-%m-%d %H:%M") %>
+          <%= l(@preview[:period_to].in_time_zone("Asia/Tokyo")) %>
           （toは含まない）
         </td>
       </tr>
