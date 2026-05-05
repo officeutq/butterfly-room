@@ -10,6 +10,10 @@
         <div class="d-flex flex-column gap-2">
           <div><span class="text-body-secondary">配信名：</span><%= @stream_session.title.presence || @booth.name %></div>
           <div>
+            <span class="text-body-secondary">配信者：</span>
+            <%= display_name_or_anonymous(@cast_user) %>
+          </div>
+          <div>
             <span class="text-body-secondary">配信開始：</span>
             <%= @started_at.present? ? l(@started_at, format: :long) : "-" %>
           </div>

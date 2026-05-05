@@ -29,6 +29,7 @@ module Cast
         )
 
       @booth = booth
+      @cast_user = @stream_session.started_by_cast_user
 
       @comment_count = comments_scope.count
       @viewer_count = presences_scope.distinct.count(:customer_user_id)

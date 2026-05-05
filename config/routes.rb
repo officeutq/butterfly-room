@@ -137,7 +137,7 @@ Rails.application.routes.draw do
 
       get :live, on: :member
       patch :status, on: :member
-      resources :stream_sessions, only: %i[create], module: :booths
+      resources :stream_sessions, only: %i[index create], module: :booths
     end
 
     resources :stream_sessions, only: %i[show] do

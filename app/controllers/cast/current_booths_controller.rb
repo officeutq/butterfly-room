@@ -83,6 +83,8 @@ module Cast
         edit_cast_booth_path(booth)
       when "booth_live"
         live_cast_booth_path(booth)
+      when "booth_stream_sessions"
+        cast_booth_stream_sessions_path(booth)
       else
         nil
       end
