@@ -31,7 +31,8 @@ module Cast
       @booth = booth
       @cast_user = @stream_session.started_by_cast_user
 
-      @comment_count = comments_scope.count
+      @comment_count =
+        comments_scope.where(kind: Comment::KIND_CHAT).count
       @viewer_count = presences_scope.distinct.count(:customer_user_id)
 
       @drink_order_count = drink_orders_scope.count
