@@ -13,9 +13,6 @@
   <div class="row g-4">
     <% @stream_sessions.each do |stream_session| %>
       <% duration_seconds = stream_session.broadcast_duration_seconds %>
-      <% hours = duration_seconds / 3600 %>
-      <% minutes = (duration_seconds % 3600) / 60 %>
-      <% seconds = duration_seconds % 60 %>
 
       <div class="col-12 col-lg-6 col-xxl-4">
         <%= link_to cast_stream_session_path(stream_session), class: "text-decoration-none text-reset" do %>
@@ -35,12 +32,12 @@
 
                   <div>
                     <span class="text-body-secondary">配信開始：</span>
-                    <%= stream_session.broadcast_started_at.present? ? l(stream_session.broadcast_started_at, format: :long) : "-" %>
+                    <%= stream_session.broadcast_started_at.present? ? l(stream_session.broadcast_started_at) : "-" %>
                   </div>
 
                   <div>
                     <span class="text-body-secondary">配信時間：</span>
-                    <%= format("%02d:%02d:%02d", hours, minutes, seconds) %>
+                    <%= seconds_to_human_time(duration_seconds) %>
                   </div>
                 </div>
               </div>

@@ -15,15 +15,12 @@
           </div>
           <div>
             <span class="text-body-secondary">配信開始：</span>
-            <%= @started_at.present? ? l(@started_at, format: :long) : "-" %>
+            <%= @started_at.present? ? l(@started_at) : "-" %>
           </div>
-          <div><span class="text-body-secondary">配信終了：</span><%= l(@ended_at, format: :long) if @ended_at.present? %></div>
+          <div><span class="text-body-secondary">配信終了：</span><%= @ended_at.present? ? l(@ended_at) : "-" %></div>
           <div>
             <span class="text-body-secondary">配信時間：</span>
-            <% hours = @duration_seconds / 3600 %>
-            <% minutes = (@duration_seconds % 3600) / 60 %>
-            <% seconds = @duration_seconds % 60 %>
-            <%= format("%02d:%02d:%02d", hours, minutes, seconds) %>
+            <%= seconds_to_human_time(@duration_seconds) %>
           </div>
           <div><span class="text-body-secondary">コメント数：</span><%= @comment_count %></div>
           <div><span class="text-body-secondary">ユニーク視聴者：</span><%= @viewer_count %></div>
