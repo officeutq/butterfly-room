@@ -83,6 +83,30 @@
 
       <div class="col-12 col-md-6 col-xl-4">
         <% if booth.present? %>
+          <%= link_to cast_booth_stream_sessions_path(booth), class: "text-decoration-none" do %>
+            <div class="card h-100 dashboard-role-card dashboard-role-card-cast" data-bs-theme="light">
+              <div class="card-body">
+                <h5 class="card-title mb-2">配信履歴</h5>
+                <p class="card-text mb-0">現在のブースの過去配信を確認できます</p>
+              </div>
+            </div>
+          <% end %>
+        <% else %>
+          <%= link_to select_modal_cast_booths_path(return_to_key: "booth_stream_sessions"),
+                      data: { turbo_frame: "modal" },
+                      class: "text-decoration-none" do %>
+            <div class="card h-100 dashboard-role-card dashboard-role-card-cast" data-bs-theme="light">
+              <div class="card-body">
+                <h5 class="card-title mb-2">配信履歴</h5>
+                <p class="card-text mb-0">現在のブースの過去配信を確認できます</p>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+
+      <div class="col-12 col-md-6 col-xl-4">
+        <% if booth.present? %>
           <%= link_to edit_cast_booth_path(booth), class: "text-decoration-none" do %>
             <div class="card h-100 dashboard-role-card dashboard-role-card-cast" data-bs-theme="light">
               <div class="card-body">

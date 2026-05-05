@@ -81,10 +81,11 @@
         </button>
       <% end %>
 
-      <button class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" disabled>
+      <%= link_to cast_booth_stream_sessions_path(@booth),
+            class: "btn btn-outline-secondary d-inline-flex align-items-center gap-2" do %>
         <i class="bi bi-clock-history" aria-hidden="true"></i>
         <span>配信履歴</span>
-      </button>
+      <% end %>
     </div>
 
     <div class="booth-show-description mt-4">

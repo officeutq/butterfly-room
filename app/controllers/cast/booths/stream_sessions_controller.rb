@@ -3,6 +3,19 @@
 module Cast
   module Booths
     class StreamSessionsController < Cast::BaseController
+      before_action :require_current_booth!, only: %i[index]
+
+      def index
+        @booth = current_booth
+
+        @stream_sessions =
+          @booth
+            .stream_sessions
+            .ended
+            .includes(:started_by_cast_user)
+            .order(started_at: :desc, id: :desc)
+      end
+
       def create
         booth = current_booth
         if booth.blank?
