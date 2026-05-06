@@ -27,12 +27,10 @@ class StorePayoutAccount < ApplicationRecord
   with_options if: :jp_bank_manual_bank? do
     validates :jp_bank_symbol, presence: true, format: { with: /\A1\d{4}\z/ }
     validates :jp_bank_number, presence: true, format: { with: /\A\d{2,8}\z/ }
-    validates :bank_code, presence: true, format: { with: /\A\d{4}\z/ }
-    validates :branch_code, presence: true, format: { with: /\A\d{3}\z/ }
-    validates :account_type, presence: true
-    validates :account_number, presence: true, format: { with: /\A\d{7}\z/ }
     validates :account_holder_kana, presence: true
   end
+
+  validate :validate_jp_bank_conversion, if: :jp_bank_manual_bank?
 
   with_options if: :stripe_connect? do
     validates :stripe_account_id, presence: true
@@ -61,5 +59,15 @@ class StorePayoutAccount < ApplicationRecord
     self.account_number = converted.account_number
   rescue PayoutAccounts::JpBankConverter::Error
     # 詳細なエラーは各format validationに任せる
+  end
+
+  def validate_jp_bank_conversion
+    return if jp_bank_symbol.blank? || jp_bank_number.blank?
+    return if bank_code.present? &&
+              branch_code.present? &&
+              account_type.present? &&
+              account_number.present?
+
+    errors.add(:base, "ゆうちょ銀行の記号・番号を確認してください")
   end
 end
