@@ -84,4 +84,41 @@ class StorePayoutAccountTest < ActiveSupport::TestCase
     spa.stripe_account_id = "acct_123"
     assert spa.valid?
   end
+
+  test "jp_bank converts symbol and number to bank transfer fields" do
+    store = Store.create!(name: "store")
+
+    spa = StorePayoutAccount.new(
+      store: store,
+      payout_method: :manual_bank,
+      status: :active,
+      input_account_kind: :jp_bank,
+      jp_bank_symbol: "11940",
+      jp_bank_number: "12345671",
+      account_holder_kana: "ﾃｽﾄ"
+    )
+
+    assert spa.valid?
+    assert_equal "9900", spa.bank_code
+    assert_equal "198", spa.branch_code
+    assert_equal "ordinary", spa.account_type
+    assert_equal "1234567", spa.account_number
+  end
+
+  test "jp_bank pads converted account number to 7 digits" do
+    store = Store.create!(name: "store")
+
+    spa = StorePayoutAccount.new(
+      store: store,
+      payout_method: :manual_bank,
+      status: :active,
+      input_account_kind: :jp_bank,
+      jp_bank_symbol: "11940",
+      jp_bank_number: "123451",
+      account_holder_kana: "ﾃｽﾄ"
+    )
+
+    assert spa.valid?
+    assert_equal "0012345", spa.account_number
+  end
 end

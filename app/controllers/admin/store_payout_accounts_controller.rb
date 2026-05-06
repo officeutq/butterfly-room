@@ -53,11 +53,14 @@ module Admin
 
     def payout_account_params
       params.require(:store_payout_account).permit(
+        :input_account_kind,
         :bank_code,
         :branch_code,
         :account_type,
         :account_number,
-        :account_holder_kana
+        :account_holder_kana,
+        :jp_bank_symbol,
+        :jp_bank_number
       )
     end
   end

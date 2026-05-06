@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_20_091116) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_06_023412) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -402,12 +402,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_20_091116) do
     t.string "bank_code", limit: 4
     t.string "branch_code", limit: 3
     t.datetime "created_at", null: false
+    t.integer "input_account_kind", default: 0, null: false
+    t.string "jp_bank_number", limit: 8
+    t.string "jp_bank_symbol", limit: 5
     t.integer "payout_method", null: false
     t.integer "status", default: 0, null: false
     t.bigint "store_id", null: false
     t.string "stripe_account_id"
     t.datetime "updated_at", null: false
     t.bigint "updated_by_user_id"
+    t.index ["input_account_kind"], name: "index_store_payout_accounts_on_input_account_kind"
     t.index ["payout_method"], name: "index_store_payout_accounts_on_payout_method"
     t.index ["status"], name: "index_store_payout_accounts_on_status"
     t.index ["store_id"], name: "index_store_payout_accounts_on_store_id"
