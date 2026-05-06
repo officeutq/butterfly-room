@@ -228,4 +228,21 @@ module ApplicationHelper
   def lp_ref_code
     params[:ref].presence || "0000"
   end
+
+  def settlement_status_label(settlement)
+    return "" if settlement.blank?
+
+    case settlement.status.to_sym
+    when :draft
+      "未確定"
+    when :confirmed
+      "確定済み"
+    when :exported
+      "振込処理中"
+    when :paid
+      "支払済み"
+    else
+      settlement.status.to_s
+    end
+  end
 end

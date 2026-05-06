@@ -56,7 +56,7 @@ class AdminSettlementsIndexTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     # 画面が出ることだけ確認（詳細な中身は別テストで）
-    assert_select "h1", text: "精算"
+    assert_select "h1", text: "精算（予定・履歴）"
   end
 
   test "store_admin sees only current_store settlements and hides draft" do
@@ -69,15 +69,22 @@ class AdminSettlementsIndexTest < ActionDispatch::IntegrationTest
     get admin_settlements_path
     assert_response :success
 
-    # store1 の confirmed は出る
-    assert_select "h1", text: "精算"
-    assert_select "table tbody tr", minimum: 1
+    assert_select "h1", text: "精算（予定・履歴）"
+
+    # テーブルではなく、精算履歴カードへのリンクが出る
+    assert_select "a[href='#{admin_settlement_path(@s1_confirmed)}']", minimum: 1
 
     # draft は出さない
-    assert_select "td", text: "draft", count: 0
+    assert_select "a[href='#{admin_settlement_path(@s1_draft)}']", count: 0
+    assert_select "*", text: "未確定", count: 0
+    refute_includes response.body, "draft"
 
     # 他店舗（store2）は出さない
-    assert_select "td", text: @store2.name, count: 0
+    assert_select "a[href='#{admin_settlement_path(@s2_confirmed)}']", count: 0
+    assert_select "*", text: @store2.name, count: 0
+
+    # 店舗向けの日本語ステータスが出る
+    assert_includes response.body, "確定済み"
 
     # 禁止ワードを含めない（簡易）
     body = response.body
@@ -99,11 +106,11 @@ class AdminSettlementsIndexTest < ActionDispatch::IntegrationTest
     get admin_settlements_path
     assert_response :success
 
-    assert_select "h1", text: "精算"
+    assert_select "h1", text: "精算（予定・履歴）"
 
-    # current_store（store2）のみ
-    assert_select "td", text: @store2.name, count: 0
-    # store名自体をこの画面では出していないので、代わりに settlement のIDリンクが出ることを確認
-    assert_select "a", text: "詳細", minimum: 1
+    # current_store（store2）の settlement のみ表示する
+    assert_select "a[href='#{admin_settlement_path(@s2_confirmed)}']", minimum: 1
+    assert_select "a[href='#{admin_settlement_path(@s1_confirmed)}']", count: 0
+    assert_select "a[href='#{admin_settlement_path(@s1_draft)}']", count: 0
   end
 end
