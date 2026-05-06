@@ -15,6 +15,7 @@ ja:
       drink_item: ドリンク
       store_admin_invitation: 店舗管理者招待
       store_cast_invitation: キャスト招待
+      store_payout_account: 振込先口座
 
     attributes:
       user:
@@ -50,6 +51,16 @@ ja:
       store_cast_invitation:
         expires_at: 有効期限
         token_digest: トークン
+
+      store_payout_account:
+        input_account_kind: 口座の種類
+        bank_code: 銀行コード
+        branch_code: 支店コード
+        account_type: 預金種目
+        account_number: 口座番号
+        account_holder_kana: 口座名義カナ
+        jp_bank_symbol: 記号
+        jp_bank_number: 番号
 
   activemodel:
     models:
