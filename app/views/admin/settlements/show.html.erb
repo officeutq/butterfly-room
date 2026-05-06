@@ -1,28 +1,65 @@
-<div style="max-width: 960px;">
-  <h1 class="mb-3">精算履歴（詳細）</h1>
+<% content_for :title, "精算履歴（詳細）" %>
 
-  <div class="alert alert-secondary" role="alert">
-    <div class="small">
-      ・本ページは精算履歴の表示のみです。<br>
-      ・※表示金額は概算ではなく、確定済みの精算情報です（ただし運営側の処理により調整が入る場合があります）。
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-9">
+    <div class="card mb-4" data-bs-theme="light">
+      <div class="card-body">
+        <div class="alert alert-secondary mb-4" role="alert">
+          <div class="fw-semibold mb-1">表示について</div>
+          <div class="small fw-semibold">
+            ・本ページは精算履歴の表示のみです。<br>
+            ・表示金額は確定済みの精算情報です（ただし運営側の処理により調整が入る場合があります）。
+          </div>
+        </div>
+
+        <div class="row g-2 align-items-start mb-3">
+          <div class="col-12 col-sm">
+            <h2 class="h6 mb-2">精算内容</h2>
+            <div class="small text-muted">
+              <div>対象期間</div>
+              <div>開始：<%= l(@settlement.period_from) %></div>
+              <div>終了：<%= l(@settlement.period_to) %></div>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-auto text-sm-end">
+            <span class="badge text-bg-secondary">
+              <%= settlement_status_label(@settlement) %>
+            </span>
+          </div>
+        </div>
+
+        <div class="rounded-3 border bg-body-tertiary p-3 mb-3">
+          <div class="small text-muted mb-1">支払予定額</div>
+          <div class="h2 mb-0">
+            <%= number_with_delimiter(@settlement.store_share_yen) %> 円
+          </div>
+        </div>
+
+        <div class="row g-2">
+          <div class="col-12 col-md-6">
+            <div class="rounded-3 border p-3 h-100">
+              <div class="small text-muted mb-1">消化pt合計</div>
+              <div class="fw-semibold">
+                <%= number_with_delimiter(@settlement.gross_yen) %> pt
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <div class="rounded-3 border p-3 h-100">
+              <div class="small text-muted mb-1">店舗取り分</div>
+              <div class="fw-semibold">
+                <%= number_with_delimiter(@settlement.store_share_yen) %> 円
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <table class="table table-sm" style="max-width: 860px;">
-    <tbody>
-      <tr><th style="width: 220px;">対象期間（JST）</th><td><%= l(@settlement.period_from) %>〜<%= l(@settlement.period_to) %></td></tr>
-      <tr><th>ステータス</th><td><%= @settlement.status %></td></tr>
-
-      <tr><th class="pt-3">支払予定額</th><td class="pt-3"><%= number_with_delimiter(@settlement.store_share_yen) %> 円</td></tr>
-      <tr><th>合計（参考）</th><td><%= number_with_delimiter(@settlement.gross_yen) %> 円</td></tr>
-
-      <tr><th>確定日</th><td><%= @settlement.confirmed_at.present? ? l(@settlement.confirmed_at) : "-" %></td></tr>
-      <tr><th>CSV生成日</th><td><%= @settlement.exported_at.present? ? l(@settlement.exported_at) : "-" %></td></tr>
-    </tbody>
-  </table>
-
-  <div class="d-flex gap-2">
-    <%= link_to "一覧へ戻る", admin_settlements_path, class: "btn btn-outline-secondary" %>
-    <%= link_to "ダッシュボードへ戻る", dashboard_path, class: "btn btn-outline-secondary" %>
+    <div class="d-flex gap-2">
+      <%= link_to "精算（予定・履歴）画面へ戻る", admin_settlements_path, class: "btn btn-outline-secondary" %>
+    </div>
   </div>
 </div>
