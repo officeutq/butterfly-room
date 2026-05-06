@@ -1,93 +1,105 @@
-<% content_for :title, "精算・振込設定" %>
+<% content_for :title, "振込先口座設定" %>
 
-<div style="max-width: 720px;">
-  <div class="alert alert-secondary" role="alert">
-    <div>※振込先口座は精算処理に利用されます。誤りがあると入金できない場合があります。</div>
-    <div class="mt-1">※この画面では口座の照会や任意の送金操作はできません（精算は月次で行われます）。</div>
-  </div>
+<div class="row justify-content-center">
+  <div class="col-12 col-md-8 col-lg-6">
+    <div class="card mb-4" data-bs-theme="light">
+      <div class="card-body">
+        <h1 class="h4 mb-3">振込先口座設定</h1>
 
-  <div class="card mb-4">
-    <div class="card-header">現在の設定状況</div>
-    <div class="card-body">
-      <% if @active_payout_account.present? && @store.payout_account_configured? %>
-        <dl class="row mb-0">
-          <dt class="col-sm-4">銀行コード</dt>
-          <dd class="col-sm-8"><%= @active_payout_account.bank_code %></dd>
+        <p class="small text-muted mb-3">
+          ※振込先口座は精算処理に利用されます。誤りがあると入金できない場合があります。<br>
+          ※この画面では口座の照会や任意の送金操作はできません（精算は月次で行われます）。
+        </p>
 
-          <dt class="col-sm-4">支店コード</dt>
-          <dd class="col-sm-8"><%= @active_payout_account.branch_code %></dd>
+        <% if @active_payout_account.present? && @store.payout_account_configured? %>
+          <div class="alert alert-success" role="alert">
+            <div class="fw-semibold mb-2">現在の設定状況</div>
 
-          <dt class="col-sm-4">口座種別</dt>
-          <dd class="col-sm-8">
-            <%= @active_payout_account.ordinary? ? "普通" : "当座" %>
-          </dd>
+            <dl class="row mb-0">
+              <dt class="col-sm-4">銀行コード</dt>
+              <dd class="col-sm-8"><%= @active_payout_account.bank_code %></dd>
 
-          <dt class="col-sm-4">口座番号</dt>
-          <dd class="col-sm-8">
-            <% last4 = @store.payout_account_last4 %>
-            <%= last4.present? ? "****#{last4}" : "-" %>
-          </dd>
+              <dt class="col-sm-4">支店コード</dt>
+              <dd class="col-sm-8"><%= @active_payout_account.branch_code %></dd>
 
-          <dt class="col-sm-4">口座名義カナ</dt>
-          <dd class="col-sm-8"><%= truncate(@active_payout_account.account_holder_kana.to_s, length: 32) %></dd>
-        </dl>
-      <% else %>
-        <div class="text-muted">未設定</div>
-      <% end %>
-    </div>
-  </div>
+              <dt class="col-sm-4">口座種別</dt>
+              <dd class="col-sm-8">
+                <%= @active_payout_account.ordinary? ? "普通" : "当座" %>
+              </dd>
 
-  <div class="card">
-    <div class="card-header">口座情報（manual_bank）</div>
-    <div class="card-body">
-      <%= form_with model: @payout_account,
-            url: admin_payout_account_path,
-            method: :patch do |f| %>
+              <dt class="col-sm-4">口座番号</dt>
+              <dd class="col-sm-8">
+                <% last4 = @store.payout_account_last4 %>
+                <%= last4.present? ? "****#{last4}" : "-" %>
+              </dd>
 
-        <% if @payout_account.errors.any? %>
-          <div class="alert alert-danger" role="alert">
-            <ul class="mb-0">
-              <% @payout_account.errors.full_messages.each do |msg| %>
-                <li><%= msg %></li>
-              <% end %>
-            </ul>
+              <dt class="col-sm-4">口座名義カナ</dt>
+              <dd class="col-sm-8 mb-0"><%= truncate(@active_payout_account.account_holder_kana.to_s, length: 32) %></dd>
+            </dl>
+          </div>
+
+          <p class="text-muted">
+            新しい口座情報を入力して登録すると、登録済み口座情報を上書きできます。
+          </p>
+        <% else %>
+          <div class="alert alert-secondary" role="alert">
+            振込先口座はまだ設定されていません。
           </div>
         <% end %>
 
-        <div class="mb-3">
-          <%= f.label :bank_code, "銀行コード（4桁）", class: "form-label" %>
-          <%= f.text_field :bank_code, class: "form-control", inputmode: "numeric", autocomplete: "off" %>
-        </div>
+        <hr class="my-4">
 
-        <div class="mb-3">
-          <%= f.label :branch_code, "支店コード（3桁）", class: "form-label" %>
-          <%= f.text_field :branch_code, class: "form-control", inputmode: "numeric", autocomplete: "off" %>
-        </div>
+        <h2 class="h6 mb-3">口座情報</h2>
 
-        <div class="mb-3">
-          <%= f.label :account_type, "口座種別", class: "form-label" %>
-          <%= f.select :account_type,
-                options_for_select([["普通", "ordinary"], ["当座", "current"]], @payout_account.account_type),
-                { include_blank: true },
-                class: "form-select" %>
-        </div>
+        <%= form_with model: @payout_account,
+              url: admin_payout_account_path,
+              method: :patch do |f| %>
 
-        <div class="mb-3">
-          <%= f.label :account_number, "口座番号（7桁）", class: "form-label" %>
-          <%= f.text_field :account_number, class: "form-control", inputmode: "numeric", autocomplete: "off" %>
-          <div class="form-text">※安全のため、現在の口座番号は表示しません。変更時は再入力してください。</div>
-        </div>
+          <% if @payout_account.errors.any? %>
+            <div class="alert alert-danger" role="alert">
+              <ul class="mb-0">
+                <% @payout_account.errors.full_messages.each do |msg| %>
+                  <li><%= msg %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
 
-        <div class="mb-3">
-          <%= f.label :account_holder_kana, "口座名義カナ", class: "form-label" %>
-          <%= f.text_field :account_holder_kana, class: "form-control", autocomplete: "off" %>
-        </div>
+          <div class="mb-3">
+            <%= f.label :bank_code, "銀行コード（4桁）", class: "form-label" %>
+            <%= f.text_field :bank_code, class: "form-control", inputmode: "numeric", autocomplete: "off" %>
+          </div>
 
-        <div class="d-flex gap-2">
-          <%= f.submit "更新する", class: "btn btn-primary" %>
-          <%= link_to "戻る", dashboard_path, class: "btn btn-outline-secondary" %>
-        </div>
-      <% end %>
+          <div class="mb-3">
+            <%= f.label :branch_code, "支店コード（3桁）", class: "form-label" %>
+            <%= f.text_field :branch_code, class: "form-control", inputmode: "numeric", autocomplete: "off" %>
+          </div>
+
+          <div class="mb-3">
+            <%= f.label :account_type, "口座種別", class: "form-label" %>
+            <%= f.select :account_type,
+                  options_for_select([["普通", "ordinary"], ["当座", "current"]], @payout_account.account_type),
+                  { include_blank: true },
+                  class: "form-select" %>
+          </div>
+
+          <div class="mb-3">
+            <%= f.label :account_number, "口座番号（7桁）", class: "form-label" %>
+            <%= f.text_field :account_number, class: "form-control", inputmode: "numeric", autocomplete: "off" %>
+            <div class="form-text">※安全のため、現在の口座番号は表示しません。変更時は再入力してください。</div>
+          </div>
+
+          <div class="mb-3">
+            <%= f.label :account_holder_kana, "口座名義カナ", class: "form-label" %>
+            <%= f.text_field :account_holder_kana, class: "form-control", autocomplete: "off" %>
+          </div>
+
+          <div class="d-flex gap-2">
+            <%= f.submit "更新する", class: "btn btn-primary" %>
+            <%= link_to "戻る", dashboard_path, class: "btn btn-outline-secondary" %>
+          </div>
+        <% end %>
+      </div>
     </div>
   </div>
 </div>
