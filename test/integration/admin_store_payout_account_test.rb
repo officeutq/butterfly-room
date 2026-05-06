@@ -124,4 +124,32 @@ class AdminStorePayoutAccountTest < ActionDispatch::IntegrationTest
     assert_no_match(/1234567/, response.body)
     assert_match(/4567/, response.body)
   end
+
+  test "update can create jp_bank payout account with converted transfer fields" do
+    sign_in @store_admin, scope: :user
+
+    post admin_current_store_path, params: { store_id: @store1.id }
+    assert_response :redirect
+
+    patch admin_payout_account_path, params: {
+      store_payout_account: {
+        input_account_kind: "jp_bank",
+        jp_bank_symbol: "11940",
+        jp_bank_number: "12345671",
+        account_holder_kana: "テストカナ"
+      }
+    }
+
+    assert_response :redirect
+    assert_redirected_to edit_admin_payout_account_path
+
+    account = @store1.store_payout_accounts.active.last
+    assert_equal "jp_bank", account.input_account_kind
+    assert_equal "11940", account.jp_bank_symbol
+    assert_equal "12345671", account.jp_bank_number
+    assert_equal "9900", account.bank_code
+    assert_equal "198", account.branch_code
+    assert_equal "ordinary", account.account_type
+    assert_equal "1234567", account.account_number
+  end
 end
