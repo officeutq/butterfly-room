@@ -4,7 +4,9 @@
   <div class="alert alert-warning">購入はキャンセルされました。</div>
 <% elsif @status == "success" %>
   <div class="alert alert-info">
-    決済は完了しました。反映まで少し時間がかかる場合があります。
+    お支払い手続きを受け付けました。<br>
+    クレジットカード等で決済済みの場合は、ポイント反映まで少し時間がかかる場合があります。<br>
+    コンビニ決済の場合は、店頭でのお支払い完了後にポイントが反映されます。
   </div>
 <% else %>
   <div class="alert alert-danger">購入に失敗した可能性があります。</div>

@@ -5,6 +5,8 @@ module Wallets
     end
 
     def call!
+      ensure_paid_session!
+
       purchase_id = @session.metadata&.[]("wallet_purchase_id").presence
       raise "missing wallet_purchase_id" if purchase_id.blank?
       purchase_id = purchase_id.to_i
@@ -49,6 +51,14 @@ module Wallets
         user = User.find_by(id: credited_user_id)
         WalletNotifier.broadcast_balance_for_user(user) if user
       end
+    end
+
+    private
+
+    def ensure_paid_session!
+      return if @session.payment_status == "paid"
+
+      raise "checkout session is not paid. session_id=#{@session.id} payment_status=#{@session.payment_status}"
     end
   end
 end
