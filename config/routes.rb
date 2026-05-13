@@ -12,6 +12,7 @@ Rails.application.routes.draw do
   get "/legal", to: "legal#show", as: :legal
   get "/terms", to: "legal#terms", as: :terms
   get "/privacy_policy", to: "legal#privacy_policy", as: :privacy_policy
+  get "/payment_services_act", to: "legal#payment_services_act", as: :payment_services_act
 
   if Rails.env.development?
     mount LetterOpenerWeb::Engine, at: "/letter_opener"
