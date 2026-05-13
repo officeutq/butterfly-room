@@ -3,6 +3,8 @@ require "ostruct"
 
 class Webhooks::StripeControllerTest < ActionDispatch::IntegrationTest
   setup do
+    ENV["STRIPE_WEBHOOK_SECRET"] = "whsec_test"
+
     @user = User.create!(
       email: "stripe-test@example.com",
       password: "password",
@@ -23,6 +25,10 @@ class Webhooks::StripeControllerTest < ActionDispatch::IntegrationTest
     )
 
     @headers = { "Stripe-Signature" => "test_signature" }
+  end
+
+  teardown do
+    ENV.delete("STRIPE_WEBHOOK_SECRET")
   end
 
   test "checkout.session.completed with paid credits wallet" do
