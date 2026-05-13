@@ -3,6 +3,7 @@ class LegalController < ApplicationController
     show
     terms
     privacy_policy
+    payment_services_act
   ]
 
   def show
@@ -12,5 +13,8 @@ class LegalController < ApplicationController
   end
 
   def privacy_policy
+  end
+
+  def payment_services_act
   end
 end
