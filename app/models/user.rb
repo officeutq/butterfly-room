@@ -24,6 +24,11 @@ class User < ApplicationRecord
   has_many :favorite_stores, dependent: :destroy
   has_many :favorite_users, dependent: :destroy
   has_many :favorited_users, through: :favorite_users, source: :target_user
+  has_many :created_notifications,
+    class_name: "Notification",
+    foreign_key: :created_by_user_id,
+    dependent: :restrict_with_error
+  has_many :notification_reads, dependent: :destroy
 
   # --- Soft delete ---
   def deleted?
