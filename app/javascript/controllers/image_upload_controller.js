@@ -11,6 +11,9 @@ export default class extends Controller {
   connect() {
     this.hadInitialFile = this.hasInitialUrlValue && this.initialUrlValue.length > 0
     this.setupAttempts = 0
+    this.initialFileRetryAttempted = false
+    this.suppressRemoveFlagUpdate = false
+    this.isDisconnected = false
 
     setTimeout(() => {
       this.setupFilePond()
@@ -18,8 +21,12 @@ export default class extends Controller {
   }
 
   disconnect() {
+    this.isDisconnected = true
     if (this.setupTimer) clearTimeout(this.setupTimer)
-    if (this.pond) this.pond.destroy()
+    if (this.pond) {
+      this.pond.destroy()
+      this.pond = null
+    }
   }
 
   setupFilePond() {
@@ -75,7 +82,7 @@ export default class extends Controller {
     this.bindEvents()
 
     if (this.hadInitialFile) {
-      this.pond.addFile(this.initialUrlValue).catch(() => {})
+      this.loadInitialFile()
     }
   }
 
@@ -85,6 +92,8 @@ export default class extends Controller {
     })
 
     this.pond.on("removefile", () => {
+      if (this.suppressRemoveFlagUpdate) return
+
       const currentFilesCount = this.pond.getFiles().length
 
       if (currentFilesCount > 0) {
@@ -94,6 +103,89 @@ export default class extends Controller {
 
       this.removeFlagTarget.value = this.hadInitialFile ? "1" : "0"
     })
+  }
+
+  loadInitialFile() {
+    this.pond.addFile(this.initialUrlValue).catch((error) => {
+      if (this.isDisconnected || !this.pond) return
+
+      console.log("[image-upload] initial file load failed", error)
+      this.retryInitialFileLoad()
+    })
+  }
+
+  async retryInitialFileLoad() {
+    if (this.initialFileRetryAttempted || this.isDisconnected || !this.pond) return
+
+    this.initialFileRetryAttempted = true
+    const retryUrl = this.cacheBustedInitialUrl(this.initialUrlValue)
+
+    console.log("[image-upload] retry initial file load with cache bust", retryUrl)
+
+    await this.removeInitialFileLoadItems(this.initialUrlValue)
+    if (this.isDisconnected || !this.pond) return
+
+    this.pond
+      .addFile(retryUrl)
+      .then(() => {
+        if (this.isDisconnected) return
+
+        console.log("[image-upload] retry initial file load succeeded")
+      })
+      .catch((error) => {
+        if (this.isDisconnected) return
+
+        console.log("[image-upload] retry initial file load failed", error)
+        this.resetRemoveFlag()
+      })
+  }
+
+  cacheBustedInitialUrl(url) {
+    const cacheBustValue = `${Date.now()}-${Math.random().toString(36).slice(2)}`
+
+    try {
+      const parsedUrl = new URL(url, window.location.href)
+      parsedUrl.searchParams.set("image_upload_cache_bust", cacheBustValue)
+
+      if (url.startsWith("/") && !url.startsWith("//")) {
+        return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`
+      }
+
+      return parsedUrl.toString()
+    } catch (_) {
+      const separator = url.includes("?") ? "&" : "?"
+      return `${url}${separator}image_upload_cache_bust=${encodeURIComponent(cacheBustValue)}`
+    }
+  }
+
+  async removeInitialFileLoadItems(source) {
+    if (!this.pond) return
+
+    const initialFiles = this.pond.getFiles().filter((file) => file.source === source)
+    if (initialFiles.length === 0) return
+
+    this.suppressRemoveFlagUpdate = true
+
+    try {
+      await Promise.allSettled(
+        initialFiles.map((file) => {
+          try {
+            return Promise.resolve(this.pond.removeFile(file.id ?? file, { revert: false }))
+          } catch (error) {
+            return Promise.reject(error)
+          }
+        })
+      )
+    } finally {
+      this.suppressRemoveFlagUpdate = false
+      this.resetRemoveFlag()
+    }
+  }
+
+  resetRemoveFlag() {
+    if (!this.hasRemoveFlagTarget) return
+
+    this.removeFlagTarget.value = "0"
   }
 
   registerPlugins() {
