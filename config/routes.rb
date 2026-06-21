@@ -27,6 +27,9 @@ Rails.application.routes.draw do
   # --- Common dashboard (login required) ---
   get "/dashboard", to: "dashboard#show", as: :dashboard
 
+  # --- Common notifications (login required) ---
+  resources :notifications, only: %i[index show]
+
   # --- Common profile (login required) ---
   resource :profile, only: %i[edit update]
   resource :email_change, only: %i[edit update]

@@ -59,18 +59,30 @@ module SystemAdmin
     end
 
     def notification_params
-      params.require(:notification).permit(:title, :body, :enabled, :published_at)
+      notification_form_params.slice(:title, :body, :enabled, :published_at)
     end
 
     def selected_tag_ids(notification)
-      raw_ids = params.dig(:notification, :notification_tag_ids)
+      raw_ids = notification_form_params[:notification_tag_ids]
       return notification.notification_tag_ids if raw_ids.nil?
 
       raw_ids.reject(&:blank?).map(&:to_i)
     end
 
     def new_tag_names_param
-      params.dig(:notification, :new_tag_names).to_s
+      notification_form_params[:new_tag_names].to_s
+    end
+
+    def notification_form_params
+      @notification_form_params ||=
+        params.require(:notification).permit(
+          :title,
+          :body,
+          :enabled,
+          :published_at,
+          :new_tag_names,
+          notification_tag_ids: []
+        )
     end
 
     def new_tag_names

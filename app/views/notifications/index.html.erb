@@ -1,0 +1,70 @@
+<h1>お知らせ</h1>
+
+<% if @tags.any? %>
+  <div class="mb-3 d-flex flex-wrap gap-2">
+    <%= link_to "All",
+          notifications_path,
+          class: "btn btn-sm #{@selected_tag_ids.empty? ? "btn-primary" : "btn-outline-secondary"}" %>
+
+    <% @tags.each do |tag| %>
+      <% selected = @selected_tag_ids.include?(tag.id) %>
+      <% next_tag_ids = selected ? @selected_tag_ids - [ tag.id ] : @selected_tag_ids + [ tag.id ] %>
+
+      <%= link_to tag.name,
+            notifications_path(tag_ids: next_tag_ids),
+            class: "btn btn-sm #{selected ? "btn-primary" : "btn-outline-secondary"}",
+            aria: { pressed: selected } %>
+    <% end %>
+  </div>
+<% end %>
+
+<% if @notifications.blank? %>
+  <div class="alert alert-secondary">
+    表示できるお知らせはありません。
+  </div>
+<% else %>
+  <div class="referral-codes-list">
+    <% @notifications.each do |notification| %>
+      <% unread = !@read_notification_ids.include?(notification.id) %>
+
+      <%= link_to notification_path(notification), class: "card referral-code-card text-decoration-none" do %>
+        <div class="card-body">
+          <div class="referral-code-row">
+            <div class="referral-code-label">タイトル</div>
+            <div class="referral-code-value d-flex align-items-center gap-2 fw-semibold text-break">
+              <% if unread %>
+                <span class="notification-unread-dot" aria-label="未読"></span>
+              <% end %>
+              <span><%= notification.title %></span>
+            </div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">本文</div>
+            <div class="referral-code-value text-break"><%= truncate(notification.body, length: 120) %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">タグ</div>
+            <div class="referral-code-value">
+              <% if notification.notification_tags.any? %>
+                <div class="d-flex flex-wrap gap-2">
+                  <% notification.notification_tags.each do |tag| %>
+                    <span class="badge text-bg-secondary"><%= tag.name %></span>
+                  <% end %>
+                </div>
+              <% else %>
+                -
+              <% end %>
+            </div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">公開日時</div>
+            <div class="referral-code-value text-muted small"><%= l(notification.published_at) %></div>
+          </div>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>

@@ -20,57 +20,69 @@ class SystemAdminNotificationsTest < ActionDispatch::IntegrationTest
   end
 
   test "system_admin can list create update toggle and assign tags" do
-    tag = NotificationTag.create!(name: "maintenance")
+    with_unpermitted_parameters_raising do
+      tag = NotificationTag.create!(name: "maintenance")
 
-    sign_in @system_admin, scope: :user
+      sign_in @system_admin, scope: :user
 
-    get system_admin_notifications_path
-    assert_response :success
+      get system_admin_notifications_path
+      assert_response :success
 
-    assert_difference [ "Notification.count", "NotificationTag.count" ], +1 do
-      post system_admin_notifications_path, params: {
+      assert_difference [ "Notification.count", "NotificationTag.count" ], +1 do
+        post system_admin_notifications_path, params: {
+          notification: {
+            title: "Scheduled maintenance",
+            body: "We will perform maintenance tonight.",
+            published_at: Time.current,
+            enabled: true,
+            notification_tag_ids: [ tag.id ],
+            new_tag_names: "important"
+          }
+        }
+      end
+
+      assert_response :redirect
+      assert_redirected_to system_admin_notifications_path
+
+      notification = Notification.find_by!(title: "Scheduled maintenance")
+      assert_equal @system_admin, notification.created_by_user
+      assert_equal [ "important", "maintenance" ], notification.notification_tags.order(:name).pluck(:name)
+
+      important = NotificationTag.find_by!(name: "important")
+      patch system_admin_notification_path(notification), params: {
         notification: {
-          title: "Scheduled maintenance",
-          body: "We will perform maintenance tonight.",
-          published_at: Time.current,
+          title: "Updated maintenance",
+          body: "Maintenance window changed.",
+          published_at: 1.hour.ago,
           enabled: true,
-          notification_tag_ids: [ tag.id ],
-          new_tag_names: "important"
+          notification_tag_ids: [ important.id ]
         }
       }
-    end
 
-    assert_response :redirect
-    assert_redirected_to system_admin_notifications_path
+      assert_response :redirect
+      assert_redirected_to system_admin_notifications_path
+      assert_equal "Updated maintenance", notification.reload.title
+      assert_equal [ "important" ], notification.notification_tags.pluck(:name)
 
-    notification = Notification.find_by!(title: "Scheduled maintenance")
-    assert_equal @system_admin, notification.created_by_user
-    assert_equal [ "important", "maintenance" ], notification.notification_tags.order(:name).pluck(:name)
-
-    important = NotificationTag.find_by!(name: "important")
-    patch system_admin_notification_path(notification), params: {
-      notification: {
-        title: "Updated maintenance",
-        body: "Maintenance window changed.",
-        published_at: 1.hour.ago,
-        enabled: true,
-        notification_tag_ids: [ important.id ]
+      patch system_admin_notification_path(notification), params: {
+        notification: { enabled: false }
       }
-    }
 
-    assert_response :redirect
-    assert_redirected_to system_admin_notifications_path
-    assert_equal "Updated maintenance", notification.reload.title
-    assert_equal [ "important" ], notification.notification_tags.pluck(:name)
+      assert_response :redirect
+      assert_redirected_to system_admin_notifications_path
+      assert_not notification.reload.enabled?
+      assert_empty Notification.published.where(id: notification.id)
+      assert_equal [ "important" ], notification.notification_tags.pluck(:name)
+    end
+  end
 
-    patch system_admin_notification_path(notification), params: {
-      notification: { enabled: false }
-    }
+  private
 
-    assert_response :redirect
-    assert_redirected_to system_admin_notifications_path
-    assert_not notification.reload.enabled?
-    assert_empty Notification.published.where(id: notification.id)
-    assert_equal [ "important" ], notification.notification_tags.pluck(:name)
+  def with_unpermitted_parameters_raising
+    previous = ActionController::Parameters.action_on_unpermitted_parameters
+    ActionController::Parameters.action_on_unpermitted_parameters = :raise
+    yield
+  ensure
+    ActionController::Parameters.action_on_unpermitted_parameters = previous
   end
 end

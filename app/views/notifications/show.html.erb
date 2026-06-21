@@ -1,0 +1,23 @@
+<div class="mb-3">
+  <%= link_to "お知らせ一覧へ", notifications_path, class: "btn btn-outline-secondary btn-sm" %>
+</div>
+
+<article class="card referral-code-card">
+  <div class="card-body">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+      <% @notification.notification_tags.each do |tag| %>
+        <span class="badge text-bg-secondary"><%= tag.name %></span>
+      <% end %>
+    </div>
+
+    <h1 class="h3 mb-3"><%= @notification.title %></h1>
+
+    <div class="text-muted small mb-4">
+      <%= l(@notification.published_at) %>
+    </div>
+
+    <div class="text-break">
+      <%= simple_format(@notification.body) %>
+    </div>
+  </div>
+</article>

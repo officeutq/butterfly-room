@@ -61,4 +61,10 @@ class User < ApplicationRecord
   def phone_verified?
     phone_number.present? && phone_verified_at.present?
   end
+
+  def unread_notifications_exists?
+    Notification.published
+                .where.not(id: notification_reads.select(:notification_id))
+                .exists?
+  end
 end

@@ -221,6 +221,10 @@ module ApplicationHelper
     controller_path.start_with?("favorites/")
   end
 
+  def footer_notifications_active?
+    controller_path == "notifications"
+  end
+
   def footer_dashboard_active?
     current_page?(dashboard_path_for(current_user))
   end
