@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_06_023412) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_21_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -193,6 +193,47 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_06_023412) do
     t.datetime "created_at", null: false
     t.string "title"
     t.datetime "updated_at", null: false
+  end
+
+  create_table "notification_reads", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "notification_id", null: false
+    t.datetime "read_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["notification_id", "user_id"], name: "index_notification_reads_uniqueness", unique: true
+    t.index ["notification_id"], name: "index_notification_reads_on_notification_id"
+    t.index ["user_id"], name: "index_notification_reads_on_user_id"
+  end
+
+  create_table "notification_taggings", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "notification_id", null: false
+    t.bigint "notification_tag_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["notification_id", "notification_tag_id"], name: "index_notification_taggings_uniqueness", unique: true
+    t.index ["notification_id"], name: "index_notification_taggings_on_notification_id"
+    t.index ["notification_tag_id"], name: "index_notification_taggings_on_notification_tag_id"
+  end
+
+  create_table "notification_tags", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_notification_tags_on_name", unique: true
+  end
+
+  create_table "notifications", force: :cascade do |t|
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.bigint "created_by_user_id", null: false
+    t.boolean "enabled", default: true, null: false
+    t.datetime "published_at", null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_by_user_id"], name: "index_notifications_on_created_by_user_id"
+    t.index ["enabled"], name: "index_notifications_on_enabled"
+    t.index ["published_at"], name: "index_notifications_on_published_at"
   end
 
   create_table "phone_verifications", force: :cascade do |t|
@@ -566,6 +607,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_06_023412) do
   add_foreign_key "favorite_stores", "users"
   add_foreign_key "favorite_users", "users"
   add_foreign_key "favorite_users", "users", column: "target_user_id"
+  add_foreign_key "notification_reads", "notifications"
+  add_foreign_key "notification_reads", "users"
+  add_foreign_key "notification_taggings", "notification_tags"
+  add_foreign_key "notification_taggings", "notifications"
+  add_foreign_key "notifications", "users", column: "created_by_user_id"
   add_foreign_key "phone_verifications", "users"
   add_foreign_key "presences", "stream_sessions"
   add_foreign_key "presences", "users", column: "customer_user_id"
