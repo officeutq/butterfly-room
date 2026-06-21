@@ -39,10 +39,15 @@
           <% end %>
         </div>
 
-        <div class="<%= footer_nav_item_classes(extra: 'app-footer-nav-item--placeholder') %>" aria-disabled="true">
-          <i class="bi bi-bell-fill app-footer-nav-icon" aria-hidden="true"></i>
+        <%= link_to notifications_path, class: footer_nav_item_classes(active: footer_notifications_active?) do %>
+          <span class="app-footer-nav-icon-wrap">
+            <i class="bi bi-bell app-footer-nav-icon" aria-hidden="true"></i>
+            <% if current_user.unread_notifications_exists? %>
+              <span class="app-footer-nav-badge" aria-label="未読のお知らせあり"></span>
+            <% end %>
+          </span>
           <span class="app-footer-nav-label">お知らせ</span>
-        </div>
+        <% end %>
 
         <%= link_to dashboard_path_for(current_user),
               class: footer_nav_item_classes(active: footer_dashboard_active?),

@@ -17,4 +17,10 @@ class Notification < ApplicationRecord
       .where("published_at <= ?", Time.current)
       .order(published_at: :desc)
   }
+
+  def unread_for?(user)
+    return false if user.blank?
+
+    !notification_reads.exists?(user_id: user.id)
+  end
 end

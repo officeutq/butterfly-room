@@ -56,4 +56,25 @@ class NotificationTest < ActiveSupport::TestCase
     assert_equal [ notification ], tag.notifications.to_a
     assert_equal [ notification ], user.notification_reads.map(&:notification)
   end
+
+  test "unread checks are scoped to the user" do
+    reader = User.create!(email: "notification_unread_reader@example.com", password: "password", role: :customer)
+    other_user = User.create!(email: "notification_unread_other@example.com", password: "password", role: :customer)
+    notification = Notification.create!(
+      title: "notice",
+      body: "body",
+      published_at: Time.current,
+      created_by_user: @system_admin
+    )
+
+    NotificationRead.create!(notification: notification, user: other_user, read_at: Time.current)
+
+    assert notification.unread_for?(reader)
+    assert reader.unread_notifications_exists?
+
+    NotificationRead.create!(notification: notification, user: reader, read_at: Time.current)
+
+    assert_not notification.unread_for?(reader)
+    assert_not reader.unread_notifications_exists?
+  end
 end
