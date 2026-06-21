@@ -60,6 +60,13 @@ async function buildDeepARInputVideo(ctx) {
   return video
 }
 
+function selectedDeepAREffectUrl(ctx) {
+  if (typeof ctx._selectedEffectInput !== "function") return ""
+
+  const input = ctx._selectedEffectInput()
+  return input?.dataset?.effectUrl || ""
+}
+
 export async function waitForDeepARRenderedNode(ctx) {
   const timeoutMs = 5000
   const startAt = Date.now()
@@ -95,7 +102,7 @@ export async function ensureDeepARStarted(ctx) {
   }
 
   const inputVideo = await buildDeepARInputVideo(ctx)
-  const effect = ctx.deeparDefaultEffectUrlValue || ""
+  const effect = selectedDeepAREffectUrl(ctx) || ctx.deeparDefaultEffectUrlValue || ""
 
   const deepAR = await window.deepar.initialize({
     licenseKey: ctx.deeparLicenseKeyValue,
@@ -201,7 +208,7 @@ export async function destroyDeepAR(ctx) {
 export async function applyDeepAREffect(ctx, effect = null) {
   if (!ctx._deepAR) return
 
-  const selectedEffect = ctx._selectedEffect || "deepar_aviators"
+  const selectedEffect = ctx._selectedEffect || ctx.deeparDefaultEffectKeyValue || ""
 
   if (selectedEffect === "none") {
     if (typeof ctx._deepAR.clearEffect === "function") {
@@ -217,18 +224,9 @@ export async function applyDeepAREffect(ctx, effect = null) {
     throw new Error("deepar_clear_effect_not_available")
   }
 
-  const effectUrls = {
-    deepar_aviators: ctx.deeparDefaultEffectUrlValue || "/deepar/effects/aviators",
-    deepar_lion: "/deepar/effects/lion",
-    deepar_koala: "/deepar/effects/koala",
-    deepar_dalmatian: "/deepar/effects/dalmatian",
-    deepar_galaxy_background: "/deepar/effects/galaxy_background",
-    deepar_background_blur: "/deepar/effects/background_blur.deepar",
-    deepar_background_replacement: "/deepar/effects/background_replacement.deepar",
-  }
-
   const effectUrl =
-    effectUrls[selectedEffect] ||
+    selectedDeepAREffectUrl(ctx) ||
+    (selectedEffect === ctx.deeparDefaultEffectKeyValue ? ctx.deeparDefaultEffectUrlValue : "") ||
     effect?.url ||
     effect?.effectUrl ||
     ""

@@ -21,7 +21,8 @@
   data-ivs-publisher-provider-value="<%= @beauty_provider %>"
   data-ivs-publisher-deepar-license-key-value="<%= ENV['DEEPAR_LICENSE_KEY'] %>"
   data-ivs-publisher-deepar-root-path-value="/deepar"
-  data-ivs-publisher-deepar-default-effect-url-value="/deepar/effects/aviators"
+  data-ivs-publisher-deepar-default-effect-key-value="<%= @deepar_default_effect&.key %>"
+  data-ivs-publisher-deepar-default-effect-url-value="<%= @deepar_default_effect&.url %>"
   data-ivs-publisher-banuba-client-token-value="<%= @banuba_client_token %>"
   data-ivs-publisher-banuba-sdk-base-url-value="<%= @banuba_sdk_base_url %>"
   data-ivs-publisher-banuba-face-tracker-url-value="<%= @banuba_face_tracker_url %>"
@@ -204,7 +205,10 @@
       </div>
     </div>
 
-    <%= render "cast/booths/effect_panel", effects: @effects %>
+    <%= render "cast/booths/effect_panel",
+              effects: @effects,
+              deepar_effects: @deepar_effects,
+              deepar_default_effect: @deepar_default_effect %>
     <%= render "cast/booths/beauty_panel" %>
   </div>
 

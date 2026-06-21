@@ -28,7 +28,7 @@
         id="cast_live_effect_mode_none"
         value="none"
         autocomplete="off"
-        <%= "checked" unless @beauty_provider == "deepar" %>
+        <%= "checked" if @beauty_provider != "deepar" || Array(deepar_effects).blank? %>
         data-action="change->ivs-publisher#onEffectSelectionChanged">
 
       <label class="btn btn-outline-light live-effect-toggle-btn" for="cast_live_effect_mode_none">
@@ -77,29 +77,34 @@
       <% end %>
 
       <% if @beauty_provider == "deepar" %>
-        <% [
-          ["deepar_aviators", "サングラス"],
-          ["deepar_lion", "ライオン"],
-          ["deepar_koala", "コアラ"],
-          ["deepar_dalmatian", "ダルメシアン"],
-          ["deepar_galaxy_background", "ギャラクシー"],
-          ["deepar_background_blur", "背景ぼかし"],
-          ["deepar_background_replacement", "背景差し替え"]
-        ].each do |value, label_text| %>
-          <% input_id = "cast_live_effect_mode_#{value}" %>
+        <% Array(deepar_effects).each do |effect| %>
+          <% input_id = "cast_live_effect_mode_#{effect.key.to_s.parameterize(separator: "_")}" %>
 
           <input
             type="radio"
             class="btn-check"
             name="cast_live_effect_mode"
             id="<%= input_id %>"
-            value="<%= value %>"
+            value="<%= effect.key %>"
+            data-effect-url="<%= effect.url %>"
             autocomplete="off"
-            <%= "checked" if value == "deepar_aviators" %>
+            <%= "checked" if deepar_default_effect&.key == effect.key %>
             data-action="change->ivs-publisher#onEffectSelectionChanged">
 
-          <label class="btn btn-outline-light live-effect-toggle-btn" for="<%= input_id %>">
-            <%= label_text %>
+          <label
+            class="btn btn-outline-light live-effect-toggle-btn live-effect-toggle-btn--preview"
+            for="<%= input_id %>"
+            title="<%= effect.name %>">
+            <% if effect.preview_path.present? %>
+              <%= image_tag effect.preview_path,
+                            class: "live-effect-preview-image",
+                            alt: effect.name %>
+            <% else %>
+              <span class="live-effect-preview-placeholder" aria-hidden="true">
+                <i class="bi bi-stars"></i>
+              </span>
+              <span class="visually-hidden"><%= effect.name %></span>
+            <% end %>
           </label>
         <% end %>
       <% end %>

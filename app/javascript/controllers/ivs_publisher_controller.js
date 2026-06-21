@@ -50,6 +50,7 @@ export default class extends Controller {
 
     deeparLicenseKey: String,
     deeparRootPath: String,
+    deeparDefaultEffectKey: String,
     deeparDefaultEffectUrl: String,
     banubaClientToken: String,
     banubaSdkBaseUrl: String,
@@ -126,7 +127,7 @@ export default class extends Controller {
 
     this._effectPanelOpen = false
     this._beautyPanelOpen = false
-    this._selectedEffect = this.providerValue === "deepar" ? "deepar_aviators" : "beauty"
+    this._selectedEffect = this._initialSelectedEffect()
     this._selectedBeautyControl = "softlight"
     this._lastBeautyAdjustBtnVisible = null
 
@@ -623,6 +624,14 @@ export default class extends Controller {
     }
 
     throw new Error(`Unknown beauty provider: ${provider}`)
+  }
+
+  _initialSelectedEffect() {
+    if (this.providerValue !== "deepar") return "beauty"
+
+    return this.deeparDefaultEffectKeyValue ||
+      this._effectOptionValues().find((value) => value !== "none") ||
+      "none"
   }
 
   _buildCameraVideoConstraints() {
