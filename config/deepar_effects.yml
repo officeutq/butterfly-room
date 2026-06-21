@@ -1,49 +1,175 @@
+- key: Burning_Effect
+  name: 燃焼効果
+  url: /deepar/effects/Burning Effect/burning_effect.deepar
+  preview_filename: Burning_Effect_preview.png
+  enabled: false
+  position: 101
+  default: false
+- key: Neon_Devil_Horns
+  name: ネオンデビルホーンズ
+  url: /deepar/effects/Devil Neon Horns/Neon_Devil_Horns.deepar
+  preview_filename: Neon_Devil_Horns_preview.png
+  enabled: true
+  position: 201
+  default: false
+- key: Elephant_Trunk
+  name: 象の鼻
+  url: /deepar/effects/Elephant Trunk/Elephant_Trunk.deepar
+  preview_filename: Elephant_Trunk_preview.png
+  enabled: true
+  position: 202
+  default: false
+- key: Emotion_Meter
+  name: 感情メーター
+  url: /deepar/effects/Emotion Meter/Emotion_Meter.deepar
+  preview_filename: Emotion_Meter_preview.png
+  enabled: true
+  position: 301
+  default: false
+- key: Emotions_Exaggerator
+  name: 感情誇張者
+  url: /deepar/effects/Emotions Exaggerator/Emotions_Exaggerator.deepar
+  preview_filename: Emotions_Exaggerator_preview.png
+  enabled: false
+  position: 401
+  default: false
+- key: Fire_Effect
+  name: 炎の効果
+  url: /deepar/effects/Fire Effect/Fire_Effect.deepar
+  preview_filename: Fire_Effect_preview.png
+  enabled: false
+  position: 402
+  default: false
+- key: flower_face
+  name: 花の顔
+  url: /deepar/effects/Flower Face/flower_face.deepar
+  preview_filename: flower_face_preview.png
+  enabled: true
+  position: 403
+  default: false
+- key: galaxy_background
+  name: 銀河の背景
+  url: /deepar/effects/Galaxy Background/galaxy_background.deepar
+  preview_filename: galaxy_background_preview.svg
+  enabled: true
+  position: 102
+  default: false
+- key: Hope
+  name: 希望
+  url: /deepar/effects/Hope/Hope.deepar
+  preview_filename: Hope_preview.png
+  enabled: false
+  position: 404
+  default: false
+- key: Humanoid
+  name: ヒューマノイド
+  url: /deepar/effects/Humanoid/Humanoid.deepar
+  preview_filename: Humanoid_preview.png
+  enabled: true
+  position: 302
+  default: false
+- key: MakeupLook
+  name: シンプルなメイクルック
+  url: /deepar/effects/Makeup Look Simple/MakeupLook.deepar
+  preview_filename: Split_View_Look_preview.jpg
+  enabled: true
+  position: 405
+  default: false
+- key: Split_View_Look
+  name: 分割ビューを見る
+  url: /deepar/effects/Makeup Look w_ Slipt Screen Effect/Split_View_Look.deepar
+  preview_filename: Split_View_Look_preview.jpg
+  enabled: false
+  position: 999
+  default: false
+- key: Ping_Pong
+  name: ピンポンミニゲーム
+  url: /deepar/effects/Ping Pong Minigame/Ping_Pong.deepar
+  preview_filename: Ping_Pong_preview.png
+  enabled: true
+  position: 303
+  default: false
+- key: Pixel_Heart_Particles
+  name: ピクセルハートパーティクル
+  url: /deepar/effects/Pixel Heart Particles/8bitHearts.deepar
+  preview_filename: Pixel_Heart_Particles_preview.png
+  enabled: false
+  position: 406
+  default: false
+- key: Snail
+  name: カタツムリ
+  url: /deepar/effects/Snail/Snail.deepar
+  preview_filename: Snail_preview.png
+  enabled: true
+  position: 407
+  default: false
+- key: Stallone
+  name: スタローン
+  url: /deepar/effects/Stallone/Stallone.deepar
+  preview_filename: Stallone_preview.png
+  enabled: false
+  position: 304
+  default: false
+- key: Vendetta_Mask
+  name: ヴェンデッタマスク
+  url: /deepar/effects/Vendetta Mask/Vendetta_Mask.deepar
+  preview_filename: Vendetta_Mask_preview.png
+  enabled: true
+  position: 203
+  default: false
+- key: viking_helmet
+  name: バイキングヘルメット
+  url: /deepar/effects/Viking Helmet PBR/viking_helmet.deepar
+  preview_filename: viking_helmet_preview.png
+  enabled: false
+  position: 204
+  default: false
 - key: deepar_aviators
   name: サングラス
   url: /deepar/effects/aviators
   preview_filename: aviators_preview.svg
   enabled: true
-  position: 0
-  default: true
+  position: 205
+  default: false
 - key: deepar_lion
   name: ライオン
   url: /deepar/effects/lion
   preview_filename: lion_preview.svg
-  enabled: true
-  position: 1
+  enabled: false
+  position: 206
   default: false
 - key: deepar_koala
   name: コアラ
   url: /deepar/effects/koala
   preview_filename: koala_preview.svg
-  enabled: true
-  position: 2
+  enabled: false
+  position: 207
   default: false
 - key: deepar_dalmatian
   name: ダルメシアン
   url: /deepar/effects/dalmatian
   preview_filename: dalmatian_preview.svg
   enabled: true
-  position: 3
+  position: 208
   default: false
 - key: deepar_galaxy_background
   name: ギャラクシー
   url: /deepar/effects/galaxy_background
   preview_filename: galaxy_background_preview.svg
   enabled: true
-  position: 4
+  position: 103
   default: false
 - key: deepar_background_blur
   name: 背景ぼかし
   url: /deepar/effects/background_blur.deepar
   preview_filename: background_blur_preview.svg
   enabled: true
-  position: 5
-  default: false
+  position: 100
+  default: true
 - key: deepar_background_replacement
   name: 背景差し替え
   url: /deepar/effects/background_replacement.deepar
   preview_filename: background_replacement_preview.svg
-  enabled: true
-  position: 6
+  enabled: false
+  position: 999
   default: false
