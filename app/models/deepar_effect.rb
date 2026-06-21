@@ -9,7 +9,7 @@ class DeeparEffect
   attr_reader :key, :name, :url, :preview_filename, :position
 
   def self.enabled
-    all.select(&:enabled?).sort_by { |effect| [effect.position, effect.key] }
+    all.select(&:enabled?).sort_by { |effect| [ effect.position, effect.key ] }
   end
 
   def self.default(effects = enabled)
