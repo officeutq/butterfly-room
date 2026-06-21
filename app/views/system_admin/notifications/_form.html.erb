@@ -1,0 +1,73 @@
+<%= form_with model: [:system_admin, notification] do |f| %>
+  <% if notification.errors.any? %>
+    <div class="alert alert-danger">
+      <ul class="mb-0">
+        <% notification.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="mb-3">
+    <%= f.label :title, "タイトル", class: "form-label" %>
+    <%= f.text_field :title, class: "form-control", required: true %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :body, "本文", class: "form-label" %>
+    <%= f.text_area :body, class: "form-control", rows: 8, required: true %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :published_at, "公開日時", class: "form-label" %>
+    <%= f.datetime_field :published_at, class: "form-control", required: true %>
+  </div>
+
+  <div class="form-check mb-3">
+    <%= f.check_box :enabled, class: "form-check-input" %>
+    <%= f.label :enabled, "enabled（有効）", class: "form-check-label" %>
+  </div>
+
+  <div class="mb-3">
+    <div class="form-label">既存タグ</div>
+    <%= hidden_field_tag "notification[notification_tag_ids][]", "" %>
+
+    <% selected_tag_ids = selected_notification_tag_ids.map(&:to_i) %>
+    <% if tags.any? %>
+      <div class="d-flex flex-wrap gap-3">
+        <% tags.each do |tag| %>
+          <div class="form-check">
+            <%= check_box_tag(
+                  "notification[notification_tag_ids][]",
+                  tag.id,
+                  selected_tag_ids.include?(tag.id),
+                  id: "notification_tag_#{tag.id}",
+                  class: "form-check-input"
+                ) %>
+            <%= label_tag "notification_tag_#{tag.id}", tag.name, class: "form-check-label" %>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="form-text">既存タグはありません。下の欄から新規タグを追加できます。</div>
+    <% end %>
+  </div>
+
+  <div class="mb-3">
+    <%= label_tag "notification_new_tag_names", "新規タグ（任意）", class: "form-label" %>
+    <%= text_area_tag(
+          "notification[new_tag_names]",
+          new_tag_names,
+          id: "notification_new_tag_names",
+          class: "form-control",
+          rows: 2
+        ) %>
+    <div class="form-text">カンマまたは改行区切りで複数追加できます。</div>
+  </div>
+
+  <div class="d-flex gap-2">
+    <%= f.submit notification.persisted? ? "更新する" : "作成する", class: "btn btn-primary" %>
+    <%= link_to "キャンセル", system_admin_notifications_path, class: "btn btn-outline-secondary" %>
+  </div>
+<% end %>
