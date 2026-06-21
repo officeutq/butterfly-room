@@ -1,0 +1,11 @@
+<h1>お知らせ編集</h1>
+
+<%= render "form",
+      notification: @notification,
+      tags: @tags,
+      selected_notification_tag_ids: @selected_notification_tag_ids,
+      new_tag_names: @new_tag_names %>
+
+<div class="mt-3">
+  <%= link_to "戻る", system_admin_notifications_path, class: "btn btn-outline-secondary" %>
+</div>

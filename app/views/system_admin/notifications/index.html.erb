@@ -1,0 +1,88 @@
+<h1>お知らせ管理</h1>
+
+<div class="mb-3 d-flex gap-2">
+  <%= link_to "新規作成", new_system_admin_notification_path, class: "btn btn-primary" %>
+</div>
+
+<% if @notifications.blank? %>
+  <div class="alert alert-secondary">
+    お知らせはまだ作成されていません。
+  </div>
+<% else %>
+  <div class="referral-codes-list">
+    <% @notifications.each do |notification| %>
+      <div class="card referral-code-card <%= "text-muted" unless notification.enabled? %>">
+        <div class="card-body">
+          <div class="referral-code-row">
+            <div class="referral-code-label">タイトル</div>
+            <div class="referral-code-value fw-semibold text-break"><%= notification.title %></div>
+
+            <div class="referral-code-inline-actions">
+              <%= link_to "編集",
+                    edit_system_admin_notification_path(notification),
+                    class: "btn btn-outline-secondary btn-sm" %>
+
+              <% if notification.enabled? %>
+                <%= button_to "無効化",
+                      system_admin_notification_path(notification),
+                      method: :patch,
+                      params: { notification: { enabled: false } },
+                      class: "btn btn-outline-danger btn-sm",
+                      data: { turbo_confirm: "このお知らせを無効化します。よろしいですか？" } %>
+              <% else %>
+                <%= button_to "有効化",
+                      system_admin_notification_path(notification),
+                      method: :patch,
+                      params: { notification: { enabled: true } },
+                      class: "btn btn-outline-success btn-sm" %>
+              <% end %>
+            </div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">本文</div>
+            <div class="referral-code-value text-break"><%= truncate(notification.body, length: 120) %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">タグ</div>
+            <div class="referral-code-value">
+              <% if notification.notification_tags.any? %>
+                <div class="d-flex flex-wrap gap-2">
+                  <% notification.notification_tags.each do |tag| %>
+                    <span class="badge text-bg-secondary"><%= tag.name %></span>
+                  <% end %>
+                </div>
+              <% else %>
+                -
+              <% end %>
+            </div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">status</div>
+            <div class="referral-code-value">
+              <% if notification.enabled? %>
+                <span class="badge text-bg-success">enabled</span>
+              <% else %>
+                <span class="badge text-bg-secondary">disabled</span>
+              <% end %>
+            </div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">published</div>
+            <div class="referral-code-value text-muted small"><%= l(notification.published_at) %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">作成者</div>
+            <div class="referral-code-value text-break">
+              <%= display_name_or_email(notification.created_by_user) %>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% end %>
