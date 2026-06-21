@@ -118,6 +118,35 @@
   pointer-events: none;
 }
 
+.live-effect-toggle-btn--preview.btn {
+  width: 68px;
+  min-width: 68px;
+  height: 68px;
+  min-height: 68px;
+  padding: 6px;
+}
+
+.live-effect-preview-image,
+.live-effect-preview-placeholder {
+  display: block;
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.live-effect-preview-image {
+  object-fit: cover;
+}
+
+.live-effect-preview-placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.96);
+}
+
 .live-beauty-slider-row {
   display: flex;
   flex-direction: column;
@@ -233,6 +262,20 @@
   .live-effect-toggle-icon {
     width: 28px;
     height: 28px;
+  }
+
+  .live-effect-toggle-btn--preview.btn {
+    width: 60px;
+    min-width: 60px;
+    height: 60px;
+    min-height: 60px;
+    padding: 5px;
+  }
+
+  .live-effect-preview-image,
+  .live-effect-preview-placeholder {
+    width: 50px;
+    height: 50px;
   }
 
   .live-effect-panel-title,

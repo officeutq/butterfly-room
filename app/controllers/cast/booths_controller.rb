@@ -101,6 +101,13 @@ module Cast
 
       @effects = Effect.enabled_only.ordered
       @beauty_provider = Rails.configuration.x.beauty_provider
+      @deepar_effects = []
+      @deepar_default_effect = nil
+
+      if @beauty_provider == "deepar"
+        @deepar_effects = DeeparEffect.enabled
+        @deepar_default_effect = DeeparEffect.default(@deepar_effects)
+      end
 
       @banuba_client_token = ENV["BANUBA_CLIENT_TOKEN"].to_s
       @banuba_sdk_base_url = "/banuba/sdk"
