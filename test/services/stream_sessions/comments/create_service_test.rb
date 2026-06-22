@@ -99,6 +99,22 @@ class StreamSessions::Comments::CreateServiceTest < ActiveSupport::TestCase
     end
   end
 
+  test "BANされたcustomerはservice層でもコメントを作成できない" do
+    StoreBan.create!(store: @store, customer_user: @customer, created_by_store_admin_user: @cast)
+
+    without_comment_broadcast do
+      assert_no_difference "Comment.count" do
+        assert_raises(StreamSessions::Comments::CreateService::BannedCustomerError) do
+          StreamSessions::Comments::CreateService.new(
+            stream_session: @stream_session,
+            user: @customer,
+            body: "hello"
+          ).call
+        end
+      end
+    end
+  end
+
   test "chat は rate limit 対象" do
     without_comment_broadcast do
       StreamSessions::Comments::CreateService.new(

@@ -18,7 +18,7 @@ module Admin
         validate!
 
         ApplicationRecord.transaction do
-          create_store_ban_if_needed!
+          create_store_ban!
           resolve_pending_reports_for_comment!
         end
       end
@@ -34,18 +34,14 @@ module Admin
         @comment.user
       end
 
-      def create_store_ban_if_needed!
-        store_ban =
-          StoreBan.find_or_initialize_by(
-            store: @current_store,
-            customer_user: reported_user
-          )
-
-        return if store_ban.persisted?
-
-        store_ban.created_by_store_admin_user = @actor
-        store_ban.reason = BAN_REASON
-        store_ban.save!
+      def create_store_ban!
+        Admin::StoreBans::CreateService.new(
+          store: @current_store,
+          customer_user: reported_user,
+          actor: @actor,
+          reason: BAN_REASON,
+          source_comment: @comment
+        ).call
       end
 
       def resolve_pending_reports_for_comment!

@@ -87,6 +87,33 @@ class FavoritesIndexTest < ActionDispatch::IntegrationTest
     assert_not_includes response.body, "store_ng"
   end
 
+  test "customer favorites index does not exclude revoked bans" do
+    store = Store.create!(name: "store_revoked")
+    booth = Booth.create!(store: store, name: "booth_revoked", status: :offline)
+    customer = User.create!(email: "customer_revoked@example.com", password: "password", role: :customer)
+    admin = User.create!(email: "admin_revoked@example.com", password: "password", role: :store_admin)
+
+    FavoriteBooth.create!(user: customer, booth: booth)
+    FavoriteStore.create!(user: customer, store: store)
+    StoreBan.create!(
+      store: store,
+      customer_user: customer,
+      created_by_store_admin_user: admin,
+      revoked_at: Time.current,
+      revoked_by_user: admin
+    )
+
+    sign_in customer, scope: :user
+
+    get favorites_booths_path
+    assert_response :success
+    assert_includes response.body, "booth_revoked"
+
+    get favorites_stores_path
+    assert_response :success
+    assert_includes response.body, "store_revoked"
+  end
+
   test "system_admin favorites index does not exclude banned stores" do
     store_ng = Store.create!(name: "ng")
     booth_ng = Booth.create!(store: store_ng, name: "booth_ng", status: :offline)

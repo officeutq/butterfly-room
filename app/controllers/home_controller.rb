@@ -101,7 +101,7 @@ class HomeController < ApplicationController
           .limit(30)
 
       if user_signed_in? && current_user.customer?
-        banned_store_ids = StoreBan.where(customer_user_id: current_user.id).select(:store_id)
+        banned_store_ids = StoreBan.active.where(customer_user_id: current_user.id).select(:store_id)
         stores = stores.where.not(id: banned_store_ids)
       end
 
@@ -152,7 +152,7 @@ class HomeController < ApplicationController
 
     # customer はBAN店舗を除外（現状踏襲）
     if user_signed_in? && current_user.customer?
-      banned_store_ids = StoreBan.where(customer_user_id: current_user.id).select(:store_id)
+      banned_store_ids = StoreBan.active.where(customer_user_id: current_user.id).select(:store_id)
       booths = booths.where.not(store_id: banned_store_ids)
     end
 

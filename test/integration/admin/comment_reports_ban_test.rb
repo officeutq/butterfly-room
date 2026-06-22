@@ -58,6 +58,7 @@ class AdminCommentReportsBanTest < ActionDispatch::IntegrationTest
     assert ban.present?
     assert_equal @store_admin.id, ban.created_by_store_admin_user_id
     assert_equal "コメント通報による対応", ban.reason
+    assert_equal @comment, ban.source_comment
 
     assert_equal "resolved", @comment.comment_reports.first.reload.status
   end

@@ -2,8 +2,11 @@
 
 <%= form_with model: @store_ban, url: admin_store_bans_path, scope: :store_ban, method: :post do |f| %>
   <div>
-    <%= f.label :customer_user_id, "customer_user_id" %>
-    <%= f.number_field :customer_user_id, required: true %>
+    <%= f.label :customer_user_id, "BAN対象" %>
+    <%= f.select :customer_user_id,
+                 @customer_options,
+                 { prompt: "顧客を選択" },
+                 required: true %>
   </div>
   <div>
     <%= f.label :reason, "理由" %>
@@ -20,7 +23,16 @@
       user_id=<%= ban.customer_user_id %>
       (<%= ban.customer_user&.email %>)
       - <%= ban.reason %>
-      <%= button_to "解除", admin_store_ban_path(ban), method: :delete %>
+      <% if ban.source_comment.present? %>
+        - comment_id=<%= ban.source_comment_id %>
+      <% end %>
+      - 実行者=<%= ban.created_by_store_admin_user&.email %>
+      <% if ban.revoked? %>
+        - 解除済み: <%= l(ban.revoked_at) %>
+        (<%= ban.revoked_by_user&.email %>)
+      <% else %>
+        <%= button_to "解除", admin_store_ban_path(ban), method: :delete %>
+      <% end %>
     </li>
   <% end %>
 </ul>

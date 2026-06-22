@@ -147,7 +147,7 @@ module Admin
       user_ids = comments.filter_map { |comment| comment.user_id }.uniq
       return [] if user_ids.empty?
 
-      current_store.store_bans.where(customer_user_id: user_ids).pluck(:customer_user_id)
+      current_store.store_bans.active.where(customer_user_id: user_ids).pluck(:customer_user_id)
     end
 
     def report_comment_ids_for_reported_user(reported_user_id)

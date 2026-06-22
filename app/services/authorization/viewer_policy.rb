@@ -15,15 +15,15 @@ module Authorization
     end
 
     def ping_presence?
-      viewer?
+      view_token?
     end
 
     def create_comment?
-      viewer?
+      view_token?
     end
 
     def create_drink_order?
-      viewer?
+      view_token?
     end
   end
 end

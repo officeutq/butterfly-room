@@ -26,7 +26,7 @@ module Favorites
 
       # customer のみ BAN store を除外（Home と同じ思想）
       if current_user.customer?
-        banned_store_ids = StoreBan.where(customer_user_id: current_user.id).select(:store_id)
+        banned_store_ids = StoreBan.active.where(customer_user_id: current_user.id).select(:store_id)
         scope = scope.where.not(stores: { id: banned_store_ids })
       end
 

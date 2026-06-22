@@ -17,6 +17,8 @@ class StreamSessions::PresencesController < ApplicationController
     ).call!
 
     head :no_content
+  rescue Presences::PingService::Forbidden
+    head :forbidden
   end
 
   private

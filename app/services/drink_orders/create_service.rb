@@ -17,6 +17,10 @@ module DrinkOrders
     def call!
       booth = @stream_session.booth
 
+      if Authorization::StoreBanChecker.new(store: booth.store, user: @customer_user).banned?
+        raise Forbidden
+      end
+
       unless booth.status.in?(%w[live away])
         raise Conflict
       end
