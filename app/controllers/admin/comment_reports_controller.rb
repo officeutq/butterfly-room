@@ -176,7 +176,7 @@ module Admin
         latest_reported_at: aggregate.latest_reported_at,
         banned: banned,
         active_store_ban: active_store_ban,
-        ban_action: ban_action_for(comment: comment, active_store_ban: active_store_ban),
+        ban_action: ban_action_for(active_store_ban: active_store_ban),
         reportable_to_ops: !reported_user.customer?
       }
     end
@@ -188,15 +188,28 @@ module Admin
       current_store
         .store_bans
         .active
+        .includes(:customer_user, source_comment: :stream_session)
         .where(customer_user_id: user_ids)
         .index_by(&:customer_user_id)
     end
 
-    def ban_action_for(comment:, active_store_ban:)
+    def ban_action_for(active_store_ban:)
       return :ban if active_store_ban.blank?
-      return :revoke if active_store_ban.source_comment_id == comment.id
+      return :revoke if revokable_comment_report_store_ban?(active_store_ban)
 
       :blocked
+    end
+
+    def revokable_comment_report_store_ban?(store_ban)
+      return false unless store_ban.store_id == current_store.id
+      return false unless store_ban.customer_user&.customer?
+      return false if store_ban.source_comment_id.blank?
+
+      source_comment = store_ban.source_comment
+      return false if source_comment.blank?
+      return false unless source_comment.user_id == store_ban.customer_user_id
+
+      source_comment.stream_session&.store_id == current_store.id
     end
 
     def report_comment_ids_for_reported_user(reported_user_id)

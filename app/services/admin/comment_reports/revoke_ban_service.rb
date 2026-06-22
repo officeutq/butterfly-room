@@ -43,7 +43,22 @@ module Admin
         @current_store
           .store_bans
           .active
-          .find_by(customer_user: reported_user, source_comment: @comment)
+          .includes(:customer_user, source_comment: :stream_session)
+          .where(customer_user: reported_user)
+          .find { |store_ban| revokable_store_ban?(store_ban) }
+      end
+
+      def revokable_store_ban?(store_ban)
+        return false unless store_ban.store_id == @current_store.id
+        return false unless store_ban.customer_user_id == reported_user.id
+        return false unless store_ban.customer_user&.customer?
+        return false if store_ban.source_comment_id.blank?
+
+        source_comment = store_ban.source_comment
+        return false if source_comment.blank?
+        return false unless source_comment.user_id == store_ban.customer_user_id
+
+        source_comment.stream_session&.store_id == @current_store.id
       end
     end
   end

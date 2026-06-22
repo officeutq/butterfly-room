@@ -98,6 +98,47 @@ class AdminCommentReportsBanTest < ActionDispatch::IntegrationTest
     assert_select "form[action=?]", revoke_ban_admin_comment_report_path(@comment, with_resolved: 1), count: 0
   end
 
+  test "comment-origin ban can be revoked from another report card for same reported user" do
+    other_comment = Comment.create!(
+      stream_session: @stream_session,
+      booth: @booth,
+      user: @customer,
+      kind: Comment::KIND_CHAT,
+      body: "another reported comment"
+    )
+    other_reporter = User.create!(email: "other_reporter_comment_report_ban@example.com", password: "password", role: :customer)
+    CommentReport.create!(
+      comment: other_comment,
+      reporter_user: other_reporter,
+      reported_user: @customer,
+      store: @store,
+      booth: @booth,
+      stream_session: @stream_session,
+      status: :pending
+    )
+
+    sign_in @store_admin, scope: :user
+    post ban_admin_comment_report_path(@comment)
+
+    ban = StoreBan.active.find_by!(store: @store, customer_user: @customer)
+    assert_equal @comment, ban.source_comment
+
+    get admin_comment_reports_path(with_resolved: 1)
+    assert_response :success
+    assert_select "form[action=?]", revoke_ban_admin_comment_report_path(@comment, with_resolved: 1)
+    assert_select "form[action=?]", revoke_ban_admin_comment_report_path(other_comment, with_resolved: 1)
+
+    assert_no_difference "StoreBan.count" do
+      delete revoke_ban_admin_comment_report_path(other_comment, with_resolved: 1)
+    end
+
+    assert_response :redirect
+    assert ban.reload.revoked?
+    assert_nil StoreBan.active.find_by(id: ban.id)
+    assert_equal @store_admin, ban.revoked_by_user
+    assert_equal "resolved", @comment.comment_reports.first.reload.status
+  end
+
   test "store_admin cannot revoke manual system admin ban from comment report card" do
     @comment.comment_reports.update_all(status: CommentReport.statuses.fetch(:resolved))
     ban = StoreBan.create!(
@@ -121,7 +162,7 @@ class AdminCommentReportsBanTest < ActionDispatch::IntegrationTest
     assert ban.reload.active?
   end
 
-  test "store_admin cannot revoke ban from another source comment by matching customer only" do
+  test "store_admin can revoke comment-origin ban from another source comment for same customer" do
     @comment.comment_reports.update_all(status: CommentReport.statuses.fetch(:resolved))
     other_comment = Comment.create!(
       stream_session: @stream_session,
@@ -141,14 +182,15 @@ class AdminCommentReportsBanTest < ActionDispatch::IntegrationTest
 
     get admin_comment_reports_path(with_resolved: 1)
     assert_response :success
-    assert_includes response.body, "BAN済み"
-    assert_not_includes response.body, "BAN解除"
+    assert_select "form[action=?]", revoke_ban_admin_comment_report_path(@comment, with_resolved: 1)
 
-    delete revoke_ban_admin_comment_report_path(@comment, with_resolved: 1)
+    assert_no_difference "StoreBan.count" do
+      delete revoke_ban_admin_comment_report_path(@comment, with_resolved: 1)
+    end
 
     assert_response :redirect
-    assert_equal "解除できないBANです", flash[:alert]
-    assert ban.reload.active?
+    assert ban.reload.revoked?
+    assert_nil StoreBan.active.find_by(id: ban.id)
   end
 
   test "store_admin cannot revoke other store ban" do

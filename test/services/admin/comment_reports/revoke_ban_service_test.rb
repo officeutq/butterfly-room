@@ -11,6 +11,7 @@ class Admin::CommentReports::RevokeBanServiceTest < ActiveSupport::TestCase
     @system_admin = User.create!(email: "revoke_ban_service_system@example.com", password: "password", role: :system_admin)
     @cast = User.create!(email: "revoke_ban_service_cast@example.com", password: "password", role: :cast)
     @customer = User.create!(email: "revoke_ban_service_customer@example.com", password: "password", role: :customer)
+    @other_customer = User.create!(email: "revoke_ban_service_other_customer@example.com", password: "password", role: :customer)
 
     @booth = Booth.create!(store: @store, name: "Booth", status: :live)
     @stream_session = StreamSession.create!(
@@ -75,7 +76,7 @@ class Admin::CommentReports::RevokeBanServiceTest < ActiveSupport::TestCase
     assert store_ban.reload.active?
   end
 
-  test "does not revoke ban from another source comment by matching customer only" do
+  test "revokes comment-origin ban from another source comment for same customer" do
     other_comment = Comment.create!(
       stream_session: @stream_session,
       booth: @booth,
@@ -88,6 +89,69 @@ class Admin::CommentReports::RevokeBanServiceTest < ActiveSupport::TestCase
       customer_user: @customer,
       created_by_store_admin_user: @admin,
       source_comment: other_comment
+    )
+
+    assert_no_difference "StoreBan.count" do
+      result = Admin::CommentReports::RevokeBanService.new(
+        comment: @comment,
+        actor: @admin,
+        current_store: @store
+      ).call
+
+      assert result.revoked
+    end
+
+    assert store_ban.reload.revoked?
+  end
+
+  test "does not revoke ban when source comment belongs to another customer" do
+    other_source_comment = Comment.create!(
+      stream_session: @stream_session,
+      booth: @booth,
+      user: @other_customer,
+      kind: Comment::KIND_CHAT,
+      body: "other customer source comment"
+    )
+    store_ban = StoreBan.create!(
+      store: @store,
+      customer_user: @customer,
+      created_by_store_admin_user: @admin,
+      source_comment: other_source_comment
+    )
+
+    assert_raises(Admin::CommentReports::RevokeBanService::RevokeTargetNotFoundError) do
+      Admin::CommentReports::RevokeBanService.new(
+        comment: @comment,
+        actor: @admin,
+        current_store: @store
+      ).call
+    end
+
+    assert store_ban.reload.active?
+  end
+
+  test "does not revoke ban when source comment belongs to another store" do
+    other_booth = Booth.create!(store: @other_store, name: "Other Source Booth", status: :live)
+    other_stream_session = StreamSession.create!(
+      store: @other_store,
+      booth: other_booth,
+      status: :live,
+      started_at: Time.current,
+      started_by_cast_user: @cast,
+      ivs_stage_arn: "arn:aws:ivs:ap-northeast-1:123456789012:stage/revoke-ban-other-source"
+    )
+    other_source_comment = Comment.create!(
+      stream_session: other_stream_session,
+      booth: other_booth,
+      user: @customer,
+      kind: Comment::KIND_CHAT,
+      body: "other store source comment"
+    )
+    store_ban = StoreBan.create!(
+      store: @store,
+      customer_user: @customer,
+      created_by_store_admin_user: @admin,
+      source_comment: other_source_comment
     )
 
     assert_raises(Admin::CommentReports::RevokeBanService::RevokeTargetNotFoundError) do
