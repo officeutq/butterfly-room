@@ -6,6 +6,8 @@
 <% title_display = stream_session&.title.presence || booth&.name.presence || "(no name)" %>
 <% status_key = card[:status_key] %>
 <% banned = card[:banned] %>
+<% ban_action = card[:ban_action] %>
+<% active_store_ban = card[:active_store_ban] %>
 <% reportable_to_ops = card[:reportable_to_ops] %>
 
 <div id="<%= dom_id(comment, :report_card) %>" class="card h-100" data-bs-theme="light">
@@ -65,8 +67,14 @@
       <div class="d-flex gap-2 flex-wrap justify-content-end">
         <% if reportable_to_ops %>
           <button type="button" class="btn btn-sm btn-outline-warning" disabled>運営に報告</button>
+        <% elsif ban_action == :revoke %>
+          <%= button_to "BAN解除",
+                        revoke_ban_admin_comment_report_path(comment, with_resolved: params[:with_resolved].presence),
+                        method: :delete,
+                        class: "btn btn-sm btn-outline-danger" %>
         <% elsif banned %>
-          <span class="btn btn-sm btn-outline-danger disabled">BAN済み</span>
+          <% banned_label = active_store_ban&.source_comment_id.present? ? "BAN済み" : "運営BAN中" %>
+          <span class="btn btn-sm btn-outline-danger disabled"><%= banned_label %></span>
         <% else %>
           <%= button_to "BAN",
                         ban_admin_comment_report_path(comment, with_resolved: params[:with_resolved].presence),

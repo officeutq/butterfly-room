@@ -115,6 +115,26 @@ class StreamSessions::Comments::CreateServiceTest < ActiveSupport::TestCase
     end
   end
 
+  test "解除済みBANはservice層のコメント作成を妨げない" do
+    StoreBan.create!(
+      store: @store,
+      customer_user: @customer,
+      created_by_store_admin_user: @cast,
+      revoked_at: Time.current,
+      revoked_by_user: @cast
+    )
+
+    without_comment_broadcast do
+      assert_difference "Comment.count", 1 do
+        StreamSessions::Comments::CreateService.new(
+          stream_session: @stream_session,
+          user: @customer,
+          body: "hello after revoke"
+        ).call
+      end
+    end
+  end
+
   test "chat は rate limit 対象" do
     without_comment_broadcast do
       StreamSessions::Comments::CreateService.new(

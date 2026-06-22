@@ -31,4 +31,21 @@ class Presences::PingServiceTest < ActiveSupport::TestCase
       end
     end
   end
+
+  test "revoked ban does not block presence ping" do
+    StoreBan.create!(
+      store: @store,
+      customer_user: @customer,
+      created_by_store_admin_user: @admin,
+      revoked_at: Time.current,
+      revoked_by_user: @admin
+    )
+
+    assert_difference "Presence.count", 1 do
+      Presences::PingService.new(
+        stream_session: @stream_session,
+        customer_user: @customer
+      ).call!
+    end
+  end
 end
