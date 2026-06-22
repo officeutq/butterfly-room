@@ -185,6 +185,7 @@ Rails.application.routes.draw do
     resources :comment_reports, only: %i[index] do
       post :reject, on: :member
       post :ban, on: :member
+      delete :revoke_ban, on: :member
     end
 
     resources :casts, only: %i[index destroy]

@@ -35,4 +35,22 @@ class DrinkOrders::CreateServiceTest < ActiveSupport::TestCase
       end
     end
   end
+
+  test "revoked ban does not block drink order creation" do
+    StoreBan.create!(
+      store: @store,
+      customer_user: @customer,
+      created_by_store_admin_user: @admin,
+      revoked_at: Time.current,
+      revoked_by_user: @admin
+    )
+
+    assert_difference "DrinkOrder.count", 1 do
+      DrinkOrders::CreateService.new(
+        stream_session: @stream_session,
+        customer_user: @customer,
+        drink_item: @drink_item
+      ).call!
+    end
+  end
 end
