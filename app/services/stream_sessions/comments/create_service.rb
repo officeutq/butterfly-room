@@ -5,6 +5,7 @@ module StreamSessions
     class CreateService
       class RateLimitedError < StandardError; end
       class BoothNotLiveError < StandardError; end
+      class BannedCustomerError < StandardError; end
 
       def initialize(stream_session:, user:, body: nil, kind: Comment::KIND_CHAT, metadata: {}, notify: true)
         @stream_session = stream_session
@@ -16,6 +17,7 @@ module StreamSessions
       end
 
       def call
+        raise BannedCustomerError if banned_customer?
         raise BoothNotLiveError unless booth_allows_comments?
         raise RateLimitedError if chat? && rate_limited?
 
@@ -37,6 +39,10 @@ module StreamSessions
       def booth_allows_comments?
         booth = @stream_session.booth
         booth.live? || booth.away?
+      end
+
+      def banned_customer?
+        Authorization::StoreBanChecker.new(store: @stream_session.store, user: @user).banned?
       end
 
       def rate_limited?

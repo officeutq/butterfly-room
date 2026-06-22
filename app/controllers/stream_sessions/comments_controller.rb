@@ -33,6 +33,8 @@ module StreamSessions
       end
     rescue StreamSessions::Comments::CreateService::BoothNotLiveError
       render_comment_form_error("配信中（live/away）のときのみコメントできます", status: :conflict)
+    rescue StreamSessions::Comments::CreateService::BannedCustomerError
+      render_comment_form_error("この店舗ではコメントできません（BANされています）", status: :forbidden)
     rescue StreamSessions::Comments::CreateService::RateLimitedError
       render_comment_form_error("送信が速すぎます。少し待ってからもう一度送信してください", status: :unprocessable_entity)
     rescue ActiveRecord::RecordInvalid => e

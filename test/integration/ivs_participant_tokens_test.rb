@@ -109,6 +109,29 @@ class IvsParticipantTokensTest < ActionDispatch::IntegrationTest
     assert_equal "forbidden", body["error"]
   end
 
+  test "viewer: revoked ban does not forbid customer" do
+    StoreBan.create!(
+      store: @store,
+      customer_user: @customer,
+      reason: "test",
+      created_by_store_admin_user: @admin,
+      revoked_at: Time.current,
+      revoked_by_user: @admin
+    )
+
+    sign_in @customer, scope: :user
+
+    stub_ivs_token("VIEW_TOKEN_AFTER_REVOKE") do
+      post stream_session_ivs_participant_tokens_path(@session),
+          params: { role: "viewer" }.to_json,
+          headers: json_headers
+    end
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_equal "VIEW_TOKEN_AFTER_REVOKE", body["participant_token"]
+  end
+
   test "invalid role returns 422" do
     sign_in @customer, scope: :user
 

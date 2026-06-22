@@ -6,8 +6,8 @@ module StreamSessions
 
     before_action :authenticate_user!
     before_action :set_stream_session
-    before_action :authorize_create_drink_order!
     before_action :reject_banned_customer_for_stream_session!
+    before_action :authorize_create_drink_order!
 
     def create
       drink_item_id = params[:drink_item_id] || params.dig(:drink_order, :drink_item_id)

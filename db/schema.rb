@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_21_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_22_080000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -383,10 +383,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_21_000000) do
     t.bigint "created_by_store_admin_user_id", null: false
     t.bigint "customer_user_id", null: false
     t.text "reason"
+    t.text "revocation_reason"
+    t.datetime "revoked_at"
+    t.bigint "revoked_by_user_id"
+    t.bigint "source_comment_id"
     t.bigint "store_id", null: false
     t.index ["created_by_store_admin_user_id"], name: "index_store_bans_on_created_by_store_admin_user_id"
     t.index ["customer_user_id"], name: "index_store_bans_on_customer_user_id"
-    t.index ["store_id", "customer_user_id"], name: "index_store_bans_on_store_id_and_customer_user_id", unique: true
+    t.index ["revoked_by_user_id"], name: "index_store_bans_on_revoked_by_user_id"
+    t.index ["source_comment_id"], name: "index_store_bans_on_source_comment_id"
+    t.index ["store_id", "customer_user_id"], name: "index_store_bans_on_active_store_and_customer", unique: true, where: "(revoked_at IS NULL)"
     t.index ["store_id"], name: "index_store_bans_on_store_id"
   end
 
@@ -626,9 +632,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_21_000000) do
   add_foreign_key "store_admin_invitations", "stores"
   add_foreign_key "store_admin_invitations", "users", column: "accepted_by_user_id"
   add_foreign_key "store_admin_invitations", "users", column: "invited_by_user_id"
+  add_foreign_key "store_bans", "comments", column: "source_comment_id"
   add_foreign_key "store_bans", "stores"
   add_foreign_key "store_bans", "users", column: "created_by_store_admin_user_id"
   add_foreign_key "store_bans", "users", column: "customer_user_id"
+  add_foreign_key "store_bans", "users", column: "revoked_by_user_id"
   add_foreign_key "store_cast_invitations", "stores"
   add_foreign_key "store_cast_invitations", "users", column: "accepted_by_user_id"
   add_foreign_key "store_cast_invitations", "users", column: "invited_by_user_id"

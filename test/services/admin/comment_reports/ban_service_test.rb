@@ -70,6 +70,7 @@ class Admin::CommentReports::BanServiceTest < ActiveSupport::TestCase
 
     assert_equal @admin, ban.created_by_store_admin_user
     assert_equal "コメント通報による対応", ban.reason
+    assert_equal @target_comment, ban.source_comment
 
     assert_equal "resolved", @target_pending_report.reload.status
     assert_equal "rejected", @target_rejected_report.reload.status
@@ -94,6 +95,28 @@ class Admin::CommentReports::BanServiceTest < ActiveSupport::TestCase
     end
 
     assert_equal "resolved", @target_pending_report.reload.status
+  end
+
+  test "解除済みBANがある場合は新しい active BAN を作成する" do
+    StoreBan.create!(
+      store: @store,
+      customer_user: @customer,
+      created_by_store_admin_user: @admin,
+      reason: "解除済みBAN",
+      revoked_at: Time.current,
+      revoked_by_user: @admin
+    )
+
+    assert_difference "StoreBan.count", 1 do
+      Admin::CommentReports::BanService.new(
+        comment: @target_comment,
+        actor: @admin,
+        current_store: @store
+      ).call
+    end
+
+    active_ban = StoreBan.active.find_by!(store: @store, customer_user: @customer)
+    assert_equal @target_comment, active_ban.source_comment
   end
 
   test "reported_user が customer 以外だと例外" do

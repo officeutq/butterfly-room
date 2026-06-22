@@ -2,12 +2,16 @@
 
 module Presences
   class PingService
+    class Forbidden < StandardError; end
+
     def initialize(stream_session:, customer_user:)
       @stream_session = stream_session
       @customer_user = customer_user
     end
 
     def call!
+      raise Forbidden if banned_customer?
+
       now = Time.current
 
       ::Presence.transaction do
@@ -29,6 +33,12 @@ module Presences
           )
         end
       end
+    end
+
+    private
+
+    def banned_customer?
+      Authorization::StoreBanChecker.new(store: @stream_session.store, user: @customer_user).banned?
     end
   end
 end
