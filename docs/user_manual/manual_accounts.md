@@ -65,6 +65,15 @@ ManualCapture123!
 - `FavoriteStore`: customer 用 1件
 - `FavoriteUser`: customer 用 1件
 
+`manual:capture:system_admin` を実行した場合は、固定 task（Railsタスク）ではなく UI 操作で次の撮影用データを作成します。`<run_id>` は通常、実行時に自動採番される一意な値です。
+
+- `User`: `manual+system_admin_capture_user_<run_id>@example.test`
+- `ReferralCode`: `MANUAL-SYSTEM-ADMIN-<run_id>`
+- `Notification`: `マニュアル撮影用お知らせ <run_id>`
+- `Effect`: `manual_system_admin_<run_id>`
+
+これらは system_admin（運営）画面の作成・保存後表示を撮るための development / test 専用データです。同じ `MANUAL_CAPTURE_RUN_ID` を同じ database（データベース）で再利用すると、email（メールアドレス）、code（コード）、key（一意キー）の uniqueness（一意制約）で失敗する可能性があります。
+
 ## 注意点
 
 - このアカウント一覧はローカル撮影用の固定値です。実運用ユーザーの手順として記載しないでください。

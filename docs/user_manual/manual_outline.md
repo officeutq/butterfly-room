@@ -227,6 +227,32 @@
 - `/system_admin/settlement_exports` 振込 CSV
 - `/system_admin/settlements/manual/new` マニュアル精算
 
+第7回で撮影済み:
+
+- `/dashboard` system_admin dashboard（運営ダッシュボード）
+- `/system_admin/users` ユーザー管理
+- `/system_admin/users/new` ユーザー作成
+- `/system_admin/referral_codes` 紹介コード管理
+- `/system_admin/referral_codes/new` 紹介コード作成
+- `/system_admin/notifications` お知らせ管理
+- `/system_admin/notifications/new` お知らせ作成
+- `/system_admin/effects` Effect 管理
+- `/system_admin/effects/new` Effect 作成
+- `/admin/stores` 店舗選択
+- `/admin/store_bans` 店舗BAN一覧 / フォーム入力例
+- `/system_admin/settlements` 精算一覧
+- `/system_admin/settlement_exports` 振込 CSV 一覧
+- `/system_admin/settlement_exports/:id` 振込 CSV 詳細
+- `/system_admin/settlements/manual/new` マニュアル精算フォーム
+- `/system_admin/settlements/manual/preview` マニュアル精算 preview（プレビュー）
+
+追加撮影候補:
+
+- `/system_admin/settlements/:id` 精算詳細
+- confirmed（確定済み）精算がある状態の CSV 生成前確認
+- 店舗BANがある状態の一覧
+- ユーザー停止、紹介コード無効化、お知らせ無効化、Effect 無効化の確認画面
+
 ## 第2回以降の Playwright 撮影候補
 
 ### 優先度A: アカウント作成から初回操作
@@ -254,7 +280,7 @@
 - ドリンクメニューとドリンク送信
 - admin ブース作成（第4回で store_admin 向け撮影済み）
 - admin ドリンクメニュー管理（第4回で store_admin 向け撮影済み）
-- system_admin 紹介コード管理
+- system_admin（運営）通常操作（第7回で危険操作以外を撮影済み）
 
 ### 優先度D: エラー・注意点
 
