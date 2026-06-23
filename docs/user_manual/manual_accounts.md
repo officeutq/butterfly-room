@@ -31,7 +31,9 @@ ManualCapture123!
 | Store（店舗） | `マニュアル撮影用店舗` | `store_admin` が admin（管理者）として所属 |
 | Store（店舗） | `マニュアル撮影用サブ店舗` | 店舗選択画面の撮影用。`store_admin` が admin（管理者）として所属 |
 | Booth（ブース） | `マニュアル撮影用ブース` | `cast` が `BoothCast` で紐づく |
+| Booth（ブース） | `マニュアル撮影用サブブース` | cast（配信者）のブース一覧・current booth（現在選択中のブース）撮影用。`cast` が `BoothCast` で紐づく |
 | IVS Stage ARN | `arn:aws:ivsrealtime:ap-northeast-1:000000000000:stage/manual-capture-local` | AWS を呼ばない疑似値 |
+| IVS Stage ARN | `arn:aws:ivsrealtime:ap-northeast-1:000000000000:stage/manual-capture-local-secondary` | サブブース用の疑似値 |
 | Wallet（ポイント残高） | `100000pt` | `customer` に付与 |
 | DrinkItem（ドリンクメニュー） | `config/default_drink_items.yml` の development 設定 | `マニュアル撮影用店舗` に作成 |
 
@@ -41,8 +43,8 @@ ManualCapture123!
 - `ReferralCode`: 1件
 - `Store`: 2件
 - `StoreMembership`: store_admin 用 `admin` 2件、cast 用 `cast` 1件
-- `Booth`: 1件
-- `BoothCast`: 1件
+- `Booth`: 2件
+- `BoothCast`: 2件
 - `DrinkItem`: 6件
 - `Wallet`: customer 用 1件
 - `WalletTransaction`: customer 用 adjustment（調整）1件

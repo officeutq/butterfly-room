@@ -6,7 +6,8 @@
     "manual:capture:install": "playwright install chromium",
     "manual:capture:smoke": "playwright test --config=playwright.config.js --project=chromium tests/manual_capture/smoke.spec.js",
     "manual:capture:accounts": "playwright test --config=playwright.config.js --project=chromium tests/manual_capture/account_creation.spec.js",
-    "manual:capture:store_admin": "playwright test --config=playwright.config.js --project=chromium tests/manual_capture/store_admin.spec.js"
+    "manual:capture:store_admin": "playwright test --config=playwright.config.js --project=chromium tests/manual_capture/store_admin.spec.js",
+    "manual:capture:cast": "playwright test --config=playwright.config.js --project=chromium tests/manual_capture/cast.spec.js"
   },
   "dependencies": {
     "@banuba/webar": "^1.18.0",

@@ -18,6 +18,7 @@ namespace :manual_capture do
     puts "store: #{result.fetch(:store).name}"
     puts "secondary_store: #{result.fetch(:secondary_store).name}"
     puts "booth: #{result.fetch(:booth).name}"
+    puts "secondary_booth: #{result.fetch(:secondary_booth).name}"
   end
 end
 
@@ -28,7 +29,9 @@ module ManualCapture
     STORE_NAME = "マニュアル撮影用店舗"
     SECONDARY_STORE_NAME = "マニュアル撮影用サブ店舗"
     BOOTH_NAME = "マニュアル撮影用ブース"
+    SECONDARY_BOOTH_NAME = "マニュアル撮影用サブブース"
     IVS_STAGE_ARN = "arn:aws:ivsrealtime:ap-northeast-1:000000000000:stage/manual-capture-local"
+    SECONDARY_IVS_STAGE_ARN = "arn:aws:ivsrealtime:ap-northeast-1:000000000000:stage/manual-capture-local-secondary"
     WALLET_POINTS = 100_000
 
     USERS = {
@@ -77,11 +80,17 @@ module ManualCapture
         store = upsert_store!(referral_code)
         secondary_store = upsert_secondary_store!(referral_code)
         booth = upsert_booth!(store)
+        secondary_booth = upsert_secondary_booth!(store)
 
         upsert_store_membership!(store:, user: users.fetch(:store_admin), membership_role: :admin)
         upsert_store_membership!(store: secondary_store, user: users.fetch(:store_admin), membership_role: :admin)
         upsert_store_membership!(store:, user: users.fetch(:cast), membership_role: :cast)
         upsert_booth_cast!(booth:, cast_user: users.fetch(:cast))
+        upsert_booth_cast!(booth: secondary_booth, cast_user: users.fetch(:cast))
+        archive_extra_manual_cast_booths!(
+          cast_user: users.fetch(:cast),
+          keep_booths: [ booth, secondary_booth ]
+        )
         upsert_default_drink_items!(store)
         upsert_wallet!(users.fetch(:customer))
 
@@ -90,7 +99,8 @@ module ManualCapture
           referral_code: referral_code,
           store: store,
           secondary_store: secondary_store,
-          booth: booth
+          booth: booth,
+          secondary_booth: secondary_booth
         }
       end
 
@@ -170,6 +180,20 @@ module ManualCapture
       booth
     end
 
+    def upsert_secondary_booth!(store)
+      booth = Booth.where(store: store, name: SECONDARY_BOOTH_NAME).order(:id).first_or_initialize
+      booth.update!(
+        name: SECONDARY_BOOTH_NAME,
+        description: "マニュアル撮影用のブース一覧・切り替え確認用サブブースです。IVS Stage は疑似 ARN を設定しています。",
+        status: :offline,
+        archived_at: nil,
+        current_stream_session: nil,
+        ivs_stage_arn: SECONDARY_IVS_STAGE_ARN,
+        last_online_at: occurred_at
+      )
+      booth
+    end
+
     def upsert_store_membership!(store:, user:, membership_role:)
       membership = StoreMembership.find_or_initialize_by(store: store, user: user)
       membership.update!(membership_role: membership_role)
@@ -180,6 +204,24 @@ module ManualCapture
       booth_cast = BoothCast.where(booth: booth).order(:id).first_or_initialize
       booth_cast.update!(cast_user: cast_user)
       booth_cast
+    end
+
+    def archive_extra_manual_cast_booths!(cast_user:, keep_booths:)
+      keep_ids = keep_booths.map(&:id)
+
+      Booth
+        .joins(:booth_casts)
+        .where(booth_casts: { cast_user_id: cast_user.id })
+        .where(archived_at: nil)
+        .where.not(id: keep_ids)
+        .where("booths.name LIKE ?", "マニュアル撮影用%")
+        .find_each do |booth|
+          booth.update!(
+            status: :offline,
+            current_stream_session: nil,
+            archived_at: occurred_at
+          )
+        end
     end
 
     def upsert_default_drink_items!(store)
