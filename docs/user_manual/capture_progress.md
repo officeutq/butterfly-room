@@ -190,22 +190,74 @@
 | `docs/user_manual/images/customer/favorites/02_stores_index.png` | `/favorites/stores` お気に入り Store（店舗）一覧 | 取得済み |
 | `docs/user_manual/images/customer/favorites/03_users_index.png` | `/favorites/users` お気に入り user（ユーザー）一覧 | 取得済み |
 
+## 第7回で取得済みの system_admin（運営）通常操作スクリーンショット
+
+### dashboard（ダッシュボード）・店舗選択
+
+| ファイル | 対象 | 状態 |
+| --- | --- | --- |
+| `docs/user_manual/images/system_admin/dashboard/01_dashboard.png` | `/dashboard` system_admin（運営）カード一覧 | 取得済み |
+| `docs/user_manual/images/system_admin/admin_stores/01_store_select.png` | `/admin/stores` 店舗選択画面 | 取得済み |
+| `docs/user_manual/images/system_admin/admin_stores/02_after_store_select_dashboard.png` | `マニュアル撮影用店舗` 選択後 `/dashboard` | 取得済み |
+
+### ユーザー管理・紹介コード管理
+
+| ファイル | 対象 | 状態 |
+| --- | --- | --- |
+| `docs/user_manual/images/system_admin/users/01_index.png` | `/system_admin/users` ユーザー一覧 | 取得済み |
+| `docs/user_manual/images/system_admin/users/02_new_form.png` | `/system_admin/users/new` ユーザー作成フォーム | 取得済み |
+| `docs/user_manual/images/system_admin/users/03_filled.png` | ユーザー作成フォーム入力済み | 取得済み |
+| `docs/user_manual/images/system_admin/users/04_after_save.png` | ユーザー作成後 `/system_admin/users` 一覧反映 | 取得済み |
+| `docs/user_manual/images/system_admin/referral_codes/01_index.png` | `/system_admin/referral_codes` 紹介コード一覧 | 取得済み |
+| `docs/user_manual/images/system_admin/referral_codes/02_new_form.png` | `/system_admin/referral_codes/new` 紹介コード作成フォーム | 取得済み |
+| `docs/user_manual/images/system_admin/referral_codes/03_filled.png` | 紹介コード作成フォーム入力済み | 取得済み |
+| `docs/user_manual/images/system_admin/referral_codes/04_after_save.png` | 紹介コード作成後 `/system_admin/referral_codes` 一覧反映 | 取得済み |
+
+### お知らせ管理・Effect 管理
+
+| ファイル | 対象 | 状態 |
+| --- | --- | --- |
+| `docs/user_manual/images/system_admin/notifications/01_index.png` | `/system_admin/notifications` お知らせ一覧 | 取得済み |
+| `docs/user_manual/images/system_admin/notifications/02_new_form.png` | `/system_admin/notifications/new` お知らせ作成フォーム | 取得済み |
+| `docs/user_manual/images/system_admin/notifications/03_filled.png` | お知らせ作成フォーム入力済み | 取得済み |
+| `docs/user_manual/images/system_admin/notifications/04_after_save.png` | お知らせ作成後 `/system_admin/notifications` 一覧反映 | 取得済み |
+| `docs/user_manual/images/system_admin/effects/01_index.png` | `/system_admin/effects` Effect 一覧 | 取得済み |
+| `docs/user_manual/images/system_admin/effects/02_new_form.png` | `/system_admin/effects/new` Effect 作成フォーム | 取得済み |
+| `docs/user_manual/images/system_admin/effects/03_filled.png` | Effect 作成フォーム入力済み | 取得済み |
+| `docs/user_manual/images/system_admin/effects/04_after_save.png` | Effect 作成後 `/system_admin/effects` 一覧反映 | 取得済み |
+
+### 店舗BAN・精算・振込 CSV・マニュアル精算
+
+| ファイル | 対象 | 状態 |
+| --- | --- | --- |
+| `docs/user_manual/images/system_admin/store_bans/01_index.png` | `/admin/store_bans` 店舗BAN一覧 / フォーム | 取得済み |
+| `docs/user_manual/images/system_admin/store_bans/02_form_filled_not_submitted.png` | 店舗BANフォーム入力例。BAN作成は未実行 | 取得済み |
+| `docs/user_manual/images/system_admin/settlements/01_index.png` | `/system_admin/settlements` 精算一覧 | 取得済み |
+| `docs/user_manual/images/system_admin/settlement_exports/01_index.png` | `/system_admin/settlement_exports` 振込 CSV 一覧 | 取得済み |
+| `docs/user_manual/images/system_admin/settlement_exports/02_show.png` | `/system_admin/settlement_exports/:id` 振込 CSV 詳細 | 取得済み |
+| `docs/user_manual/images/system_admin/manual_settlements/01_manual_form.png` | `/system_admin/settlements/manual/new` マニュアル精算フォーム | 取得済み |
+| `docs/user_manual/images/system_admin/manual_settlements/02_manual_filled.png` | マニュアル精算フォーム入力済み | 取得済み |
+| `docs/user_manual/images/system_admin/manual_settlements/03_manual_preview.png` | マニュアル精算 preview（プレビュー）。確定は未実行 | 取得済み |
+
 ## 次回撮影すべき画面
 
-1. role（権限種別）別の通常操作画面。
-   - system_admin（運営）: ユーザー管理、紹介コード管理、通知管理、Effect 管理、精算管理。
-2. customer（視聴者）の追加撮影。
+1. customer（視聴者）の追加撮影。
    - comment（コメント）送信後の表示更新。
    - drink order（ドリンク注文）送信後の Wallet（ポイント残高）・未消化ドリンク表示。
    - Stripe Checkout（Stripe の決済画面）遷移後の購入完了。
    - SMS OTP（ショートメッセージのワンタイム認証コード）入力。
    - 実 IVS join（Amazon IVS への参加）を伴う映像視聴。
-3. cast（配信者）の追加撮影。
+2. cast（配信者）の追加撮影。
    - 実配信開始から終了までの完全フロー。
    - live（配信中）/ away（席外し）への status（状態）変更。
    - 終了済み stream session（配信セッション）がある状態の配信履歴と配信リザルト。
    - customer（視聴者）からの drink order（ドリンク注文）送信と cast（配信者）による消化。
    - サムネ画像アップロード。
+3. system_admin（運営）の追加撮影。
+   - `/system_admin/settlements/:id` 精算詳細。
+   - confirmed（確定済み）精算がある状態の CSV 生成前確認。
+   - 店舗BANがある状態の一覧。
+   - ユーザー停止、紹介コード無効化、お知らせ無効化、Effect 無効化の確認画面。
 4. エラー・注意点として説明すべき画面。
    - 招待 URL 期限切れ。
    - 招待 URL 使用済み。
@@ -227,3 +279,4 @@
 - store_admin（店舗管理者）の通報対応、精算確定、振込 CSV 出力、ブース閉鎖、配信強制終了などの危険操作は未実行です。
 - cast（配信者）の配信開始、配信終了、席外し、復帰、ドリンク消化は未実行です。
 - customer（視聴者）のコメント送信、ドリンク送信、Stripe Checkout（Stripe の決済画面）での購入完了、SMS OTP 入力、実 IVS join は未実行です。
+- system_admin（運営）のユーザー停止、紹介コード無効化、お知らせ無効化、Effect 無効化、店舗BAN作成 / 解除、精算確定、支払済み更新、振込 CSV 生成 / ダウンロード、マニュアル精算確定は未実行です。

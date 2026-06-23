@@ -12,6 +12,7 @@
 - store_admin（店舗管理者）通常操作のスクリーンショット保存先は `docs/user_manual/images/store_admin/` です。
 - cast（配信者）通常操作のスクリーンショット保存先は `docs/user_manual/images/cast/` です。
 - customer（視聴者）通常操作のスクリーンショット保存先は `docs/user_manual/images/customer/` です。
+- system_admin（運営）通常操作のスクリーンショット保存先は `docs/user_manual/images/system_admin/` です。
 - 撮影用データは `manual+...@example.test`、`マニュアル撮影用...`、`MANUAL-CAPTURE-LOCAL` で識別します。
 
 ## 初回セットアップ
@@ -266,6 +267,71 @@ Remove-Item Env:\MANUAL_CAPTURE_SKIP_CUSTOMER_VIEWER_PREPARE
 
 任意の準備コマンドを使う場合は `MANUAL_CAPTURE_CUSTOMER_PREPARE_COMMAND` を指定できます。
 
+## Playwright system_admin capture（運営通常操作撮影）
+
+```bash
+npm run manual:capture:system_admin
+```
+
+このコマンドは system_admin（運営）でログインし、次の画面を撮影します。
+
+- `/dashboard` dashboard（ダッシュボード）
+- `/system_admin/users` ユーザー管理
+- `/system_admin/users/new` ユーザー作成
+- `/system_admin/referral_codes` 紹介コード管理
+- `/system_admin/referral_codes/new` 紹介コード作成
+- `/system_admin/notifications` お知らせ管理
+- `/system_admin/notifications/new` お知らせ作成
+- `/system_admin/effects` Effect 管理
+- `/system_admin/effects/new` Effect 作成
+- `/admin/stores` 店舗選択
+- `/admin/store_bans` 店舗BAN
+- `/system_admin/settlements` 精算一覧
+- `/system_admin/settlement_exports` 振込 CSV
+- `/system_admin/settlement_exports/:id` 振込 CSV 詳細が安全に開ける場合
+- `/system_admin/settlements/manual/new` マニュアル精算
+- `/system_admin/settlements/manual/preview` マニュアル精算 preview（プレビュー）
+
+保存先:
+
+```text
+docs/user_manual/images/system_admin/dashboard/
+docs/user_manual/images/system_admin/users/
+docs/user_manual/images/system_admin/referral_codes/
+docs/user_manual/images/system_admin/notifications/
+docs/user_manual/images/system_admin/effects/
+docs/user_manual/images/system_admin/admin_stores/
+docs/user_manual/images/system_admin/store_bans/
+docs/user_manual/images/system_admin/settlements/
+docs/user_manual/images/system_admin/settlement_exports/
+docs/user_manual/images/system_admin/manual_settlements/
+```
+
+system_admin capture（運営通常操作撮影）は、既定で fullPage（ページ全体撮影）を使います。表示範囲だけを撮りたい場合は `MANUAL_CAPTURE_FULL_PAGE=0` を指定してください。
+
+PowerShell の例:
+
+```powershell
+$env:MANUAL_CAPTURE_FULL_PAGE = "0"
+npm run manual:capture:system_admin
+Remove-Item Env:\MANUAL_CAPTURE_FULL_PAGE
+```
+
+事前に `docker compose exec -T app bin/rails manual_capture:prepare` を実行してください。`system_admin` は `manual+system_admin@example.test` を使います。
+
+この spec（テスト定義）は、誤ってリモート環境へ撮影用データを作成しないよう、既定では `MANUAL_CAPTURE_BASE_URL` / `PLAYWRIGHT_BASE_URL` の host（接続先）が `127.0.0.1`、`localhost`、`[::1]` の場合だけ実行します。ローカル以外へ向ける必要がある場合のみ `MANUAL_CAPTURE_ALLOW_REMOTE=1` を明示します。
+
+撮影中に UI から次のデータを作成します。いずれも `manual` または `マニュアル撮影用` を含む development / test 専用の識別子です。
+
+- `manual+system_admin_capture_user_<run_id>@example.test` の User（ユーザー）
+- `MANUAL-SYSTEM-ADMIN-<run_id>` の ReferralCode（紹介コード）
+- `マニュアル撮影用お知らせ <run_id>` の Notification（お知らせ）
+- `manual_system_admin_<run_id>` の Effect（配信画面のエフェクト）
+
+通常は毎回一意の `run_id` が自動採番されます。固定 ID で撮り直したい場合は `MANUAL_CAPTURE_RUN_ID` を指定できますが、同じ database（データベース）で同じ ID を再実行すると、email（メールアドレス）、code（コード）、key（一意キー）の uniqueness（一意制約）で失敗する可能性があります。
+
+店舗BAN作成、BAN解除、精算確定、支払済み更新、振込 CSV 生成、CSV ダウンロード、マニュアル精算確定は実行しません。マニュアル精算は preview（プレビュー）までです。
+
 ## オプション
 
 別 URL に向けたい場合は `MANUAL_CAPTURE_BASE_URL` を指定します。
@@ -314,6 +380,8 @@ cast capture（配信者通常操作撮影）では、`/booths/:id/enter` によ
 
 customer capture（視聴者通常操作撮影）では、`manual_capture:prepare_customer_viewer` が DB（データベース）上だけで `マニュアル撮影用サブブース` を live（配信中）にします。Playwright 側では IVS SDK（配信用 JavaScript SDK）の外部 script と participant token（参加トークン）取得 URL を fake（代替応答）し、実 IVS join（Amazon IVS への参加）や AWS 呼び出しに進みません。
 
+system_admin capture（運営通常操作撮影）では、IVS Stage（Amazon IVS の配信ルーム実体）作成、参加、配信開始に関わる操作を行いません。
+
 ### SMS（ショートメッセージ）
 
 `Sms::Sender` は development / test では既定で mock（ログ出力のみ）です。固定撮影用ユーザーには `phone_number` と `phone_verified_at` を設定し、電話番号認証済みの表示確認だけができる状態にしています。customer capture（視聴者通常操作撮影）では電話番号入力例まで撮影し、SMS OTP（ワンタイム認証コード）の送信・入力は実行しません。
@@ -322,9 +390,13 @@ customer capture（視聴者通常操作撮影）では、`manual_capture:prepar
 
 実決済は行いません。購入完了や Stripe Checkout（Stripe の決済画面）への遷移は対象外です。customer（視聴者）用の `Wallet` は撮影用 task（Railsタスク）で固定ポイントを付与します。customer capture（視聴者通常操作撮影）ではポイント購入 modal（モーダル）の表示まで撮影し、「購入する」は押しません。
 
+system_admin capture（運営通常操作撮影）では、振込 CSV 一覧・詳細の表示だけを撮影し、CSV 生成、CSV ダウンロード、支払済み更新は実行しません。
+
 ### Banuba / DeepAR（画面加工）
 
 cast capture（配信者通常操作撮影）では配信画面の standby（配信準備中）表示まで撮影しますが、実配信開始、実カメラ、実マイク、Banuba / DeepAR の本格操作は行いません。token / license が未設定でも撮影基盤全体が失敗しない範囲に留めます。
+
+system_admin capture（運営通常操作撮影）では、Effect 管理で文字列レコードを作成するだけです。Banuba / DeepAR の zip ファイル実体アップロード、license（ライセンス）検証、配信画面での実適用は行いません。
 
 ## 関連ファイル
 
@@ -335,6 +407,7 @@ cast capture（配信者通常操作撮影）では配信画面の standby（配
 - `tests/manual_capture/store_admin.spec.js`
 - `tests/manual_capture/cast.spec.js`
 - `tests/manual_capture/customer.spec.js`
+- `tests/manual_capture/system_admin.spec.js`
 - `docs/user_manual/manual_accounts.md`
 - `docs/user_manual/capture_progress.md`
 - `docs/user_manual/account_creation_capture.md`
@@ -345,3 +418,5 @@ cast capture（配信者通常操作撮影）では配信画面の standby（配
 - `docs/user_manual/cast_manual_draft.md`
 - `docs/user_manual/customer_capture.md`
 - `docs/user_manual/customer_manual_draft.md`
+- `docs/user_manual/system_admin_capture.md`
+- `docs/user_manual/system_admin_manual_draft.md`
