@@ -20,6 +20,22 @@ namespace :manual_capture do
     puts "booth: #{result.fetch(:booth).name}"
     puts "secondary_booth: #{result.fetch(:secondary_booth).name}"
   end
+
+  desc "Prepare development/test-only live customer viewer data for user manual screenshots"
+  task prepare_customer_viewer: :environment do
+    if Rails.env.production?
+      raise "manual_capture:prepare_customer_viewer is disabled in production"
+    end
+
+    result = ManualCapture::CustomerViewerDataBuilder.new.call!
+
+    puts "manual capture customer viewer data prepared"
+    puts "customer: #{result.fetch(:customer).email}"
+    puts "store: #{result.fetch(:store).name}"
+    puts "offline_booth: #{result.fetch(:offline_booth).name}"
+    puts "live_booth: #{result.fetch(:live_booth).name}"
+    puts "stream_session: #{result.fetch(:stream_session).id}"
+  end
 end
 
 module ManualCapture
@@ -264,6 +280,116 @@ module ManualCapture
 
     def occurred_at
       Time.zone.local(2026, 1, 1, 0, 0, 0)
+    end
+  end
+
+  class CustomerViewerDataBuilder
+    STREAM_TITLE = "マニュアル撮影用ライブ配信"
+    COMMENT_BODY = "マニュアル撮影用のコメントです。".freeze
+
+    def initialize(rails_env: Rails.env)
+      @rails_env = rails_env
+    end
+
+    def call!
+      raise "ManualCapture::CustomerViewerDataBuilder is disabled in production" if @rails_env.production?
+
+      base = DataBuilder.new(rails_env: @rails_env).call!
+      users = base.fetch(:users)
+      store = base.fetch(:store)
+      offline_booth = base.fetch(:booth)
+      live_booth = base.fetch(:secondary_booth)
+      cast_user = users.fetch(:cast)
+      customer = users.fetch(:customer)
+
+      stream_session = nil
+
+      ActiveRecord::Base.transaction do
+        stream_session = upsert_live_stream_session!(
+          booth: live_booth,
+          store: store,
+          cast_user: cast_user
+        )
+
+        upsert_manual_comment!(
+          stream_session: stream_session,
+          booth: live_booth,
+          customer: customer
+        )
+
+        upsert_favorites!(
+          customer: customer,
+          booth: live_booth,
+          store: store,
+          cast_user: cast_user
+        )
+      end
+
+      {
+        customer: customer,
+        store: store,
+        offline_booth: offline_booth,
+        live_booth: live_booth.reload,
+        stream_session: stream_session
+      }
+    end
+
+    private
+
+    def upsert_live_stream_session!(booth:, store:, cast_user:)
+      stream_session =
+        StreamSession
+          .where(booth: booth, started_by_cast_user: cast_user, title: STREAM_TITLE)
+          .order(:id)
+          .first_or_initialize
+
+      stream_session.update!(
+        store: store,
+        status: :live,
+        started_at: live_started_at,
+        broadcast_started_at: live_started_at,
+        ended_at: nil,
+        ivs_stage_arn: booth.ivs_stage_arn
+      )
+
+      booth.update!(
+        status: :live,
+        current_stream_session: stream_session,
+        last_online_at: live_started_at
+      )
+
+      stream_session
+    end
+
+    def live_started_at
+      Time.zone.local(2026, 1, 1, 12, 0, 0)
+    end
+
+    def upsert_manual_comment!(stream_session:, booth:, customer:)
+      comment =
+        Comment
+          .where(
+            stream_session: stream_session,
+            booth: booth,
+            user: customer,
+            kind: Comment::KIND_CHAT,
+            body: COMMENT_BODY
+          )
+          .order(:id)
+          .first_or_initialize
+
+      comment.update!(
+        metadata: {},
+        deleted_at: nil
+      )
+
+      comment
+    end
+
+    def upsert_favorites!(customer:, booth:, store:, cast_user:)
+      FavoriteBooth.find_or_create_by!(user: customer, booth: booth)
+      FavoriteStore.find_or_create_by!(user: customer, store: store)
+      FavoriteUser.find_or_create_by!(user: customer, target_user: cast_user)
     end
   end
 end

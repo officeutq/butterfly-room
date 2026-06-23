@@ -11,6 +11,7 @@
 - アカウント作成フローのスクリーンショット保存先は `docs/user_manual/images/account_creation/` です。
 - store_admin（店舗管理者）通常操作のスクリーンショット保存先は `docs/user_manual/images/store_admin/` です。
 - cast（配信者）通常操作のスクリーンショット保存先は `docs/user_manual/images/cast/` です。
+- customer（視聴者）通常操作のスクリーンショット保存先は `docs/user_manual/images/customer/` です。
 - 撮影用データは `manual+...@example.test`、`マニュアル撮影用...`、`MANUAL-CAPTURE-LOCAL` で識別します。
 
 ## 初回セットアップ
@@ -201,6 +202,70 @@ Remove-Item Env:\MANUAL_CAPTURE_FULL_PAGE
 
 配信画面では Playwright（ブラウザ自動操作）の fake media（疑似カメラ・疑似マイク）設定を使えるように、cast spec（テスト定義）内で Chromium に `--use-fake-device-for-media-stream` と `--use-fake-ui-for-media-stream` を指定しています。ただし今回の撮影では「配信開始」ボタンを押さず、実 IVS join（Amazon IVS への参加）や実 publish（配信送信）は行いません。
 
+## Playwright customer capture（視聴者通常操作撮影）
+
+```bash
+npm run manual:capture:customer
+```
+
+このコマンドは customer（視聴者）でログインし、次の画面を撮影します。
+
+- `/dashboard` dashboard（ダッシュボード）
+- `/profile/edit` プロフィール編集
+- `/phone_verification` 電話番号認証
+- `/` ホームの booth / store / user 検索
+- `/stores/:id` 店舗詳細
+- `/users/:id` cast（配信者）プロフィール
+- `/booths/:id` offline（オフライン）ブース詳細
+- `/booths/:id` live（配信中）視聴画面
+- live（配信中）視聴画面のコメント入力欄
+- live（配信中）視聴画面のドリンクメニュー
+- `/wallet/purchases/new` ポイント購入 modal（モーダル）
+- `/favorites/booths`, `/favorites/stores`, `/favorites/users` お気に入り一覧
+
+保存先:
+
+```text
+docs/user_manual/images/customer/dashboard/
+docs/user_manual/images/customer/home/
+docs/user_manual/images/customer/stores/
+docs/user_manual/images/customer/users/
+docs/user_manual/images/customer/booths/
+docs/user_manual/images/customer/live/
+docs/user_manual/images/customer/profile/
+docs/user_manual/images/customer/phone/
+docs/user_manual/images/customer/wallet/
+docs/user_manual/images/customer/favorites/
+```
+
+customer capture（視聴者通常操作撮影）は、読者向けスクリーンショットの見やすさを優先し、既定では viewport（表示範囲）だけを撮影します。ページ全体を撮影したい場合は `MANUAL_CAPTURE_FULL_PAGE=1` を指定してください。
+
+PowerShell の例:
+
+```powershell
+$env:MANUAL_CAPTURE_FULL_PAGE = "1"
+npm run manual:capture:customer
+Remove-Item Env:\MANUAL_CAPTURE_FULL_PAGE
+```
+
+`manual:capture:customer` は既定で次の task（Railsタスク）を Docker Compose 経由で実行します。
+
+```bash
+docker compose exec -T app bin/rails manual_capture:prepare_customer_viewer
+```
+
+この task（Railsタスク）は `manual_capture:prepare` を内部で呼び、固定データを整えたうえで `マニュアル撮影用サブブース` だけを live（配信中）にします。production（本番環境）では実行できません。
+
+Docker Compose 以外で Rails server（Railsアプリの開発サーバー）を起動している場合は、事前に同等の task（Railsタスク）を実行し、Playwright（ブラウザ自動操作）側では自動実行を止めます。
+
+```powershell
+$env:MANUAL_CAPTURE_SKIP_CUSTOMER_VIEWER_PREPARE = "1"
+npm run manual:capture:customer
+Remove-Item Env:\MANUAL_CAPTURE_SKIP_CUSTOMER_VIEWER_PREPARE
+```
+
+任意の準備コマンドを使う場合は `MANUAL_CAPTURE_CUSTOMER_PREPARE_COMMAND` を指定できます。
+
 ## オプション
 
 別 URL に向けたい場合は `MANUAL_CAPTURE_BASE_URL` を指定します。
@@ -247,13 +312,15 @@ store_admin capture（店舗管理者通常操作撮影）のブース作成も�
 
 cast capture（配信者通常操作撮影）では、`/booths/:id/enter` により `StreamSessions::StartService` が stream session（配信セッション）を作成し、Booth（ブース）を standby（配信準備中）にします。この処理は既存 Booth（ブース）の疑似 `ivs_stage_arn` をコピーするだけで、AWS は呼びません。Playwright 側では participant token（参加トークン）取得 URL をブロックし、誤って IVS join / publish に進まないことを確認します。
 
+customer capture（視聴者通常操作撮影）では、`manual_capture:prepare_customer_viewer` が DB（データベース）上だけで `マニュアル撮影用サブブース` を live（配信中）にします。Playwright 側では IVS SDK（配信用 JavaScript SDK）の外部 script と participant token（参加トークン）取得 URL を fake（代替応答）し、実 IVS join（Amazon IVS への参加）や AWS 呼び出しに進みません。
+
 ### SMS（ショートメッセージ）
 
-`Sms::Sender` は development / test では既定で mock（ログ出力のみ）です。今回の撮影では SMS OTP（ワンタイム認証コード）入力フローは扱いません。固定撮影用ユーザーには `phone_number` と `phone_verified_at` を設定し、電話番号認証済みの表示確認だけができる状態にしています。
+`Sms::Sender` は development / test では既定で mock（ログ出力のみ）です。固定撮影用ユーザーには `phone_number` と `phone_verified_at` を設定し、電話番号認証済みの表示確認だけができる状態にしています。customer capture（視聴者通常操作撮影）では電話番号入力例まで撮影し、SMS OTP（ワンタイム認証コード）の送信・入力は実行しません。
 
 ### Stripe（決済）
 
-実決済は行いません。今回の撮影では購入完了や Stripe Checkout（Stripe の決済画面）への遷移は対象外です。customer（視聴者）用の `Wallet` は撮影用 task（Railsタスク）で固定ポイントを付与します。
+実決済は行いません。購入完了や Stripe Checkout（Stripe の決済画面）への遷移は対象外です。customer（視聴者）用の `Wallet` は撮影用 task（Railsタスク）で固定ポイントを付与します。customer capture（視聴者通常操作撮影）ではポイント購入 modal（モーダル）の表示まで撮影し、「購入する」は押しません。
 
 ### Banuba / DeepAR（画面加工）
 
@@ -267,6 +334,7 @@ cast capture（配信者通常操作撮影）では配信画面の standby（配
 - `tests/manual_capture/account_creation.spec.js`
 - `tests/manual_capture/store_admin.spec.js`
 - `tests/manual_capture/cast.spec.js`
+- `tests/manual_capture/customer.spec.js`
 - `docs/user_manual/manual_accounts.md`
 - `docs/user_manual/capture_progress.md`
 - `docs/user_manual/account_creation_capture.md`
@@ -275,3 +343,5 @@ cast capture（配信者通常操作撮影）では配信画面の standby（配
 - `docs/user_manual/store_admin_manual_draft.md`
 - `docs/user_manual/cast_capture.md`
 - `docs/user_manual/cast_manual_draft.md`
+- `docs/user_manual/customer_capture.md`
+- `docs/user_manual/customer_manual_draft.md`

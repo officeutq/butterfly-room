@@ -153,24 +153,66 @@
 | `docs/user_manual/images/cast/stream_sessions/01_index_empty.png` | `/cast/booths/:booth_id/stream_sessions` 配信履歴の空状態 | 取得済み |
 | `docs/user_manual/images/cast/drink_orders/01_pending_empty.png` | `/cast/stream_sessions/:id/pending_drink_orders` pending drink orders（未消化ドリンク）の空状態 | 取得済み |
 
+## 第6回で取得済みの customer（視聴者）通常操作スクリーンショット
+
+### dashboard（ダッシュボード）・プロフィール・電話番号
+
+| ファイル | 対象 | 状態 |
+| --- | --- | --- |
+| `docs/user_manual/images/customer/dashboard/01_dashboard.png` | `/dashboard` customer（視聴者）カード一覧 | 取得済み |
+| `docs/user_manual/images/customer/profile/01_edit_form.png` | `/profile/edit` プロフィール編集フォーム | 取得済み |
+| `docs/user_manual/images/customer/profile/02_edit_filled.png` | プロフィール編集フォーム入力済み | 取得済み |
+| `docs/user_manual/images/customer/profile/03_after_update_home.png` | プロフィール更新後 `/` | 取得済み |
+| `docs/user_manual/images/customer/phone/01_new_form.png` | `/phone_verification` 電話番号認証フォーム | 取得済み |
+| `docs/user_manual/images/customer/phone/02_new_filled.png` | 電話番号認証フォーム入力済み。SMS（ショートメッセージ）送信は未実行 | 取得済み |
+
+### ホーム検索・詳細画面
+
+| ファイル | 対象 | 状態 |
+| --- | --- | --- |
+| `docs/user_manual/images/customer/home/01_booths_index.png` | `/?mode=booths` booth（ブース）一覧 | 取得済み |
+| `docs/user_manual/images/customer/home/02_booth_search.png` | `/?mode=booths&q=サブ` booth（ブース）検索 | 取得済み |
+| `docs/user_manual/images/customer/home/03_stores_index.png` | `/?mode=stores` Store（店舗）一覧 | 取得済み |
+| `docs/user_manual/images/customer/home/04_users_index.png` | `/?mode=users` user（ユーザー）一覧 | 取得済み |
+| `docs/user_manual/images/customer/stores/01_show.png` | `/stores/:id` 店舗詳細 | 取得済み |
+| `docs/user_manual/images/customer/users/01_cast_show.png` | `/users/:id` cast（配信者）プロフィール | 取得済み |
+| `docs/user_manual/images/customer/booths/01_offline_show.png` | `/booths/:id` offline（オフライン）ブース詳細 | 取得済み |
+
+### live（配信中）視聴・ポイント・お気に入り
+
+| ファイル | 対象 | 状態 |
+| --- | --- | --- |
+| `docs/user_manual/images/customer/live/01_live_viewer.png` | `/booths/:id` viewer（視聴者）向け live UI（配信視聴画面） | 取得済み |
+| `docs/user_manual/images/customer/live/02_comment_filled.png` | コメント入力済み。送信は未実行 | 取得済み |
+| `docs/user_manual/images/customer/live/03_drink_menu.png` | ドリンクメニュー表示。ドリンク送信は未実行 | 取得済み |
+| `docs/user_manual/images/customer/wallet/01_purchase_modal.png` | `/wallet/purchases/new` ポイント購入 modal（モーダル）。Stripe（決済）遷移は未実行 | 取得済み |
+| `docs/user_manual/images/customer/favorites/01_booths_index.png` | `/favorites/booths` お気に入り booth（ブース）一覧 | 取得済み |
+| `docs/user_manual/images/customer/favorites/02_stores_index.png` | `/favorites/stores` お気に入り Store（店舗）一覧 | 取得済み |
+| `docs/user_manual/images/customer/favorites/03_users_index.png` | `/favorites/users` お気に入り user（ユーザー）一覧 | 取得済み |
+
 ## 次回撮影すべき画面
 
 1. role（権限種別）別の通常操作画面。
-   - customer（視聴者）: ブース詳細、配信視聴、コメント、ドリンク送信、ポイント購入導線。
    - system_admin（運営）: ユーザー管理、紹介コード管理、通知管理、Effect 管理、精算管理。
-2. cast（配信者）の追加撮影。
+2. customer（視聴者）の追加撮影。
+   - comment（コメント）送信後の表示更新。
+   - drink order（ドリンク注文）送信後の Wallet（ポイント残高）・未消化ドリンク表示。
+   - Stripe Checkout（Stripe の決済画面）遷移後の購入完了。
+   - SMS OTP（ショートメッセージのワンタイム認証コード）入力。
+   - 実 IVS join（Amazon IVS への参加）を伴う映像視聴。
+3. cast（配信者）の追加撮影。
    - 実配信開始から終了までの完全フロー。
    - live（配信中）/ away（席外し）への status（状態）変更。
    - 終了済み stream session（配信セッション）がある状態の配信履歴と配信リザルト。
    - customer（視聴者）からの drink order（ドリンク注文）送信と cast（配信者）による消化。
    - サムネ画像アップロード。
-3. エラー・注意点として説明すべき画面。
+4. エラー・注意点として説明すべき画面。
    - 招待 URL 期限切れ。
    - 招待 URL 使用済み。
    - role（権限種別）違いで招待を承認しようとした場合。
    - 権限不足で管理画面を開こうとした場合。
-4. mobile（スマートフォン幅）撮影。
-5. store_admin（店舗管理者）の追加状態。
+5. mobile（スマートフォン幅）撮影。
+6. store_admin（店舗管理者）の追加状態。
    - 通報がある状態。
    - 精算履歴がある状態。
    - 配信者別数値に売上がある状態。
@@ -184,3 +226,4 @@
 - SMS OTP、Stripe、Banuba / DeepAR、Google Docs 連携は今回の撮影対象外です。
 - store_admin（店舗管理者）の通報対応、精算確定、振込 CSV 出力、ブース閉鎖、配信強制終了などの危険操作は未実行です。
 - cast（配信者）の配信開始、配信終了、席外し、復帰、ドリンク消化は未実行です。
+- customer（視聴者）のコメント送信、ドリンク送信、Stripe Checkout（Stripe の決済画面）での購入完了、SMS OTP 入力、実 IVS join は未実行です。

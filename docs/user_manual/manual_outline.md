@@ -88,11 +88,35 @@
 - guest（未ログイン）のホーム
 - `/sign_up` 顧客登録
 - `/profile/edit` プロフィール編集
-- `/phone_verification/new` 電話番号認証
+- `/phone_verification` 電話番号認証
 - `/` ログイン後ホーム
 - `/dashboard` customer 表示
 - `/booths/:id` ブース詳細
 - `/wallet/purchases/new` ポイント購入
+
+第6回で撮影済み:
+
+- `/dashboard` customer dashboard（視聴者ダッシュボード）
+- `/profile/edit` プロフィール編集
+- `/phone_verification` 電話番号認証
+- `/` ホームの booth / store / user 検索
+- `/stores/:id` 店舗詳細
+- `/users/:id` cast（配信者）プロフィール
+- `/booths/:id` offline（オフライン）ブース詳細
+- `/booths/:id` live（配信中）視聴画面
+- live（配信中）視聴画面のコメント入力欄
+- live（配信中）視聴画面のドリンクメニュー
+- `/wallet/purchases/new` ポイント購入 modal（モーダル）
+- `/favorites/booths`, `/favorites/stores`, `/favorites/users` お気に入り一覧
+
+追加撮影候補:
+
+- comment（コメント）送信後の表示更新
+- drink order（ドリンク注文）送信後の Wallet（ポイント残高）・未消化ドリンク表示
+- Stripe Checkout（Stripe の決済画面）遷移後の購入完了
+- SMS OTP（ショートメッセージのワンタイム認証コード）入力
+- 実 IVS join（Amazon IVS への参加）を伴う映像視聴
+- mobile（スマートフォン幅）での customer（視聴者）操作
 
 ### cast（配信者）
 
@@ -225,6 +249,7 @@
 ### 優先度C: 通常操作
 
 - ブース詳細と視聴 UI
+- customer（視聴者）通常操作（第6回で送信・決済完了以外を撮影済み）
 - cast 配信画面（第5回で standby まで撮影済み）
 - ドリンクメニューとドリンク送信
 - admin ブース作成（第4回で store_admin 向け撮影済み）

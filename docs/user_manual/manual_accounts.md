@@ -8,6 +8,12 @@
 docker compose exec -T app bin/rails manual_capture:prepare
 ```
 
+customer（視聴者）通常操作撮影で live（配信中）視聴画面を撮る場合は、次の development / test 専用 task（Railsタスク）も使います。
+
+```bash
+docker compose exec -T app bin/rails manual_capture:prepare_customer_viewer
+```
+
 ## 共通パスワード
 
 ```text
@@ -36,6 +42,8 @@ ManualCapture123!
 | IVS Stage ARN | `arn:aws:ivsrealtime:ap-northeast-1:000000000000:stage/manual-capture-local-secondary` | サブブース用の疑似値 |
 | Wallet（ポイント残高） | `100000pt` | `customer` に付与 |
 | DrinkItem（ドリンクメニュー） | `config/default_drink_items.yml` の development 設定 | `マニュアル撮影用店舗` に作成 |
+| StreamSession（配信セッション） | `マニュアル撮影用ライブ配信` | `manual_capture:prepare_customer_viewer` で `マニュアル撮影用サブブース` に作成 |
+| FavoriteBooth / FavoriteStore / FavoriteUser（お気に入り） | サブブース / 店舗 / cast | customer（視聴者）通常操作撮影用 |
 
 ## 作成される関連レコード
 
@@ -49,10 +57,19 @@ ManualCapture123!
 - `Wallet`: customer 用 1件
 - `WalletTransaction`: customer 用 adjustment（調整）1件
 
+`manual_capture:prepare_customer_viewer` を実行した場合は、上記に加えて次を作成または更新します。
+
+- `StreamSession`: `マニュアル撮影用サブブース` 用 live（配信中）1件
+- `Comment`: customer（視聴者）撮影用の固定コメント1件
+- `FavoriteBooth`: customer 用 1件
+- `FavoriteStore`: customer 用 1件
+- `FavoriteUser`: customer 用 1件
+
 ## 注意点
 
 - このアカウント一覧はローカル撮影用の固定値です。実運用ユーザーの手順として記載しないでください。
 - `cast` は招待承認フローを通さず、撮影用 task で店舗所属・ブース紐づけを作ります。IVS Stage（Amazon IVS の配信ルーム実体）作成を避けるためです。
 - `store_admin` は店舗登録画面を通さず、撮影用 task で Store（店舗）と StoreMembership（店舗所属）を作ります。
 - `customer` の Wallet（ポイント残高）は Stripe（決済）を通さず、撮影用 task で固定値を設定します。
+- `manual_capture:prepare_customer_viewer` は `manual_capture:prepare` を内部で呼ぶため、既存の固定撮影用データを整えたうえで `マニュアル撮影用サブブース` だけを live（配信中）にします。
 - 既存の production（本番環境）向け seed（初期データ投入処理）とは別物です。
