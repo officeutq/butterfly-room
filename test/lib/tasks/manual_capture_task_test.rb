@@ -19,6 +19,7 @@ class ManualCaptureTaskTest < ActiveSupport::TestCase
     cast = User.find_by!(email: "manual+cast@example.test")
     customer = User.find_by!(email: "manual+customer@example.test")
     store = Store.find_by!(name: "マニュアル撮影用店舗")
+    secondary_store = Store.find_by!(name: "マニュアル撮影用サブ店舗")
     booth = Booth.find_by!(store: store, name: "マニュアル撮影用ブース")
 
     assert system_admin.system_admin?
@@ -29,6 +30,7 @@ class ManualCaptureTaskTest < ActiveSupport::TestCase
     assert_equal "MANUAL-CAPTURE-LOCAL", store.referral_code.code
     assert_equal "arn:aws:ivsrealtime:ap-northeast-1:000000000000:stage/manual-capture-local", booth.ivs_stage_arn
     assert StoreMembership.exists?(store: store, user: store_admin, membership_role: :admin)
+    assert StoreMembership.exists?(store: secondary_store, user: store_admin, membership_role: :admin)
     assert StoreMembership.exists?(store: store, user: cast, membership_role: :cast)
     assert BoothCast.exists?(booth: booth, cast_user: cast)
     assert_equal 6, store.drink_items.count

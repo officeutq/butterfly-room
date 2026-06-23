@@ -139,6 +139,29 @@
 - `/admin/payout_account/edit` 振込先口座設定
 - `/admin/settlements` 精算
 
+第4回で撮影済み:
+
+- `/dashboard` store_admin dashboard（店舗管理者ダッシュボード）
+- `/admin/stores` 店舗選択
+- `/admin/stores/:id/edit` 店舗情報編集
+- `/admin/booths` ブース管理
+- `/admin/booths/new` ブース作成
+- `/admin/casts` キャスト一覧
+- `/admin/cast_invitations` キャスト招待
+- `/admin/store_admin_invitations` 店舗管理者招待
+- `/admin/drink_items` ドリンクメニュー管理
+- `/admin/cast_metrics` 配信者別数値一覧
+- `/admin/comment_reports` 通報一覧
+- `/admin/payout_account/edit` 振込先口座設定
+- `/admin/settlements` 精算（予定・履歴）
+
+追加撮影候補:
+
+- 通報がある状態の `/admin/comment_reports`
+- 精算履歴がある状態の `/admin/settlements`
+- 売上データがある状態の `/admin/cast_metrics`
+- 既存ドリンクの編集フォーム
+
 ### system_admin（運営）
 
 最初に読む章:
@@ -186,8 +209,8 @@
 - ブース詳細と視聴 UI
 - cast 配信画面
 - ドリンクメニューとドリンク送信
-- admin ブース作成
-- admin ドリンクメニュー管理
+- admin ブース作成（第4回で store_admin 向け撮影済み）
+- admin ドリンクメニュー管理（第4回で store_admin 向け撮影済み）
 - system_admin 紹介コード管理
 
 ### 優先度D: エラー・注意点

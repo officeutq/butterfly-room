@@ -9,6 +9,7 @@
 - 対象ブラウザは Chromium のみです。
 - 通常の smoke（最小確認）スクリーンショット保存先は `docs/user_manual/images/smoke/` です。
 - アカウント作成フローのスクリーンショット保存先は `docs/user_manual/images/account_creation/` です。
+- store_admin（店舗管理者）通常操作のスクリーンショット保存先は `docs/user_manual/images/store_admin/` です。
 - 撮影用データは `manual+...@example.test`、`マニュアル撮影用...`、`MANUAL-CAPTURE-LOCAL` で識別します。
 
 ## 初回セットアップ
@@ -109,6 +110,55 @@ Remove-Item Env:\MANUAL_CAPTURE_RUN_ID
 
 同じ `MANUAL_CAPTURE_RUN_ID` を同じ database（データベース）に対して再実行すると、メールアドレス重複で失敗する可能性があります。通常は環境変数を指定せず、毎回一意 ID を自動生成してください。
 
+## Playwright store_admin capture（店舗管理者通常操作撮影）
+
+```bash
+npm run manual:capture:store_admin
+```
+
+このコマンドは store_admin（店舗管理者）でログインし、次の画面を撮影します。
+
+- `/dashboard` dashboard（ダッシュボード）
+- `/admin/stores` 店舗選択
+- `/admin/stores/:id/edit` 店舗情報編集
+- `/admin/booths` ブース管理
+- `/admin/booths/new` ブース作成
+- `/admin/casts` キャスト一覧
+- `/admin/cast_invitations` キャスト招待
+- `/admin/store_admin_invitations` 店舗管理者招待
+- `/admin/drink_items` ドリンクメニュー管理
+- `/admin/cast_metrics` 配信者別数値一覧
+- `/admin/comment_reports` 通報一覧
+- `/admin/payout_account/edit` 振込先口座設定
+- `/admin/settlements` 精算（予定・履歴）
+
+保存先:
+
+```text
+docs/user_manual/images/store_admin/dashboard/
+docs/user_manual/images/store_admin/stores/
+docs/user_manual/images/store_admin/booths/
+docs/user_manual/images/store_admin/casts/
+docs/user_manual/images/store_admin/invitations/
+docs/user_manual/images/store_admin/drink_items/
+docs/user_manual/images/store_admin/metrics/
+docs/user_manual/images/store_admin/comment_reports/
+docs/user_manual/images/store_admin/payout_account/
+docs/user_manual/images/store_admin/settlements/
+```
+
+store_admin capture（店舗管理者通常操作撮影）は、長い管理画面を説明しやすくするため、既定で fullPage（ページ全体撮影）を使います。表示範囲だけを撮りたい場合は `MANUAL_CAPTURE_FULL_PAGE=0` を指定してください。
+
+PowerShell の例:
+
+```powershell
+$env:MANUAL_CAPTURE_FULL_PAGE = "0"
+npm run manual:capture:store_admin
+Remove-Item Env:\MANUAL_CAPTURE_FULL_PAGE
+```
+
+事前に `docker compose exec -T app bin/rails manual_capture:prepare` を実行してください。店舗選択画面を撮るため、この task（Railsタスク）は `マニュアル撮影用店舗` と `マニュアル撮影用サブ店舗` の2店舗を作成します。
+
 ## オプション
 
 別 URL に向けたい場合は `MANUAL_CAPTURE_BASE_URL` を指定します。
@@ -151,6 +201,8 @@ arn:aws:ivsrealtime:ap-northeast-1:000000000000:stage/manual-capture-local-booth
 
 production（本番環境）ではこの疑似化分岐は無効です。通常の店舗名に対しても自動では有効になりません。開発・検証で明示的に疑似化したい場合のみ `MANUAL_CAPTURE_FAKE_IVS=1` を使えますが、本番では無効です。
 
+store_admin capture（店舗管理者通常操作撮影）のブース作成もこの方針に従います。
+
 ### SMS（ショートメッセージ）
 
 `Sms::Sender` は development / test では既定で mock（ログ出力のみ）です。今回の撮影では SMS OTP（ワンタイム認証コード）入力フローは扱いません。固定撮影用ユーザーには `phone_number` と `phone_verified_at` を設定し、電話番号認証済みの表示確認だけができる状態にしています。
@@ -169,7 +221,10 @@ production（本番環境）ではこの疑似化分岐は無効です。通常�
 - `playwright.config.js`
 - `tests/manual_capture/smoke.spec.js`
 - `tests/manual_capture/account_creation.spec.js`
+- `tests/manual_capture/store_admin.spec.js`
 - `docs/user_manual/manual_accounts.md`
 - `docs/user_manual/capture_progress.md`
 - `docs/user_manual/account_creation_capture.md`
 - `docs/user_manual/account_creation_manual_draft.md`
+- `docs/user_manual/store_admin_capture.md`
+- `docs/user_manual/store_admin_manual_draft.md`

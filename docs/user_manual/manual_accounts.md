@@ -29,6 +29,7 @@ ManualCapture123!
 | --- | --- | --- |
 | ReferralCode（紹介コード） | `MANUAL-CAPTURE-LOCAL` | 有効化済み、期限は task 実行時から1年後 |
 | Store（店舗） | `マニュアル撮影用店舗` | `store_admin` が admin（管理者）として所属 |
+| Store（店舗） | `マニュアル撮影用サブ店舗` | 店舗選択画面の撮影用。`store_admin` が admin（管理者）として所属 |
 | Booth（ブース） | `マニュアル撮影用ブース` | `cast` が `BoothCast` で紐づく |
 | IVS Stage ARN | `arn:aws:ivsrealtime:ap-northeast-1:000000000000:stage/manual-capture-local` | AWS を呼ばない疑似値 |
 | Wallet（ポイント残高） | `100000pt` | `customer` に付与 |
@@ -38,8 +39,8 @@ ManualCapture123!
 
 - `User`: 4件
 - `ReferralCode`: 1件
-- `Store`: 1件
-- `StoreMembership`: store_admin 用 `admin` 1件、cast 用 `cast` 1件
+- `Store`: 2件
+- `StoreMembership`: store_admin 用 `admin` 2件、cast 用 `cast` 1件
 - `Booth`: 1件
 - `BoothCast`: 1件
 - `DrinkItem`: 6件

@@ -16,6 +16,7 @@ namespace :manual_capture do
     end
     puts "referral_code: #{result.fetch(:referral_code).code}"
     puts "store: #{result.fetch(:store).name}"
+    puts "secondary_store: #{result.fetch(:secondary_store).name}"
     puts "booth: #{result.fetch(:booth).name}"
   end
 end
@@ -25,6 +26,7 @@ module ManualCapture
     PASSWORD = "ManualCapture123!"
     REFERRAL_CODE = "MANUAL-CAPTURE-LOCAL"
     STORE_NAME = "マニュアル撮影用店舗"
+    SECONDARY_STORE_NAME = "マニュアル撮影用サブ店舗"
     BOOTH_NAME = "マニュアル撮影用ブース"
     IVS_STAGE_ARN = "arn:aws:ivsrealtime:ap-northeast-1:000000000000:stage/manual-capture-local"
     WALLET_POINTS = 100_000
@@ -73,9 +75,11 @@ module ManualCapture
         users = USERS.keys.index_with { |role| upsert_user!(role) }
         referral_code = upsert_referral_code!
         store = upsert_store!(referral_code)
+        secondary_store = upsert_secondary_store!(referral_code)
         booth = upsert_booth!(store)
 
         upsert_store_membership!(store:, user: users.fetch(:store_admin), membership_role: :admin)
+        upsert_store_membership!(store: secondary_store, user: users.fetch(:store_admin), membership_role: :admin)
         upsert_store_membership!(store:, user: users.fetch(:cast), membership_role: :cast)
         upsert_booth_cast!(booth:, cast_user: users.fetch(:cast))
         upsert_default_drink_items!(store)
@@ -85,6 +89,7 @@ module ManualCapture
           users: users,
           referral_code: referral_code,
           store: store,
+          secondary_store: secondary_store,
           booth: booth
         }
       end
@@ -130,6 +135,21 @@ module ManualCapture
         area: "マニュアル撮影用エリア",
         business_type: :girls_bar,
         phone_number: "03-0000-0000",
+        business_hours: "20:00-25:00",
+        onboarding_step: :skipped
+      )
+      store
+    end
+
+    def upsert_secondary_store!(referral_code)
+      store = Store.where(name: SECONDARY_STORE_NAME).order(:id).first_or_initialize
+      store.update!(
+        referral_code: referral_code,
+        name: SECONDARY_STORE_NAME,
+        description: "マニュアル撮影用の店舗選択画面に表示するサブ店舗です。",
+        area: "マニュアル撮影用エリア",
+        business_type: :girls_bar,
+        phone_number: "03-0000-0001",
         business_hours: "20:00-25:00",
         onboarding_step: :skipped
       )

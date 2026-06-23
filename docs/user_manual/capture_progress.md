@@ -60,7 +60,7 @@
 | `docs/user_manual/images/account_creation/store_admin_invitation/06_after_signup_invitation.png` | 登録後の招待確認画面 | 取得済み |
 | `docs/user_manual/images/account_creation/store_admin_invitation/07_after_accept_dashboard.png` | 招待承認後 `/dashboard` | 取得済み |
 
-## 今回取得できなかったもの
+## 第3回時点で取得できなかったもの
 
 - mobile（スマートフォン幅）でのアカウント作成フロー。
 - 招待 URL の期限切れ / 使用済み / role（権限種別）違いのエラー画面。
@@ -68,12 +68,64 @@
 - Stripe（決済）完了フロー。
 - cast（配信者）の配信開始から終了までの完全フロー。
 
+## 第4回で取得済みの store_admin（店舗管理者）通常操作スクリーンショット
+
+### dashboard（ダッシュボード）
+
+| ファイル | 対象 | 状態 |
+| --- | --- | --- |
+| `docs/user_manual/images/store_admin/dashboard/01_dashboard.png` | `/dashboard` store_admin（店舗管理者）カード一覧 | 取得済み |
+
+### 店舗選択・店舗情報編集
+
+| ファイル | 対象 | 状態 |
+| --- | --- | --- |
+| `docs/user_manual/images/store_admin/stores/01_index.png` | `/admin/stores` 店舗選択 | 取得済み |
+| `docs/user_manual/images/store_admin/stores/02_edit_form.png` | `/admin/stores/:id/edit` 店舗設定編集フォーム | 取得済み |
+| `docs/user_manual/images/store_admin/stores/03_edit_filled.png` | 店舗設定編集フォーム入力済み | 取得済み |
+| `docs/user_manual/images/store_admin/stores/04_after_update_dashboard.png` | 店舗情報更新後 `/dashboard` | 取得済み |
+
+### ブース管理・キャスト管理
+
+| ファイル | 対象 | 状態 |
+| --- | --- | --- |
+| `docs/user_manual/images/store_admin/booths/01_index.png` | `/admin/booths` ブース管理一覧 | 取得済み |
+| `docs/user_manual/images/store_admin/booths/02_new_form.png` | `/admin/booths/new` ブース作成フォーム | 取得済み |
+| `docs/user_manual/images/store_admin/booths/03_new_filled.png` | ブース作成フォーム入力済み | 取得済み |
+| `docs/user_manual/images/store_admin/booths/04_after_create_dashboard.png` | ブース作成後 `/dashboard` | 取得済み |
+| `docs/user_manual/images/store_admin/booths/05_index_after_create.png` | 作成後 `/admin/booths` 一覧反映 | 取得済み |
+| `docs/user_manual/images/store_admin/casts/01_index.png` | `/admin/casts` キャスト一覧 | 取得済み |
+
+### 招待管理・ドリンクメニュー
+
+| ファイル | 対象 | 状態 |
+| --- | --- | --- |
+| `docs/user_manual/images/store_admin/invitations/01_cast_invitation_index.png` | `/admin/cast_invitations` キャスト招待一覧 / 発行画面 | 取得済み |
+| `docs/user_manual/images/store_admin/invitations/02_cast_invitation_filled.png` | キャスト招待メモ入力済み | 取得済み |
+| `docs/user_manual/images/store_admin/invitations/03_cast_invitation_issued.png` | キャスト招待 URL 発行後 | 取得済み |
+| `docs/user_manual/images/store_admin/invitations/04_store_admin_invitation_index.png` | `/admin/store_admin_invitations` 店舗管理者招待画面 | 取得済み |
+| `docs/user_manual/images/store_admin/invitations/05_store_admin_invitation_issued.png` | 店舗管理者招待 URL 発行後 | 取得済み |
+| `docs/user_manual/images/store_admin/drink_items/01_index.png` | `/admin/drink_items` ドリンク一覧 / 新規作成フォーム | 取得済み |
+| `docs/user_manual/images/store_admin/drink_items/02_new_filled.png` | ドリンク新規作成フォーム入力済み | 取得済み |
+| `docs/user_manual/images/store_admin/drink_items/03_after_create.png` | ドリンク作成後の一覧反映 | 取得済み |
+
+### 数値・通報・口座・精算
+
+| ファイル | 対象 | 状態 |
+| --- | --- | --- |
+| `docs/user_manual/images/store_admin/metrics/01_index.png` | `/admin/cast_metrics` 配信者別数値一覧 | 取得済み |
+| `docs/user_manual/images/store_admin/metrics/02_all_casts.png` | `/admin/cast_metrics?all_casts=1` 全キャスト表示 | 取得済み |
+| `docs/user_manual/images/store_admin/comment_reports/01_index.png` | `/admin/comment_reports` 通報一覧 | 取得済み |
+| `docs/user_manual/images/store_admin/payout_account/01_edit_form.png` | `/admin/payout_account/edit` 振込先口座設定フォーム | 取得済み |
+| `docs/user_manual/images/store_admin/payout_account/02_edit_filled.png` | 振込先口座設定フォーム入力済み | 取得済み |
+| `docs/user_manual/images/store_admin/payout_account/03_after_update.png` | 振込先口座更新後 | 取得済み |
+| `docs/user_manual/images/store_admin/settlements/01_index.png` | `/admin/settlements` 精算（予定・履歴） | 取得済み |
+
 ## 次回撮影すべき画面
 
 1. role（権限種別）別の通常操作画面。
    - customer（視聴者）: ブース詳細、配信視聴、コメント、ドリンク送信、ポイント購入導線。
    - cast（配信者）: ブース詳細、ブース編集、配信準備、配信開始、配信終了、ドリンク消化。
-   - store_admin（店舗管理者）: ブース管理、cast 管理、ドリンクメニュー管理、招待管理、売上・精算関連。
    - system_admin（運営）: ユーザー管理、紹介コード管理、通知管理、Effect 管理、精算管理。
 2. エラー・注意点として説明すべき画面。
    - 招待 URL 期限切れ。
@@ -81,6 +133,11 @@
    - role（権限種別）違いで招待を承認しようとした場合。
    - 権限不足で管理画面を開こうとした場合。
 3. mobile（スマートフォン幅）撮影。
+4. store_admin（店舗管理者）の追加状態。
+   - 通報がある状態。
+   - 精算履歴がある状態。
+   - 配信者別数値に売上がある状態。
+   - 既存ドリンクの編集フォーム。
 
 ## 未確認点
 
@@ -88,3 +145,4 @@
 - 実運用での紹介コード配布方法、招待 URL 共有方法、期限切れ時の問い合わせ先は未確定です。
 - system_admin（運営）アカウント作成は画面上の自己登録ではなく、管理・運用手順として別途整理が必要です。
 - SMS OTP、Stripe、Banuba / DeepAR、Google Docs 連携は今回の撮影対象外です。
+- store_admin（店舗管理者）の通報対応、精算確定、振込 CSV 出力、ブース閉鎖、配信強制終了などの危険操作は未実行です。
