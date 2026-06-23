@@ -121,19 +121,56 @@
 | `docs/user_manual/images/store_admin/payout_account/03_after_update.png` | 振込先口座更新後 | 取得済み |
 | `docs/user_manual/images/store_admin/settlements/01_index.png` | `/admin/settlements` 精算（予定・履歴） | 取得済み |
 
+## 第5回で取得済みの cast（配信者）通常操作スクリーンショット
+
+### dashboard（ダッシュボード）
+
+| ファイル | 対象 | 状態 |
+| --- | --- | --- |
+| `docs/user_manual/images/cast/dashboard/01_dashboard.png` | `/dashboard` cast（配信者）カード一覧 | 取得済み |
+
+### ブース一覧・ブース情報
+
+| ファイル | 対象 | 状態 |
+| --- | --- | --- |
+| `docs/user_manual/images/cast/booths/01_index.png` | `/cast/booths` ブース一覧 | 取得済み |
+| `docs/user_manual/images/cast/booths/02_show.png` | `/cast/booths/:id` ブース情報 | 取得済み |
+| `docs/user_manual/images/cast/booths/03_index_current_booth.png` | `/cast/booths` current booth（現在選択中のブース）表示 | 取得済み |
+
+### ブース編集
+
+| ファイル | 対象 | 状態 |
+| --- | --- | --- |
+| `docs/user_manual/images/cast/booth_edit/01_edit_form.png` | `/cast/booths/:id/edit` ブース編集フォーム | 取得済み |
+| `docs/user_manual/images/cast/booth_edit/02_edit_filled.png` | ブース編集フォーム入力済み | 取得済み |
+| `docs/user_manual/images/cast/booth_edit/03_after_update_dashboard.png` | ブース更新後 `/dashboard` | 取得済み |
+
+### 配信画面・配信履歴・ドリンク消化関連
+
+| ファイル | 対象 | 状態 |
+| --- | --- | --- |
+| `docs/user_manual/images/cast/live/01_live_standby_initial.png` | `/booths/:id/enter` 後の `/cast/booths/:id/live` standby（配信準備中）画面 | 取得済み |
+| `docs/user_manual/images/cast/stream_sessions/01_index_empty.png` | `/cast/booths/:booth_id/stream_sessions` 配信履歴の空状態 | 取得済み |
+| `docs/user_manual/images/cast/drink_orders/01_pending_empty.png` | `/cast/stream_sessions/:id/pending_drink_orders` pending drink orders（未消化ドリンク）の空状態 | 取得済み |
+
 ## 次回撮影すべき画面
 
 1. role（権限種別）別の通常操作画面。
    - customer（視聴者）: ブース詳細、配信視聴、コメント、ドリンク送信、ポイント購入導線。
-   - cast（配信者）: ブース詳細、ブース編集、配信準備、配信開始、配信終了、ドリンク消化。
    - system_admin（運営）: ユーザー管理、紹介コード管理、通知管理、Effect 管理、精算管理。
-2. エラー・注意点として説明すべき画面。
+2. cast（配信者）の追加撮影。
+   - 実配信開始から終了までの完全フロー。
+   - live（配信中）/ away（席外し）への status（状態）変更。
+   - 終了済み stream session（配信セッション）がある状態の配信履歴と配信リザルト。
+   - customer（視聴者）からの drink order（ドリンク注文）送信と cast（配信者）による消化。
+   - サムネ画像アップロード。
+3. エラー・注意点として説明すべき画面。
    - 招待 URL 期限切れ。
    - 招待 URL 使用済み。
    - role（権限種別）違いで招待を承認しようとした場合。
    - 権限不足で管理画面を開こうとした場合。
-3. mobile（スマートフォン幅）撮影。
-4. store_admin（店舗管理者）の追加状態。
+4. mobile（スマートフォン幅）撮影。
+5. store_admin（店舗管理者）の追加状態。
    - 通報がある状態。
    - 精算履歴がある状態。
    - 配信者別数値に売上がある状態。
@@ -146,3 +183,4 @@
 - system_admin（運営）アカウント作成は画面上の自己登録ではなく、管理・運用手順として別途整理が必要です。
 - SMS OTP、Stripe、Banuba / DeepAR、Google Docs 連携は今回の撮影対象外です。
 - store_admin（店舗管理者）の通報対応、精算確定、振込 CSV 出力、ブース閉鎖、配信強制終了などの危険操作は未実行です。
+- cast（配信者）の配信開始、配信終了、席外し、復帰、ドリンク消化は未実行です。

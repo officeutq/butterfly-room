@@ -114,6 +114,24 @@
 - `/cast/booths/:id/live` 配信画面
 - `/cast/booths/:booth_id/stream_sessions` 配信履歴
 
+第5回で撮影済み:
+
+- `/dashboard` cast dashboard（配信者ダッシュボード）
+- `/cast/booths` ブース一覧
+- `/cast/booths/:id` ブース情報
+- `/cast/booths/:id/edit` ブース編集
+- `/cast/booths/:booth_id/stream_sessions` 配信履歴の空状態
+- `/cast/booths/:id/live` standby（配信準備中）画面
+- `/cast/stream_sessions/:id/pending_drink_orders` pending drink orders（未消化ドリンク）の空状態
+
+追加撮影候補:
+
+- 実配信開始から終了までの完全フロー
+- live（配信中）/ away（席外し）への status（状態）変更
+- 終了済み stream session（配信セッション）がある状態の配信履歴と配信リザルト
+- customer（視聴者）からの drink order（ドリンク注文）送信と cast（配信者）による消化
+- サムネ画像アップロード
+
 ### store_admin（店舗管理者）
 
 最初に読む章:
@@ -207,7 +225,7 @@
 ### 優先度C: 通常操作
 
 - ブース詳細と視聴 UI
-- cast 配信画面
+- cast 配信画面（第5回で standby まで撮影済み）
 - ドリンクメニューとドリンク送信
 - admin ブース作成（第4回で store_admin 向け撮影済み）
 - admin ドリンクメニュー管理（第4回で store_admin 向け撮影済み）

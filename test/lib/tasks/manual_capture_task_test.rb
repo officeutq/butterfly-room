@@ -21,6 +21,7 @@ class ManualCaptureTaskTest < ActiveSupport::TestCase
     store = Store.find_by!(name: "マニュアル撮影用店舗")
     secondary_store = Store.find_by!(name: "マニュアル撮影用サブ店舗")
     booth = Booth.find_by!(store: store, name: "マニュアル撮影用ブース")
+    secondary_booth = Booth.find_by!(store: store, name: "マニュアル撮影用サブブース")
 
     assert system_admin.system_admin?
     assert store_admin.store_admin?
@@ -29,10 +30,12 @@ class ManualCaptureTaskTest < ActiveSupport::TestCase
     assert customer.phone_verified?
     assert_equal "MANUAL-CAPTURE-LOCAL", store.referral_code.code
     assert_equal "arn:aws:ivsrealtime:ap-northeast-1:000000000000:stage/manual-capture-local", booth.ivs_stage_arn
+    assert_equal "arn:aws:ivsrealtime:ap-northeast-1:000000000000:stage/manual-capture-local-secondary", secondary_booth.ivs_stage_arn
     assert StoreMembership.exists?(store: store, user: store_admin, membership_role: :admin)
     assert StoreMembership.exists?(store: secondary_store, user: store_admin, membership_role: :admin)
     assert StoreMembership.exists?(store: store, user: cast, membership_role: :cast)
     assert BoothCast.exists?(booth: booth, cast_user: cast)
+    assert BoothCast.exists?(booth: secondary_booth, cast_user: cast)
     assert_equal 6, store.drink_items.count
     assert_equal 100_000, customer.wallet.available_points
 
@@ -59,5 +62,26 @@ class ManualCaptureTaskTest < ActiveSupport::TestCase
     assert_raises RuntimeError do
       ManualCapture::DataBuilder.new(rails_env: production_env).call!
     end
+  end
+
+  test "prepare archives extra manual cast booths without deleting them" do
+    cast = User.create!(
+      email: "manual+cast@example.test",
+      password: "password",
+      password_confirmation: "password",
+      role: :cast
+    )
+    store = Store.create!(name: "マニュアル撮影用 旧店舗")
+    extra_booth = Booth.create!(
+      store: store,
+      name: "マニュアル撮影用 旧ブース",
+      status: :offline
+    )
+    BoothCast.create!(booth: extra_booth, cast_user: cast)
+
+    Rake::Task[TASK_NAME].invoke
+
+    assert extra_booth.reload.archived?
+    assert Booth.exists?(extra_booth.id)
   end
 end

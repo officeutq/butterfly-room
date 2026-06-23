@@ -10,6 +10,7 @@
 - 通常の smoke（最小確認）スクリーンショット保存先は `docs/user_manual/images/smoke/` です。
 - アカウント作成フローのスクリーンショット保存先は `docs/user_manual/images/account_creation/` です。
 - store_admin（店舗管理者）通常操作のスクリーンショット保存先は `docs/user_manual/images/store_admin/` です。
+- cast（配信者）通常操作のスクリーンショット保存先は `docs/user_manual/images/cast/` です。
 - 撮影用データは `manual+...@example.test`、`マニュアル撮影用...`、`MANUAL-CAPTURE-LOCAL` で識別します。
 
 ## 初回セットアップ
@@ -51,7 +52,7 @@ development（開発環境）で実行します。
 docker compose exec -T app bin/rails manual_capture:prepare
 ```
 
-この task（Railsタスク）は idempotent（再実行可能）です。何度実行しても、固定の撮影用アカウント、店舗、ブース、紹介コード、ドリンク初期データを同じ状態へ戻します。
+この task（Railsタスク）は idempotent（再実行可能）です。何度実行しても、固定の撮影用アカウント、店舗、ブース、紹介コード、ドリンク初期データを同じ状態へ戻します。過去の撮影で作成された余分な `マニュアル撮影用...` booth（ブース）が cast（配信者）に紐づいている場合は、物理削除せず archived（閉鎖済み）にして、固定ブースだけが通常一覧に出る状態へ戻します。
 
 production（本番環境）では次のエラーで停止します。
 
@@ -159,6 +160,47 @@ Remove-Item Env:\MANUAL_CAPTURE_FULL_PAGE
 
 事前に `docker compose exec -T app bin/rails manual_capture:prepare` を実行してください。店舗選択画面を撮るため、この task（Railsタスク）は `マニュアル撮影用店舗` と `マニュアル撮影用サブ店舗` の2店舗を作成します。
 
+## Playwright cast capture（配信者通常操作撮影）
+
+```bash
+npm run manual:capture:cast
+```
+
+このコマンドは cast（配信者）でログインし、次の画面を撮影します。
+
+- `/dashboard` dashboard（ダッシュボード）
+- `/cast/booths` ブース一覧
+- `/cast/booths/:id` ブース情報
+- `/cast/booths/:id/edit` ブース編集
+- `/cast/booths/:booth_id/stream_sessions` 配信履歴
+- `/booths/:id/enter` から進む `/cast/booths/:id/live` の standby（配信準備中）画面
+- `/cast/stream_sessions/:id/pending_drink_orders` pending drink orders（未消化ドリンク）
+
+保存先:
+
+```text
+docs/user_manual/images/cast/dashboard/
+docs/user_manual/images/cast/booths/
+docs/user_manual/images/cast/booth_edit/
+docs/user_manual/images/cast/live/
+docs/user_manual/images/cast/stream_sessions/
+docs/user_manual/images/cast/drink_orders/
+```
+
+cast capture（配信者通常操作撮影）は、既定で fullPage（ページ全体撮影）を使います。表示範囲だけを撮りたい場合は `MANUAL_CAPTURE_FULL_PAGE=0` を指定してください。
+
+PowerShell の例:
+
+```powershell
+$env:MANUAL_CAPTURE_FULL_PAGE = "0"
+npm run manual:capture:cast
+Remove-Item Env:\MANUAL_CAPTURE_FULL_PAGE
+```
+
+事前に `docker compose exec -T app bin/rails manual_capture:prepare` を実行してください。ブース一覧と current booth（現在選択中のブース）の説明用に、この task（Railsタスク）は `マニュアル撮影用ブース` と `マニュアル撮影用サブブース` の2ブースを `manual+cast@example.test` に紐づけます。
+
+配信画面では Playwright（ブラウザ自動操作）の fake media（疑似カメラ・疑似マイク）設定を使えるように、cast spec（テスト定義）内で Chromium に `--use-fake-device-for-media-stream` と `--use-fake-ui-for-media-stream` を指定しています。ただし今回の撮影では「配信開始」ボタンを押さず、実 IVS join（Amazon IVS への参加）や実 publish（配信送信）は行いません。
+
 ## オプション
 
 別 URL に向けたい場合は `MANUAL_CAPTURE_BASE_URL` を指定します。
@@ -203,6 +245,8 @@ production（本番環境）ではこの疑似化分岐は無効です。通常�
 
 store_admin capture（店舗管理者通常操作撮影）のブース作成もこの方針に従います。
 
+cast capture（配信者通常操作撮影）では、`/booths/:id/enter` により `StreamSessions::StartService` が stream session（配信セッション）を作成し、Booth（ブース）を standby（配信準備中）にします。この処理は既存 Booth（ブース）の疑似 `ivs_stage_arn` をコピーするだけで、AWS は呼びません。Playwright 側では participant token（参加トークン）取得 URL をブロックし、誤って IVS join / publish に進まないことを確認します。
+
 ### SMS（ショートメッセージ）
 
 `Sms::Sender` は development / test では既定で mock（ログ出力のみ）です。今回の撮影では SMS OTP（ワンタイム認証コード）入力フローは扱いません。固定撮影用ユーザーには `phone_number` と `phone_verified_at` を設定し、電話番号認証済みの表示確認だけができる状態にしています。
@@ -213,7 +257,7 @@ store_admin capture（店舗管理者通常操作撮影）のブース作成も�
 
 ### Banuba / DeepAR（画面加工）
 
-今回の撮影では cast（配信者）の配信画面、カメラ、画面加工画面にはアクセスしません。token / license が未設定でも smoke（最小確認）と account creation capture（アカウント作成撮影）は失敗しない構成です。
+cast capture（配信者通常操作撮影）では配信画面の standby（配信準備中）表示まで撮影しますが、実配信開始、実カメラ、実マイク、Banuba / DeepAR の本格操作は行いません。token / license が未設定でも撮影基盤全体が失敗しない範囲に留めます。
 
 ## 関連ファイル
 
@@ -222,9 +266,12 @@ store_admin capture（店舗管理者通常操作撮影）のブース作成も�
 - `tests/manual_capture/smoke.spec.js`
 - `tests/manual_capture/account_creation.spec.js`
 - `tests/manual_capture/store_admin.spec.js`
+- `tests/manual_capture/cast.spec.js`
 - `docs/user_manual/manual_accounts.md`
 - `docs/user_manual/capture_progress.md`
 - `docs/user_manual/account_creation_capture.md`
 - `docs/user_manual/account_creation_manual_draft.md`
 - `docs/user_manual/store_admin_capture.md`
 - `docs/user_manual/store_admin_manual_draft.md`
+- `docs/user_manual/cast_capture.md`
+- `docs/user_manual/cast_manual_draft.md`
