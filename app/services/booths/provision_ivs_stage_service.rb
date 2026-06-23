@@ -6,10 +6,13 @@ module Booths
     class StageProvisionFailed < Error; end
 
     DEFAULT_PREFIX = "br".freeze
+    MANUAL_CAPTURE_STAGE_ARN_PREFIX = "arn:aws:ivsrealtime:ap-northeast-1:000000000000:stage/manual-capture-local-booth-".freeze
+    MANUAL_CAPTURE_STORE_MARKERS = [ "manual", "マニュアル撮影用" ].freeze
 
-    def initialize(booth:, ivs_client: Ivs::Client.build)
+    def initialize(booth:, ivs_client: nil, rails_env: Rails.env)
       @booth = booth
       @ivs_client = ivs_client
+      @rails_env = rails_env
     end
 
     # NOTE:
@@ -21,7 +24,7 @@ module Booths
       @booth.with_lock do
         return @booth.ivs_stage_arn if @booth.ivs_stage_arn.present?
 
-        arn = @ivs_client.create_stage!(
+        arn = manual_capture_stage_arn || ivs_client.create_stage!(
           name: stage_name,
           tags: stage_tags
         )
@@ -36,6 +39,30 @@ module Booths
     end
 
     private
+
+    def ivs_client
+      @ivs_client ||= Ivs::Client.build
+    end
+
+    def manual_capture_stage_arn
+      return nil if production_env?
+      return "#{MANUAL_CAPTURE_STAGE_ARN_PREFIX}#{@booth.id}" if ENV["MANUAL_CAPTURE_FAKE_IVS"] == "1"
+      return nil if ENV["MANUAL_CAPTURE_FAKE_IVS"] == "0"
+      return nil unless manual_capture_store?
+
+      "#{MANUAL_CAPTURE_STAGE_ARN_PREFIX}#{@booth.id}"
+    end
+
+    def manual_capture_store?
+      store_name = @booth.store&.name.to_s
+      MANUAL_CAPTURE_STORE_MARKERS.any? { |marker| store_name.include?(marker) }
+    end
+
+    def production_env?
+      return @rails_env.production? if @rails_env.respond_to?(:production?)
+
+      @rails_env.to_s == "production"
+    end
 
     def stage_name
       # 例: br-prod-store-1-booth-3
