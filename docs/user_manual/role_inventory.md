@@ -68,7 +68,7 @@ TODO: 「ログイン直後のトップ画面」はブラウザ上の実挙動�
   - `/` ホーム
   - `/dashboard` ダッシュボード
   - `/profile/edit` プロフィール編集
-  - `/phone_verification/new` 電話番号認証
+  - `/phone_verification` 電話番号認証
   - `/favorites/...` お気に入り
   - `/stores/:id` 店舗詳細
   - `/booths/:id` ブース詳細
