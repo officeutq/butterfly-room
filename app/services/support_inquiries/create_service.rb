@@ -16,6 +16,7 @@ module SupportInquiries
 
     def call
       raise NotAllowedError unless support_user?
+      raise NotAllowedError unless source_comment_allowed?
 
       support_inquiry = build_support_inquiry
       support_inquiry_message = build_support_inquiry_message(support_inquiry)
@@ -37,6 +38,15 @@ module SupportInquiries
 
     def support_user?
       @user&.customer? || @user&.cast? || @user&.store_admin?
+    end
+
+    def source_comment_allowed?
+      return true if @source_comment.blank?
+      return false unless @user&.store_admin?
+      return false if @store.blank?
+      return false unless @user.admin_of_store?(@store.id)
+
+      @source_comment.stream_session&.store_id == @store.id
     end
 
     def build_support_inquiry

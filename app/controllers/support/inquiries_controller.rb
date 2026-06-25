@@ -4,6 +4,7 @@ module Support
   class InquiriesController < ApplicationController
     before_action :require_support_user!
     before_action :set_support_context_store, only: %i[new create]
+    before_action :set_support_source_comment, only: %i[new create]
     before_action :set_support_inquiry, only: %i[show]
 
     def index
@@ -22,6 +23,7 @@ module Support
       result = SupportInquiries::CreateService.new(
         user: current_user,
         store: @support_context_store,
+        source_comment: @support_source_comment,
         attributes: support_inquiry_params,
         message_body: support_inquiry_params[:body]
       ).call
@@ -72,15 +74,72 @@ module Support
           category: :question,
           reply_email: current_user.email
         )
-      @message_body = message_body
+      apply_source_comment_defaults if @support_source_comment.present? && support_inquiry.blank?
+      @support_source_comment ||= @support_inquiry.source_comment
+      @message_body = message_body.nil? ? default_message_body : message_body
     end
 
     def support_inquiry_params
-      params.require(:support_inquiry).permit(:category, :subject, :reply_email, :body)
+      params.require(:support_inquiry).permit(:category, :subject, :reply_email, :body, :source_comment_id)
     end
 
     def set_support_context_store
       @support_context_store = support_context_store
+    end
+
+    def set_support_source_comment
+      source_comment_id = source_comment_id_param
+      return if source_comment_id.blank?
+
+      unless current_user.store_admin? && @support_context_store.present?
+        head :forbidden
+        return
+      end
+
+      @support_source_comment =
+        Comment
+          .includes(:user, :booth, stream_session: :store)
+          .joins(:stream_session)
+          .where(stream_sessions: { store_id: @support_context_store.id })
+          .find(source_comment_id)
+
+      @support_context_store = @support_source_comment.stream_session.store
+    end
+
+    def source_comment_id_param
+      params[:source_comment_id].presence || params.dig(:support_inquiry, :source_comment_id).presence
+    end
+
+    def apply_source_comment_defaults
+      @support_inquiry.category = :report
+      @support_inquiry.subject = "通報に関する運営報告"
+      @support_inquiry.source_comment = @support_source_comment
+    end
+
+    def default_message_body
+      return nil if @support_source_comment.blank?
+
+      source_comment_draft_body(@support_source_comment)
+    end
+
+    def source_comment_draft_body(comment)
+      stream_session = comment.stream_session
+      reported_user = comment.user
+      title = stream_session.title.presence || comment.booth&.name.presence || "(no name)"
+      reported_user_name = reported_user.display_name.presence || reported_user.email
+
+      <<~BODY.chomp
+        以下の通報について、運営への確認・対応を依頼します。
+
+        店舗名: #{stream_session.store.name}
+        配信名: #{title}
+        comment ID: #{comment.id}
+        通報されたユーザー: #{reported_user_name}
+        コメント本文:
+        #{comment.body.presence || "（本文なし）"}
+
+        補足:
+      BODY
     end
 
     def support_context_store

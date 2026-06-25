@@ -1,4 +1,9 @@
 <%= form_with model: support_inquiry, url: support_inquiries_path, scope: :support_inquiry do |f| %>
+  <% source_comment_id = support_inquiry.source_comment_id || support_inquiry.source_comment&.id %>
+  <% if source_comment_id.present? %>
+    <%= f.hidden_field :source_comment_id, value: source_comment_id %>
+  <% end %>
+
   <% if support_inquiry.errors.any? %>
     <div class="alert alert-danger">
       <ul class="mb-0">

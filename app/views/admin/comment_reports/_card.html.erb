@@ -65,7 +65,11 @@
       </div>
 
       <div class="d-flex gap-2 flex-wrap justify-content-end">
-        <% if reportable_to_ops %>
+        <% if reportable_to_ops && current_user.store_admin? %>
+          <%= link_to "運営に報告",
+                new_support_inquiry_path(source_comment_id: comment.id),
+                class: "btn btn-sm btn-outline-warning" %>
+        <% elsif reportable_to_ops %>
           <button type="button" class="btn btn-sm btn-outline-warning" disabled>運営に報告</button>
         <% elsif ban_action == :revoke %>
           <%= button_to "BAN解除",

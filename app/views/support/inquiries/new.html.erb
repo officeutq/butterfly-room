@@ -23,6 +23,36 @@
   </div>
 </div>
 
+<% if @support_source_comment.present? %>
+  <div class="card referral-code-card mb-4">
+    <div class="card-body">
+      <h2 class="h5 mb-3">関連コメント</h2>
+
+      <div class="referral-code-row">
+        <div class="referral-code-label">comment ID</div>
+        <div class="referral-code-value"><%= @support_source_comment.id %></div>
+      </div>
+
+      <div class="referral-code-row">
+        <div class="referral-code-label">配信名</div>
+        <div class="referral-code-value text-break">
+          <%= @support_source_comment.stream_session.title.presence || @support_source_comment.booth&.name.presence || "(no name)" %>
+        </div>
+      </div>
+
+      <div class="referral-code-row">
+        <div class="referral-code-label">通報されたユーザー</div>
+        <div class="referral-code-value"><%= display_name_or_email(@support_source_comment.user) %></div>
+      </div>
+
+      <div class="referral-code-row">
+        <div class="referral-code-label">本文</div>
+        <div class="referral-code-value text-break"><%= @support_source_comment.body.presence || "（本文なし）" %></div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
 <%= render "form",
       support_inquiry: @support_inquiry,
       message_body: @message_body %>
