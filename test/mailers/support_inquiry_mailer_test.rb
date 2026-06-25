@@ -3,7 +3,10 @@
 require "test_helper"
 
 class SupportInquiryMailerTest < ActionMailer::TestCase
+  include ActiveJob::TestHelper
+
   setup do
+    clear_enqueued_jobs
     @customer = User.create!(
       email: "support_inquiry_mail_customer@example.com",
       password: "password",
@@ -25,6 +28,33 @@ class SupportInquiryMailerTest < ActionMailer::TestCase
       sender_kind: :system_admin,
       body: "Mailer reply body"
     )
+    clear_enqueued_jobs
+  end
+
+  teardown do
+    clear_enqueued_jobs
+    clear_performed_jobs
+  end
+
+  test "received email renders inquiry receipt" do
+    first_message = @support_inquiry.support_inquiry_messages.order(:created_at, :id).first
+    mail = SupportInquiryMailer
+      .with(
+        support_inquiry: @support_inquiry,
+        support_inquiry_message: first_message
+      )
+      .received
+
+    assert_equal [ "reply-destination@example.com" ], mail.to
+    assert_equal "【Butterflyve】お問い合わせを受け付けました", mail.subject
+    assert_match "Mail Customer", mail.text_part.body.decoded
+    assert_match "お問い合わせを受け付けました", mail.text_part.body.decoded
+    assert_match "Mail subject", mail.text_part.body.decoded
+    assert_match @support_inquiry.category_label, mail.text_part.body.decoded
+    assert_match "アプリ内のお問い合わせ詳細から確認・返信できます", mail.text_part.body.decoded
+    assert_match "このメールへの直接返信ではなく", mail.text_part.body.decoded
+    assert_match "/support/inquiries/#{@support_inquiry.id}", mail.text_part.body.decoded
+    assert_match "お問い合わせを受け付けました", mail.html_part.body.decoded
   end
 
   test "reply email renders inquiry reply" do

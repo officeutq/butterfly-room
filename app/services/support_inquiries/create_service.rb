@@ -28,6 +28,8 @@ module SupportInquiries
         support_inquiry_message.save!
       end
 
+      enqueue_received_mail!(support_inquiry, support_inquiry_message)
+
       Result.new(
         support_inquiry: support_inquiry,
         support_inquiry_message: support_inquiry_message
@@ -91,6 +93,18 @@ module SupportInquiries
 
     def name_snapshot
       @user.display_name.presence || @user.email
+    end
+
+    def enqueue_received_mail!(support_inquiry, support_inquiry_message)
+      SupportInquiryMailer
+        .with(
+          support_inquiry: support_inquiry,
+          support_inquiry_message: support_inquiry_message
+        )
+        .received
+        .deliver_later
+
+      support_inquiry_message.update!(email_enqueued_at: Time.current)
     end
   end
 end
