@@ -76,6 +76,30 @@ class SystemAdminNotificationsTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "system_admin notification management does not list private notifications" do
+    public_notice = Notification.create!(
+      title: "Public managed notice",
+      body: "body",
+      published_at: Time.current,
+      created_by_user: @system_admin
+    )
+    private_notice = Notification.create!(
+      title: "Private support notice",
+      body: "body",
+      published_at: Time.current,
+      created_by_user: @system_admin,
+      recipient_user: @customer,
+      link_path: "/support/inquiries/1"
+    )
+
+    sign_in @system_admin, scope: :user
+
+    get system_admin_notifications_path
+    assert_response :success
+    assert_includes response.body, public_notice.title
+    assert_not_includes response.body, private_notice.title
+  end
+
   private
 
   def with_unpermitted_parameters_raising

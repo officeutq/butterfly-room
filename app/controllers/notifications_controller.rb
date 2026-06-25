@@ -5,7 +5,7 @@ class NotificationsController < ApplicationController
     @tags = NotificationTag.order(:name, :id)
     @selected_tag_ids = selected_tag_ids
 
-    notifications = Notification.published.includes(:notification_tags)
+    notifications = Notification.visible_to(current_user).includes(:notification_tags)
     if @selected_tag_ids.any?
       notifications =
         notifications
@@ -23,9 +23,10 @@ class NotificationsController < ApplicationController
   end
 
   def show
-    @notification = Notification.published.includes(:notification_tags).find(params[:id])
+    @notification = Notification.visible_to(current_user).includes(:notification_tags).find(params[:id])
 
     mark_notification_read
+    redirect_to @notification.link_path if @notification.link_path.present?
   end
 
   private

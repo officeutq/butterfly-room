@@ -28,6 +28,10 @@ class User < ApplicationRecord
     class_name: "Notification",
     foreign_key: :created_by_user_id,
     dependent: :restrict_with_error
+  has_many :received_notifications,
+    class_name: "Notification",
+    foreign_key: :recipient_user_id,
+    dependent: :restrict_with_error
   has_many :notification_reads, dependent: :destroy
 
   # --- Soft delete ---
@@ -63,7 +67,7 @@ class User < ApplicationRecord
   end
 
   def unread_notifications_exists?
-    Notification.published
+    Notification.visible_to(self)
                 .where.not(id: notification_reads.select(:notification_id))
                 .exists?
   end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_22_080000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_25_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -228,12 +228,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_22_080000) do
     t.datetime "created_at", null: false
     t.bigint "created_by_user_id", null: false
     t.boolean "enabled", default: true, null: false
+    t.string "link_path"
     t.datetime "published_at", null: false
+    t.bigint "recipient_user_id"
     t.string "title", null: false
     t.datetime "updated_at", null: false
     t.index ["created_by_user_id"], name: "index_notifications_on_created_by_user_id"
     t.index ["enabled"], name: "index_notifications_on_enabled"
     t.index ["published_at"], name: "index_notifications_on_published_at"
+    t.index ["recipient_user_id"], name: "index_notifications_on_recipient_user_id"
   end
 
   create_table "phone_verifications", force: :cascade do |t|
@@ -618,6 +621,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_22_080000) do
   add_foreign_key "notification_taggings", "notification_tags"
   add_foreign_key "notification_taggings", "notifications"
   add_foreign_key "notifications", "users", column: "created_by_user_id"
+  add_foreign_key "notifications", "users", column: "recipient_user_id"
   add_foreign_key "phone_verifications", "users"
   add_foreign_key "presences", "stream_sessions"
   add_foreign_key "presences", "users", column: "customer_user_id"
