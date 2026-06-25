@@ -38,10 +38,8 @@ module Support
     end
 
     def show
-      @support_inquiry_messages =
-        @support_inquiry
-          .support_inquiry_messages
-          .includes(:sender_user)
+      @support_inquiry_message = @support_inquiry.support_inquiry_messages.new
+      load_support_inquiry_messages
     end
 
     private
@@ -58,6 +56,13 @@ module Support
           .support_inquiries
           .includes(:store, :source_comment)
           .find(params[:id])
+    end
+
+    def load_support_inquiry_messages
+      @support_inquiry_messages =
+        @support_inquiry
+          .support_inquiry_messages
+          .includes(:sender_user)
     end
 
     def build_support_inquiry_form(support_inquiry: nil, message_body: nil)
