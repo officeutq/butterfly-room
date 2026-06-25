@@ -91,6 +91,8 @@ class SystemAdminSupportInquiriesTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, matching.subject
     assert_not_includes response.body, filtered_out.subject
+    assert_select "select[name='role_snapshot'] option[value='customer']", text: "視聴者"
+    assert_select ".referral-code-value", text: "視聴者"
   end
 
   test "system admin can view inquiry details with messages and source comment" do
@@ -112,6 +114,7 @@ class SystemAdminSupportInquiriesTest < ActionDispatch::IntegrationTest
     assert_includes response.body, support_inquiry.reply_email
     assert_includes response.body, "Initial inquiry body"
     assert_includes response.body, "Reported comment body"
+    assert_select ".referral-code-value", text: "店舗管理者"
   end
 
   test "system admin can update status and resolved_at" do

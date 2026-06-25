@@ -22,7 +22,7 @@
       <div class="col-md-3">
         <%= label_tag :role_snapshot, "ロール", class: "form-label" %>
         <%= select_tag :role_snapshot,
-              options_for_select([ [ "", "" ] ] + @role_options.map { |role| [ role, role ] }, params[:role_snapshot]),
+              options_for_select([ [ "", "" ] ] + @role_options.map { |role| [ role_label_for(role), role ] }, params[:role_snapshot]),
               class: "form-select" %>
       </div>
 
@@ -77,7 +77,7 @@
 
           <div class="referral-code-row">
             <div class="referral-code-label">ロール</div>
-            <div class="referral-code-value"><%= support_inquiry.role_snapshot %></div>
+            <div class="referral-code-value"><%= role_label_for(support_inquiry.role_snapshot) %></div>
           </div>
 
           <div class="referral-code-row">

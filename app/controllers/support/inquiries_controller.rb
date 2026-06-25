@@ -127,6 +127,7 @@ module Support
       reported_user = comment.user
       title = stream_session.title.presence || comment.booth&.name.presence || "(no name)"
       reported_user_name = reported_user.display_name.presence || reported_user.email
+      reported_user_role = helpers.role_label_for(reported_user.role)
 
       <<~BODY.chomp
         以下の通報について、運営への確認・対応を依頼します。
@@ -135,6 +136,7 @@ module Support
         配信名: #{title}
         comment ID: #{comment.id}
         通報されたユーザー: #{reported_user_name}
+        ロール: #{reported_user_role}
         コメント本文:
         #{comment.body.presence || "（本文なし）"}
 

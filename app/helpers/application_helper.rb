@@ -123,7 +123,13 @@ module ApplicationHelper
   def user_role_label(user)
     return "" if user.blank?
 
-    case user.role.to_sym
+    role_label_for(user.role)
+  end
+
+  def role_label_for(role)
+    return "" if role.blank?
+
+    case role.to_sym
     when :customer
       "視聴者"
     when :cast
@@ -133,7 +139,7 @@ module ApplicationHelper
     when :system_admin
       "運営"
     else
-      user.role.to_s.upcase
+      role.to_s.upcase
     end
   end
   def dashboard_path_for(_user)

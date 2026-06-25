@@ -119,6 +119,9 @@ class SupportInquiriesTest < ActionDispatch::IntegrationTest
 
       assert_response :success
       assert_select "a[href=?]", support_inquiries_path, minimum: 1
+      assert_select "a[href=?] .dashboard-role-card-customer", support_inquiries_path, count: 1
+      assert_select "a[href=?] .dashboard-role-card-cast", support_inquiries_path, count: 0
+      assert_select "a[href=?] .dashboard-role-card-store-admin", support_inquiries_path, count: 0
 
       sign_out :user
     end
