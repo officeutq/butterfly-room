@@ -1,0 +1,17 @@
+<p><%= @support_inquiry.name_snapshot %> 様</p>
+
+<p>
+  お問い合わせ「<%= @support_inquiry.subject %>」に運営から返信がありました。
+</p>
+
+<blockquote>
+  <%= simple_format(@support_inquiry_message.body) %>
+</blockquote>
+
+<p>
+  返信する場合は、アプリ内のお問い合わせ画面から返信してください。
+</p>
+
+<p>
+  <%= link_to "お問い合わせを確認する", support_inquiry_url(@support_inquiry) %>
+</p>

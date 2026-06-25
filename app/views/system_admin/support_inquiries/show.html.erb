@@ -128,3 +128,32 @@
     </article>
   <% end %>
 </div>
+
+<section class="mt-4">
+  <h2 class="h4 mb-3">返信</h2>
+
+  <%= form_with model: @support_inquiry_message,
+        url: system_admin_support_inquiry_messages_path(@support_inquiry),
+        scope: :support_inquiry_message do |f| %>
+    <% if @support_inquiry_message.errors.any? %>
+      <div class="alert alert-danger">
+        <ul class="mb-0">
+          <% @support_inquiry_message.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="mb-3">
+      <%= f.label :body, "返信内容", class: "form-label" %>
+      <%= f.text_area :body,
+            class: "form-control",
+            rows: 6,
+            maxlength: SupportInquiryMessage::BODY_MAX_LENGTH,
+            required: true %>
+    </div>
+
+    <%= f.submit "返信する", class: "btn btn-primary" %>
+  <% end %>
+</section>
