@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_25_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_25_001000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -526,6 +526,44 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_000000) do
     t.index ["event_id"], name: "index_stripe_webhook_events_on_event_id", unique: true
   end
 
+  create_table "support_inquiries", force: :cascade do |t|
+    t.integer "category", null: false
+    t.datetime "created_at", null: false
+    t.datetime "last_message_at", null: false
+    t.integer "last_message_sender_kind", null: false
+    t.string "name_snapshot", null: false
+    t.string "reply_email", null: false
+    t.datetime "resolved_at"
+    t.string "role_snapshot", null: false
+    t.bigint "source_comment_id"
+    t.integer "status", default: 0, null: false
+    t.bigint "store_id"
+    t.string "store_name_snapshot"
+    t.string "subject", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["category"], name: "index_support_inquiries_on_category"
+    t.index ["last_message_at"], name: "index_support_inquiries_on_last_message_at"
+    t.index ["source_comment_id"], name: "index_support_inquiries_on_source_comment_id"
+    t.index ["status"], name: "index_support_inquiries_on_status"
+    t.index ["store_id"], name: "index_support_inquiries_on_store_id"
+    t.index ["user_id", "last_message_at"], name: "index_support_inquiries_on_user_id_and_last_message_at"
+    t.index ["user_id"], name: "index_support_inquiries_on_user_id"
+  end
+
+  create_table "support_inquiry_messages", force: :cascade do |t|
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.datetime "email_enqueued_at"
+    t.integer "sender_kind", null: false
+    t.bigint "sender_user_id", null: false
+    t.bigint "support_inquiry_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["sender_user_id"], name: "index_support_inquiry_messages_on_sender_user_id"
+    t.index ["support_inquiry_id", "created_at", "id"], name: "index_support_inquiry_messages_on_thread_order"
+    t.index ["support_inquiry_id"], name: "index_support_inquiry_messages_on_support_inquiry_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.text "bio"
     t.datetime "created_at", null: false
@@ -655,6 +693,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_000000) do
   add_foreign_key "stream_sessions", "booths"
   add_foreign_key "stream_sessions", "stores"
   add_foreign_key "stream_sessions", "users", column: "started_by_cast_user_id"
+  add_foreign_key "support_inquiries", "comments", column: "source_comment_id"
+  add_foreign_key "support_inquiries", "stores"
+  add_foreign_key "support_inquiries", "users"
+  add_foreign_key "support_inquiry_messages", "support_inquiries"
+  add_foreign_key "support_inquiry_messages", "users", column: "sender_user_id"
   add_foreign_key "wallet_purchases", "wallets"
   add_foreign_key "wallet_transactions", "wallets"
   add_foreign_key "wallets", "users", column: "customer_user_id"

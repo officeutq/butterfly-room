@@ -20,6 +20,10 @@ class Comment < ApplicationRecord
   belongs_to :user
 
   has_many :comment_reports, dependent: :restrict_with_error
+  has_many :support_inquiries,
+    foreign_key: :source_comment_id,
+    inverse_of: :source_comment,
+    dependent: :restrict_with_error
 
   scope :alive, -> { where(deleted_at: nil) }
 
