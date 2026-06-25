@@ -60,6 +60,10 @@ class SupportInquiry < ApplicationRecord
     categories.keys.map { |key| [ CATEGORY_LABELS.fetch(key.to_sym), key ] }
   end
 
+  def self.status_select_options
+    statuses.keys.map { |key| [ STATUS_LABELS.fetch(key.to_sym), key ] }
+  end
+
   def category_label
     CATEGORY_LABELS[category&.to_sym] || category.to_s
   end

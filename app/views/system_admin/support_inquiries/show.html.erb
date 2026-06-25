@@ -1,0 +1,130 @@
+<% content_for :title, @support_inquiry.subject %>
+
+<div class="mb-3">
+  <%= link_to "お問い合わせ管理へ", system_admin_support_inquiries_path, class: "btn btn-outline-secondary btn-sm" %>
+</div>
+
+<% if @support_inquiry.errors.any? %>
+  <div class="alert alert-danger">
+    <ul class="mb-0">
+      <% @support_inquiry.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<article class="card referral-code-card mb-4">
+  <div class="card-body">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+      <span class="badge <%= @support_inquiry.resolved? ? "text-bg-success" : "text-bg-primary" %>">
+        <%= @support_inquiry.status_label %>
+      </span>
+      <span class="badge text-bg-secondary"><%= @support_inquiry.category_label %></span>
+    </div>
+
+    <h1 class="h3 mb-4 text-break"><%= @support_inquiry.subject %></h1>
+
+    <div class="referral-code-row">
+      <div class="referral-code-label">名前</div>
+      <div class="referral-code-value"><%= @support_inquiry.name_snapshot %></div>
+    </div>
+
+    <div class="referral-code-row">
+      <div class="referral-code-label">ロール</div>
+      <div class="referral-code-value"><%= @support_inquiry.role_snapshot %></div>
+    </div>
+
+    <div class="referral-code-row">
+      <div class="referral-code-label">店舗名</div>
+      <div class="referral-code-value"><%= @support_inquiry.store_name_snapshot.presence || "-" %></div>
+    </div>
+
+    <div class="referral-code-row">
+      <div class="referral-code-label">返信メール</div>
+      <div class="referral-code-value text-break"><%= @support_inquiry.reply_email %></div>
+    </div>
+
+    <div class="referral-code-row">
+      <div class="referral-code-label">最終送信者</div>
+      <div class="referral-code-value"><%= @support_inquiry.last_message_sender_kind_label %></div>
+    </div>
+
+    <div class="referral-code-row">
+      <div class="referral-code-label">最終更新</div>
+      <div class="referral-code-value text-muted small"><%= l(@support_inquiry.last_message_at) %></div>
+    </div>
+
+    <div class="referral-code-row">
+      <div class="referral-code-label">作成日時</div>
+      <div class="referral-code-value text-muted small"><%= l(@support_inquiry.created_at) %></div>
+    </div>
+
+    <div class="referral-code-row">
+      <div class="referral-code-label">解決日時</div>
+      <div class="referral-code-value text-muted small">
+        <%= @support_inquiry.resolved_at.present? ? l(@support_inquiry.resolved_at) : "-" %>
+      </div>
+    </div>
+  </div>
+</article>
+
+<section class="card referral-code-card mb-4">
+  <div class="card-body">
+    <h2 class="h5 mb-3">状態変更</h2>
+
+    <%= form_with model: [:system_admin, @support_inquiry], method: :patch, class: "d-flex flex-wrap gap-2 align-items-end" do |f| %>
+      <div>
+        <%= f.label :status, "状態", class: "form-label" %>
+        <%= f.select :status,
+              SupportInquiry.status_select_options,
+              {},
+              class: "form-select" %>
+      </div>
+
+      <%= f.submit "更新する", class: "btn btn-primary" %>
+    <% end %>
+  </div>
+</section>
+
+<% if @support_inquiry.source_comment.present? %>
+  <section class="card referral-code-card mb-4">
+    <div class="card-body">
+      <h2 class="h5 mb-3">関連コメント</h2>
+
+      <div class="referral-code-row">
+        <div class="referral-code-label">comment ID</div>
+        <div class="referral-code-value"><%= @support_inquiry.source_comment.id %></div>
+      </div>
+
+      <div class="referral-code-row">
+        <div class="referral-code-label">本文</div>
+        <div class="referral-code-value text-break"><%= @support_inquiry.source_comment.body.presence || "-" %></div>
+      </div>
+    </div>
+  </section>
+<% end %>
+
+<h2 class="h4 mb-3">メッセージ履歴</h2>
+
+<div class="d-flex flex-column gap-3">
+  <% @support_inquiry_messages.each do |message| %>
+    <article class="card referral-code-card">
+      <div class="card-body">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="badge <%= message.sender_system_admin? ? "text-bg-dark" : "text-bg-secondary" %>">
+              <%= message.sender_kind_label %>
+            </span>
+            <span class="fw-semibold"><%= display_name_or_email(message.sender_user) %></span>
+          </div>
+          <div class="text-muted small"><%= l(message.created_at) %></div>
+        </div>
+
+        <div class="text-break">
+          <%= simple_format(message.body) %>
+        </div>
+      </div>
+    </article>
+  <% end %>
+</div>

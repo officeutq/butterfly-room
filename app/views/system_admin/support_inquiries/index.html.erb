@@ -1,0 +1,122 @@
+<% content_for :title, "お問い合わせ管理" %>
+
+<h1>お問い合わせ管理</h1>
+
+<%= form_with url: system_admin_support_inquiries_path, method: :get, class: "card mb-3" do %>
+  <div class="card-body">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <%= label_tag :status, "状態", class: "form-label" %>
+        <%= select_tag :status,
+              options_for_select([ [ "", "" ] ] + SupportInquiry.status_select_options, params[:status]),
+              class: "form-select" %>
+      </div>
+
+      <div class="col-md-3">
+        <%= label_tag :category, "種別", class: "form-label" %>
+        <%= select_tag :category,
+              options_for_select([ [ "", "" ] ] + SupportInquiry.category_select_options, params[:category]),
+              class: "form-select" %>
+      </div>
+
+      <div class="col-md-3">
+        <%= label_tag :role_snapshot, "ロール", class: "form-label" %>
+        <%= select_tag :role_snapshot,
+              options_for_select([ [ "", "" ] ] + @role_options.map { |role| [ role, role ] }, params[:role_snapshot]),
+              class: "form-select" %>
+      </div>
+
+      <div class="col-md-3 d-flex gap-2">
+        <%= submit_tag "絞り込む", class: "btn btn-outline-primary" %>
+        <%= link_to "リセット", system_admin_support_inquiries_path, class: "btn btn-outline-secondary" %>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<% if @support_inquiries.blank? %>
+  <div class="alert alert-secondary">
+    表示できるお問い合わせはありません。
+  </div>
+<% else %>
+  <div class="referral-codes-list">
+    <% @support_inquiries.each do |support_inquiry| %>
+      <div class="card referral-code-card">
+        <div class="card-body">
+          <div class="referral-code-row">
+            <div class="referral-code-label">件名</div>
+            <div class="referral-code-value fw-semibold text-break"><%= support_inquiry.subject %></div>
+
+            <div class="referral-code-inline-actions">
+              <%= link_to "詳細",
+                    system_admin_support_inquiry_path(support_inquiry),
+                    class: "btn btn-outline-secondary btn-sm" %>
+            </div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">状態</div>
+            <div class="referral-code-value">
+              <span class="badge <%= support_inquiry.resolved? ? "text-bg-success" : "text-bg-primary" %>">
+                <%= support_inquiry.status_label %>
+              </span>
+            </div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">種別</div>
+            <div class="referral-code-value">
+              <span class="badge text-bg-secondary"><%= support_inquiry.category_label %></span>
+            </div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">名前</div>
+            <div class="referral-code-value text-break"><%= support_inquiry.name_snapshot %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">ロール</div>
+            <div class="referral-code-value"><%= support_inquiry.role_snapshot %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">店舗名</div>
+            <div class="referral-code-value text-break"><%= support_inquiry.store_name_snapshot.presence || "-" %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">返信メール</div>
+            <div class="referral-code-value text-break"><%= support_inquiry.reply_email %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">最終送信者</div>
+            <div class="referral-code-value"><%= support_inquiry.last_message_sender_kind_label %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">最終更新</div>
+            <div class="referral-code-value text-muted small"><%= l(support_inquiry.last_message_at) %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">作成日時</div>
+            <div class="referral-code-value text-muted small"><%= l(support_inquiry.created_at) %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">通報起点</div>
+            <div class="referral-code-value">
+              <% if support_inquiry.source_comment.present? %>
+                <span class="badge text-bg-warning">あり</span>
+              <% else %>
+                -
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% end %>
