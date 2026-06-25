@@ -30,6 +30,11 @@ Rails.application.routes.draw do
   # --- Common notifications (login required) ---
   resources :notifications, only: %i[index show]
 
+  # --- Common support inquiries (login required) ---
+  namespace :support do
+    resources :inquiries, only: %i[index new create show]
+  end
+
   # --- Common profile (login required) ---
   resource :profile, only: %i[edit update]
   resource :email_change, only: %i[edit update]
