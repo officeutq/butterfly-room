@@ -1,0 +1,12 @@
+<%= @support_inquiry.name_snapshot %> 様
+
+お問い合わせ「<%= @support_inquiry.subject %>」に運営から返信がありました。
+
+---
+<%= @support_inquiry_message.body %>
+---
+
+返信する場合は、アプリ内のお問い合わせ画面から返信してください。
+
+お問い合わせを確認する:
+<%= support_inquiry_url(@support_inquiry) %>

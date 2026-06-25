@@ -17,6 +17,7 @@ module SystemAdmin
 
     def show
       load_support_inquiry_messages
+      build_support_inquiry_message
     end
 
     def update
@@ -30,6 +31,7 @@ module SystemAdmin
     rescue SupportInquiries::UpdateStatusService::InvalidStatusError, ActiveRecord::RecordInvalid => e
       @support_inquiry.errors.add(:base, e.message)
       load_support_inquiry_messages
+      build_support_inquiry_message
       render :show, status: :unprocessable_entity
     end
 
@@ -47,6 +49,10 @@ module SystemAdmin
         @support_inquiry
           .support_inquiry_messages
           .includes(:sender_user)
+    end
+
+    def build_support_inquiry_message
+      @support_inquiry_message ||= @support_inquiry.support_inquiry_messages.build
     end
 
     def filtered_support_inquiries

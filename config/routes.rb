@@ -210,7 +210,9 @@ Rails.application.routes.draw do
     resources :users, only: %i[index new create edit update destroy]
     resources :effects, only: %i[index new create edit update]
     resources :notifications, only: %i[index new create edit update]
-    resources :support_inquiries, only: %i[index show update]
+    resources :support_inquiries, only: %i[index show update] do
+      resources :messages, only: %i[create], controller: "support_inquiry_messages"
+    end
 
     resources :settlements, only: %i[index show] do
       collection do
