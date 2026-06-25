@@ -8,6 +8,7 @@ module SystemAdmin
     def index
       @notifications =
         Notification
+          .where(recipient_user_id: nil)
           .includes(:created_by_user, :notification_tags)
           .order(published_at: :desc, id: :desc)
     end

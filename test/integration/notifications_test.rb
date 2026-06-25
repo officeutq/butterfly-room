@@ -88,6 +88,41 @@ class NotificationsTest < ActionDispatch::IntegrationTest
     assert_select ".notification-unread-dot", count: 0
   end
 
+  test "private notifications are visible only to the recipient" do
+    public_notice = create_notification(title: "Public notice")
+    recipient_notice = create_notification(title: "Recipient notice", recipient_user: @customer)
+    other_notice = create_notification(title: "Other private notice", recipient_user: @cast)
+
+    sign_in @customer, scope: :user
+
+    get notifications_path
+    assert_response :success
+    assert_includes response.body, public_notice.title
+    assert_includes response.body, recipient_notice.title
+    assert_not_includes response.body, other_notice.title
+    assert_select ".notification-unread-dot", count: 2
+
+    get notification_path(other_notice)
+    assert_response :not_found
+  end
+
+  test "show redirects link_path notification after marking it as read" do
+    notification = create_notification(
+      title: "Linked notice",
+      recipient_user: @customer,
+      link_path: dashboard_path
+    )
+
+    sign_in @customer, scope: :user
+
+    assert_difference "NotificationRead.count", +1 do
+      get notification_path(notification)
+    end
+
+    assert_redirected_to dashboard_path
+    assert_not notification.reload.unread_for?(@customer)
+  end
+
   test "disabled notification is not visible from public show" do
     notification = create_notification(title: "Disabled public notice", enabled: false)
 
@@ -99,13 +134,23 @@ class NotificationsTest < ActionDispatch::IntegrationTest
 
   private
 
-  def create_notification(title:, body: "body", enabled: true, published_at: 1.hour.ago, tags: [])
+  def create_notification(
+    title:,
+    body: "body",
+    enabled: true,
+    published_at: 1.hour.ago,
+    recipient_user: nil,
+    link_path: nil,
+    tags: []
+  )
     notification = Notification.create!(
       title: title,
       body: body,
       enabled: enabled,
       published_at: published_at,
-      created_by_user: @system_admin
+      created_by_user: @system_admin,
+      recipient_user: recipient_user,
+      link_path: link_path
     )
     notification.notification_tags = tags
     notification
