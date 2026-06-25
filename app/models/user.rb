@@ -33,6 +33,11 @@ class User < ApplicationRecord
     foreign_key: :recipient_user_id,
     dependent: :restrict_with_error
   has_many :notification_reads, dependent: :destroy
+  has_many :support_inquiries, dependent: :restrict_with_error
+  has_many :sent_support_inquiry_messages,
+    class_name: "SupportInquiryMessage",
+    foreign_key: :sender_user_id,
+    dependent: :restrict_with_error
 
   # --- Soft delete ---
   def deleted?

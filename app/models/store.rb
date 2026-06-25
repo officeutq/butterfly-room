@@ -13,6 +13,7 @@ class Store < ApplicationRecord
   has_many :settlement_carryovers, dependent: :restrict_with_error
   has_many :store_cast_invitations, dependent: :destroy
   has_many :store_admin_invitations, dependent: :destroy
+  has_many :support_inquiries, dependent: :restrict_with_error
   has_one :active_payout_account, -> { active }, class_name: "StorePayoutAccount"
   has_one_attached :thumbnail
 
