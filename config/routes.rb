@@ -32,7 +32,9 @@ Rails.application.routes.draw do
 
   # --- Common support inquiries (login required) ---
   namespace :support do
-    resources :inquiries, only: %i[index new create show]
+    resources :inquiries, only: %i[index new create show] do
+      resources :messages, only: %i[create], controller: "inquiry_messages"
+    end
   end
 
   # --- Common profile (login required) ---
