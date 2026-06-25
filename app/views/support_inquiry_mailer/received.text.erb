@@ -1,0 +1,13 @@
+<%= @support_inquiry.name_snapshot %> 様
+
+お問い合わせを受け付けました。
+
+件名: <%= @support_inquiry.subject %>
+種別: <%= @support_inquiry.category_label %>
+受付日時: <%= l(@support_inquiry.created_at) %>
+
+お問い合わせ内容は、アプリ内のお問い合わせ詳細から確認・返信できます。
+このメールへの直接返信ではなく、アプリ内のお問い合わせ画面から返信してください。
+
+お問い合わせを確認する:
+<%= support_inquiry_url(@support_inquiry) %>

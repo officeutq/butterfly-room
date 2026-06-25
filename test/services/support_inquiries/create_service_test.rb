@@ -3,7 +3,11 @@
 require "test_helper"
 
 class SupportInquiries::CreateServiceTest < ActiveSupport::TestCase
+  include ActiveJob::TestHelper
+  include ActionMailer::TestHelper
+
   setup do
+    clear_enqueued_jobs
     @store = Store.create!(name: "Support Service Store")
     @other_store = Store.create!(name: "Other Support Service Store")
     @customer = User.create!(
@@ -31,21 +35,28 @@ class SupportInquiries::CreateServiceTest < ActiveSupport::TestCase
     @other_store_comment = create_comment_for(@other_store, body: "other store source comment")
   end
 
+  teardown do
+    clear_enqueued_jobs
+    clear_performed_jobs
+  end
+
   test "creates inquiry and first message with snapshots" do
     result = nil
 
     assert_difference -> { SupportInquiry.count }, +1 do
       assert_difference -> { SupportInquiryMessage.count }, +1 do
-        result = SupportInquiries::CreateService.new(
-          user: @customer,
-          store: @store,
-          attributes: {
-            category: "question",
-            subject: "Need help",
-            reply_email: "reply@example.com"
-          },
-          message_body: "Please help"
-        ).call
+        assert_enqueued_emails 1 do
+          result = SupportInquiries::CreateService.new(
+            user: @customer,
+            store: @store,
+            attributes: {
+              category: "question",
+              subject: "Need help",
+              reply_email: "reply@example.com"
+            },
+            message_body: "Please help"
+          ).call
+        end
       end
     end
 
@@ -65,21 +76,24 @@ class SupportInquiries::CreateServiceTest < ActiveSupport::TestCase
     assert_equal "Please help", message.body
     assert_equal @customer, message.sender_user
     assert_equal "user", message.sender_kind
+    assert_not_nil message.email_enqueued_at
   end
 
   test "rejects system admin users" do
-    assert_no_difference -> { SupportInquiry.count } do
-      assert_no_difference -> { SupportInquiryMessage.count } do
-        assert_raises(SupportInquiries::CreateService::NotAllowedError) do
-          SupportInquiries::CreateService.new(
-            user: @system_admin,
-            attributes: {
-              category: "question",
-              subject: "Need help",
-              reply_email: "reply@example.com"
-            },
-            message_body: "Please help"
-          ).call
+    assert_no_enqueued_emails do
+      assert_no_difference -> { SupportInquiry.count } do
+        assert_no_difference -> { SupportInquiryMessage.count } do
+          assert_raises(SupportInquiries::CreateService::NotAllowedError) do
+            SupportInquiries::CreateService.new(
+              user: @system_admin,
+              attributes: {
+                category: "question",
+                subject: "Need help",
+                reply_email: "reply@example.com"
+              },
+              message_body: "Please help"
+            ).call
+          end
         end
       end
     end
@@ -110,58 +124,64 @@ class SupportInquiries::CreateServiceTest < ActiveSupport::TestCase
   end
 
   test "rejects source comment when user is not store admin" do
-    assert_no_difference -> { SupportInquiry.count } do
-      assert_no_difference -> { SupportInquiryMessage.count } do
-        assert_raises(SupportInquiries::CreateService::NotAllowedError) do
-          SupportInquiries::CreateService.new(
-            user: @customer,
-            store: @store,
-            source_comment: @source_comment,
-            attributes: {
-              category: "report",
-              subject: "通報に関する運営報告",
-              reply_email: "reply@example.com"
-            },
-            message_body: "Please review"
-          ).call
+    assert_no_enqueued_emails do
+      assert_no_difference -> { SupportInquiry.count } do
+        assert_no_difference -> { SupportInquiryMessage.count } do
+          assert_raises(SupportInquiries::CreateService::NotAllowedError) do
+            SupportInquiries::CreateService.new(
+              user: @customer,
+              store: @store,
+              source_comment: @source_comment,
+              attributes: {
+                category: "report",
+                subject: "通報に関する運営報告",
+                reply_email: "reply@example.com"
+              },
+              message_body: "Please review"
+            ).call
+          end
         end
       end
     end
   end
 
   test "rejects source comment outside store admin store" do
-    assert_no_difference -> { SupportInquiry.count } do
-      assert_no_difference -> { SupportInquiryMessage.count } do
-        assert_raises(SupportInquiries::CreateService::NotAllowedError) do
-          SupportInquiries::CreateService.new(
-            user: @store_admin,
-            store: @store,
-            source_comment: @other_store_comment,
-            attributes: {
-              category: "report",
-              subject: "通報に関する運営報告",
-              reply_email: "reply@example.com"
-            },
-            message_body: "Please review"
-          ).call
+    assert_no_enqueued_emails do
+      assert_no_difference -> { SupportInquiry.count } do
+        assert_no_difference -> { SupportInquiryMessage.count } do
+          assert_raises(SupportInquiries::CreateService::NotAllowedError) do
+            SupportInquiries::CreateService.new(
+              user: @store_admin,
+              store: @store,
+              source_comment: @other_store_comment,
+              attributes: {
+                category: "report",
+                subject: "通報に関する運営報告",
+                reply_email: "reply@example.com"
+              },
+              message_body: "Please review"
+            ).call
+          end
         end
       end
     end
   end
 
   test "rolls back inquiry when first message is invalid" do
-    assert_no_difference -> { SupportInquiry.count } do
-      assert_no_difference -> { SupportInquiryMessage.count } do
-        assert_raises(ActiveRecord::RecordInvalid) do
-          SupportInquiries::CreateService.new(
-            user: @customer,
-            attributes: {
-              category: "question",
-              subject: "Need help",
-              reply_email: "reply@example.com"
-            },
-            message_body: ""
-          ).call
+    assert_no_enqueued_emails do
+      assert_no_difference -> { SupportInquiry.count } do
+        assert_no_difference -> { SupportInquiryMessage.count } do
+          assert_raises(ActiveRecord::RecordInvalid) do
+            SupportInquiries::CreateService.new(
+              user: @customer,
+              attributes: {
+                category: "question",
+                subject: "Need help",
+                reply_email: "reply@example.com"
+              },
+              message_body: ""
+            ).call
+          end
         end
       end
     end
