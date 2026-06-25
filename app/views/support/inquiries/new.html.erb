@@ -1,0 +1,28 @@
+<% content_for :title, "新規お問い合わせ" %>
+
+<div class="mb-3">
+  <%= link_to "お問い合わせ一覧へ", support_inquiries_path, class: "btn btn-outline-secondary btn-sm" %>
+</div>
+
+<h1 class="h3 mb-4">新規お問い合わせ</h1>
+
+<div class="card referral-code-card mb-4">
+  <div class="card-body">
+    <div class="referral-code-row">
+      <div class="referral-code-label">名前</div>
+      <div class="referral-code-value"><%= display_name_or_email(current_user) %></div>
+    </div>
+    <div class="referral-code-row">
+      <div class="referral-code-label">ロール</div>
+      <div class="referral-code-value"><%= user_role_label(current_user) %></div>
+    </div>
+    <div class="referral-code-row">
+      <div class="referral-code-label">店舗名</div>
+      <div class="referral-code-value"><%= @support_context_store&.name || "-" %></div>
+    </div>
+  </div>
+</div>
+
+<%= render "form",
+      support_inquiry: @support_inquiry,
+      message_body: @message_body %>

@@ -1,0 +1,49 @@
+<%= form_with model: support_inquiry, url: support_inquiries_path, scope: :support_inquiry do |f| %>
+  <% if support_inquiry.errors.any? %>
+    <div class="alert alert-danger">
+      <ul class="mb-0">
+        <% support_inquiry.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="mb-3">
+    <%= f.label :category, "お問い合わせ種別", class: "form-label" %>
+    <%= f.select :category,
+          SupportInquiry.category_select_options,
+          { include_blank: "選択してください" },
+          class: "form-select",
+          required: true %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :subject, "件名", class: "form-label" %>
+    <%= f.text_field :subject,
+          class: "form-control",
+          maxlength: SupportInquiry::SUBJECT_MAX_LENGTH,
+          required: true %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :reply_email, "返信メールアドレス", class: "form-label" %>
+    <%= f.email_field :reply_email, class: "form-control", required: true %>
+  </div>
+
+  <div class="mb-4">
+    <%= label_tag "support_inquiry_body", "お問い合わせ内容", class: "form-label" %>
+    <%= text_area_tag "support_inquiry[body]",
+          message_body,
+          id: "support_inquiry_body",
+          class: "form-control",
+          rows: 8,
+          maxlength: SupportInquiryMessage::BODY_MAX_LENGTH,
+          required: true %>
+  </div>
+
+  <div class="d-flex gap-2">
+    <%= f.submit "送信する", class: "btn btn-primary" %>
+    <%= link_to "キャンセル", support_inquiries_path, class: "btn btn-outline-secondary" %>
+  </div>
+<% end %>

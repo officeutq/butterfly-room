@@ -2,6 +2,14 @@
 <div class="container px-0">
   <% store = layout_current_store %>
   <% booth = layout_current_booth %>
+  <% support_dashboard_card_class =
+       if current_user.store_admin?
+         "dashboard-role-card-store-admin"
+       elsif current_user.cast?
+         "dashboard-role-card-cast"
+       else
+         "dashboard-role-card-customer"
+       end %>
 
   <div class="row g-3">
     <% if current_user.at_least?(:customer) %>
@@ -37,6 +45,19 @@
                   電話番号を登録して認証します。電話番号でもログインできるようになります。
                 <% end %>
               </p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <% unless current_user.system_admin? %>
+      <div class="col-12 col-md-6 col-xl-4">
+        <%= link_to support_inquiries_path, class: "text-decoration-none" do %>
+          <div class="card h-100 dashboard-role-card <%= support_dashboard_card_class %>" data-bs-theme="light">
+            <div class="card-body">
+              <h5 class="card-title mb-2">お問い合わせ</h5>
+              <p class="card-text mb-0">運営へのお問い合わせ履歴を確認し、新しいお問い合わせを作成できます。</p>
             </div>
           </div>
         <% end %>
