@@ -85,6 +85,8 @@ class SupportInquiriesFromCommentReportTest < ActionDispatch::IntegrationTest
     assert_includes response.body, @store.name
     assert_includes response.body, "Report Source Stream"
     assert_includes response.body, "Reported Cast"
+    assert_includes response.body, "配信者"
+    assert_includes response.body, "ロール: 配信者"
     assert_includes response.body, "Escalation target body"
     assert_includes response.body, "comment ID: #{@comment.id}"
   end

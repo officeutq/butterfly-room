@@ -46,6 +46,11 @@
       </div>
 
       <div class="referral-code-row">
+        <div class="referral-code-label">ロール</div>
+        <div class="referral-code-value"><%= user_role_label(@support_source_comment.user) %></div>
+      </div>
+
+      <div class="referral-code-row">
         <div class="referral-code-label">本文</div>
         <div class="referral-code-value text-break"><%= @support_source_comment.body.presence || "（本文なし）" %></div>
       </div>
