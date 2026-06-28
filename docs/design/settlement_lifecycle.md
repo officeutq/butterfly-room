@@ -169,20 +169,16 @@ CSV出力は `Settlements::SbiFurikomiCsvExportService` が処理する。
 
 - 対象は `confirmed` の `Settlement` のみ
 - 店舗に active な `manual_bank` の `StorePayoutAccount` が必要
-- 1ファイル最大9,999件を上限として扱う
+- CSV生成の主導線は `SystemAdmin::SettlementsController#export_csv`
+- `SystemAdmin::SettlementExportsController` は生成済みCSVの `index` / `show` のみを扱う
+- 1ファイル最大9,999件を上限とし、超過時は分割せずエラーとして扱う
+- `StorePayoutAccount.account_type` が `ordinary` の場合はCSV口座種別 `1`、`current` の場合は `2` として出力する
 - CSV生成後に `SettlementExport` を作成し、CSVファイルをActiveStorageに添付する
 - 対象 `Settlement` を `exported` に更新する
 - 対象 `Settlement` に振込先スナップショットを保存する
 - `SettlementEvent.exported` を記録する
-
-確認済みの既存不整合:
-
-- `SystemAdmin::SettlementExportsController#create` は、Serviceに必須の `settlements:` を渡していない
-- 画面文言には9,999件超過時の分割が示されているが、実装は超過時にエラーとして扱う
-- 当座口座 `current` のCSV口座種別変換に不整合がある可能性がある
-- CSV失敗時に `SettlementEvent.export_failed` が記録されていない
-
-これらは後続Issue #930 で修正する。
+- CSV生成中に例外が発生した場合、対象 `Settlement` に `SettlementEvent.export_failed` を記録し、呼び出し元には `ok: false` を返す
+- 事前条件不一致による早期エラー、たとえば `confirmed` 以外や振込先未設定は、CSV生成失敗ではなく入力不備として扱う
 
 ---
 
