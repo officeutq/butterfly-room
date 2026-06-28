@@ -15,7 +15,9 @@ class SystemAdminManualSettlementsTest < ActionDispatch::IntegrationTest
     sign_in @system_admin, scope: :user
     get "/system_admin/settlements/manual/new"
     assert_response :success
-    assert_includes response.body, "マニュアル精算"
+    assert_includes response.body, "手動精算"
+    assert_includes response.body, "対象期間 開始"
+    assert_includes response.body, "対象期間 終了"
   end
 
   test "non system_admin cannot access" do
@@ -36,7 +38,7 @@ class SystemAdminManualSettlementsTest < ActionDispatch::IntegrationTest
     }
 
     assert_response :unprocessable_entity
-    assert_includes response.body, "period_from"
+    assert_includes response.body, "対象期間 終了は対象期間 開始より後にしてください"
   end
 
   test "preview calculation matches rules (1pt=1yen, 0.7 floor)" do
@@ -60,10 +62,17 @@ class SystemAdminManualSettlementsTest < ActionDispatch::IntegrationTest
     share = (BigDecimal(gross) * BigDecimal("0.7")).floor(0).to_i
     fee = gross - share
 
-    assert_includes response.body, "gross_yen"
+    assert_includes response.body, "売上総額"
+    assert_includes response.body, "店舗取り分"
+    assert_includes response.body, "運営手数料"
     assert_includes response.body, gross.to_s
     assert_includes response.body, share.to_s
     assert_includes response.body, fee.to_s
+    assert_not_includes response.body, "gross_yen"
+    assert_not_includes response.body, "store_share_yen"
+    assert_not_includes response.body, "platform_fee_yen"
+    assert_not_includes response.body, "confirmed"
+    assert_not_includes response.body, "settlement 台帳"
     assert_not_includes response.body, "carryover_yen"
   end
 
@@ -96,9 +105,17 @@ class SystemAdminManualSettlementsTest < ActionDispatch::IntegrationTest
     }
 
     assert_response :success
+    assert_includes response.body, "売上総額"
+    assert_includes response.body, "店舗取り分"
+    assert_includes response.body, "運営手数料"
     assert_includes response.body, gross.to_s
     assert_includes response.body, share.to_s
     assert_includes response.body, fee.to_s
+    assert_not_includes response.body, "gross_yen"
+    assert_not_includes response.body, "store_share_yen"
+    assert_not_includes response.body, "platform_fee_yen"
+    assert_not_includes response.body, "confirmed"
+    assert_not_includes response.body, "settlement 台帳"
     assert_not_includes response.body, "carryover_yen"
 
     assert_no_difference -> { SettlementCarryover.count } do

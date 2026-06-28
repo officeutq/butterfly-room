@@ -37,7 +37,7 @@ module SystemAdmin
     def period_range_validation
       return if period_from.blank? || period_to.blank?
 
-      errors.add(:period_to, "は period_from より後にしてください") unless period_from < period_to
+      errors.add(:base, "対象期間 終了は対象期間 開始より後にしてください") unless period_from < period_to
     end
 
     def overlap_validation
