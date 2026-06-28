@@ -178,6 +178,7 @@ module Settlements
     end
 
     def apply_export_snapshot!(settlement, acct:, blob_key:)
+      # exported時点の振込先をSettlement側の正本として固定する。
       settlement.update!(
         status: :exported,
         exported_at: Time.use_zone(ZONE) { Time.zone.now },

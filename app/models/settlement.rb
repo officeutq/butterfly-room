@@ -9,6 +9,14 @@ class Settlement < ApplicationRecord
     platform_fee_yen
   ].freeze
 
+  IMMUTABLE_AFTER_EXPORTED_ATTRIBUTES = %w[
+    payout_bank_code
+    payout_branch_code
+    payout_account_type
+    payout_account_number
+    payout_account_holder_kana
+  ].freeze
+
   belongs_to :store
   belongs_to :exported_by_user, class_name: "User", optional: true
   belongs_to :paid_by_user, class_name: "User", optional: true
@@ -26,6 +34,7 @@ class Settlement < ApplicationRecord
   validates :gross_yen, :store_share_yen, :platform_fee_yen,
             numericality: { greater_than_or_equal_to: 0 }
   validate :immutable_attributes_after_confirmed, if: :persisted?
+  validate :immutable_payout_snapshot_after_exported, if: :persisted?
 
   # --- Phase1 minimal guardrails (app-side) ---
   with_options if: :confirmed_or_later? do
@@ -66,6 +75,16 @@ class Settlement < ApplicationRecord
     end
   end
 
+  def immutable_payout_snapshot_after_exported
+    return unless exported_or_later_status?(status_in_database)
+
+    IMMUTABLE_AFTER_EXPORTED_ATTRIBUTES.each do |attribute|
+      next unless will_save_change_to_attribute?(attribute)
+
+      errors.add(attribute, "cannot be changed after exported")
+    end
+  end
+
   def confirmed_or_later_status?(value)
     normalized =
       if value.is_a?(Integer)
@@ -75,6 +94,17 @@ class Settlement < ApplicationRecord
       end
 
     %w[confirmed exported paid].include?(normalized)
+  end
+
+  def exported_or_later_status?(value)
+    normalized =
+      if value.is_a?(Integer)
+        self.class.statuses.key(value)
+      else
+        value.to_s
+      end
+
+    %w[exported paid].include?(normalized)
   end
 
   def confirmed_or_later?

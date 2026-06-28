@@ -131,6 +131,7 @@ Settlements::MonthlyGenerateService が以下を行う。
 
 Settlements::SbiFurikomiCsvExportService が confirmed の精算を対象に住信SBI CSVを作成する。
 CSV出力時に Settlement.status を exported にし、振込先情報をスナップショット保存する。
+この振込先スナップショットは exported 時点の正本であり、exported 以降は Settlement 側で固定する。
 exported はCSV生成済みを表し、銀行振込成功を意味しない。
 支払完了は paid として扱う。
 

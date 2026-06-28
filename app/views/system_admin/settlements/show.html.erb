@@ -19,7 +19,7 @@
     <tr><th>export_format</th><td><%= @settlement.export_format.presence || "-" %></td></tr>
     <tr><th>export_file_key</th><td class="text-muted small"><%= @settlement.export_file_key.presence || "-" %></td></tr>
 
-    <tr><th>振込先口座（スナップショット）</th>
+    <tr><th>振込先口座（exported時点スナップショット）</th>
       <td>
         <div class="text-muted small">
           bank: <%= @settlement.payout_bank_code.presence || "-" %> /

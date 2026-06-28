@@ -210,7 +210,9 @@ stateDiagram-v2
 
 * 店舗ごとに active な振込先は1件のみ
 * 現行実装では、CSV出力によって exported になる時点で振込先情報を Settlement にスナップショット保存する
-* confirmed 時点で保存するかどうかは、今後の仕様判断対象とする
+* exported 時点で保存された Settlement 側の振込先スナップショットを、支払・監査・支払明細書PDFで参照する正本として扱う
+* exported 以降は、Settlement 側の振込先スナップショットを変更不可にする
+* confirmed 時点で保存する方式へ変えるかどうかは、将来の仕様判断対象とする
 
 ---
 

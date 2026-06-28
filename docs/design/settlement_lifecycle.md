@@ -92,6 +92,7 @@ CSV出力対象は `confirmed` のみである。
 `exported` は銀行振込成功を意味しない。現行実装では、住信SBIの総合振込CSVを生成し、`SettlementExport` とCSVファイルを保存し、対象 `Settlement` を `exported` に更新した状態である。
 
 CSV出力時に、店舗の active な `manual_bank` 振込先を `Settlement` へスナップショット保存する。
+このスナップショットは、`exported` 以降の支払・監査・支払明細書PDFで参照する振込先の正本であり、保存後は変更しない。
 
 ### 3.4 paid
 
@@ -143,6 +144,8 @@ CSV出力時に、店舗の active な `manual_bank` 振込先を `Settlement` �
 店舗振込先は `StorePayoutAccount` に保存される。
 
 現行実装では、振込先スナップショットは `confirmed` 時点ではなく、CSV出力によって `exported` になる時点で `Settlement` に保存される。
+今回の見直しでは、現行CSV運用を前提に、`exported` 時点のスナップショットを正本として扱う。
+`exported` 以降の `Settlement` では、以下のスナップショットカラムを変更不可にする。
 
 スナップショット対象の主なカラム:
 
@@ -154,7 +157,7 @@ CSV出力時に、店舗の active な `manual_bank` 振込先を `Settlement` �
 
 支払明細書PDFや運営側の監査表示では、現在の `StorePayoutAccount` ではなく `Settlement` 側のスナップショットを参照する。
 
-この方針は後続Issue #929 で、docsと実装の両面から明確化する。
+`StorePayoutAccount` が後から変更されても、過去に `exported` になった `Settlement` の振込先スナップショットは変わらない。
 
 ---
 
@@ -252,7 +255,7 @@ SBI APIの詳細は銀行からの回答待ちであるため、このEpicでは
 | --- | --- | --- | --- |
 | `confirmed -> paid` | 記載あり | 実装なし。`mark_paid` は `exported` のみ | 現行実装を正として扱い、必要なら後続Issueで仕様判断する |
 | confirmed以降の固定 | 金額・振込先情報を固定すると記載 | 金額・期間はモデル上で変更不可。振込先情報は #929 で整理する | #928 / #929 で整理する |
-| 振込先スナップショット | confirmed時点と読める記述あり | CSV出力時、`exported` 時点で保存 | #929 で `exported` 時点の正本として明確化する |
+| 振込先スナップショット | confirmed時点と読める記述あり | CSV出力時、`exported` 時点で保存。`exported` 以降は変更不可 | #929 で `exported` 時点の正本として明確化する |
 | 支払日 | 未整理 | `paid_at` なし | #927 で追加する |
 | API振込 | 未整理 | 未実装 | #935 で設計する |
 
