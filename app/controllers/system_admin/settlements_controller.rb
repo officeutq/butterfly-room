@@ -57,6 +57,21 @@ module SystemAdmin
     end
 
     # ----------------------------
+    # monthly generation (system_admin manual execution)
+    # ----------------------------
+    def generate_monthly
+      result = Settlements::MonthlyGenerateService.new(
+        actor_user: current_user
+      ).call
+
+      target_month = Time.use_zone("Asia/Tokyo") { Time.zone.today.prev_month.strftime("%Y-%m") }
+      carryover_count = result.skipped.count { |item| item[:reason].to_s == "below_min_payout" }
+
+      redirect_to system_admin_settlements_path(month: target_month),
+                  notice: "月次精算生成（前月分）を実行しました（作成: #{result.created_count}件 / スキップ: #{result.skipped.size}件、うち繰越: #{carryover_count}件）"
+    end
+
+    # ----------------------------
     # #260 draft -> confirmed
     # ----------------------------
     def confirm

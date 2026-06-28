@@ -78,7 +78,12 @@ class Settlements::MonthlyGenerateServiceTest < ActiveSupport::TestCase
           created_at: Time.zone.now
         )
 
-        result = Settlements::MonthlyGenerateService.new.call
+        actor = User.create!(email: "monthly-generator@example.com", password: "password", role: :system_admin)
+
+        result = nil
+        assert_difference -> { SettlementEvent.created.count }, 1 do
+          result = Settlements::MonthlyGenerateService.new(actor_user: actor).call
+        end
         assert_equal 1, result.created_count
 
         settlement = Settlement.order(:id).last
@@ -86,6 +91,14 @@ class Settlements::MonthlyGenerateServiceTest < ActiveSupport::TestCase
         # month_share = floor(101*0.7)=70, payable = 70 + 10_000
         assert_equal 10_070, settlement.store_share_yen
         assert_equal 31, settlement.platform_fee_yen
+
+        event = settlement.settlement_events.created.order(:id).last
+        assert_equal actor, event.actor_user
+        assert_equal "monthly_generate_service", event.metadata["source"]
+        assert_equal 101, event.metadata["gross_yen"]
+        assert_equal 10_070, event.metadata["store_share_yen"]
+        assert_equal 31, event.metadata["platform_fee_yen"]
+        assert_equal 10_000, event.metadata["carryover_applied_yen"]
       end
     end
   end
@@ -106,9 +119,13 @@ class Settlements::MonthlyGenerateServiceTest < ActiveSupport::TestCase
         o1 = DrinkOrder.create!(store:, booth:, stream_session: ss, customer_user: customer, drink_item:, status: :consumed, consumed_at: period_from + 2.hours)
         StoreLedgerEntry.create!(store:, stream_session: ss, drink_order: o1, points: 9000, occurred_at: period_from + 2.hours)
 
-        svc = Settlements::MonthlyGenerateService.new
+        actor = User.create!(email: "monthly-carryover-generator@example.com", password: "password", role: :system_admin)
+        svc = Settlements::MonthlyGenerateService.new(actor_user: actor)
 
-        r1 = svc.call
+        r1 = nil
+        assert_no_difference -> { SettlementEvent.created.count } do
+          r1 = svc.call
+        end
         assert_equal 0, r1.created_count
         assert_equal 0, Settlement.where(store_id: store.id, period_from:, period_to:).count
 

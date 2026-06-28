@@ -9,8 +9,9 @@ module Settlements
     Result = Data.define(:created_count, :skipped)
 
     # skipped: [{ store_id:, reason:, detail: }, ...]
-    def initialize(target_month: nil, logger: Rails.logger)
+    def initialize(target_month: nil, actor_user: nil, logger: Rails.logger)
       @target_month = target_month
+      @actor_user = actor_user
       @logger = logger
     end
 
@@ -138,6 +139,15 @@ module Settlements
             platform_fee_yen: seg[:fee_yen]
           )
 
+          record_created_event!(
+            settlement: settlement,
+            month_from: month_from,
+            month_to: month_to,
+            segment: seg,
+            store_share_yen: store_share_yen,
+            carryover_applied_yen: idx.zero? ? carryover_yen : 0
+          )
+
           first_settlement ||= settlement
           created_count += 1
         end
@@ -215,6 +225,26 @@ module Settlements
 
     def calc_store_share(gross_yen)
       (BigDecimal(gross_yen) * SHARE_RATE).floor(0).to_i
+    end
+
+    def record_created_event!(settlement:, month_from:, month_to:, segment:, store_share_yen:, carryover_applied_yen:)
+      return if @actor_user.blank?
+
+      settlement.settlement_events.create!(
+        actor_user: @actor_user,
+        action: :created,
+        metadata: {
+          source: "monthly_generate_service",
+          target_month_from: month_from.iso8601,
+          target_month_to: month_to.iso8601,
+          period_from: segment[:from].iso8601,
+          period_to: segment[:to].iso8601,
+          gross_yen: segment[:gross_yen],
+          store_share_yen: store_share_yen,
+          platform_fee_yen: segment[:fee_yen],
+          carryover_applied_yen: carryover_applied_yen
+        }
+      )
     end
   end
 end

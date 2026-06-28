@@ -221,6 +221,7 @@ Rails.application.routes.draw do
         post "manual", to: "settlements#create_manual", as: :create_manual
 
         post :export_csv
+        post :generate_monthly
       end
 
       member do

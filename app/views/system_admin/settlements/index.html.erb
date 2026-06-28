@@ -6,6 +6,30 @@
   confirmed のカードだけにチェックボックスが出ます。
 </div>
 
+<% default_target_month = Time.use_zone("Asia/Tokyo") { Time.zone.today.prev_month.strftime("%Y-%m") } %>
+<div class="card mb-3">
+  <div class="card-body">
+    <%= form_with url: generate_monthly_system_admin_settlements_path, method: :post, class: "row g-2 align-items-end" do %>
+      <div class="col-md-3">
+        <div class="form-label">月次精算生成</div>
+        <div class="fw-semibold">前月分（<%= default_target_month %>）</div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="text-muted small">
+          JST基準で前月を集計し、未精算分を monthly / draft として作成します。confirmed / exported / paid には進めません。
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <%= submit_tag "前月分を生成",
+              class: "btn btn-outline-primary w-100",
+              data: { turbo_confirm: "前月分の月次精算を生成します。よろしいですか？" } %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
 <%= form_with url: export_csv_system_admin_settlements_path, method: :post do %>
   <div class="card mb-3">
     <div class="card-body">
