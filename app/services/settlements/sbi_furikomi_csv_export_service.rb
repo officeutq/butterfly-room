@@ -52,7 +52,8 @@ module Settlements
       { ok: true, created_exports: [ export ], message: "ok" }
     rescue => e
       @logger.error("[SbiFurikomiCsvExport] failed #{e.class}: #{e.message}")
-      raise
+      record_export_failed!(e)
+      { ok: false, message: "振込CSV生成に失敗しました" }
     end
 
     private
@@ -97,24 +98,25 @@ module Settlements
           record_count: record_count
         )
 
-        export = SettlementExport.create!(
-          format: :sbi_furikomi_csv,
-          generated_by_user: @actor_user,
-          file_seq: 1,
-          record_count: record_count,
-          total_amount_yen: total_amount
-        )
-
         filename = "furikomi_#{today.strftime('%Y%m%d')}_01.csv"
-        export.file.attach(
-          io: StringIO.new(csv_string.encode(Encoding::Shift_JIS, invalid: :replace, undef: :replace, replace: "?")),
-          filename: filename,
-          content_type: "text/csv"
-        )
-
-        blob_key = export.file.blob.key
+        export = nil
 
         ApplicationRecord.transaction do
+          export = SettlementExport.create!(
+            format: :sbi_furikomi_csv,
+            generated_by_user: @actor_user,
+            file_seq: 1,
+            record_count: record_count,
+            total_amount_yen: total_amount
+          )
+          export.file.attach(
+            io: StringIO.new(csv_string.encode(Encoding::Shift_JIS, invalid: :replace, undef: :replace, replace: "?")),
+            filename: filename,
+            content_type: "text/csv"
+          )
+
+          blob_key = export.file.blob.key
+
           settlements.each do |s|
             acct = accounts_by_store_id.fetch(s.store_id)
             apply_export_snapshot!(s, acct: acct, blob_key: blob_key)
@@ -212,6 +214,9 @@ module Settlements
       # StorePayoutAccount enum は ordinary/current なので 1/2 に寄せる
       v = value.to_s
       return v if %w[1 2 4 9].include?(v)
+      return "1" if v == "ordinary" || v == StorePayoutAccount.account_types[:ordinary].to_s
+      return "2" if v == "current" || v == StorePayoutAccount.account_types[:current].to_s
+
       "1"
     end
 
@@ -220,6 +225,23 @@ module Settlements
       v = value.to_s
       return Settlement.payout_account_types[:current] if v == "current" || v == "2" || v == StorePayoutAccount.account_types[:current].to_s
       Settlement.payout_account_types[:ordinary]
+    end
+
+    def record_export_failed!(error)
+      @settlements.each do |settlement|
+        next unless settlement.respond_to?(:settlement_events) && settlement.persisted?
+
+        settlement.settlement_events.create!(
+          actor_user: @actor_user,
+          action: :export_failed,
+          metadata: {
+            error_class: error.class.name,
+            error_message: error.message.to_s.truncate(500)
+          }
+        )
+      rescue => event_error
+        @logger.error("[SbiFurikomiCsvExport] export_failed event failed settlement_id=#{settlement.id} #{event_error.class}: #{event_error.message}")
+      end
     end
   end
 end

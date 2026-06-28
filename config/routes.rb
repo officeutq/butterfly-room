@@ -229,6 +229,6 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :settlement_exports, only: %i[index show create]
+    resources :settlement_exports, only: %i[index show]
   end
 end

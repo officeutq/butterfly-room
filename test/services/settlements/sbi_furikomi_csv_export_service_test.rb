@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "csv"
 require "test_helper"
 
 class Settlements::SbiFurikomiCsvExportServiceTest < ActiveSupport::TestCase
@@ -40,6 +41,9 @@ class Settlements::SbiFurikomiCsvExportServiceTest < ActiveSupport::TestCase
     assert_equal account.account_number, settlement.payout_account_number
     assert_equal account.account_holder_kana, settlement.payout_account_holder_kana
     assert settlement.settlement_events.exported.exists?(actor_user: @actor)
+
+    rows = csv_rows(export)
+    assert_equal "1", rows.second[6]
   end
 
   test "later active payout account changes do not change exported settlement snapshot" do
@@ -77,7 +81,76 @@ class Settlements::SbiFurikomiCsvExportServiceTest < ActiveSupport::TestCase
     assert_equal original_snapshot, settlement.reload.attributes.slice(*original_snapshot.keys)
   end
 
+  test "exports current account type as SBI account type 2" do
+    store = Store.create!(name: "store-#{SecureRandom.hex(4)}")
+    create_payout_account(
+      store: store,
+      account_type: :current,
+      account_number: "2345678"
+    )
+    settlement = create_confirmed_settlement(store: store)
+    result = nil
+
+    with_sbi_env do
+      result = Settlements::SbiFurikomiCsvExportService.new(
+        actor_user: @actor,
+        settlements: [ settlement ]
+      ).call
+    end
+
+    assert result[:ok], result[:message]
+
+    export = result[:created_exports].first
+    rows = csv_rows(export)
+    assert_equal "2", rows.second[6]
+    assert_equal "current", settlement.reload.payout_account_type
+  end
+
+  test "rejects more than max records as one file error" do
+    settlements = Array.new(Settlements::SbiFurikomiCsvExportService::MAX_RECORDS_PER_FILE + 1) do
+      Settlement.new(status: :confirmed)
+    end
+
+    result = Settlements::SbiFurikomiCsvExportService.new(
+      actor_user: @actor,
+      settlements: settlements
+    ).call
+
+    assert_not result[:ok]
+    assert_includes result[:message], "1ファイル最大9999件"
+  end
+
+  test "records export_failed event when CSV generation raises" do
+    store = Store.create!(name: "store-#{SecureRandom.hex(4)}")
+    create_payout_account(store: store)
+    settlement = create_confirmed_settlement(store: store)
+    result = nil
+
+    assert_no_difference -> { SettlementExport.count } do
+      without_sbi_required_env do
+        result = Settlements::SbiFurikomiCsvExportService.new(
+          actor_user: @actor,
+          settlements: [ settlement ]
+        ).call
+      end
+    end
+
+    assert_not result[:ok]
+    assert_equal "振込CSV生成に失敗しました", result[:message]
+    assert_predicate settlement.reload, :confirmed?
+
+    event = settlement.settlement_events.export_failed.order(:id).last
+    assert_not_nil event
+    assert_equal @actor, event.actor_user
+    assert_equal "KeyError", event.metadata["error_class"]
+  end
+
   private
+
+  def csv_rows(export)
+    csv = export.file.download.force_encoding(Encoding::Shift_JIS).encode(Encoding::UTF_8)
+    CSV.parse(csv)
+  end
 
   def create_confirmed_settlement(store:)
     Settlement.create!(
@@ -134,6 +207,32 @@ class Settlements::SbiFurikomiCsvExportServiceTest < ActiveSupport::TestCase
     values.each do |key, value|
       previous[key] = ENV[key]
       ENV[key] = value
+    end
+
+    yield
+  ensure
+    previous.each do |key, value|
+      if value.nil?
+        ENV.delete(key)
+      else
+        ENV[key] = value
+      end
+    end
+  end
+
+  def without_sbi_required_env
+    keys = %w[
+      SOUTOKU_FURIKOMI_CLIENT_CODE
+      SOUTOKU_FURIKOMI_CLIENT_NAME
+      SOUTOKU_FURIKOMI_BRANCH_CODE
+      SOUTOKU_FURIKOMI_BRANCH_NAME
+      SOUTOKU_FURIKOMI_ACCOUNT_NUMBER
+    ]
+    previous = {}
+
+    keys.each do |key|
+      previous[key] = ENV[key]
+      ENV.delete(key)
     end
 
     yield
