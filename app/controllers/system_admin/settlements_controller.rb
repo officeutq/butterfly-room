@@ -57,6 +57,20 @@ module SystemAdmin
     end
 
     # ----------------------------
+    # monthly generation (system_admin manual execution)
+    # ----------------------------
+    def generate_monthly
+      result = Settlements::MonthlyGenerateService.new(
+        actor_user: current_user
+      ).call
+
+      target_month = monthly_generation_target_month
+
+      redirect_to system_admin_settlements_path(month: target_month),
+                  notice: monthly_generation_notice(result: result)
+    end
+
+    # ----------------------------
     # #260 draft -> confirmed
     # ----------------------------
     def confirm
@@ -208,6 +222,31 @@ module SystemAdmin
 
     def form_params
       params.require(:manual_settlement).permit(:store_id, :period_from, :period_to)
+    end
+
+    def monthly_generation_target_month
+      Time.use_zone("Asia/Tokyo") { Time.zone.today.prev_month.strftime("%Y-%m") }
+    end
+
+    def monthly_generation_notice(result:)
+      target_month_date = Time.use_zone("Asia/Tokyo") { Time.zone.today.prev_month }
+      target_month_label = "#{target_month_date.year}年#{target_month_date.month}月分"
+      carryover_count = monthly_generation_carryover_count(result)
+      skipped_count = result.skipped.size - carryover_count
+      summary = "（作成: #{result.created_count}件 / 繰越: #{carryover_count}件 / スキップ: #{skipped_count}件）"
+
+      if carryover_count.positive?
+        min_payout_yen = helpers.number_with_delimiter(Settlements::MonthlyGenerateService::MIN_PAYOUT_YEN)
+        "#{target_month_label}を集計しました。支払予定額が最低支払額#{min_payout_yen}円未満の店舗は精算を作成せず、繰越として記録しました。#{summary}"
+      elsif result.created_count.positive?
+        "#{target_month_label}を集計し、monthly / draft の精算を作成しました。#{summary}"
+      else
+        "#{target_month_label}を集計しました。新規作成対象の精算はありませんでした。#{summary}"
+      end
+    end
+
+    def monthly_generation_carryover_count(result)
+      result.skipped.count { |item| item[:reason].to_s == "below_min_payout" }
     end
   end
 end

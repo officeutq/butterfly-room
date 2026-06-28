@@ -126,6 +126,9 @@ Settlements::MonthlyGenerateService が以下を行う。
 - 店舗取り分70%を計算
 - 10,000円未満は SettlementCarryover に繰越
 - 支払可能額に達した場合は Settlement を作成
+- system_admin の手動実行導線から呼ばれた場合は SettlementEvent.created を記録
+
+現行実装では、月次精算生成は system_admin の精算一覧から手動実行する。定期ジョブは未設定である。
 
 ### 7.3 CSV出力
 
