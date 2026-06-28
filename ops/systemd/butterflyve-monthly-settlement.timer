@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Butterflyve monthly settlement generation
+
+[Timer]
+# EC2 hosts run in UTC; JST 13:00 = UTC 04:00.
+OnCalendar=*-*-01 04:00
+AccuracySec=1min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

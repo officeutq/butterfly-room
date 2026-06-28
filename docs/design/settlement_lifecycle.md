@@ -281,7 +281,45 @@ confirmed
 
 ---
 
-## 11. 守る前提
+## 11. 月次精算生成の定期実行（#275）
+
+月次精算生成は `Settlements::MonthlyGenerateService` を正とし、system_admin 画面からの手動実行導線（#932）に加えて、production（本番環境）では systemd timer（Linux の定期実行機能）から Rake task（Railsタスク）を実行する。
+
+通常実行:
+
+```bash
+bin/rails settlements:monthly_generate
+```
+
+通常実行では JST 基準の前月分を対象にする。systemd timer は EC2 の UTC 運用に合わせ、毎月1日 `04:00 UTC`、つまり `13:00 JST` に実行する。
+
+救済用に任意月指定も許可する。
+
+```bash
+bin/rails "settlements:monthly_generate[2026-05]"
+```
+
+この task は `monthly / draft` の `Settlement` 作成、最低支払額未満の `SettlementCarryover` 作成、既存精算との重複スキップを `MonthlyGenerateService` の現行仕様どおりに処理する。`confirmed`、CSV出力、`paid` 化、支払明細書PDF発行は自動化しない。
+
+systemd / Rake task 実行では操作ユーザーが存在しないため、`actor_user: nil` のまま Service を呼び出す。したがって `SettlementEvent.created` は記録しない。`SettlementEvent.created` を記録するのは、system_admin 画面から手動実行された場合のみとする。
+
+Rake task は systemd / journalctl で確認できるよう、対象期間、作成件数、繰越件数、スキップ件数を標準出力に出す。
+
+```text
+[MonthlySettlement] target=2026-05-01..2026-06-01 created=0 carryover=1 skipped=0
+```
+
+systemd の service / timer テンプレートと運用手順は以下を正とする。
+
+- `ops/systemd/butterflyve-monthly-settlement.service`
+- `ops/systemd/butterflyve-monthly-settlement.timer`
+- `docs/ops/monthly_settlement_timer.md`
+
+`config/recurring.yml`、`app/jobs`、ActiveJob（Railsの非同期ジョブ）、DB上のバッチ実行ログテーブルは #275 では使わない。
+
+---
+
+## 12. 守る前提
 
 - 金銭処理・状態変更は Service に集約する
 - Controller は認可、Service 呼び出し、レスポンスに留める
