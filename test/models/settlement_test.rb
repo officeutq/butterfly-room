@@ -130,4 +130,129 @@ class SettlementTest < ActiveSupport::TestCase
 
     assert settlement.valid?
   end
+
+  test "draft settlement can change amount and period" do
+    settlement = create_draft_settlement
+
+    settlement.update!(
+      gross_yen: 10_000,
+      store_share_yen: 7_000,
+      platform_fee_yen: 3_000,
+      period_to: Time.zone.parse("2026-08-01 00:00:00")
+    )
+
+    assert_equal 10_000, settlement.gross_yen
+    assert_equal Time.zone.parse("2026-08-01 00:00:00"), settlement.period_to
+  end
+
+  test "confirmed settlement cannot change amount" do
+    settlement = create_confirmed_settlement
+
+    assert_not settlement.update(gross_yen: settlement.gross_yen + 1)
+    assert settlement.errors[:gross_yen].present?
+  end
+
+  test "exported settlement cannot change period" do
+    settlement = create_exported_settlement
+
+    assert_not settlement.update(period_from: settlement.period_from - 1.day)
+    assert settlement.errors[:period_from].present?
+  end
+
+  test "paid settlement cannot change amount" do
+    settlement = create_paid_settlement
+
+    assert_not settlement.update(store_share_yen: settlement.store_share_yen + 1)
+    assert settlement.errors[:store_share_yen].present?
+  end
+
+  test "confirmed settlement remains immutable even if status is changed back" do
+    settlement = create_confirmed_settlement
+
+    assert_not settlement.update(status: :draft, gross_yen: settlement.gross_yen + 1)
+    assert settlement.errors[:gross_yen].present?
+  end
+
+  test "valid lifecycle metadata updates are allowed without changing amount or period" do
+    settlement = create_draft_settlement
+    user = create_system_admin("settlement-lifecycle@example.com")
+
+    assert settlement.update(status: :confirmed, confirmed_at: Time.zone.parse("2026-07-02 00:00:00"))
+
+    assert settlement.update(
+      status: :exported,
+      exported_at: Time.zone.parse("2026-07-03 00:00:00"),
+      exported_by_user: user,
+      export_format: "sbi_furikomi_csv",
+      payout_bank_code: "0038",
+      payout_branch_code: "101",
+      payout_account_type: :ordinary,
+      payout_account_number: "1234567",
+      payout_account_holder_kana: "ﾃｽﾄ"
+    )
+
+    assert settlement.update(
+      status: :paid,
+      paid_at: Time.zone.parse("2026-07-04 00:00:00"),
+      paid_by_user: user
+    )
+  end
+
+  private
+
+  def create_draft_settlement
+    Settlement.create!(
+      store: Store.create!(name: "store-#{SecureRandom.hex(4)}"),
+      kind: :monthly,
+      status: :draft,
+      period_from: Time.zone.parse("2026-07-01 00:00:00"),
+      period_to: Time.zone.parse("2026-07-15 00:00:00"),
+      gross_yen: 9_000,
+      store_share_yen: 6_300,
+      platform_fee_yen: 2_700
+    )
+  end
+
+  def create_confirmed_settlement
+    create_draft_settlement.tap do |settlement|
+      settlement.update!(
+        status: :confirmed,
+        confirmed_at: Time.zone.parse("2026-07-16 00:00:00")
+      )
+    end
+  end
+
+  def create_exported_settlement
+    user = create_system_admin("settlement-exported@example.com")
+
+    create_confirmed_settlement.tap do |settlement|
+      settlement.update!(
+        status: :exported,
+        exported_at: Time.zone.parse("2026-07-17 00:00:00"),
+        exported_by_user: user,
+        export_format: "sbi_furikomi_csv",
+        payout_bank_code: "0038",
+        payout_branch_code: "101",
+        payout_account_type: :ordinary,
+        payout_account_number: "1234567",
+        payout_account_holder_kana: "ﾃｽﾄ"
+      )
+    end
+  end
+
+  def create_paid_settlement
+    user = create_system_admin("settlement-paid@example.com")
+
+    create_exported_settlement.tap do |settlement|
+      settlement.update!(
+        status: :paid,
+        paid_at: Time.zone.parse("2026-07-18 00:00:00"),
+        paid_by_user: user
+      )
+    end
+  end
+
+  def create_system_admin(email)
+    User.create!(email: email, password: "password", role: :system_admin)
+  end
 end
