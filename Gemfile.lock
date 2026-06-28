@@ -526,6 +526,7 @@ DEPENDENCIES
   importmap-rails
   kamal
   letter_opener_web
+  matrix
   meta-tags
   mini_magick
   pdf-reader
