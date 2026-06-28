@@ -21,19 +21,12 @@ module Settlements
       store_share_yen = (BigDecimal(gross_yen) * SHARE_RATE).floor(0).to_i
       platform_fee_yen = gross_yen - store_share_yen
 
-      carryover_yen =
-        SettlementCarryover
-          .where(store_id: @store_id)
-          .sum(:amount_yen)
-          .to_i
-
       {
         period_from: @period_from,
         period_to: @period_to,
         gross_yen: gross_yen,
         store_share_yen: store_share_yen,
-        platform_fee_yen: platform_fee_yen,
-        carryover_yen: carryover_yen
+        platform_fee_yen: platform_fee_yen
       }
     end
   end

@@ -146,7 +146,7 @@ TODO: CSV生成、CSVダウンロード、銀行アップロード後の確認�
 
 ![マニュアル精算入力済み](images/system_admin/manual_settlements/02_manual_filled.png)
 
-「プレビュー」を選ぶと、gross_yen（総額）、store_share_yen（店舗取り分）、platform_fee_yen（手数料）、carryover_yen（繰越額）が表示されます。
+「プレビュー」を選ぶと、gross_yen（総額）、store_share_yen（店舗取り分）、platform_fee_yen（手数料）が表示されます。マニュアル精算（テスト）では繰越額を適用しません。
 
 ![マニュアル精算プレビュー](images/system_admin/manual_settlements/03_manual_preview.png)
 

@@ -135,7 +135,9 @@ CSV出力時に、店舗の active な `manual_bank` 振込先を `Settlement` �
 
 手動精算は `Settlements::ManualCreateService` が処理し、作成時点で `confirmed` になる。
 
-現行実装では `ManualPreviewService` が繰越額を表示する一方、`ManualCreateService` は繰越額を `store_share_yen` に反映していない。この差分は後続Issue #931 で、手動精算の用途とあわせて整理する。
+手動精算はテスト・例外確認用の精算として扱い、繰越は適用しない。繰越の適用と相殺用の `SettlementCarryover` 作成は月次精算で扱う。
+
+`ManualPreviewService` が表示する `gross_yen` / `store_share_yen` / `platform_fee_yen` と、`ManualCreateService` が作成する `Settlement` の金額は一致する。
 
 ---
 

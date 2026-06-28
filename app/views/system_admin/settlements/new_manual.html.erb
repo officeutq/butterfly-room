@@ -1,7 +1,8 @@
-<h1>マニュアル精算（system_admin）</h1>
+<h1>手動精算（system_admin限定）</h1>
 
 <div class="alert alert-secondary" role="alert">
-  テスト期間のみ使用できます。JST固定、期間は <code>[from, to)</code>（from含む / to含まない）です。
+  テスト・例外確認用の手動精算です。JST固定、対象期間は「開始日時を含む / 終了日時を含まない」で集計します。<br>
+  月次精算の繰越はこの画面では自動適用しません。
 </div>
 
 <%= form_with scope: :manual_settlement,
@@ -29,15 +30,15 @@
 
   <div class="row g-3">
     <div class="col-md-6">
-      <%= f.label :period_from, "period_from（JST）", class: "form-label" %>
+      <%= f.label :period_from, "対象期間 開始（JST）", class: "form-label" %>
       <%= f.datetime_field :period_from, class: "form-control", required: true %>
-      <div class="form-text">from は含みます</div>
+      <div class="form-text">開始日時は集計に含めます</div>
     </div>
 
     <div class="col-md-6">
-      <%= f.label :period_to, "period_to（JST）", class: "form-label" %>
+      <%= f.label :period_to, "対象期間 終了（JST）", class: "form-label" %>
       <%= f.datetime_field :period_to, class: "form-control", required: true %>
-      <div class="form-text">to は含みません</div>
+      <div class="form-text">終了日時は集計に含めません</div>
     </div>
   </div>
 
@@ -60,30 +61,27 @@
           <%= l(@preview[:period_from].in_time_zone("Asia/Tokyo")) %>
           〜
           <%= l(@preview[:period_to].in_time_zone("Asia/Tokyo")) %>
-          （toは含まない）
+          （終了日時は集計に含めません）
         </td>
       </tr>
       <tr>
-        <th>gross_yen</th>
+        <th>売上総額</th>
         <td><%= @preview[:gross_yen] %></td>
       </tr>
       <tr>
-        <th>store_share_yen（gross×0.7 floor）</th>
+        <th>店舗取り分（売上総額の70%・小数切り捨て）</th>
         <td><%= @preview[:store_share_yen] %></td>
       </tr>
       <tr>
-        <th>platform_fee_yen</th>
+        <th>運営手数料</th>
         <td><%= @preview[:platform_fee_yen] %></td>
-      </tr>
-      <tr>
-        <th>carryover_yen（表示のみ）</th>
-        <td><%= @preview[:carryover_yen] %></td>
       </tr>
     </tbody>
   </table>
 
   <div class="alert alert-warning" role="alert">
-    この画面の「確定」は settlement 台帳を作成するだけです。支払や残高表示は扱いません。
+    この画面の「確定して作成」は、プレビューに表示された売上総額・店舗取り分・運営手数料で、
+    精算データを確定済みとして作成します。支払、残高表示、繰越の適用・相殺は行いません。
   </div>
 
   <%= form_with scope: :manual_settlement,
@@ -95,7 +93,7 @@
     <%= f.hidden_field :period_to, value: @form.period_to %>
 
     <div class="d-flex gap-2">
-      <%= f.submit "確定（confirmedで作成）", class: "btn btn-danger", data: { turbo_confirm: "この内容で精算を確定します。よろしいですか？" } %>
+      <%= f.submit "確定して作成", class: "btn btn-danger", data: { turbo_confirm: "この内容で精算を確定します。よろしいですか？" } %>
       <%= link_to "キャンセル", dashboard_path, class: "btn btn-outline-secondary" %>
     </div>
   <% end %>
