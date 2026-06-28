@@ -14,6 +14,8 @@
 
     <tr><th>confirmed_at</th><td><%= @settlement.confirmed_at.present? ? l(@settlement.confirmed_at) : "-" %></td></tr>
     <tr><th>exported_at</th><td><%= @settlement.exported_at.present? ? l(@settlement.exported_at) : "-" %></td></tr>
+    <tr><th>paid_at</th><td><%= @settlement.paid_at.present? ? l(@settlement.paid_at) : "-" %></td></tr>
+    <tr><th>paid_by_user</th><td><%= @settlement.paid_by_user&.email || "-" %></td></tr>
     <tr><th>export_format</th><td><%= @settlement.export_format.presence || "-" %></td></tr>
     <tr><th>export_file_key</th><td class="text-muted small"><%= @settlement.export_file_key.presence || "-" %></td></tr>
 

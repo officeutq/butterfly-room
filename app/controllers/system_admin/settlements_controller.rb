@@ -127,22 +127,20 @@ module SystemAdmin
     # with extra confirmation checkbox
     # ----------------------------
     def mark_paid
-      unless @settlement.exported?
-        redirect_to system_admin_settlement_path(@settlement), alert: "exported のみ支払済みにできます"
-        return
-      end
-
       unless params[:paid_confirm].to_s == "1"
         redirect_to system_admin_settlement_path(@settlement), alert: "確認チェックが必要です"
         return
       end
 
-      @settlement.update!(status: :paid)
+      result = Settlements::MarkPaidService.new(
+        settlement: @settlement,
+        actor_user: current_user
+      ).call
 
-      @settlement.settlement_events.create!(
-        actor_user: current_user,
-        action: :marked_paid
-      )
+      unless result[:ok]
+        redirect_to system_admin_settlement_path(@settlement), alert: result[:message]
+        return
+      end
 
       redirect_to system_admin_settlement_path(@settlement), notice: "paid に更新しました"
     end
