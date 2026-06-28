@@ -80,4 +80,54 @@ class SettlementTest < ActiveSupport::TestCase
       s.save!(validate: false)
     end
   end
+
+  test "paid settlement requires paid_at" do
+    store = Store.create!(name: "store")
+    user = User.create!(email: "settlement-exporter@example.com", password: "password", role: :system_admin)
+
+    settlement = Settlement.new(
+      store: store,
+      kind: :monthly,
+      status: :paid,
+      period_from: Time.zone.parse("2026-04-01 00:00:00"),
+      period_to: Time.zone.parse("2026-05-01 00:00:00"),
+      confirmed_at: Time.zone.parse("2026-05-02 00:00:00"),
+      exported_at: Time.zone.parse("2026-05-03 00:00:00"),
+      exported_by_user: user,
+      export_format: "sbi_furikomi_csv",
+      payout_bank_code: "0038",
+      payout_branch_code: "101",
+      payout_account_type: :ordinary,
+      payout_account_number: "1234567",
+      payout_account_holder_kana: "ﾃｽﾄ"
+    )
+
+    assert_not settlement.valid?
+    assert settlement.errors.of_kind?(:paid_at, :blank)
+  end
+
+  test "paid settlement can omit paid_by_user for future automatic payment results" do
+    store = Store.create!(name: "store")
+    user = User.create!(email: "settlement-exporter@example.com", password: "password", role: :system_admin)
+
+    settlement = Settlement.new(
+      store: store,
+      kind: :monthly,
+      status: :paid,
+      period_from: Time.zone.parse("2026-05-01 00:00:00"),
+      period_to: Time.zone.parse("2026-06-01 00:00:00"),
+      confirmed_at: Time.zone.parse("2026-06-02 00:00:00"),
+      exported_at: Time.zone.parse("2026-06-03 00:00:00"),
+      exported_by_user: user,
+      export_format: "sbi_furikomi_csv",
+      payout_bank_code: "0038",
+      payout_branch_code: "101",
+      payout_account_type: :ordinary,
+      payout_account_number: "1234567",
+      payout_account_holder_kana: "ﾃｽﾄ",
+      paid_at: Time.zone.parse("2026-06-04 00:00:00")
+    )
+
+    assert settlement.valid?
+  end
 end

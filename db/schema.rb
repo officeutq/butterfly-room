@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_25_001000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_28_043000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -340,6 +340,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_001000) do
     t.bigint "exported_by_user_id"
     t.bigint "gross_yen", default: 0, null: false
     t.integer "kind", null: false
+    t.datetime "paid_at"
+    t.bigint "paid_by_user_id"
     t.string "payout_account_holder_kana"
     t.string "payout_account_number", limit: 7
     t.integer "payout_account_type"
@@ -353,6 +355,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_001000) do
     t.bigint "store_share_yen", default: 0, null: false
     t.datetime "updated_at", null: false
     t.index ["kind"], name: "index_settlements_on_kind"
+    t.index ["paid_by_user_id"], name: "index_settlements_on_paid_by_user_id"
     t.index ["period_from", "period_to"], name: "index_settlements_on_period_from_and_period_to"
     t.index ["status"], name: "index_settlements_on_status"
     t.index ["store_id", "period_from", "period_to"], name: "uniq_settlements_store_period_exact", unique: true
@@ -671,6 +674,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_001000) do
   add_foreign_key "settlement_exports", "users", column: "generated_by_user_id"
   add_foreign_key "settlements", "stores"
   add_foreign_key "settlements", "users", column: "exported_by_user_id"
+  add_foreign_key "settlements", "users", column: "paid_by_user_id"
   add_foreign_key "store_admin_invitations", "stores"
   add_foreign_key "store_admin_invitations", "users", column: "accepted_by_user_id"
   add_foreign_key "store_admin_invitations", "users", column: "invited_by_user_id"

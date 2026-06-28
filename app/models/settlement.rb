@@ -3,6 +3,7 @@
 class Settlement < ApplicationRecord
   belongs_to :store
   belongs_to :exported_by_user, class_name: "User", optional: true
+  belongs_to :paid_by_user, class_name: "User", optional: true
   has_many :settlement_events, dependent: :destroy
 
   enum :kind, { monthly: 0, manual: 1 }
@@ -32,6 +33,10 @@ class Settlement < ApplicationRecord
     validates :payout_account_type, presence: true
     validates :payout_account_number, presence: true
     validates :payout_account_holder_kana, presence: true
+  end
+
+  with_options if: :paid? do
+    validates :paid_at, presence: true
   end
 
   private
