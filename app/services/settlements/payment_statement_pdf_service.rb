@@ -128,17 +128,10 @@ module Settlements
 
     def draw_note(pdf)
       section_title(pdf, "備考")
-      pdf.text(
-        "本書は支払済み精算に基づき発行しています。振込先はCSV出力時点で精算に保存された口座情報を使用しています。",
-        size: 10,
-        leading: 4
-      )
-      pdf.move_down 4
-      pdf.text(
-        "draft / confirmed / exported の精算は正式な支払明細書PDFの発行対象外です。",
-        size: 10,
-        leading: 4
-      )
+      note_lines.each do |line|
+        pdf.text(line, size: 10, leading: 4)
+        pdf.move_down 4
+      end
     end
 
     def draw_footer(pdf)
@@ -205,6 +198,21 @@ module Settlements
 
     def title
       @copy ? "支払明細書（運営控え）" : "支払明細書"
+    end
+
+    def note_lines
+      if @copy
+        [
+          "本書は支払済みの精算に基づいて発行しています。",
+          "振込先はCSV出力時点で精算に保存された口座情報を使用しています。",
+          "支払済み以外の精算は、正式な支払明細書PDFの発行対象外です。"
+        ]
+      else
+        [
+          "本書は支払済みの精算に基づいて発行しています。",
+          "振込先は、支払処理時点で登録されていた口座情報を表示しています。"
+        ]
+      end
     end
 
     def statement_number

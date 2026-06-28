@@ -31,6 +31,11 @@ class Settlements::PaymentStatementPdfServiceTest < ActiveSupport::TestCase
     assert_includes text, "9,000円"
     assert_includes text, "21,000円"
     assert_includes text, "***4567"
+    assert_includes text, "本書は支払済みの精算に基づいて発行しています。"
+    assert_includes text, "振込先は、支払処理時点で登録されていた口座情報を表示しています。"
+    refute_includes text, "draft"
+    refute_includes text, "confirmed"
+    refute_includes text, "exported"
   end
 
   test "system admin copy uses admin copy title and filename" do
@@ -44,7 +49,15 @@ class Settlements::PaymentStatementPdfServiceTest < ActiveSupport::TestCase
       ).call
 
     assert_equal "payment_statement_PS-#{format('%08d', settlement.id)}_admin_copy.pdf", result[:filename]
-    assert_includes pdf_text(result[:data]), "支払明細書（運営控え）"
+
+    text = pdf_text(result[:data])
+    assert_includes text, "支払明細書（運営控え）"
+    assert_includes text, "本書は支払済みの精算に基づいて発行しています。"
+    assert_includes text, "振込先はCSV出力時点で精算に保存された口座情報を使用しています。"
+    assert_includes text, "支払済み以外の精算は、正式な支払明細書PDFの発行対象外です。"
+    refute_includes text, "draft"
+    refute_includes text, "confirmed"
+    refute_includes text, "exported"
   end
 
   test "rejects non paid settlement statuses" do
