@@ -1,0 +1,11 @@
+[Unit]
+Description=Butterflyve monthly settlement generation
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/ec2-user/apps/butterfly-room
+ExecStartPre=/usr/bin/docker compose -f /home/ec2-user/apps/butterfly-room/docker-compose.production.yml --env-file /home/ec2-user/apps/butterfly-room/.env.production up -d app
+ExecStart=/usr/bin/docker compose -f /home/ec2-user/apps/butterfly-room/docker-compose.production.yml --env-file /home/ec2-user/apps/butterfly-room/.env.production exec -T app bin/rails settlements:monthly_generate
+TimeoutStartSec=600
