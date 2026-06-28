@@ -232,7 +232,7 @@ PDFで参照する正本データ:
 - 支払日: 将来追加する `Settlement.paid_at`
 - 振込先: `Settlement` の振込先スナップショット
 
-PDF生成方式は後続Issue #933 で選定し、実装は #934 で扱う。
+PDF生成方式は `docs/design/payment_statement_pdf.md` で定める。実装は #934 で扱う。
 
 ---
 
