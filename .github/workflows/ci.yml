@@ -73,6 +73,8 @@ jobs:
             libpq-dev \
             pkg-config \
             libyaml-dev \
+            fonts-noto-cjk \
+            fonts-ipaexfont \
             imagemagick
 
       - name: Set up Node (for npm/sass)

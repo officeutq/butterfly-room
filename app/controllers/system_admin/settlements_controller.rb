@@ -56,6 +56,16 @@ module SystemAdmin
       @events = @settlement.settlement_events.includes(:actor_user).order(created_at: :desc, id: :desc)
     end
 
+    def payment_statement
+      settlement = Settlement.paid.includes(:store).find(params[:id])
+      result = Settlements::PaymentStatementPdfService.new(settlement: settlement, copy: true).call
+
+      send_data result[:data],
+                filename: result[:filename],
+                type: result[:content_type],
+                disposition: "attachment"
+    end
+
     # ----------------------------
     # monthly generation (system_admin manual execution)
     # ----------------------------

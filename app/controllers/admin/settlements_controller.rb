@@ -49,6 +49,16 @@ module Admin
       end
     end
 
+    def payment_statement
+      settlement = current_store.settlements.paid.find(params[:id])
+      result = Settlements::PaymentStatementPdfService.new(settlement: settlement).call
+
+      send_data result[:data],
+                filename: result[:filename],
+                type: result[:content_type],
+                disposition: "attachment"
+    end
+
     private
 
     def set_settlement

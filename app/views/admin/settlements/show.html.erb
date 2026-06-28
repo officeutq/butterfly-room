@@ -59,6 +59,13 @@
     </div>
 
     <div class="d-flex gap-2">
+      <% if @settlement.paid? %>
+        <%= link_to "支払明細書PDFをダウンロード",
+              payment_statement_admin_settlement_path(@settlement),
+              class: "btn btn-primary",
+              data: { turbo: false } %>
+      <% end %>
+
       <%= link_to "精算（予定・履歴）画面へ戻る", admin_settlements_path, class: "btn btn-outline-secondary" %>
     </div>
   </div>
