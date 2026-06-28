@@ -1,7 +1,8 @@
-<h1>マニュアル精算（system_admin）</h1>
+<h1>マニュアル精算（テスト）</h1>
 
 <div class="alert alert-secondary" role="alert">
-  テスト期間のみ使用できます。JST固定、期間は <code>[from, to)</code>（from含む / to含まない）です。
+  テスト・例外確認用の手動精算です。JST固定、期間は <code>[from, to)</code>（from含む / to含まない）です。<br>
+  繰越は月次精算でのみ扱い、この画面では適用しません。
 </div>
 
 <%= form_with scope: :manual_settlement,
@@ -75,15 +76,12 @@
         <th>platform_fee_yen</th>
         <td><%= @preview[:platform_fee_yen] %></td>
       </tr>
-      <tr>
-        <th>carryover_yen（表示のみ）</th>
-        <td><%= @preview[:carryover_yen] %></td>
-      </tr>
     </tbody>
   </table>
 
   <div class="alert alert-warning" role="alert">
-    この画面の「確定」は settlement 台帳を作成するだけです。支払や残高表示は扱いません。
+    この画面の「確定」は、プレビューに表示した gross_yen / store_share_yen / platform_fee_yen で
+    settlement 台帳を confirmed として作成します。支払、残高表示、繰越の適用・相殺は扱いません。
   </div>
 
   <%= form_with scope: :manual_settlement,

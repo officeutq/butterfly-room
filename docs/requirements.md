@@ -228,6 +228,8 @@ StoreLedgerEntry は、DrinkOrder が consumed になった時点で作成され
 - 指定期間で作成する
 - 期間重複がある場合は作成しない
 - 作成時点で confirmed になる
+- テスト・例外確認用の精算であり、繰越は扱わない
+- preview（プレビュー）で表示した gross_yen / store_share_yen / platform_fee_yen が、そのまま作成される Settlement の金額になる
 
 ### 10.4 精算状態
 
