@@ -133,6 +133,7 @@ CSV出力時に、店舗の active な `manual_bank` 振込先を `Settlement` �
 - 支払可能額が10,000円未満の場合、`Settlement` は作らず `SettlementCarryover` に繰り越す
 - 繰越がある場合、次回支払可能時の最初の `Settlement` に加算し、相殺用の負の `SettlementCarryover` を作成する
 - system_admin から実行した場合、作成された `Settlement` ごとに `SettlementEvent.created` を記録する
+- system_admin 画面の実行結果では、`Settlement` 作成、最低支払額未満による繰越、その他スキップを分けて表示する
 
 現行実装では `config/recurring.yml` に月次精算生成の定期ジョブは設定していない。`lib/tasks` のRake task、systemd timer、productionでの自動実行設定、journalctl前提の運用ログ確認は別Issueで扱う。
 

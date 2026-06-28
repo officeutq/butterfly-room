@@ -77,7 +77,10 @@
 
   <% if @settlements.blank? %>
     <div class="alert alert-warning" role="alert">
-      表示できる精算はありません。
+      <div>表示できる精算はありません。</div>
+      <div class="small mt-1">
+        前月分を生成しても、支払予定額が最低支払額10,000円未満の場合は精算は作成されず、繰越として記録されます。
+      </div>
     </div>
   <% else %>
     <div class="referral-codes-list">
@@ -160,9 +163,16 @@
   <% end %>
 
   <div class="d-flex gap-2 mt-3">
-    <%= button_tag "選択したconfirmedをCSV生成（1ファイル）",
-          type: "submit",
-          class: "btn btn-primary",
-          data: { turbo_confirm: "選択した confirmed を対象に、振込CSVを1ファイル生成します。よろしいですか？" } %>
+    <% if @settlements.any?(&:confirmed?) %>
+      <%= button_tag "選択したconfirmedをCSV生成（1ファイル）",
+            type: "submit",
+            class: "btn btn-primary",
+            data: { turbo_confirm: "選択した confirmed を対象に、振込CSVを1ファイル生成します。よろしいですか？" } %>
+    <% else %>
+      <%= button_tag "CSV生成対象のconfirmed精算がありません",
+            type: "button",
+            class: "btn btn-secondary",
+            disabled: true %>
+    <% end %>
   </div>
 <% end %>

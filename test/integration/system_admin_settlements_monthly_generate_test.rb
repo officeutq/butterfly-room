@@ -21,6 +21,30 @@ class SystemAdminSettlementsMonthlyGenerateTest < ActionDispatch::IntegrationTes
     assert_select "input[name=?]", "target_month", count: 0
     assert_includes response.body, "月次精算生成"
     assert_includes response.body, "前月分を生成"
+    assert_includes response.body, "支払予定額が最低支払額10,000円未満の場合は精算は作成されず"
+    assert_select "button[disabled]", text: "CSV生成対象のconfirmed精算がありません"
+  end
+
+  test "csv export button is enabled when confirmed settlement is visible" do
+    Settlement.create!(
+      store: @store,
+      kind: :monthly,
+      status: :confirmed,
+      confirmed_at: Time.zone.parse("2026-04-02 00:00"),
+      period_from: Time.zone.parse("2026-03-01 00:00"),
+      period_to: Time.zone.parse("2026-04-01 00:00"),
+      gross_yen: 20_000,
+      store_share_yen: 14_000,
+      platform_fee_yen: 6_000
+    )
+
+    sign_in @system_admin, scope: :user
+
+    get system_admin_settlements_path, params: { month: "2026-03" }
+
+    assert_response :success
+    assert_select "button:not([disabled])", text: "選択したconfirmedをCSV生成（1ファイル）"
+    assert_select "button[disabled]", text: "CSV生成対象のconfirmed精算がありません", count: 0
   end
 
   test "system_admin can generate monthly settlements and records created event" do
@@ -39,9 +63,10 @@ class SystemAdminSettlementsMonthlyGenerateTest < ActionDispatch::IntegrationTes
     end
 
     assert_redirected_to system_admin_settlements_path(month: "2026-03")
+    assert_match "2026年3月分を集計し", flash[:notice]
     assert_match "作成: 1件", flash[:notice]
-    assert_match "スキップ: 0件", flash[:notice]
     assert_match "繰越: 0件", flash[:notice]
+    assert_match "スキップ: 0件", flash[:notice]
 
     settlement = Settlement.where(store: @store, kind: :monthly, status: :draft).order(:id).last
     assert_equal Time.zone.parse("2026-03-01 00:00"), settlement.period_from
@@ -77,9 +102,11 @@ class SystemAdminSettlementsMonthlyGenerateTest < ActionDispatch::IntegrationTes
     end
 
     assert_redirected_to system_admin_settlements_path(month: "2026-03")
+    assert_match "2026年3月分を集計しました", flash[:notice]
+    assert_match "支払予定額が最低支払額10,000円未満", flash[:notice]
     assert_match "作成: 0件", flash[:notice]
-    assert_match "スキップ: 1件", flash[:notice]
     assert_match "繰越: 1件", flash[:notice]
+    assert_match "スキップ: 0件", flash[:notice]
 
     carryover = SettlementCarryover.where(store: @store, reason: :min_payout_carryover).order(:id).last
     assert_equal 6_300, carryover.amount_yen
