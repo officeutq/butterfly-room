@@ -1,6 +1,14 @@
 # frozen_string_literal: true
 
 class Settlement < ApplicationRecord
+  IMMUTABLE_AFTER_CONFIRMED_ATTRIBUTES = %w[
+    period_from
+    period_to
+    gross_yen
+    store_share_yen
+    platform_fee_yen
+  ].freeze
+
   belongs_to :store
   belongs_to :exported_by_user, class_name: "User", optional: true
   belongs_to :paid_by_user, class_name: "User", optional: true
@@ -17,6 +25,7 @@ class Settlement < ApplicationRecord
 
   validates :gross_yen, :store_share_yen, :platform_fee_yen,
             numericality: { greater_than_or_equal_to: 0 }
+  validate :immutable_attributes_after_confirmed, if: :persisted?
 
   # --- Phase1 minimal guardrails (app-side) ---
   with_options if: :confirmed_or_later? do
@@ -45,6 +54,27 @@ class Settlement < ApplicationRecord
     return if period_from.blank? || period_to.blank?
 
     errors.add(:period_to, "must be after period_from") unless period_from < period_to
+  end
+
+  def immutable_attributes_after_confirmed
+    return unless confirmed_or_later? || confirmed_or_later_status?(status_in_database)
+
+    IMMUTABLE_AFTER_CONFIRMED_ATTRIBUTES.each do |attribute|
+      next unless will_save_change_to_attribute?(attribute)
+
+      errors.add(attribute, "cannot be changed after confirmed")
+    end
+  end
+
+  def confirmed_or_later_status?(value)
+    normalized =
+      if value.is_a?(Integer)
+        self.class.statuses.key(value)
+      else
+        value.to_s
+      end
+
+    %w[confirmed exported paid].include?(normalized)
   end
 
   def confirmed_or_later?
