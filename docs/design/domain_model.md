@@ -137,6 +137,7 @@ DrinkOrder が consumed になった時点で作成される。
 ## 9. Settlement
 
 Settlement は店舗への支払単位である。
+精算ライフサイクルの正本は `docs/design/settlement_lifecycle.md` を参照する。
 
 状態:
 
@@ -150,6 +151,8 @@ draft / confirmed / exported / paid
 10,000円未満の場合は Settlement を作らず、SettlementCarryover に繰り越す。
 
 CSV出力時、Settlement は exported になり、振込先口座情報がスナップショット保存される。
+exported はCSV生成済みであり、銀行振込成功ではない。
+paid は正式な支払済み状態であり、支払明細書PDFの対象になる。
 
 ---
 
