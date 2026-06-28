@@ -201,7 +201,11 @@ Rails.application.routes.draw do
 
     get "/cast_metrics", to: "metrics#cast"
 
-    resources :settlements, only: %i[index show]
+    resources :settlements, only: %i[index show] do
+      member do
+        get :payment_statement
+      end
+    end
   end
 
   # --- System Admin ---
@@ -225,6 +229,7 @@ Rails.application.routes.draw do
       end
 
       member do
+        get :payment_statement
         post :confirm
         post :mark_paid
       end

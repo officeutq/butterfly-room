@@ -42,6 +42,13 @@
 <div class="d-flex flex-wrap gap-2 mb-4">
   <%= link_to "一覧へ戻る", system_admin_settlements_path, class: "btn btn-outline-secondary" %>
 
+  <% if @settlement.paid? %>
+    <%= link_to "支払明細書（運営控え）PDFをダウンロード",
+          payment_statement_system_admin_settlement_path(@settlement),
+          class: "btn btn-primary",
+          data: { turbo: false } %>
+  <% end %>
+
   <% if @settlement.draft? %>
     <%= button_to "confirmed にする",
           confirm_system_admin_settlement_path(@settlement),

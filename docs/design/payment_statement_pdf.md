@@ -9,7 +9,7 @@
 
 この文書は #933 の成果物であり、#934「支払済み精算の支払明細書PDF・運営控えPDFを追加する」の実装前提を固める。
 
-今回のIssueでは方式選定と設計整理のみを行う。Gemfile変更、PDF生成Service実装、Controller / route追加、画面導線追加、フォントファイル追加、PDF実発行は #934 で扱う。
+#934 では、この方針に沿って Prawn（RubyでPDFを直接生成するライブラリ）によるPDF生成Service、Controller / route、画面導線、Docker / CI / production の日本語フォント依存を追加する。フォントファイル自体はリポジトリに含めない。
 
 ---
 
@@ -31,10 +31,10 @@
 
 現状:
 
-- `Gemfile` / `Gemfile.lock` に Prawn（RubyでPDFを直接生成するライブラリ）、Grover（ChromiumでHTMLをPDF化する方式）、WickedPDF（wkhtmltopdfでHTMLをPDF化する方式）などのPDF生成gemは入っていない。
-- 支払明細書PDFのController / route / Service / viewは未実装である。
-- Docker（コンテナ実行環境）は `ruby:3.3-slim` ベースで、Chromium、wkhtmltopdf、日本語フォントは明示的には入っていない。
-- CI（自動テスト環境）は Ubuntu 上でRuby、PostgreSQL、Node、ImageMagick等を準備しているが、PDF生成用のChromium、wkhtmltopdf、日本語フォントは明示的には入っていない。
+- #934 で `Gemfile` / `Gemfile.lock` に Prawn（RubyでPDFを直接生成するライブラリ）を追加し、test環境にはPDFテキスト抽出用の `pdf-reader` を追加する。Grover（ChromiumでHTMLをPDF化する方式）、WickedPDF（wkhtmltopdfでHTMLをPDF化する方式）、PDFKit（wkhtmltopdf系）は追加しない。
+- #934 で支払明細書PDFのController / route / Service / view導線を追加する。
+- Docker（コンテナ実行環境）と production Dockerfile には、PDF生成に必要な日本語フォントとして `fonts-noto-cjk` と `fonts-ipaexfont` を追加する。Chromium、wkhtmltopdfは追加しない。
+- CI（自動テスト環境）には、PDF生成テスト用の日本語フォントとして `fonts-noto-cjk` と `fonts-ipaexfont` を追加する。Chromium、wkhtmltopdfは追加しない。
 - `Settlement` は `paid_at` と `paid_by_user` を持ち、`paid?` の場合は `paid_at` が必須である。
 - `Settlement` の金額・期間は confirmed 以降変更不可であり、振込先スナップショットは exported 以降変更不可である。
 - 精算ライフサイクル上、正式な支払明細書PDFの対象は `paid` の `Settlement` のみである。
@@ -320,14 +320,14 @@ Prawnで日本語を表示するには、PDF組み込みフォントではなく
 
 ### 8.4 推奨する実装時設定案
 
-#934での候補:
+#934で確認した標準候補:
 
 ```ruby
-PAYMENT_STATEMENT_PDF_FONT_PATH=/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc
-PAYMENT_STATEMENT_PDF_FONT_BOLD_PATH=/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc
+PAYMENT_STATEMENT_PDF_FONT_PATH=/usr/share/fonts/opentype/ipaexfont-gothic/ipaexg.ttf
+PAYMENT_STATEMENT_PDF_FONT_BOLD_PATH=/usr/share/fonts/opentype/ipaexfont-gothic/ipaexg.ttf
 ```
 
-ただし、上記パスは環境により異なる可能性があるため、#934でDocker / CI上の実パスを確認してから確定する。
+Docker / CI / production には `fonts-noto-cjk` と `fonts-ipaexfont` を追加する。Debian / Ubuntu系の `fonts-noto-cjk` は `.ttc` 形式になるため、Prawnの標準候補ではTTF / OTFを優先し、`fonts-ipaexfont` の `ipaexg.ttf` をfallbackとして使う。Noto系のTTF / OTFフォントを別途用意する場合は、上記の環境変数で明示する。
 
 Service側では以下の順で解決する案とする。
 
@@ -353,13 +353,15 @@ gem "prawn"
 gem "prawn-table"
 ```
 
-test環境でPDF内テキスト抽出をしたい場合の候補:
+test環境でPDF内テキスト抽出をするための追加gem:
 
 ```ruby
-gem "pdf-reader", group: :test
+group :test do
+  gem "pdf-reader"
+end
 ```
 
-ただし、#934ではまずPrawnのみで実装し、PDF本文の検証が難しい場合に `pdf-reader` を追加する。
+#934では、PDF本文の主要項目を検証するため test 環境に `pdf-reader` を追加する。`prawn-table` は初期実装では追加しない。
 
 ### 9.2 Service構成案
 
@@ -383,7 +385,6 @@ Settlements::PaymentStatementPdfService.new(
 
 ```ruby
 {
-  ok: true,
   filename: "payment_statement_PS-00000001.pdf",
   content_type: "application/pdf",
   data: pdf_binary
@@ -462,7 +463,7 @@ end
 取得方針:
 
 ```ruby
-settlement = Settlement.paid.find(params[:id])
+settlement = Settlement.paid.includes(:store).find(params[:id])
 ```
 
 system_admin向けは `copy: true` とし、タイトルを「支払明細書（運営控え）」にする。
