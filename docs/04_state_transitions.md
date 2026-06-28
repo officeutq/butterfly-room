@@ -159,6 +159,9 @@ stateDiagram-v2
 
 ## 7. Settlement 状態
 
+精算ライフサイクルの正本は `docs/design/settlement_lifecycle.md` を参照する。
+この章では現行実コードを正として扱い、実コードと差分がある既存記述は後続Issueで整理する。
+
 ### 7.1 状態一覧
 
 ```text
@@ -173,16 +176,16 @@ stateDiagram-v2
   draft --> confirmed: 精算確定
   confirmed --> exported: 振込CSV出力
   exported --> paid: 支払完了
-  confirmed --> paid: CSVを使わず支払完了
 ```
 
 ### 7.3 ドメインルール
 
 * draft は仮作成状態
-* confirmed 以降は金額・振込先情報を固定する
-* exported は振込データ出力済み状態
+* confirmed 以降の金額・期間固定は目指す仕様だが、現行実装ではモデル上の完全な固定制約は未実装
+* exported は振込CSV生成済み状態であり、銀行振込成功ではない
 * paid は支払完了状態
 * 精算期間は重複不可
+* 現行実装では confirmed から paid への直接遷移は提供していない
 
 ---
 
@@ -206,7 +209,8 @@ stateDiagram-v2
 ### 8.3 ルール
 
 * 店舗ごとに active な振込先は1件のみ
-* 精算確定時点で振込先情報を Settlement にスナップショット保存する
+* 現行実装では、CSV出力によって exported になる時点で振込先情報を Settlement にスナップショット保存する
+* confirmed 時点で保存するかどうかは、今後の仕様判断対象とする
 
 ---
 

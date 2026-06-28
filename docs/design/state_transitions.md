@@ -127,6 +127,8 @@ stateDiagram-v2
 
 ## 7. Settlement 状態
 
+精算ライフサイクルの正本は `docs/design/settlement_lifecycle.md` を参照する。
+
 ```text
 draft / confirmed / exported / paid
 ```
@@ -138,7 +140,6 @@ stateDiagram-v2
   draft --> confirmed: 確定
   confirmed --> exported: SBI CSV出力
   exported --> paid: 支払完了
-  confirmed --> paid: 手動支払完了
 ```
 
 補足:
@@ -147,7 +148,10 @@ stateDiagram-v2
 - manual は confirmed で作成
 - CSV出力対象は confirmed のみ
 - CSV出力後は exported
+- exported はCSV生成済みであり、銀行振込成功ではない
+- paid は正式な支払済み状態
 - 店舗画面には confirmed / exported / paid のみ表示
+- 現行実装では confirmed から paid への直接遷移は提供していない
 
 ---
 

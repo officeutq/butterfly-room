@@ -110,6 +110,8 @@ DrinkOrders::RefundService が、StreamSession 内の pending DrinkOrder を一�
 
 ## 7. 精算アーキテクチャ
 
+精算ライフサイクルの正本は `docs/design/settlement_lifecycle.md` を参照する。
+
 ### 7.1 集計基準
 
 StoreLedgerEntry.occurred_at をSSOTとして集計する。
@@ -129,6 +131,8 @@ Settlements::MonthlyGenerateService が以下を行う。
 
 Settlements::SbiFurikomiCsvExportService が confirmed の精算を対象に住信SBI CSVを作成する。
 CSV出力時に Settlement.status を exported にし、振込先情報をスナップショット保存する。
+exported はCSV生成済みを表し、銀行振込成功を意味しない。
+支払完了は paid として扱う。
 
 ---
 

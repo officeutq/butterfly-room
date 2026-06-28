@@ -205,6 +205,9 @@ StoreLedgerEntry は、DrinkOrder が consumed になった時点で作成され
 
 ## 10. 精算
 
+精算ライフサイクルの正本は `docs/design/settlement_lifecycle.md` を参照する。
+現状把握では実コードを正として扱い、既存ドキュメントと実コードの差分は後続Issueで整理する。
+
 ### 10.1 精算種別
 
 - manual
@@ -239,6 +242,8 @@ draft / confirmed / exported / paid
 - manual_bank の active な振込先口座が必要
 - CSV出力時に Settlement.status は exported になる
 - 振込先口座情報は Settlement にスナップショット保存する
+- exported はCSV生成済みであり、銀行振込成功ではない
+- paid を正式な支払済み状態として扱い、支払明細書PDFの対象とする
 
 ---
 
