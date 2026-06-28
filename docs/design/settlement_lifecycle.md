@@ -102,7 +102,7 @@ CSV出力時に、店舗の active な `manual_bank` 振込先を `Settlement` �
 
 現行実装では、system_admin が `exported` の精算詳細画面で「銀行アップロード/支払実行を確認した」にチェックし、`mark_paid` を実行すると `paid` になる。
 
-現行スキーマには `settlements.paid_at` / `settlements.paid_by_user_id` がない。支払日を正本として扱うには、後続Issue #927 で追加する。
+`mark_paid` 実行時に `settlements.paid_at` と `settlements.paid_by_user_id` を保存する。支払日として使う正本は `Settlement.paid_at` であり、手動で支払済みにした操作者は `Settlement.paid_by_user` で参照する。
 
 ---
 
@@ -201,16 +201,16 @@ CSV出力は `Settlements::SbiFurikomiCsvExportService` が処理する。
 - 対象は `exported` の `Settlement` のみ
 - system_admin が確認チェックを入れた場合のみ実行する
 - `Settlement.status` を `paid` に更新する
+- `Settlement.paid_at` に支払済み化した日時を保存する
+- `Settlement.paid_by_user` に操作したsystem_adminを保存する
 - `SettlementEvent.marked_paid` を記録する
 
 現行実装には以下がない。
 
-- `paid_at`
-- `paid_by_user_id`
 - `paid_source`
 - paid後の取消・再精算の仕組み
 
-`paid_at` は `paid` 精算では必須にする方向で後続Issue #927 で扱う。`paid_by_user_id` は手動 `mark_paid` では保存するが、将来の銀行API結果による自動 paid 化では nil または system user 扱いを許容する余地を残す。
+`Settlement` は `paid` 精算に `paid_at` を必須としている。`paid_by_user_id` は手動 `mark_paid` では保存するが、将来の銀行API結果による自動 paid 化では nil または system user 扱いを許容する余地を残す。
 
 ---
 
@@ -229,10 +229,10 @@ PDFで参照する正本データ:
 
 - 金額: `Settlement` の金額カラム
 - 対象期間: `Settlement.period_from` / `Settlement.period_to`
-- 支払日: 将来追加する `Settlement.paid_at`
+- 支払日: `Settlement.paid_at`
 - 振込先: `Settlement` の振込先スナップショット
 
-PDF生成方式は後続Issue #933 で選定し、実装は #934 で扱う。
+PDF生成方式は `docs/design/payment_statement_pdf.md` で定める。実装は #934 で扱う。
 
 ---
 
@@ -262,7 +262,7 @@ SBI APIの詳細は銀行からの回答待ちであるため、このEpicでは
 | `confirmed -> paid` | 記載あり | 実装なし。`mark_paid` は `exported` のみ | 現行実装を正として扱い、必要なら後続Issueで仕様判断する |
 | confirmed以降の固定 | 金額・振込先情報を固定すると記載 | 金額・期間はモデル上で変更不可。振込先情報は #929 で整理する | #928 / #929 で整理する |
 | 振込先スナップショット | confirmed時点と読める記述あり | CSV出力時、`exported` 時点で保存。`exported` 以降は変更不可 | #929 で `exported` 時点の正本として明確化する |
-| 支払日 | 未整理 | `paid_at` なし | #927 で追加する |
+| 支払日 | 未整理 | `paid_at` を保存し、`paid` 精算では必須 | 現行実装を正として扱う |
 | API振込 | 未整理 | 未実装 | #935 で設計する |
 
 ---
