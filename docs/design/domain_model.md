@@ -151,6 +151,7 @@ draft / confirmed / exported / paid
 10,000円未満の場合は Settlement を作らず、SettlementCarryover に繰り越す。
 
 CSV出力時、Settlement は exported になり、振込先口座情報がスナップショット保存される。
+このスナップショットは exported 時点の正本として扱い、以降の StorePayoutAccount 変更では更新しない。
 exported はCSV生成済みであり、銀行振込成功ではない。
 paid は正式な支払済み状態であり、支払明細書PDFの対象になる。
 

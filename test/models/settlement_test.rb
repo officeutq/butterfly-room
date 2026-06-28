@@ -173,6 +173,27 @@ class SettlementTest < ActiveSupport::TestCase
     assert settlement.errors[:gross_yen].present?
   end
 
+  test "exported settlement cannot change payout snapshot" do
+    settlement = create_exported_settlement
+
+    assert_not settlement.update(payout_account_number: "7654321")
+    assert settlement.errors[:payout_account_number].present?
+  end
+
+  test "paid settlement cannot change payout snapshot" do
+    settlement = create_paid_settlement
+
+    assert_not settlement.update(payout_bank_code: "9999")
+    assert settlement.errors[:payout_bank_code].present?
+  end
+
+  test "exported payout snapshot remains immutable even if status is changed back" do
+    settlement = create_exported_settlement
+
+    assert_not settlement.update(status: :confirmed, payout_branch_code: "999")
+    assert settlement.errors[:payout_branch_code].present?
+  end
+
   test "valid lifecycle metadata updates are allowed without changing amount or period" do
     settlement = create_draft_settlement
     user = create_system_admin("settlement-lifecycle@example.com")
