@@ -135,7 +135,7 @@ CSV出力時に、店舗の active な `manual_bank` 振込先を `Settlement` �
 - system_admin から実行した場合、作成された `Settlement` ごとに `SettlementEvent.created` を記録する
 - system_admin 画面の実行結果では、`Settlement` 作成、最低支払額未満による繰越、その他スキップを分けて表示する
 
-現行実装では `config/recurring.yml` に月次精算生成の定期ジョブは設定していない。`lib/tasks` のRake task、systemd timer、productionでの自動実行設定、journalctl前提の運用ログ確認は別Issueで扱う。
+production（本番環境）での月次精算自動実行は #275 で Rake task（Railsタスク）と systemd timer（Linux の定期実行機能）テンプレートとして整理する。system_admin 画面からの手動生成導線は #932 のまま残す。`config/recurring.yml`、`app/jobs`、ActiveJob（Railsの非同期ジョブ）は使わない。
 
 `Settlement` が作られないスキップ結果は `SettlementEvent` に記録しない。最低支払額未満の繰越は `SettlementCarryover` に記録する。`SettlementEvent` は `Settlement` に紐づく操作履歴であり、繰越のみの処理では紐づけ先の `Settlement` が存在しないためである。既存精算との重複除外は月次生成結果のスキップ件数として扱う。
 
