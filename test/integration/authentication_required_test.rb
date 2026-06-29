@@ -13,6 +13,14 @@ class AuthenticationRequiredTest < ActionDispatch::IntegrationTest
     get stores_lp_path
 
     assert_response :success
+    assert_select "a", text: "無料で店舗登録する", href: stores_new_registration_path(ref: "0000")
+  end
+
+  test "店舗LPはrefを店舗登録導線へ引き継ぐ" do
+    get stores_lp_path(ref: "abc123")
+
+    assert_response :success
+    assert_select "a", text: "無料で店舗登録する", href: stores_new_registration_path(ref: "abc123")
   end
 
   test "未ログインでも通常サインアップページを表示できる" do

@@ -32,7 +32,7 @@ phone_verifications
 
 ### 3.1 home
 
-`views/home/_guest_lp.html.erb` が未ログイン向けLPを構成する。
+`views/home/_guest_home.html.erb` が未ログイン向け公式トップ / 総合入口を構成する。
 
 主な役割:
 
@@ -40,6 +40,7 @@ phone_verifications
 - 視聴者登録導線
 - ログイン導線
 - 店舗向けLP導線
+- ポイント購入紹介
 - legal / privacy / terms へのリンク
 
 ### 3.2 stores LP
@@ -49,6 +50,8 @@ phone_verifications
 主な役割:
 
 - 店舗導入説明
+- 店舗単位の売上管理
+- ドリンク送信から消化、売上確定までの説明
 - 店舗登録導線
 - 紹介コードrefの引き継ぎ
 
