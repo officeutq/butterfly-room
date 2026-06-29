@@ -179,16 +179,18 @@ class HomeController < ApplicationController
   private
 
   def set_top_page_meta_tags
-    description = "Butterflyve（バタフライブ）は、視聴者・キャスト・店舗をつなぐライブ配信サービスです。配信を見て、コメントし、ドリンクで応援できます。"
+    brand_name = "Butterflyve（バタフライブ）"
+    title = "夜を、ライブ体験に。"
+    description = "#{brand_name}は、視聴者・キャスト・店舗をつなぐライブ配信サービスです。配信を見て、コメントし、ドリンクで応援できます。"
 
     set_meta_tags(
-      title: "Butterflyve（バタフライブ）| 夜を、ライブ体験に。",
+      title: title,
       description: description,
       noindex: false,
       nofollow: false,
       canonical: root_url,
       og: {
-        title: "Butterflyve（バタフライブ）| 夜を、ライブ体験に。",
+        title: "#{title} | #{brand_name}",
         description: description,
         type: "website",
         url: root_url,

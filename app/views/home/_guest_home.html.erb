@@ -1,15 +1,25 @@
+<% content_for :head do %>
+  <script type="application/ld+json"><%= raw({
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Butterflyve",
+    "alternateName": "バタフライブ",
+    "url": "https://butterflyve.jp/"
+  }.to_json) %></script>
+<% end %>
+
 <div class="mx-auto guest-home" style="max-width: 1040px;">
   <section class="py-4 py-md-5">
     <div class="row g-4 align-items-center">
       <div class="col-lg-6">
-        <p class="text-primary fw-semibold small mb-2">Butterflyve（バタフライブ）</p>
+        <p class="text-primary fw-semibold small mb-2">公式トップ</p>
 
         <h1 class="display-5 fw-bold mb-3">
-          配信を見て、<br>
-          ドリンクで応援する。
+          Butterflyve（バタフライブ）
         </h1>
 
         <p class="lead text-secondary mb-4">
+          夜を、ライブ体験に。<br>
           Butterflyveは、視聴者・キャスト・店舗をつなぐライブ配信サービスです。
           配信を視聴し、コメントしながら、アプリ内ドリンクで応援できます。
         </p>
