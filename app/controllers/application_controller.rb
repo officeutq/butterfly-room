@@ -96,18 +96,21 @@ class ApplicationController < ActionController::Base
   end
 
   def set_default_meta_tags
+    brand_name = "Butterflyve（バタフライブ）"
+    description = "Butterflyve（バタフライブ）は、視聴者・キャスト・店舗をつなぐライブ配信サービスです。"
+
     set_meta_tags(
-      site: "Butterflyve",
+      site: brand_name,
       title: "Butterflyve",
-      description: "Butterflyveは、視聴者・キャスト・店舗をつなぐライブ配信サービスです。",
+      description: description,
       reverse: true,
       separator: "|",
       noindex: true,
       nofollow: true,
       og: {
-        site_name: "Butterflyve",
-        title: "Butterflyve",
-        description: "Butterflyveは、視聴者・キャスト・店舗をつなぐライブ配信サービスです。",
+        site_name: brand_name,
+        title: brand_name,
+        description: description,
         type: "website",
         image: view_context.image_url("logo.png")
       },

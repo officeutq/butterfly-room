@@ -41,11 +41,12 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     ss
   end
 
-  test "未ログイン: ようこそ表示が出て、検索欄は出ない" do
+  test "未ログイン: 公式トップ表示が出て、検索欄は出ない" do
     get root_path
     assert_response :success
 
-    assert_includes @response.body, "店舗の方はこちら"
+    assert_includes @response.body, "Butterflyve（バタフライブ）"
+    assert_includes @response.body, "店舗向けページを見る"
     refute_includes @response.body, "input-group"
     refute_includes @response.body, "mode"
     refute_includes @response.body, "placeholder=\"ブース名 / ストア名で検索（部分一致）\""

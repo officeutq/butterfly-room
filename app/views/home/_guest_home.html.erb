@@ -1,0 +1,179 @@
+<% content_for :head do %>
+  <script type="application/ld+json"><%= raw({
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Butterflyve",
+    "alternateName": "バタフライブ",
+    "url": "https://butterflyve.jp/"
+  }.to_json) %></script>
+<% end %>
+
+<div class="mx-auto guest-home" style="max-width: 1040px;">
+  <section class="py-4 py-md-5">
+    <div class="row g-4 align-items-center">
+      <div class="col-lg-6">
+        <p class="text-primary fw-semibold small mb-2">公式トップ</p>
+
+        <h1 class="display-5 fw-bold mb-3">
+          Butterflyve（バタフライブ）
+        </h1>
+
+        <p class="lead text-secondary mb-4">
+          夜を、ライブ体験に。<br>
+          Butterflyveは、視聴者・キャスト・店舗をつなぐライブ配信サービスです。
+          配信を視聴し、コメントしながら、アプリ内ドリンクで応援できます。
+        </p>
+
+        <div class="d-grid gap-2 d-sm-flex mb-3">
+          <%= link_to "ログイン",
+                new_user_session_path,
+                class: "btn btn-primary btn-lg" %>
+
+          <%= link_to "視聴者アカウント 新規作成",
+                sign_up_path,
+                class: "btn btn-outline-primary btn-lg" %>
+        </div>
+
+        <div class="d-grid gap-2 d-sm-flex">
+          <%= link_to "店舗向けページを見る",
+                stores_lp_path,
+                class: "btn btn-outline-secondary" %>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <%= image_tag "lp/points-drink-flow.webp",
+              class: "img-fluid rounded-4 shadow-sm",
+              alt: "視聴者がポイントを使って配信中のキャストへドリンクを送る流れ" %>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-4">
+    <div class="mb-4">
+      <p class="text-primary fw-semibold small mb-2">できること</p>
+      <h2 class="h3 fw-bold mb-0">ライブ配信をもっと近い応援体験に。</h2>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-3 g-3">
+      <div class="col">
+        <div class="card h-100 bg-body-tertiary border-0">
+          <div class="card-body p-4">
+            <h3 class="h5 fw-bold">配信を視聴</h3>
+            <p class="text-secondary mb-0">
+              キャストや店舗の配信を見ながら、その場の空気をオンラインで楽しめます。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="card h-100 bg-body-tertiary border-0">
+          <div class="card-body p-4">
+            <h3 class="h5 fw-bold">コメントで参加</h3>
+            <p class="text-secondary mb-0">
+              配信中にコメントして、キャストと会話しながら時間を過ごせます。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="card h-100 bg-body-tertiary border-0">
+          <div class="card-body p-4">
+            <h3 class="h5 fw-bold">ドリンクで応援</h3>
+            <p class="text-secondary mb-0">
+              購入したポイントを使って、ライブ配信中のキャストへドリンクを送れます。
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-4">
+    <div class="border-top pt-4 row g-4 align-items-center">
+      <div class="col-lg-7">
+        <p class="text-primary fw-semibold small mb-2">ポイント購入に関して</p>
+
+        <h2 class="h5 fw-bold mb-3">
+          視聴者は、配信をドリンクで応援できます。
+        </h2>
+
+        <p class="text-secondary mb-3">
+          Butterflyveでは、購入したポイントを使ってライブ配信中のキャストへドリンクを送信できます。
+        </p>
+
+        <div class="vstack gap-1 mb-3 rounded-3 border-primary-subtle bg-body-tertiary p-3">
+          <div class="small">1,000pt：1,100円（税込）</div>
+          <div class="small">5,000pt：5,500円（税込）</div>
+          <div class="small">10,000pt：11,000円（税込）</div>
+          <div class="small">50,000pt：55,000円（税込）</div>
+          <div class="small">100,000pt：110,000円（税込）</div>
+        </div>
+
+        <p class="small text-secondary mb-3">
+          ※本サービスは会員制サービスです。ポイントの購入および利用にはログインが必要です。
+        </p>
+
+        <div class="d-grid gap-2 d-sm-flex">
+          <%= link_to "ポイントを購入する",
+                new_user_session_path,
+                class: "btn btn-outline-secondary" %>
+        </div>
+      </div>
+
+      <div class="col-lg-5">
+        <div class="card border-primary-subtle bg-body-tertiary">
+          <div class="card-body p-4">
+            <h3 class="h5 fw-bold mb-3">店舗の方へ</h3>
+            <p class="text-secondary mb-3">
+              店舗向けページでは、配信売上の仕組みや料金体系を確認できます。
+            </p>
+
+            <%= link_to "店舗向けページを見る",
+                  stores_lp_path,
+                  class: "btn btn-outline-primary" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="border-top pt-4 d-flex flex-column flex-sm-row gap-2 justify-content-center align-items-center flex-wrap">
+      <span class="text-secondary small">
+        運営会社：
+        <%= link_to "株式会社オフィスUTQ",
+              "https://officeutq.co.jp",
+              class: "link-secondary",
+              target: "_blank",
+              rel: "noopener" %>
+      </span>
+
+      <span class="text-secondary small d-none d-sm-inline">/</span>
+
+      <%= link_to "特定商取引法に基づく表記",
+            legal_path,
+            class: "link-secondary small" %>
+
+      <span class="text-secondary small d-none d-sm-inline">/</span>
+
+      <%= link_to "資金決済法に基づく表示",
+            payment_services_act_path,
+            class: "link-secondary small" %>
+
+      <span class="text-secondary small d-none d-sm-inline">/</span>
+
+      <%= link_to "利用規約",
+            terms_path,
+            class: "link-secondary small" %>
+
+      <span class="text-secondary small d-none d-sm-inline">/</span>
+
+      <%= link_to "プライバシーポリシー",
+            privacy_policy_path,
+            class: "link-secondary small" %>
+    </div>
+  </section>
+</div>
