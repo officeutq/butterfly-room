@@ -199,6 +199,7 @@ Rails.application.routes.draw do
     resources :cast_invitations, only: %i[index create]
     resources :store_admin_invitations, only: %i[index create]
 
+    get "/sales", to: "sales#index"
     get "/cast_metrics", to: "metrics#cast"
 
     resources :settlements, only: %i[index show] do
