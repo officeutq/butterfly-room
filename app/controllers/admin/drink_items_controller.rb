@@ -9,8 +9,8 @@ module Admin
     before_action :set_drink_item, only: %i[update destroy]
 
     def index
-      @drink_item = current_store.drink_items.new(enabled: true, position: default_position)
-      @drink_items = current_store.drink_items.with_attached_custom_icon.ordered
+      @drink_item = build_drink_item
+      load_drink_items
       @editing_drink_item_id = params[:editing_id].to_i if params[:editing_id].present?
     end
 
@@ -36,7 +36,7 @@ module Admin
 
         redirect_to admin_drink_items_path, notice: notice
       else
-        @drink_items = current_store.drink_items.with_attached_custom_icon.ordered
+        load_drink_items
         @editing_drink_item_id = nil
         render :index, status: :unprocessable_entity
       end
@@ -63,9 +63,9 @@ module Admin
 
         redirect_to admin_drink_items_path, notice: notice
       else
-        @drink_items = current_store.drink_items.with_attached_custom_icon.ordered
+        load_drink_items(replace_item: @drink_item)
         @editing_drink_item_id = @drink_item.id
-        @drink_item = current_store.drink_items.new(enabled: true, position: default_position)
+        @drink_item = build_drink_item
         render :index, status: :unprocessable_entity
       end
     end
@@ -82,7 +82,20 @@ module Admin
     end
 
     def drink_item_params
-      params.require(:drink_item).permit(:name, :price_points, :position, :enabled, :icon_key, :custom_icon)
+      params.require(:drink_item)
+            .permit(:name, :price_points, :position, :enabled, :icon_key, :custom_icon, :remove_custom_icon)
+            .tap { |permitted| permitted.delete(:remove_custom_icon) }
+    end
+
+    def load_drink_items(replace_item: nil)
+      @drink_items = current_store.drink_items.with_attached_custom_icon.ordered.to_a
+      return if replace_item.blank? || replace_item.id.blank?
+
+      @drink_items.map! { |item| item.id == replace_item.id ? replace_item : item }
+    end
+
+    def build_drink_item
+      current_store.drink_items.new(enabled: true, position: default_position)
     end
 
     def default_position

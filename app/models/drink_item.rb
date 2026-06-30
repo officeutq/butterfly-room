@@ -66,7 +66,7 @@ class DrinkItem < ApplicationRecord
     content_type = custom_icon.blob.content_type.to_s
     return if CUSTOM_ICON_ALLOWED_CONTENT_TYPES.include?(content_type)
 
-    errors.add(:custom_icon, "はJPEG / PNG / WebPのみアップロードできます")
+    errors.add(:custom_icon, "はJPEG / PNG / WebP のみ使用できます")
   end
 
   def custom_icon_byte_size
