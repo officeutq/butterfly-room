@@ -1,0 +1,138 @@
+<% content_for :title, "売上レポート" %>
+
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-10">
+    <div class="mb-3">
+      <h1 class="h4 mb-1">売上レポート</h1>
+      <div class="small text-muted">
+        消化確定分の店舗総合・ブース別集計値を確認できます。
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <%= form_with url: admin_sales_path,
+            method: :get,
+            local: true,
+            class: "card",
+            data: { controller: "auto-submit" } do %>
+        <div class="card-body">
+          <div class="row g-3 align-items-end">
+            <div class="col-12 col-md-4">
+              <%= label_tag :month, "対象月", class: "form-label" %>
+              <%= tag.input(
+                    type: "month",
+                    id: "month",
+                    name: "month",
+                    value: @selected_month,
+                    class: "form-control",
+                    data: { action: "change->auto-submit#submit" }
+                  ) %>
+            </div>
+            <div class="col-12 col-md-auto">
+              <%= submit_tag "表示", class: "btn btn-primary" %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="alert alert-secondary mb-4" role="alert">
+      <div class="fw-semibold mb-1">表示について</div>
+      <div class="small fw-semibold">
+        ※この画面は消化確定ベースの売上レポート（gross）です。<br>
+        精算額（支払予定額）とは一致しない場合があります。
+      </div>
+    </div>
+
+    <div class="card mb-4" data-bs-theme="light">
+      <div class="card-body">
+        <div class="row g-3 align-items-start">
+          <div class="col-12 col-md">
+            <h2 class="h6 mb-2">店舗総合集計</h2>
+            <div class="small text-muted">
+              <div>対象月：<%= @selected_month %></div>
+              <div>開始：<%= l(@report.period_from) %></div>
+              <div>終了：<%= l(@report.period_to) %></div>
+            </div>
+          </div>
+          <div class="col-12 col-md-auto">
+            <div class="rounded-3 border bg-body-tertiary p-3 text-md-end">
+              <div class="small text-muted mb-1">月合計（gross）</div>
+              <div class="h2 mb-0">
+                <%= number_with_delimiter(@report.month_total_points) %> pt
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-12 col-xl-6">
+        <div class="card h-100" data-bs-theme="light">
+          <div class="card-body">
+            <h2 class="h6 mb-3">日次集計</h2>
+
+            <div class="table-responsive">
+              <table class="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th scope="col">日付</th>
+                    <th scope="col" class="text-end">売上合計（gross）</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @report.daily_rows.each do |row| %>
+                    <tr>
+                      <td><%= "#{row.date.year}年#{row.date.month}月#{row.date.day}日" %></td>
+                      <td class="text-end"><%= number_with_delimiter(row.points) %> pt</td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-xl-6">
+        <div class="card h-100" data-bs-theme="light">
+          <div class="card-body">
+            <h2 class="h6 mb-3">ブース別集計</h2>
+
+            <% if @report.booth_rows.any? %>
+              <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th scope="col">booth名</th>
+                      <th scope="col" class="text-end">売上合計（gross）</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% @report.booth_rows.each do |row| %>
+                      <tr>
+                        <td><%= row.booth_name.presence || "(no name)" %></td>
+                        <td class="text-end"><%= number_with_delimiter(row.points) %> pt</td>
+                      </tr>
+                    <% end %>
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <th scope="row">月合計</th>
+                      <th class="text-end"><%= number_with_delimiter(@report.month_total_points) %> pt</th>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            <% else %>
+              <div class="text-muted small">
+                この月のブース別売上集計値はありません。
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
