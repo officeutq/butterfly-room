@@ -43,6 +43,7 @@ ja:
         price_points: ポイント
         position: 表示順
         icon_key: アイコン
+        custom_icon: カスタムアイコン
 
       store_admin_invitation:
         expires_at: 有効期限
@@ -94,4 +95,3 @@ ja:
 
   errors:
     format: "%{attribute}%{message}"
-

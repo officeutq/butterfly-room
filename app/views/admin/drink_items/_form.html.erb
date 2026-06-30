@@ -1,4 +1,7 @@
-<%= form_with model: drink_item, url: url, method: method do |f| %>
+<%= form_with model: drink_item,
+              url: url,
+              method: method,
+              data: { action: "submit->drink-menu-scroll#store" } do |f| %>
   <div class="card drink-item-card drink-item-form-card <%= "text-muted drink-item-card-disabled" unless drink_item.enabled %>" data-bs-theme="light" data-onboarding-target-element="create-drink-card">
     <div class="card-body">
       <% if drink_item.errors.any? %>
@@ -30,14 +33,59 @@
             <%= f.label :name, "アイコン", class: "col-form-label" %>
           </div>
           <div class="col-8 col-sm-9">
-            <div class="drink-icon-toggle-list" role="radiogroup" aria-label="ドリンクアイコン選択">
+            <% custom_icon_selected = drink_item_custom_icon_attached?(drink_item) %>
+
+            <div
+              class="drink-icon-toggle-list"
+              role="group"
+              aria-label="ドリンクアイコン選択"
+              data-controller="drink-icon-upload">
+              <%= hidden_field_tag "drink_item[remove_custom_icon]",
+                    "0",
+                    data: { "drink-icon-upload-target": "removeFlag" } %>
+
+              <%= f.file_field :custom_icon,
+                    accept: ".jpg,.jpeg,.png,.webp",
+                    class: "drink-icon-upload-input",
+                    data: {
+                      "drink-icon-upload-target": "input",
+                      action: "change->drink-icon-upload#preview"
+                    } %>
+
+              <button
+                type="button"
+                class="btn drink-icon-toggle-btn drink-icon-upload-btn <%= "is-custom-selected" if custom_icon_selected %>"
+                title="画像追加"
+                aria-label="画像追加"
+                data-drink-icon-upload-target="uploadTile"
+                data-action="drink-icon-upload#open">
+                <% if custom_icon_selected %>
+                  <%= image_tag drink_item.custom_icon,
+                                alt: "",
+                                class: "drink-icon-toggle-image",
+                                data: { "drink-icon-upload-target": "preview" } %>
+                  <span class="drink-icon-upload-placeholder d-none" data-drink-icon-upload-target="placeholder">
+                    <span class="drink-icon-upload-plus" aria-hidden="true">+</span>
+                    <span class="drink-icon-upload-text">画像追加</span>
+                  </span>
+                <% else %>
+                  <img alt="" class="drink-icon-toggle-image d-none" data-drink-icon-upload-target="preview">
+                  <span class="drink-icon-upload-placeholder" data-drink-icon-upload-target="placeholder">
+                    <span class="drink-icon-upload-plus" aria-hidden="true">+</span>
+                    <span class="drink-icon-upload-text">画像追加</span>
+                  </span>
+                <% end %>
+              </button>
+
               <% unset_option = send(:drink_icon_option_by_key, nil) %>
 
               <%= f.radio_button :icon_key,
                                 "",
                                 class: "btn-check",
                                 id: "drink_icon_none_#{drink_item.id || 'new'}",
-                                aria: { label: unset_option[:label] } %>
+                                checked: (!custom_icon_selected && drink_item.icon_key.blank?),
+                                aria: { label: unset_option[:label] },
+                                data: { action: "change->drink-icon-upload#selectPreset" } %>
               <label class="btn drink-icon-toggle-btn"
                     for="drink_icon_none_<%= drink_item.id || 'new' %>"
                     title="<%= unset_option[:label] %>">
@@ -51,7 +99,9 @@
                                   key,
                                   class: "btn-check",
                                   id: "drink_icon_#{key}_#{drink_item.id || 'new'}",
-                                  aria: { label: option[:label] } %>
+                                  checked: (!custom_icon_selected && drink_item.icon_key == key),
+                                  aria: { label: option[:label] },
+                                  data: { action: "change->drink-icon-upload#selectPreset" } %>
                 <label class="btn drink-icon-toggle-btn"
                       for="drink_icon_<%= key %>_<%= drink_item.id || 'new' %>"
                       title="<%= option[:label] %>">
@@ -98,7 +148,10 @@
                       onboarding_target_element: (method.to_s == "post" ? nil : "update-drink-submit")
                     } %>
               <% if cancel_url.present? %>
-                <%= link_to "キャンセル", cancel_url, class: "btn btn-sm btn-outline-secondary" %>
+                <%= link_to "キャンセル",
+                            cancel_url,
+                            class: "btn btn-sm btn-outline-secondary",
+                            data: { action: "click->drink-menu-scroll#store" } %>
               <% end %>
             </div>
           </div>

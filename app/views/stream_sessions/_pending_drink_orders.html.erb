@@ -1,5 +1,5 @@
 <% pending = DrinkOrder
-  .includes(:drink_item)
+  .includes(drink_item: { custom_icon_attachment: :blob })
   .where(stream_session_id: stream_session.id, status: :pending)
   .order(:created_at, :id) %>
 

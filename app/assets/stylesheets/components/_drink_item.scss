@@ -29,6 +29,25 @@
   background-color: var(--bs-body-bg);
 }
 
+.drink-icon-upload-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  padding: 0;
+}
+
+.drink-icon-upload-btn {
+  width: 76px;
+  height: 76px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .drink-icon-toggle-image {
   display: block;
   width: 64px;
@@ -37,12 +56,47 @@
   object-fit: cover;
 }
 
+.drink-icon-upload-placeholder {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+  color: var(--bs-secondary-color);
+  background-color: var(--bs-tertiary-bg);
+  line-height: 1;
+}
+
+.drink-icon-upload-plus {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.drink-icon-upload-text {
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
 .btn-check:checked + .drink-icon-toggle-btn {
   border-color: var(--bs-primary);
   background-color: rgba(var(--bs-primary-rgb), 0.12);
 }
 
+.drink-icon-upload-btn.is-custom-selected {
+  border-color: var(--bs-primary);
+  background-color: rgba(var(--bs-primary-rgb), 0.12);
+}
+
 .btn-check:focus-visible + .drink-icon-toggle-btn {
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+.drink-icon-upload-btn:focus-visible {
   outline: 0;
   box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
 }
@@ -133,6 +187,20 @@
   .drink-icon-toggle-image {
     width: 56px;
     height: 56px;
+  }
+
+  .drink-icon-upload-btn {
+    width: 68px;
+    height: 68px;
+  }
+
+  .drink-icon-upload-placeholder {
+    width: 56px;
+    height: 56px;
+  }
+
+  .drink-icon-upload-text {
+    font-size: 0.62rem;
   }
 
   .drink-item-display {

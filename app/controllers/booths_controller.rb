@@ -139,7 +139,7 @@ class BoothsController < ApplicationController
 
   def set_viewer_stream_context
     @stream_session = @booth.current_stream_session
-    @drink_items = @booth.store.drink_items.enabled_only.ordered
+    @drink_items = @booth.store.drink_items.with_attached_custom_icon.enabled_only.ordered
     @can_create_drink_order = can_create_drink_order?
   end
 

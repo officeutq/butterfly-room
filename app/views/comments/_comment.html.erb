@@ -78,7 +78,7 @@
   <% when Comment::KIND_DRINK %>
     <% metadata = comment.metadata_hash %>
     <% drink_item_id = metadata["drink_item_id"] || metadata[:drink_item_id] %>
-    <% drink_item = DrinkItem.find_by(id: drink_item_id) %>
+    <% drink_item = DrinkItem.with_attached_custom_icon.find_by(id: drink_item_id) %>
 
     <div class="comment-avatar">
       <%= user_avatar_badge(comment.user, size: 30, klass: "comment-avatar-badge") %>
@@ -108,7 +108,7 @@
   <% when Comment::KIND_DRINK_CONSUMED %>
     <% metadata = comment.metadata_hash %>
     <% drink_item_id = metadata["drink_item_id"] || metadata[:drink_item_id] %>
-    <% drink_item = DrinkItem.find_by(id: drink_item_id) %>
+    <% drink_item = DrinkItem.with_attached_custom_icon.find_by(id: drink_item_id) %>
 
     <div class="comment-avatar">
       <%= user_avatar_badge(comment.user, size: 30, klass: "comment-avatar-badge") %>

@@ -1,6 +1,6 @@
 <% content_for :title, "ドリンクメニュー" %>
 
-<div class="row g-3">
+<div class="row g-3" data-controller="drink-menu-scroll">
   <% @drink_items.each do |item| %>
     <% editing = @editing_drink_item_id == item.id %>
 
