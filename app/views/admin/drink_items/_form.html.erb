@@ -1,4 +1,7 @@
-<%= form_with model: drink_item, url: url, method: method do |f| %>
+<%= form_with model: drink_item,
+              url: url,
+              method: method,
+              data: { action: "submit->drink-menu-scroll#store" } do |f| %>
   <div class="card drink-item-card drink-item-form-card <%= "text-muted drink-item-card-disabled" unless drink_item.enabled %>" data-bs-theme="light" data-onboarding-target-element="create-drink-card">
     <div class="card-body">
       <% if drink_item.errors.any? %>
@@ -145,7 +148,10 @@
                       onboarding_target_element: (method.to_s == "post" ? nil : "update-drink-submit")
                     } %>
               <% if cancel_url.present? %>
-                <%= link_to "キャンセル", cancel_url, class: "btn btn-sm btn-outline-secondary" %>
+                <%= link_to "キャンセル",
+                            cancel_url,
+                            class: "btn btn-sm btn-outline-secondary",
+                            data: { action: "click->drink-menu-scroll#store" } %>
               <% end %>
             </div>
           </div>
