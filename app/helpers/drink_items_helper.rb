@@ -36,6 +36,13 @@ module DrinkItemsHelper
     end
   end
 
+  def drink_item_custom_icon_attached?(drink_item)
+    return false if drink_item.blank?
+    return false unless drink_item.custom_icon.attached?
+
+    drink_item.custom_icon.attachment&.persisted?
+  end
+
   private
 
   def drink_item_icon_path(drink_item)
@@ -47,6 +54,10 @@ module DrinkItemsHelper
   end
 
   def drink_item_icon_option(drink_item)
+    if drink_item_custom_icon_attached?(drink_item)
+      return { label: "カスタムアイコン", path: drink_item.custom_icon }
+    end
+
     drink_icon_option_by_key(drink_item&.icon_key)
   end
 
