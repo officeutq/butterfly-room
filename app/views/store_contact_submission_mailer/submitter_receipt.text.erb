@@ -1,0 +1,19 @@
+<%= @store_contact_submission.name %> 様
+
+お問い合わせを受け付けました。内容を確認のうえ、担当者よりご連絡いたします。
+
+入力内容の控えは以下のとおりです。
+
+お名前: <%= @store_contact_submission.name %>
+店舗名: <%= @store_contact_submission.store_name %>
+メールアドレス: <%= @store_contact_submission.email %>
+電話番号: <%= @store_contact_submission.phone_number %>
+連絡可能時間帯: <%= @store_contact_submission.contactable_time.presence || "（未入力）" %>
+
+お問い合わせ内容:
+<%= @store_contact_submission.body.presence || "（未入力）" %>
+
+--
+Butterflyve（バタフライブ）
+お店とお客様を、ライブでつなぐ。
+https://butterflyve.jp/

@@ -3,6 +3,21 @@
 require "test_helper"
 
 class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
+  include ActiveJob::TestHelper
+  include ActionMailer::TestHelper
+
+  setup do
+    clear_enqueued_jobs
+    @previous_admin_email = ENV[StoreContactSubmissionMailer::ADMIN_EMAIL_ENV_KEY]
+    ENV[StoreContactSubmissionMailer::ADMIN_EMAIL_ENV_KEY] = "store-contact-admin@example.com"
+  end
+
+  teardown do
+    restore_admin_email_env
+    clear_enqueued_jobs
+    clear_performed_jobs
+  end
+
   test "guest can access new form" do
     get stores_contact_path
 
@@ -58,8 +73,10 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
   test "signed in user cannot create submission" do
     sign_in create_user(email: "signed-in-create@example.com"), scope: :user
 
-    assert_no_difference -> { StoreContactSubmission.count } do
-      post stores_contact_path, params: submission_params
+    assert_no_enqueued_emails do
+      assert_no_difference -> { StoreContactSubmission.count } do
+        post stores_contact_path, params: submission_params
+      end
     end
 
     assert_redirected_to dashboard_path
@@ -69,7 +86,9 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_difference -> { StoreContactSubmission.count }, +1 do
       assert_no_difference -> { SupportInquiry.count } do
         assert_no_difference -> { SupportInquiryMessage.count } do
-          post stores_contact_path, params: submission_params
+          assert_enqueued_emails 2 do
+            post stores_contact_path, params: submission_params
+          end
         end
       end
     end
@@ -95,13 +114,15 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
   end
 
   test "validation errors are displayed when required attributes are missing" do
-    assert_no_difference -> { StoreContactSubmission.count } do
-      post stores_contact_path, params: submission_params(
-        name: "",
-        store_name: "",
-        email: "",
-        phone_number: ""
-      )
+    assert_no_enqueued_emails do
+      assert_no_difference -> { StoreContactSubmission.count } do
+        post stores_contact_path, params: submission_params(
+          name: "",
+          store_name: "",
+          email: "",
+          phone_number: ""
+        )
+      end
     end
 
     assert_response :unprocessable_entity
@@ -147,5 +168,13 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
         contactable_time: "Weekdays 10:00-18:00"
       }.merge(overrides)
     }
+  end
+
+  def restore_admin_email_env
+    if @previous_admin_email.nil?
+      ENV.delete(StoreContactSubmissionMailer::ADMIN_EMAIL_ENV_KEY)
+    else
+      ENV[StoreContactSubmissionMailer::ADMIN_EMAIL_ENV_KEY] = @previous_admin_email
+    end
   end
 end
