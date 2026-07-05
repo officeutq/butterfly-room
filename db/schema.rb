@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_28_043000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_05_000100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -419,6 +419,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_28_043000) do
     t.index ["store_id"], name: "index_store_cast_invitations_on_store_id"
     t.index ["token_digest"], name: "index_store_cast_invitations_on_token_digest", unique: true
     t.index ["used_at"], name: "index_store_cast_invitations_on_used_at"
+  end
+
+  create_table "store_contact_submissions", force: :cascade do |t|
+    t.text "body"
+    t.string "contactable_time", limit: 120
+    t.datetime "created_at", null: false
+    t.string "email", limit: 255, null: false
+    t.string "name", limit: 120, null: false
+    t.string "phone_number", limit: 50, null: false
+    t.string "source", limit: 50, default: "stores_lp", null: false
+    t.string "store_name", limit: 120, null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_store_contact_submissions_on_created_at"
+    t.index ["source"], name: "index_store_contact_submissions_on_source"
   end
 
   create_table "store_ledger_entries", force: :cascade do |t|
