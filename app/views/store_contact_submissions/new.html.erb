@@ -1,0 +1,84 @@
+<% content_for :title, "店舗向けお問い合わせ" %>
+
+<h1 class="container mt-4">店舗向けお問い合わせ</h1>
+
+<div class="container mt-3" style="max-width: 720px;">
+  <p class="text-secondary mb-4">
+    Butterflyveの導入をご検討中の店舗様は、こちらからお気軽にお問い合わせください。
+  </p>
+
+  <% if @store_contact_submission.errors.any? %>
+    <div class="alert alert-danger">
+      <ul class="mb-0">
+        <% @store_contact_submission.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="card">
+    <div class="card-body">
+      <%= form_with model: @store_contact_submission,
+            url: stores_contact_path,
+            scope: :store_contact_submission do |f| %>
+        <div class="mb-3">
+          <%= f.label :name, "お名前", class: "form-label" %>
+          <%= f.text_field :name,
+                class: "form-control",
+                maxlength: StoreContactSubmission::NAME_MAX_LENGTH,
+                required: true,
+                autocomplete: "name" %>
+        </div>
+
+        <div class="mb-3">
+          <%= f.label :store_name, "店舗名", class: "form-label" %>
+          <%= f.text_field :store_name,
+                class: "form-control",
+                maxlength: StoreContactSubmission::STORE_NAME_MAX_LENGTH,
+                required: true,
+                autocomplete: "organization" %>
+        </div>
+
+        <div class="mb-3">
+          <%= f.label :email, "メールアドレス", class: "form-label" %>
+          <%= f.email_field :email,
+                class: "form-control",
+                maxlength: StoreContactSubmission::EMAIL_MAX_LENGTH,
+                required: true,
+                autocomplete: "email" %>
+        </div>
+
+        <div class="mb-3">
+          <%= f.label :phone_number, "電話番号", class: "form-label" %>
+          <%= f.telephone_field :phone_number,
+                class: "form-control",
+                maxlength: StoreContactSubmission::PHONE_NUMBER_MAX_LENGTH,
+                required: true,
+                autocomplete: "tel" %>
+        </div>
+
+        <div class="mb-3">
+          <%= f.label :body, "お問い合わせ内容", class: "form-label" %>
+          <%= f.text_area :body,
+                class: "form-control",
+                rows: 6,
+                maxlength: StoreContactSubmission::BODY_MAX_LENGTH %>
+        </div>
+
+        <div class="mb-4">
+          <%= f.label :contactable_time, "連絡可能時間帯", class: "form-label" %>
+          <%= f.text_field :contactable_time,
+                class: "form-control",
+                maxlength: StoreContactSubmission::CONTACTABLE_TIME_MAX_LENGTH,
+                autocomplete: "off" %>
+        </div>
+
+        <div class="d-flex gap-2">
+          <%= f.submit "送信する", class: "btn btn-primary" %>
+          <%= link_to "店舗向けLPへ戻る", stores_lp_path, class: "btn btn-outline-secondary" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
