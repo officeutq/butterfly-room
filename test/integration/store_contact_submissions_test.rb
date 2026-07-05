@@ -21,29 +21,29 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "label[for='store_contact_submission_name']", text: /お名前/
-    assert_select "label[for='store_contact_submission_name'] .store-contact-submission-field-note",
-      text: "（必須・#{StoreContactSubmission::NAME_MAX_LENGTH}文字以内）"
+    assert_select "label[for='store_contact_submission_name'] .badge.store-contact-submission-field-badge",
+      text: "必須"
     assert_select "input[name='store_contact_submission[name]'][placeholder='例: 山田 太郎']"
     assert_select "label[for='store_contact_submission_store_name']", text: /店舗名/
-    assert_select "label[for='store_contact_submission_store_name'] .store-contact-submission-field-note",
-      text: "（必須・#{StoreContactSubmission::STORE_NAME_MAX_LENGTH}文字以内）"
+    assert_select "label[for='store_contact_submission_store_name'] .badge.store-contact-submission-field-badge",
+      text: "必須"
     assert_select "input[name='store_contact_submission[store_name]'][placeholder='例: Butterflyve Bar 新宿店']"
     assert_select "label[for='store_contact_submission_email']", text: /メールアドレス/
-    assert_select "label[for='store_contact_submission_email'] .store-contact-submission-field-note",
-      text: "（必須・#{StoreContactSubmission::EMAIL_MAX_LENGTH}文字以内・メール形式）"
+    assert_select "label[for='store_contact_submission_email'] .badge.store-contact-submission-field-badge",
+      text: "必須"
     assert_select "input[name='store_contact_submission[email]'][placeholder='例: owner@example.com']"
     assert_select "label[for='store_contact_submission_phone_number']", text: /電話番号/
-    assert_select "label[for='store_contact_submission_phone_number'] .store-contact-submission-field-note",
-      text: "（必須・#{StoreContactSubmission::PHONE_NUMBER_MAX_LENGTH}文字以内）"
+    assert_select "label[for='store_contact_submission_phone_number'] .badge.store-contact-submission-field-badge",
+      text: "必須"
     assert_select "input[name='store_contact_submission[phone_number]'][placeholder='例: 090-1234-5678']"
     assert_select ".form-text", text: "ハイフンあり・なし、先頭0、全角入力でも送信できます。"
     assert_select "label[for='store_contact_submission_body']", text: /お問い合わせ内容/
-    assert_select "label[for='store_contact_submission_body'] .store-contact-submission-field-note",
-      text: "（任意・5,000文字以内）"
+    assert_select "label[for='store_contact_submission_body'] .badge.store-contact-submission-field-badge",
+      text: "任意"
     assert_select "textarea[name='store_contact_submission[body]'][placeholder='例: 導入時期や料金について相談したいです。']"
     assert_select "label[for='store_contact_submission_contactable_time']", text: /連絡可能時間帯/
-    assert_select "label[for='store_contact_submission_contactable_time'] .store-contact-submission-field-note",
-      text: "（任意・#{StoreContactSubmission::CONTACTABLE_TIME_MAX_LENGTH}文字以内）"
+    assert_select "label[for='store_contact_submission_contactable_time'] .badge.store-contact-submission-field-badge",
+      text: "任意"
     assert_select "input[name='store_contact_submission[contactable_time]'][placeholder='例: 平日 10:00〜18:00']"
   end
 
