@@ -4,6 +4,8 @@ require "test_helper"
 
 class StoreContactSubmissionMailerTest < ActionMailer::TestCase
   setup do
+    @previous_mailer_sender = ENV[ApplicationMailer::DEFAULT_FROM_ENV_KEY]
+    ENV[ApplicationMailer::DEFAULT_FROM_ENV_KEY] = "no-reply-test@butterflyve.jp"
     @previous_admin_email = ENV[StoreContactSubmissionMailer::ADMIN_EMAIL_ENV_KEY]
     ENV[StoreContactSubmissionMailer::ADMIN_EMAIL_ENV_KEY] = "store-contact-admin@example.com"
     @store_contact_submission = StoreContactSubmission.create!(
@@ -17,6 +19,7 @@ class StoreContactSubmissionMailerTest < ActionMailer::TestCase
   end
 
   teardown do
+    restore_mailer_sender_env
     restore_admin_email_env
   end
 
@@ -26,6 +29,7 @@ class StoreContactSubmissionMailerTest < ActionMailer::TestCase
       .admin_notification
 
     assert_equal [ "store-contact-admin@example.com" ], mail.to
+    assert_equal [ "no-reply-test@butterflyve.jp" ], mail.from
     assert_equal "【Butterflyve】店舗向けLPからお問い合わせがありました", mail.subject
     assert_match "店舗向けLPからお問い合わせがありました。", mail.text_part.body.decoded
     assert_match "Owner Name", mail.text_part.body.decoded
@@ -44,6 +48,7 @@ class StoreContactSubmissionMailerTest < ActionMailer::TestCase
       .submitter_receipt
 
     assert_equal [ "owner@example.com" ], mail.to
+    assert_equal [ "no-reply-test@butterflyve.jp" ], mail.from
     assert_equal "【Butterflyve】お問い合わせを受け付けました", mail.subject
     assert_match "Owner Name", mail.text_part.body.decoded
     assert_match "お問い合わせを受け付けました。", mail.text_part.body.decoded
@@ -72,6 +77,14 @@ class StoreContactSubmissionMailerTest < ActionMailer::TestCase
   end
 
   private
+
+  def restore_mailer_sender_env
+    if @previous_mailer_sender.nil?
+      ENV.delete(ApplicationMailer::DEFAULT_FROM_ENV_KEY)
+    else
+      ENV[ApplicationMailer::DEFAULT_FROM_ENV_KEY] = @previous_mailer_sender
+    end
+  end
 
   def restore_admin_email_env
     if @previous_admin_email.nil?
