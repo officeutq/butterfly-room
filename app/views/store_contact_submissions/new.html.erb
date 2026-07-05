@@ -24,7 +24,10 @@
             scope: :store_contact_submission,
             html: { class: "store-contact-submission-form" } do |f| %>
         <div class="mb-3">
-          <%= f.label :name, "お名前（必須・#{StoreContactSubmission::NAME_MAX_LENGTH}文字以内）", class: "form-label" %>
+          <%= f.label :name, class: "form-label" do %>
+            お名前<%= tag.span "（必須・#{StoreContactSubmission::NAME_MAX_LENGTH}文字以内）",
+                  class: "store-contact-submission-field-note" %>
+          <% end %>
           <%= f.text_field :name,
                 class: "form-control",
                 maxlength: StoreContactSubmission::NAME_MAX_LENGTH,
@@ -34,7 +37,10 @@
         </div>
 
         <div class="mb-3">
-          <%= f.label :store_name, "店舗名（必須・#{StoreContactSubmission::STORE_NAME_MAX_LENGTH}文字以内）", class: "form-label" %>
+          <%= f.label :store_name, class: "form-label" do %>
+            店舗名<%= tag.span "（必須・#{StoreContactSubmission::STORE_NAME_MAX_LENGTH}文字以内）",
+                  class: "store-contact-submission-field-note" %>
+          <% end %>
           <%= f.text_field :store_name,
                 class: "form-control",
                 maxlength: StoreContactSubmission::STORE_NAME_MAX_LENGTH,
@@ -44,7 +50,10 @@
         </div>
 
         <div class="mb-3">
-          <%= f.label :email, "メールアドレス（必須・#{StoreContactSubmission::EMAIL_MAX_LENGTH}文字以内・メール形式）", class: "form-label" %>
+          <%= f.label :email, class: "form-label" do %>
+            メールアドレス<%= tag.span "（必須・#{StoreContactSubmission::EMAIL_MAX_LENGTH}文字以内・メール形式）",
+                  class: "store-contact-submission-field-note" %>
+          <% end %>
           <%= f.email_field :email,
                 class: "form-control",
                 maxlength: StoreContactSubmission::EMAIL_MAX_LENGTH,
@@ -54,7 +63,10 @@
         </div>
 
         <div class="mb-3">
-          <%= f.label :phone_number, "電話番号（必須・#{StoreContactSubmission::PHONE_NUMBER_MAX_LENGTH}文字以内）", class: "form-label" %>
+          <%= f.label :phone_number, class: "form-label" do %>
+            電話番号<%= tag.span "（必須・#{StoreContactSubmission::PHONE_NUMBER_MAX_LENGTH}文字以内）",
+                  class: "store-contact-submission-field-note" %>
+          <% end %>
           <%= f.telephone_field :phone_number,
                 class: "form-control",
                 maxlength: StoreContactSubmission::PHONE_NUMBER_MAX_LENGTH,
@@ -65,7 +77,10 @@
         </div>
 
         <div class="mb-3">
-          <%= f.label :body, "お問い合わせ内容（任意・#{number_with_delimiter(StoreContactSubmission::BODY_MAX_LENGTH)}文字以内）", class: "form-label" %>
+          <%= f.label :body, class: "form-label" do %>
+            お問い合わせ内容<%= tag.span "（任意・#{number_with_delimiter(StoreContactSubmission::BODY_MAX_LENGTH)}文字以内）",
+                  class: "store-contact-submission-field-note" %>
+          <% end %>
           <%= f.text_area :body,
                 class: "form-control",
                 rows: 6,
@@ -74,7 +89,10 @@
         </div>
 
         <div class="mb-4">
-          <%= f.label :contactable_time, "連絡可能時間帯（任意・#{StoreContactSubmission::CONTACTABLE_TIME_MAX_LENGTH}文字以内）", class: "form-label" %>
+          <%= f.label :contactable_time, class: "form-label" do %>
+            連絡可能時間帯<%= tag.span "（任意・#{StoreContactSubmission::CONTACTABLE_TIME_MAX_LENGTH}文字以内）",
+                  class: "store-contact-submission-field-note" %>
+          <% end %>
           <%= f.text_field :contactable_time,
                 class: "form-control",
                 maxlength: StoreContactSubmission::CONTACTABLE_TIME_MAX_LENGTH,
