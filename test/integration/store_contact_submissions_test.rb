@@ -16,6 +16,25 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_select "input[name='store_contact_submission[contactable_time]']"
   end
 
+  test "form shows validation guidance and placeholders" do
+    get stores_contact_path
+
+    assert_response :success
+    assert_select "label", text: "お名前（必須・#{StoreContactSubmission::NAME_MAX_LENGTH}文字以内）"
+    assert_select "input[name='store_contact_submission[name]'][placeholder='例: 山田 太郎']"
+    assert_select "label", text: "店舗名（必須・#{StoreContactSubmission::STORE_NAME_MAX_LENGTH}文字以内）"
+    assert_select "input[name='store_contact_submission[store_name]'][placeholder='例: Butterflyve Bar 新宿店']"
+    assert_select "label", text: "メールアドレス（必須・#{StoreContactSubmission::EMAIL_MAX_LENGTH}文字以内・メール形式）"
+    assert_select "input[name='store_contact_submission[email]'][placeholder='例: owner@example.com']"
+    assert_select "label", text: "電話番号（必須・#{StoreContactSubmission::PHONE_NUMBER_MAX_LENGTH}文字以内）"
+    assert_select "input[name='store_contact_submission[phone_number]'][placeholder='例: 090-1234-5678']"
+    assert_select ".form-text", text: "ハイフンあり・なし、先頭0、全角入力でも送信できます。"
+    assert_select "label", text: "お問い合わせ内容（任意・5,000文字以内）"
+    assert_select "textarea[name='store_contact_submission[body]'][placeholder='例: 導入時期や料金について相談したいです。']"
+    assert_select "label", text: "連絡可能時間帯（任意・#{StoreContactSubmission::CONTACTABLE_TIME_MAX_LENGTH}文字以内）"
+    assert_select "input[name='store_contact_submission[contactable_time]'][placeholder='例: 平日 10:00〜18:00']"
+  end
+
   test "signed in user is redirected from new form" do
     sign_in create_user, scope: :user
 
