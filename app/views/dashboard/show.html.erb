@@ -490,6 +490,17 @@
       </div>
 
       <div class="col-12 col-md-6 col-xl-4">
+        <%= link_to system_admin_store_contact_submissions_path, class: "text-decoration-none" do %>
+          <div class="card h-100 dashboard-role-card dashboard-role-card-system-admin" data-bs-theme="light">
+            <div class="card-body">
+              <h5 class="card-title mb-2">店舗LPお問い合わせ管理</h5>
+              <p class="card-text mb-0">店舗向けLPから送信されたお問い合わせを確認します。</p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="col-12 col-md-6 col-xl-4">
         <%= link_to "/system_admin/settlements/manual/new", class: "text-decoration-none" do %>
           <div class="card h-100 dashboard-role-card dashboard-role-card-system-admin" data-bs-theme="light">
             <div class="card-body">
