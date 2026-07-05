@@ -1,0 +1,27 @@
+<p><%= @store_contact_submission.name %> 様</p>
+
+<p>
+  お問い合わせを受け付けました。内容を確認のうえ、担当者よりご連絡いたします。
+</p>
+
+<p>入力内容の控えは以下のとおりです。</p>
+
+<dl>
+  <dt>お名前</dt>
+  <dd><%= @store_contact_submission.name %></dd>
+
+  <dt>店舗名</dt>
+  <dd><%= @store_contact_submission.store_name %></dd>
+
+  <dt>メールアドレス</dt>
+  <dd><%= @store_contact_submission.email %></dd>
+
+  <dt>電話番号</dt>
+  <dd><%= @store_contact_submission.phone_number %></dd>
+
+  <dt>連絡可能時間帯</dt>
+  <dd><%= @store_contact_submission.contactable_time.presence || "（未入力）" %></dd>
+
+  <dt>お問い合わせ内容</dt>
+  <dd><%= simple_format(@store_contact_submission.body.presence || "（未入力）") %></dd>
+</dl>

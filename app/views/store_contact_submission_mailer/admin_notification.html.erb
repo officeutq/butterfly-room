@@ -1,0 +1,24 @@
+<p>店舗向けLPからお問い合わせがありました。</p>
+
+<dl>
+  <dt>お名前</dt>
+  <dd><%= @store_contact_submission.name %></dd>
+
+  <dt>店舗名</dt>
+  <dd><%= @store_contact_submission.store_name %></dd>
+
+  <dt>メールアドレス</dt>
+  <dd><%= @store_contact_submission.email %></dd>
+
+  <dt>電話番号</dt>
+  <dd><%= @store_contact_submission.phone_number %></dd>
+
+  <dt>連絡可能時間帯</dt>
+  <dd><%= @store_contact_submission.contactable_time.presence || "（未入力）" %></dd>
+
+  <dt>お問い合わせ内容</dt>
+  <dd><%= simple_format(@store_contact_submission.body.presence || "（未入力）") %></dd>
+
+  <dt>送信日時</dt>
+  <dd><%= l(@store_contact_submission.created_at) %></dd>
+</dl>
