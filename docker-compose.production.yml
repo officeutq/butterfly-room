@@ -15,3 +15,18 @@ services:
       NODE_ENV: production
       RAILS_SERVE_STATIC_FILES: "true"
     restart: unless-stopped
+
+  worker:
+    image: butterfly_room:prod
+    container_name: butterfly_room-worker
+    working_dir: /app
+    env_file:
+      - ./.env.production
+    environment:
+      RAILS_ENV: production
+      NODE_ENV: production
+      RAILS_SERVE_STATIC_FILES: "true"
+    command: bundle exec rails solid_queue:start
+    restart: unless-stopped
+    depends_on:
+      - app

@@ -6,6 +6,8 @@ class SupportInquiryMailerTest < ActionMailer::TestCase
   include ActiveJob::TestHelper
 
   setup do
+    @previous_mailer_sender = ENV[ApplicationMailer::DEFAULT_FROM_ENV_KEY]
+    ENV[ApplicationMailer::DEFAULT_FROM_ENV_KEY] = "no-reply-support-test@butterflyve.jp"
     clear_enqueued_jobs
     @customer = User.create!(
       email: "support_inquiry_mail_customer@example.com",
@@ -32,6 +34,7 @@ class SupportInquiryMailerTest < ActionMailer::TestCase
   end
 
   teardown do
+    restore_mailer_sender_env
     clear_enqueued_jobs
     clear_performed_jobs
   end
@@ -46,6 +49,7 @@ class SupportInquiryMailerTest < ActionMailer::TestCase
       .received
 
     assert_equal [ "reply-destination@example.com" ], mail.to
+    assert_equal [ "no-reply-support-test@butterflyve.jp" ], mail.from
     assert_equal "【Butterflyve】お問い合わせを受け付けました", mail.subject
     assert_match "Mail Customer", mail.text_part.body.decoded
     assert_match "お問い合わせを受け付けました", mail.text_part.body.decoded
@@ -66,6 +70,7 @@ class SupportInquiryMailerTest < ActionMailer::TestCase
       .reply
 
     assert_equal [ "reply-destination@example.com" ], mail.to
+    assert_equal [ "no-reply-support-test@butterflyve.jp" ], mail.from
     assert_equal "【Butterflyve】お問い合わせに返信がありました", mail.subject
     assert_match "Mail Customer", mail.text_part.body.decoded
     assert_match "Mail subject", mail.text_part.body.decoded
@@ -73,5 +78,15 @@ class SupportInquiryMailerTest < ActionMailer::TestCase
     assert_match "アプリ内のお問い合わせ画面から返信してください", mail.text_part.body.decoded
     assert_match "/support/inquiries/#{@support_inquiry.id}", mail.text_part.body.decoded
     assert_match "Mailer reply body", mail.html_part.body.decoded
+  end
+
+  private
+
+  def restore_mailer_sender_env
+    if @previous_mailer_sender.nil?
+      ENV.delete(ApplicationMailer::DEFAULT_FROM_ENV_KEY)
+    else
+      ENV[ApplicationMailer::DEFAULT_FROM_ENV_KEY] = @previous_mailer_sender
+    end
   end
 end
