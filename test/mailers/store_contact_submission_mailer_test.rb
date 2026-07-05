@@ -54,7 +54,11 @@ class StoreContactSubmissionMailerTest < ActionMailer::TestCase
     assert_match "090-1234-5678", mail.text_part.body.decoded
     assert_match "Weekdays 10:00-18:00", mail.text_part.body.decoded
     assert_match "Question about registration.", mail.text_part.body.decoded
+    assert_match "Butterflyve", mail.text_part.body.decoded
+    assert_match "お店とお客様を、ライブでつなぐ。", mail.text_part.body.decoded
+    assert_match "https://butterflyve.jp/", mail.text_part.body.decoded
     assert_match "お問い合わせを受け付けました。", mail.html_part.body.decoded
+    assert_match "https://butterflyve.jp/", mail.html_part.body.decoded
   end
 
   test "admin email is read from environment variable" do
