@@ -21,7 +21,8 @@
     <div class="card-body">
       <%= form_with model: @store_contact_submission,
             url: stores_contact_path,
-            scope: :store_contact_submission do |f| %>
+            scope: :store_contact_submission,
+            html: { class: "store-contact-submission-form" } do |f| %>
         <div class="mb-3">
           <%= f.label :name, "お名前（必須・#{StoreContactSubmission::NAME_MAX_LENGTH}文字以内）", class: "form-label" %>
           <%= f.text_field :name,

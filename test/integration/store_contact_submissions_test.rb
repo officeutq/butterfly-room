@@ -7,7 +7,7 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     get stores_contact_path
 
     assert_response :success
-    assert_select "form[action=?]", stores_contact_path
+    assert_select "form[action=?].store-contact-submission-form", stores_contact_path
     assert_select "input[name='store_contact_submission[name]']"
     assert_select "input[name='store_contact_submission[store_name]']"
     assert_select "input[name='store_contact_submission[email]']"

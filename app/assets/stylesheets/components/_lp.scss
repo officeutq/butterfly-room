@@ -11,3 +11,8 @@
 .store-lp-price {
   min-height: 4rem;
 }
+
+.store-contact-submission-form .form-control::placeholder {
+  color: rgba(var(--bs-body-color-rgb), 0.38);
+  opacity: 1;
+}
