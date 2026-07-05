@@ -1,0 +1,67 @@
+<% content_for :title, "店舗LPお問い合わせ管理" %>
+
+<h1>店舗LPお問い合わせ管理</h1>
+
+<% if @store_contact_submissions.blank? %>
+  <div class="alert alert-secondary">
+    表示できる店舗LPお問い合わせはありません。
+  </div>
+<% else %>
+  <div class="referral-codes-list">
+    <% @store_contact_submissions.each do |store_contact_submission| %>
+      <div class="card referral-code-card">
+        <div class="card-body">
+          <div class="referral-code-row">
+            <div class="referral-code-label">送信日時</div>
+            <div class="referral-code-value text-muted small"><%= l(store_contact_submission.created_at) %></div>
+
+            <div class="referral-code-inline-actions">
+              <%= link_to "詳細",
+                    system_admin_store_contact_submission_path(store_contact_submission),
+                    class: "btn btn-outline-secondary btn-sm" %>
+            </div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">店舗名</div>
+            <div class="referral-code-value fw-semibold text-break"><%= store_contact_submission.store_name %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">お名前</div>
+            <div class="referral-code-value text-break"><%= store_contact_submission.name %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">メールアドレス</div>
+            <div class="referral-code-value text-break"><%= store_contact_submission.email %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">電話番号</div>
+            <div class="referral-code-value"><%= store_contact_submission.phone_number %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">連絡可能時間帯</div>
+            <div class="referral-code-value text-break"><%= store_contact_submission.contactable_time.presence || "-" %></div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">お問い合わせ内容</div>
+            <div class="referral-code-value text-break">
+              <%= store_contact_submission.body.present? ? truncate(store_contact_submission.body, length: 80) : "-" %>
+            </div>
+          </div>
+
+          <div class="referral-code-row">
+            <div class="referral-code-label">source</div>
+            <div class="referral-code-value">
+              <span class="badge text-bg-secondary"><%= store_contact_submission.source %></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% end %>

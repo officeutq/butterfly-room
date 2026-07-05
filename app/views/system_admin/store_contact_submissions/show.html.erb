@@ -1,0 +1,61 @@
+<% content_for :title, "店舗LPお問い合わせ詳細" %>
+
+<div class="mb-3">
+  <%= link_to "店舗LPお問い合わせ管理へ",
+        system_admin_store_contact_submissions_path,
+        class: "btn btn-outline-secondary btn-sm" %>
+</div>
+
+<article class="card referral-code-card mb-4">
+  <div class="card-body">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+      <span class="badge text-bg-secondary"><%= @store_contact_submission.source %></span>
+    </div>
+
+    <h1 class="h3 mb-4">店舗LPお問い合わせ詳細</h1>
+
+    <div class="referral-code-row">
+      <div class="referral-code-label">送信日時</div>
+      <div class="referral-code-value text-muted small"><%= l(@store_contact_submission.created_at) %></div>
+    </div>
+
+    <div class="referral-code-row">
+      <div class="referral-code-label">お名前</div>
+      <div class="referral-code-value text-break"><%= @store_contact_submission.name %></div>
+    </div>
+
+    <div class="referral-code-row">
+      <div class="referral-code-label">店舗名</div>
+      <div class="referral-code-value fw-semibold text-break"><%= @store_contact_submission.store_name %></div>
+    </div>
+
+    <div class="referral-code-row">
+      <div class="referral-code-label">メールアドレス</div>
+      <div class="referral-code-value text-break"><%= @store_contact_submission.email %></div>
+    </div>
+
+    <div class="referral-code-row">
+      <div class="referral-code-label">電話番号</div>
+      <div class="referral-code-value"><%= @store_contact_submission.phone_number %></div>
+    </div>
+
+    <div class="referral-code-row">
+      <div class="referral-code-label">連絡可能時間帯</div>
+      <div class="referral-code-value text-break"><%= @store_contact_submission.contactable_time.presence || "-" %></div>
+    </div>
+
+    <div class="referral-code-row">
+      <div class="referral-code-label">お問い合わせ内容</div>
+      <div class="referral-code-value text-break">
+        <%= @store_contact_submission.body.present? ? simple_format(@store_contact_submission.body) : "-" %>
+      </div>
+    </div>
+
+    <div class="referral-code-row">
+      <div class="referral-code-label">source</div>
+      <div class="referral-code-value">
+        <span class="badge text-bg-secondary"><%= @store_contact_submission.source %></span>
+      </div>
+    </div>
+  </div>
+</article>
