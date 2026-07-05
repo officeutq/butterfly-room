@@ -14,6 +14,7 @@ class AuthenticationRequiredTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "a", text: "無料で店舗登録する", href: stores_new_registration_path(ref: "0000")
+    assert_select "a", text: "お問い合わせはこちら", href: stores_contact_path, minimum: 1
   end
 
   test "店舗LPはrefを店舗登録導線へ引き継ぐ" do
@@ -21,6 +22,7 @@ class AuthenticationRequiredTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "a", text: "無料で店舗登録する", href: stores_new_registration_path(ref: "abc123")
+    assert_select "a", text: "お問い合わせはこちら", href: stores_contact_path, minimum: 1
   end
 
   test "未ログインでも通常サインアップページを表示できる" do

@@ -14,10 +14,14 @@
           LINEなどで常連のお客様に配信URLを送り、オンライン上でドリンク売上をつくれます。
         </p>
 
-        <div class="d-grid gap-2 d-sm-flex mb-3">
+        <div class="d-grid gap-2 d-sm-flex flex-wrap mb-3">
           <%= link_to "無料で店舗登録する",
                 stores_new_registration_path(ref: lp_ref_code),
                 class: "btn btn-primary btn-lg fw-bold" %>
+
+          <%= link_to "お問い合わせはこちら",
+                stores_contact_path,
+                class: "btn btn-outline-primary btn-lg fw-bold" %>
 
           <%= link_to "トップへ戻る",
                 root_path,
@@ -263,9 +267,15 @@
           固定費なしで、店舗の新しいオンライン導線を作れます。
         </p>
 
-        <%= link_to "無料で店舗登録する",
-              stores_new_registration_path(ref: lp_ref_code),
-              class: "btn btn-primary btn-lg fw-bold" %>
+        <div class="d-grid gap-2 d-sm-flex justify-content-center">
+          <%= link_to "無料で店舗登録する",
+                stores_new_registration_path(ref: lp_ref_code),
+                class: "btn btn-primary btn-lg fw-bold" %>
+
+          <%= link_to "お問い合わせはこちら",
+                stores_contact_path,
+                class: "btn btn-outline-primary btn-lg fw-bold" %>
+        </div>
       </div>
     </div>
   </section>
