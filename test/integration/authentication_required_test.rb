@@ -13,7 +13,8 @@ class AuthenticationRequiredTest < ActionDispatch::IntegrationTest
     get stores_lp_path
 
     assert_response :success
-    assert_select "a", text: "無料で店舗登録する", href: stores_new_registration_path(ref: "0000")
+    assert_select "a", text: "無料で店舗登録する",
+      href: stores_new_registration_path(ref: "0000", from: "stores_lp")
     assert_select "a", text: "お問い合わせはこちら", href: stores_contact_path(from: "stores_lp"), minimum: 1
   end
 
@@ -21,7 +22,8 @@ class AuthenticationRequiredTest < ActionDispatch::IntegrationTest
     get stores_lp_path(ref: "abc123")
 
     assert_response :success
-    assert_select "a", text: "無料で店舗登録する", href: stores_new_registration_path(ref: "abc123")
+    assert_select "a", text: "無料で店舗登録する",
+      href: stores_new_registration_path(ref: "abc123", from: "stores_lp")
     assert_select "a", text: "お問い合わせはこちら", href: stores_contact_path(from: "stores_lp"), minimum: 1
   end
 
@@ -30,7 +32,7 @@ class AuthenticationRequiredTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select ".store-lp-202607"
-    assert_select "a[href=?]", stores_new_registration_path(ref: "1001"), minimum: 1
+    assert_select "a[href=?]", stores_new_registration_path(ref: "1001", from: "stores_lp_202607"), minimum: 1
     assert_select "a[href=?]", stores_contact_path(from: "stores_lp_202607"), minimum: 1
     assert_select "a[href=?]", legal_path, minimum: 1
     assert_select "a[href=?]", payment_services_act_path, minimum: 1

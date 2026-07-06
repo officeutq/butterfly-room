@@ -50,7 +50,8 @@ class SeoMetaTagsTest < ActionDispatch::IntegrationTest
     assert_match %r{\Ahttps?://}, doc.at_css("meta[property='og:image']")["content"]
     assert_nil doc.at_css("meta[name='robots']")
     assert_nil doc.at_css("script[type='application/ld+json']")
-    assert_select "a", text: "無料で店舗登録する", href: stores_new_registration_path(ref: "abc123")
+    assert_select "a", text: "無料で店舗登録する",
+      href: stores_new_registration_path(ref: "abc123", from: "stores_lp")
   end
 
   test "store LP 202607 is noindex while it is a confirmation page" do
@@ -65,6 +66,6 @@ class SeoMetaTagsTest < ActionDispatch::IntegrationTest
     assert_equal stores_lp_202607_url, doc.at_css("meta[property='og:url']")["content"]
     assert_includes doc.at_css("meta[name='robots']")["content"], "noindex"
     assert_select ".store-lp-202607"
-    assert_select "a[href=?]", stores_new_registration_path(ref: "1001"), minimum: 1
+    assert_select "a[href=?]", stores_new_registration_path(ref: "1001", from: "stores_lp_202607"), minimum: 1
   end
 end
