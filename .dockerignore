@@ -36,6 +36,31 @@
 !/app/assets/builds/.keep
 /public/assets
 
+# Ignore self-hosted DeepAR SDK/effects from the production build context.
+# The production beauty provider defaults to Banuba; keep public/banuba and public/esm.
+/public/deepar/
+
+# Ignore development/test artifacts that are not required for the production image.
+/coverage/
+/test-results/
+/test/
+/tests/
+/docs/
+
+# Ignore local bundler installs, logs, and OS metadata.
+/vendor/bundle/
+*.log
+.DS_Store
+**/.DS_Store
+
+# Ignore local export/helper artifacts.
+/_issues.json
+/_prs.json
+/issues_with*.csv
+/project_export.tsv
+/copy_app_tree.ps1
+/export_*.ps1
+
 # Ignore CI service files.
 /.github
 
