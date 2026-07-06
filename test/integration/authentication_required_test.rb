@@ -38,6 +38,12 @@ class AuthenticationRequiredTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?]", payment_services_act_path, minimum: 1
     assert_select "a[href=?]", terms_path, minimum: 1
     assert_select "a[href=?]", privacy_policy_path, minimum: 1
+    assert_includes response.body, "お客様に自動返却"
+    assert_includes response.body, "今なら、こちらのサイトからの登録で全て無料"
+    assert_includes response.body, "お客様の支払い方法は何がありますか？"
+    assert_includes response.body, "コンビニ決済、クレジットカード、ApplePay、GooglePay"
+    refute_includes response.body, "ファンに自動返却"
+    refute_includes response.body, "通常初期費用〇〇円"
   end
 
   test "未ログインでも通常サインアップページを表示できる" do
