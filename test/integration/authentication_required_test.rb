@@ -25,6 +25,19 @@ class AuthenticationRequiredTest < ActionDispatch::IntegrationTest
     assert_select "a", text: "お問い合わせはこちら", href: stores_contact_path, minimum: 1
   end
 
+  test "未ログインでも外注店舗LP 202607を表示できる" do
+    get stores_lp_202607_path
+
+    assert_response :success
+    assert_select ".store-lp-202607"
+    assert_select "a[href=?]", stores_new_registration_path(ref: "1001"), minimum: 1
+    assert_select "a[href=?]", stores_contact_path, minimum: 1
+    assert_select "a[href=?]", legal_path, minimum: 1
+    assert_select "a[href=?]", payment_services_act_path, minimum: 1
+    assert_select "a[href=?]", terms_path, minimum: 1
+    assert_select "a[href=?]", privacy_policy_path, minimum: 1
+  end
+
   test "未ログインでも通常サインアップページを表示できる" do
     get sign_up_path
 

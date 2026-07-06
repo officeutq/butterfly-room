@@ -52,4 +52,19 @@ class SeoMetaTagsTest < ActionDispatch::IntegrationTest
     assert_nil doc.at_css("script[type='application/ld+json']")
     assert_select "a", text: "無料で店舗登録する", href: stores_new_registration_path(ref: "abc123")
   end
+
+  test "store LP 202607 is noindex while it is a confirmation page" do
+    get stores_lp_202607_path
+
+    assert_response :success
+
+    doc = Nokogiri::HTML(@response.body)
+
+    assert_equal "夜のお店のための新しい遠隔配信ツール | Butterflyve（バタフライブ）", doc.at_css("title").text
+    assert_equal stores_lp_202607_url, doc.at_css("link[rel='canonical']")["href"]
+    assert_equal stores_lp_202607_url, doc.at_css("meta[property='og:url']")["content"]
+    assert_includes doc.at_css("meta[name='robots']")["content"], "noindex"
+    assert_select ".store-lp-202607"
+    assert_select "a[href=?]", stores_new_registration_path(ref: "1001"), minimum: 1
+  end
 end
