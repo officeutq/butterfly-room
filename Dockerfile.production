@@ -25,6 +25,8 @@ RUN test -f package.json && (npm ci || npm install) || true
 
 COPY . .
 
+RUN npm run build:css
+
 ENV RAILS_ENV=production NODE_ENV=production
 
 # ★ここが本命：ビルド中に必ず precompile
