@@ -36,6 +36,41 @@
 !/app/assets/builds/.keep
 /public/assets
 
+# Ignore DeepAR effects disabled in config/deepar_effects.yml.
+# Keep DeepAR SDK/runtime files and enabled effects for BEAUTY_PROVIDER=deepar.
+/public/deepar/effects/Burning Effect/
+/public/deepar/effects/Emotions Exaggerator/
+/public/deepar/effects/Fire Effect/
+/public/deepar/effects/Hope/
+/public/deepar/effects/Makeup Look w_ Slipt Screen Effect/
+/public/deepar/effects/Pixel Heart Particles/
+/public/deepar/effects/Stallone/
+/public/deepar/effects/Viking Helmet PBR/
+/public/deepar/effects/lion
+/public/deepar/effects/koala
+/public/deepar/effects/background_replacement.deepar
+
+# Ignore development/test artifacts that are not required for the production image.
+/coverage/
+/test-results/
+/test/
+/tests/
+/docs/
+
+# Ignore local bundler installs, logs, and OS metadata.
+/vendor/bundle/
+*.log
+.DS_Store
+**/.DS_Store
+
+# Ignore local export/helper artifacts.
+/_issues.json
+/_prs.json
+/issues_with*.csv
+/project_export.tsv
+/copy_app_tree.ps1
+/export_*.ps1
+
 # Ignore CI service files.
 /.github
 
