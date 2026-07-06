@@ -13,16 +13,37 @@ class AuthenticationRequiredTest < ActionDispatch::IntegrationTest
     get stores_lp_path
 
     assert_response :success
-    assert_select "a", text: "無料で店舗登録する", href: stores_new_registration_path(ref: "0000")
-    assert_select "a", text: "お問い合わせはこちら", href: stores_contact_path, minimum: 1
+    assert_select "a", text: "無料で店舗登録する",
+      href: stores_new_registration_path(ref: "0000", from: "stores_lp")
+    assert_select "a", text: "お問い合わせはこちら", href: stores_contact_path(from: "stores_lp"), minimum: 1
   end
 
   test "店舗LPはrefを店舗登録導線へ引き継ぐ" do
     get stores_lp_path(ref: "abc123")
 
     assert_response :success
-    assert_select "a", text: "無料で店舗登録する", href: stores_new_registration_path(ref: "abc123")
-    assert_select "a", text: "お問い合わせはこちら", href: stores_contact_path, minimum: 1
+    assert_select "a", text: "無料で店舗登録する",
+      href: stores_new_registration_path(ref: "abc123", from: "stores_lp")
+    assert_select "a", text: "お問い合わせはこちら", href: stores_contact_path(from: "stores_lp"), minimum: 1
+  end
+
+  test "未ログインでも外注店舗LP 202607を表示できる" do
+    get stores_lp_202607_path
+
+    assert_response :success
+    assert_select ".store-lp-202607"
+    assert_select "a[href=?]", stores_new_registration_path(ref: "1001", from: "stores_lp_202607"), minimum: 1
+    assert_select "a[href=?]", stores_contact_path(from: "stores_lp_202607"), minimum: 1
+    assert_select "a[href=?]", legal_path, minimum: 1
+    assert_select "a[href=?]", payment_services_act_path, minimum: 1
+    assert_select "a[href=?]", terms_path, minimum: 1
+    assert_select "a[href=?]", privacy_policy_path, minimum: 1
+    assert_includes response.body, "お客様に自動返却"
+    assert_includes response.body, "今なら、こちらのサイトからの登録で全て無料"
+    assert_includes response.body, "お客様の支払い方法は何がありますか？"
+    assert_includes response.body, "コンビニ決済、クレジットカード、ApplePay、GooglePay"
+    refute_includes response.body, "ファンに自動返却"
+    refute_includes response.body, "通常初期費用〇〇円"
   end
 
   test "未ログインでも通常サインアップページを表示できる" do

@@ -16,11 +16,11 @@
 
         <div class="d-grid gap-2 d-sm-flex flex-wrap mb-3">
           <%= link_to "無料で店舗登録する",
-                stores_new_registration_path(ref: lp_ref_code),
+                stores_new_registration_path(ref: lp_ref_code, from: "stores_lp"),
                 class: "btn btn-primary btn-lg fw-bold" %>
 
           <%= link_to "お問い合わせはこちら",
-                stores_contact_path,
+                stores_contact_path(from: "stores_lp"),
                 class: "btn btn-outline-primary btn-lg fw-bold" %>
 
           <%= link_to "トップへ戻る",
@@ -269,11 +269,11 @@
 
         <div class="d-grid gap-2 d-sm-flex justify-content-center">
           <%= link_to "無料で店舗登録する",
-                stores_new_registration_path(ref: lp_ref_code),
+                stores_new_registration_path(ref: lp_ref_code, from: "stores_lp"),
                 class: "btn btn-primary btn-lg fw-bold" %>
 
           <%= link_to "お問い合わせはこちら",
-                stores_contact_path,
+                stores_contact_path(from: "stores_lp"),
                 class: "btn btn-outline-primary btn-lg fw-bold" %>
         </div>
       </div>

@@ -9,6 +9,7 @@ Rails.application.routes.draw do
 
   get "/sitemap.xml", to: "seo#sitemap", as: :sitemap, defaults: { format: :xml }
   get "/stores/lp", to: "store_lps#show", as: :stores_lp
+  get "/stores/lp_202607", to: "store_lps#show_202607", as: :stores_lp_202607
   get "/stores/contact", to: "store_contact_submissions#new", as: :stores_contact
   post "/stores/contact", to: "store_contact_submissions#create"
   get "/legal", to: "legal#show", as: :legal

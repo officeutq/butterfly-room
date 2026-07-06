@@ -23,12 +23,38 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "form[action=?].store-contact-submission-form", stores_contact_path
+    assert_select "a[href=?]", stores_lp_path
     assert_select "input[name='store_contact_submission[name]']"
     assert_select "input[name='store_contact_submission[store_name]']"
     assert_select "input[name='store_contact_submission[email]']"
     assert_select "input[name='store_contact_submission[phone_number]']"
     assert_select "textarea[name='store_contact_submission[body]']"
     assert_select "input[name='store_contact_submission[contactable_time]']"
+  end
+
+  test "form keeps back link for current store LP" do
+    get stores_contact_path(from: "stores_lp")
+
+    assert_response :success
+    assert_select "form[action=?].store-contact-submission-form", stores_contact_path(from: "stores_lp")
+    assert_select "a[href=?]", stores_lp_path
+  end
+
+  test "form keeps back link for store LP 202607" do
+    get stores_contact_path(from: "stores_lp_202607")
+
+    assert_response :success
+    assert_select "form[action=?].store-contact-submission-form", stores_contact_path(from: "stores_lp_202607")
+    assert_select "a[href=?]", stores_lp_202607_path
+  end
+
+  test "form falls back to current store LP when from is invalid" do
+    get stores_contact_path(from: "https://example.com")
+
+    assert_response :success
+    assert_select "form[action=?].store-contact-submission-form", stores_contact_path
+    assert_select "a[href=?]", stores_lp_path
+    assert_no_match "https://example.com", response.body
   end
 
   test "form shows validation guidance and placeholders" do
@@ -105,6 +131,17 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_equal StoreContactSubmission::SOURCE_STORES_LP, submission.source
   end
 
+  test "create keeps store LP 202607 contact source in redirect" do
+    assert_difference -> { StoreContactSubmission.count }, +1 do
+      assert_enqueued_emails 2 do
+        post stores_contact_path(from: "stores_lp_202607"), params: submission_params
+      end
+    end
+
+    assert_redirected_to stores_contact_path(from: "stores_lp_202607")
+    assert_equal StoreContactSubmission::SOURCE_STORES_LP, StoreContactSubmission.order(:id).last.source
+  end
+
   test "success message is displayed after create" do
     post stores_contact_path, params: submission_params
     follow_redirect!
@@ -127,10 +164,30 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
 
     assert_response :unprocessable_entity
     assert_select ".alert-danger"
+    assert_select "form[action=?].store-contact-submission-form", stores_contact_path
+    assert_select "a[href=?]", stores_lp_path
     assert_select "input[name='store_contact_submission[name]']"
     assert_select "input[name='store_contact_submission[store_name]']"
     assert_select "input[name='store_contact_submission[email]']"
     assert_select "input[name='store_contact_submission[phone_number]']"
+  end
+
+  test "validation errors keep store LP 202607 back link" do
+    assert_no_enqueued_emails do
+      assert_no_difference -> { StoreContactSubmission.count } do
+        post stores_contact_path(from: "stores_lp_202607"), params: submission_params(
+          name: "",
+          store_name: "",
+          email: "",
+          phone_number: ""
+        )
+      end
+    end
+
+    assert_response :unprocessable_entity
+    assert_select ".alert-danger"
+    assert_select "form[action=?].store-contact-submission-form", stores_contact_path(from: "stores_lp_202607")
+    assert_select "a[href=?]", stores_lp_202607_path
   end
 
   test "body is optional when creating submission" do
