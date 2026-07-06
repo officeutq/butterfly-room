@@ -1548,6 +1548,7 @@
   align-items: center;
   position: relative;
   background: unset;
+  cursor: pointer;
   }
   .qa .qa_list .qa_item .q .q_heading {
   color: #FFF;
@@ -1593,6 +1594,14 @@
   }
   .qa .qa_list .qa_item .a {
   background: unset;
+  height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: height 0.3s ease, opacity 0.24s ease;
+  will-change: height, opacity;
+  }
+  .qa .qa_list .qa_item .a.is-open {
+  opacity: 1;
   }
   .qa .qa_list .qa_item .a .a_heading {
   display: none;
