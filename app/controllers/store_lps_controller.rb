@@ -13,6 +13,8 @@ class StoreLpsController < ApplicationController
   end
 
   def show_202607
+    persist_store_lp_202607_attribution
+
     @store_lp_202607_contact_params = tracking_query_params(from: STORE_LP_202607_FROM)
     @store_lp_202607_registration_params = @store_lp_202607_contact_params.dup
     @store_lp_202607_registration_params[:ref] = params[:ref] if params[:ref].present?
@@ -21,6 +23,16 @@ class StoreLpsController < ApplicationController
   end
 
   private
+
+  def persist_store_lp_202607_attribution
+    attribution = store_lp_202607_attribution_payload(from: STORE_LP_202607_FROM)
+
+    if attribution.present?
+      session[STORE_LP_202607_ATTRIBUTION_SESSION_KEY] = attribution
+    else
+      delete_store_lp_202607_attribution
+    end
+  end
 
   def set_store_lp_meta_tags
     brand_name = "Butterflyve（バタフライブ）"

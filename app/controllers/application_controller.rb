@@ -1,5 +1,7 @@
 class ApplicationController < ActionController::Base
   GTM_CONTAINER_ID = "GTM-KNT7H4CG"
+  STORE_LP_202607_ATTRIBUTION_SESSION_KEY = :store_lp_202607_attribution
+  STORE_LP_202607_FROM = "stores_lp_202607"
   UTM_PARAM_KEYS = %i[utm_source utm_medium utm_campaign utm_content].freeze
   UTM_PARAM_MAX_LENGTH = 100
 
@@ -39,23 +41,83 @@ class ApplicationController < ActionController::Base
     UTM_PARAM_KEYS.each_with_object({}) do |key, sanitized|
       raw_value = source[key] if source.respond_to?(:[])
       raw_value = source[key.to_s] if raw_value.blank? && source.respond_to?(:[])
+      next unless raw_value.is_a?(String)
 
-      value = raw_value.to_s.strip
+      value = raw_value.strip
       next if value.blank?
 
       sanitized[key] = value[0, UTM_PARAM_MAX_LENGTH]
     end
   end
 
-  def tracking_query_params(from: nil, utm_params: sanitized_utm_params)
+  def tracking_query_params(from: nil, utm_params: {})
     query = {}
     query[:from] = from if from.present?
     query.merge!(sanitized_utm_params(utm_params))
     query
   end
 
-  def tracking_session_payload(from: nil, utm_params: sanitized_utm_params)
+  def tracking_session_payload(from: nil, utm_params: {})
     tracking_query_params(from:, utm_params:).transform_keys(&:to_s)
+  end
+
+  def store_lp_202607_attribution
+    session[STORE_LP_202607_ATTRIBUTION_SESSION_KEY]
+  end
+
+  def store_lp_202607_attribution_payload(from: STORE_LP_202607_FROM, source: params)
+    utm_params = sanitized_utm_params(source)
+    return nil if utm_params.blank?
+
+    tracking_session_payload(from:, utm_params:)
+  end
+
+  def completion_tracking_payload(from:)
+    payload = tracking_session_payload(from:)
+    attribution = store_lp_202607_attribution
+    attribution_from = attribution_from(attribution)
+    source_from = payload["from"].presence || attribution_from
+
+    if source_from == STORE_LP_202607_FROM
+      utm_params = sanitized_utm_params(attribution)
+      payload["utm"] = utm_params.transform_keys(&:to_s) if utm_params.present?
+    end
+
+    payload
+  end
+
+  def gtm_conversion_event_payload(event:, completion:)
+    payload = { event: event }
+    from = completion_from(completion)
+    payload[:from] = from if from.present?
+
+    sanitized_utm_params(completion_utm(completion)).each do |key, value|
+      payload[key] = value
+    end
+
+    payload
+  end
+
+  def delete_store_lp_202607_attribution
+    session.delete(STORE_LP_202607_ATTRIBUTION_SESSION_KEY)
+  end
+
+  def attribution_from(attribution)
+    return nil if attribution.blank?
+
+    attribution[:from].presence || attribution["from"].presence
+  end
+
+  def completion_from(completion)
+    return nil if completion.blank?
+
+    completion[:from].presence || completion["from"].presence
+  end
+
+  def completion_utm(completion)
+    return {} if completion.blank?
+
+    completion[:utm] || completion["utm"] || {}
   end
 
   # 既存：完全一致（そのまま残す。階層が必要な箇所は require_at_least! を使う）

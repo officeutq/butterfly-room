@@ -24,10 +24,10 @@ class StoreContactSubmissionsController < ApplicationController
     ).call
 
     session[:store_contact_completion] =
-      tracking_session_payload(from: @store_contact_from, utm_params: @store_contact_utm_params)
+      completion_tracking_payload(from: @store_contact_from)
         .merge("completed" => true)
 
-    redirect_to store_contact_thanks_path(@store_contact_from, @store_contact_utm_params)
+    redirect_to store_contact_thanks_path(@store_contact_from)
   rescue ActiveRecord::RecordInvalid => e
     @store_contact_submission = e.record
     set_store_contact_submission_meta_tags
@@ -38,13 +38,18 @@ class StoreContactSubmissionsController < ApplicationController
     @store_contact_completion = session.delete(:store_contact_completion)
 
     if @store_contact_completion.blank?
-      redirect_to store_contact_form_path(permitted_store_contact_from, sanitized_utm_params)
+      redirect_to store_contact_form_path(permitted_store_contact_from)
       return
     end
 
     @store_contact_from = permitted_store_contact_from(@store_contact_completion)
     @store_contact_back_path = store_contact_back_path(@store_contact_from)
-    @store_contact_utm_params = sanitized_utm_params(@store_contact_completion)
+    @store_contact_gtm_event = gtm_conversion_event_payload(
+      event: "store_contact_complete",
+      completion: @store_contact_completion
+    )
+
+    delete_store_lp_202607_attribution
 
     set_store_contact_thanks_meta_tags
   end
@@ -70,9 +75,8 @@ class StoreContactSubmissionsController < ApplicationController
 
   def set_store_contact_back_path
     @store_contact_from = permitted_store_contact_from
-    @store_contact_utm_params = sanitized_utm_params
     @store_contact_back_path = store_contact_back_path(@store_contact_from)
-    @store_contact_form_path = store_contact_form_path(@store_contact_from, @store_contact_utm_params)
+    @store_contact_form_path = store_contact_form_path(@store_contact_from)
   end
 
   def permitted_store_contact_from(source = params)
@@ -91,15 +95,15 @@ class StoreContactSubmissionsController < ApplicationController
     end
   end
 
-  def store_contact_form_path(from, utm_params = {})
-    query = tracking_query_params(from:, utm_params:)
+  def store_contact_form_path(from)
+    query = tracking_query_params(from:)
     return stores_contact_path if query.blank?
 
     stores_contact_path(query)
   end
 
-  def store_contact_thanks_path(from, utm_params)
-    query = tracking_query_params(from:, utm_params:)
+  def store_contact_thanks_path(from)
+    query = tracking_query_params(from:)
     return stores_contact_thanks_path if query.blank?
 
     stores_contact_thanks_path(query)
