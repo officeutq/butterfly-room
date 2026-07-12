@@ -2,7 +2,7 @@
 
 class StoreLpsController < ApplicationController
   STORE_LP_202607_FROM = "stores_lp_202607"
-  STORE_LP_202607_REF = "1001"
+  STORE_LP_DEFAULT_REF = "0000"
 
   skip_before_action :authenticate_user!, only: %i[show show_202607]
   before_action :enable_gtm, only: %i[show show_202607]
@@ -15,12 +15,16 @@ class StoreLpsController < ApplicationController
 
   def show_202607
     @store_lp_202607_contact_params = tracking_query_params(from: STORE_LP_202607_FROM)
-    @store_lp_202607_registration_params = @store_lp_202607_contact_params.merge(ref: STORE_LP_202607_REF)
+    @store_lp_202607_registration_params = @store_lp_202607_contact_params.merge(ref: store_lp_ref_code)
 
     set_store_lp_202607_meta_tags
   end
 
   private
+
+  def store_lp_ref_code
+    params[:ref].presence || STORE_LP_DEFAULT_REF
+  end
 
   def set_store_lp_meta_tags
     brand_name = "Butterflyve（バタフライブ）"

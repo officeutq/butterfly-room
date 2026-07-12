@@ -32,7 +32,7 @@ class AuthenticationRequiredTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select ".store-lp-202607"
-    assert_select "a[href=?]", stores_new_registration_path(ref: "1001", from: "stores_lp_202607"), minimum: 1
+    assert_select "a[href=?]", stores_new_registration_path(ref: "0000", from: "stores_lp_202607"), minimum: 1
     assert_select "a[href=?]", stores_contact_path(from: "stores_lp_202607"), minimum: 1
     assert_select "a[href=?]", legal_path, minimum: 1
     assert_select "a[href=?]", payment_services_act_path, minimum: 1
@@ -44,6 +44,13 @@ class AuthenticationRequiredTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "コンビニ決済、クレジットカード、ApplePay、GooglePay"
     refute_includes response.body, "ファンに自動返却"
     refute_includes response.body, "通常初期費用〇〇円"
+  end
+
+  test "外注店舗LP 202607はrefを店舗登録導線へ引き継ぐ" do
+    get stores_lp_202607_path(ref: "abc123")
+
+    assert_response :success
+    assert_select "a[href=?]", stores_new_registration_path(ref: "abc123", from: "stores_lp_202607"), minimum: 1
   end
 
   test "未ログインでも通常サインアップページを表示できる" do
