@@ -10,6 +10,8 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
+    <%= render "layouts/gtm_head" if gtm_enabled? %>
+
     <%= yield :head %>
 
     <link rel="icon" href="<%= asset_path('favicon.ico') %>" sizes="any">
@@ -30,6 +32,8 @@
   <% viewer_layout = (controller_path == "booths" && action_name == "show") %>
 
   <body class="<%= [ "d-flex", "flex-column", "min-vh-100", ("cast-live-layout" if cast_live_layout), ("viewer-layout" if viewer_layout) ].compact.join(" ") %>">
+    <%= render "layouts/gtm_body" if gtm_enabled? %>
+
     <%= render "layouts/header" %>
 
     <% if cast_live_layout %>

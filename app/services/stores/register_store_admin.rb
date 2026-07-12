@@ -2,6 +2,8 @@
 
 module Stores
   class RegisterStoreAdmin
+    DEFAULT_REFERRAL_CODE = "0000"
+
     Result = Struct.new(:store, :user, keyword_init: true)
 
     def self.call!(store_name:, email:, password:, referral_code:)
@@ -12,7 +14,7 @@ module Stores
       @store_name = store_name
       @email = email
       @password = password
-      @referral_code = referral_code
+      @referral_code = referral_code.to_s.strip.presence || DEFAULT_REFERRAL_CODE
     end
 
     def call!

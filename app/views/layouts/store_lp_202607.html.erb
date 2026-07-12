@@ -8,12 +8,16 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
+    <%= render "layouts/gtm_head" if gtm_enabled? %>
+
     <link rel="icon" href="<%= asset_path('store_lp_202607/logo/favicon.png') %>" type="image/png">
     <%= stylesheet_link_tag "store_lp_202607", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
 
   <body>
+    <%= render "layouts/gtm_body" if gtm_enabled? %>
+
     <%= yield %>
   </body>
 </html>

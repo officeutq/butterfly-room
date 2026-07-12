@@ -151,7 +151,9 @@ test("store admin store registration", async ({ page }) => {
   await page.locator('input[name="store_registration[referral_code]"]').fill("MANUAL-CAPTURE-LOCAL");
   await capture(page, "store_admin_registration", "02_registration_filled.png");
 
-  await submitFirstFormAndWait(page, /\/admin\/stores\/\d+\/edit/);
+  await submitFirstFormAndWait(page, /\/stores\/registration\/thanks/);
+  await page.getByRole("link", { name: "管理画面へ進む" }).click();
+  await page.waitForURL(/\/admin\/stores\/\d+\/edit/);
   await expect(page.locator('input[name="store[name]"]')).toBeVisible();
   await capture(page, "store_admin_registration", "03_after_registration_store_edit.png");
 });

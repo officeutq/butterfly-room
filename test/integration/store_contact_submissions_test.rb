@@ -48,6 +48,26 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?]", stores_lp_202607_path
   end
 
+  test "form keeps allowed utm params in action" do
+    get stores_contact_path(
+      from: "stores_lp_202607",
+      utm_source: " meta ",
+      utm_medium: "paid_social",
+      utm_campaign: "store_recruit_202607",
+      utm_content: "flyer_a"
+    )
+
+    assert_response :success
+    assert_select "form[action=?].store-contact-submission-form",
+      stores_contact_path(
+        from: "stores_lp_202607",
+        utm_source: "meta",
+        utm_medium: "paid_social",
+        utm_campaign: "store_recruit_202607",
+        utm_content: "flyer_a"
+      )
+  end
+
   test "form falls back to current store LP when from is invalid" do
     get stores_contact_path(from: "https://example.com")
 
@@ -121,7 +141,7 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
 
     submission = StoreContactSubmission.order(:id).last
 
-    assert_redirected_to stores_contact_path
+    assert_redirected_to stores_contact_thanks_path
     assert_equal "Owner Name", submission.name
     assert_equal "Sample Store", submission.store_name
     assert_equal "owner@example.com", submission.email
@@ -131,23 +151,39 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_equal StoreContactSubmission::SOURCE_STORES_LP, submission.source
   end
 
-  test "create keeps store LP 202607 contact source in redirect" do
+  test "create keeps store LP 202607 contact source and utm params in thanks redirect" do
     assert_difference -> { StoreContactSubmission.count }, +1 do
       assert_enqueued_emails 2 do
-        post stores_contact_path(from: "stores_lp_202607"), params: submission_params
+        post stores_contact_path(
+          from: "stores_lp_202607",
+          utm_source: " meta ",
+          utm_medium: "paid_social",
+          utm_campaign: "store_recruit_202607"
+        ), params: submission_params
       end
     end
 
-    assert_redirected_to stores_contact_path(from: "stores_lp_202607")
+    assert_redirected_to stores_contact_thanks_path(
+      from: "stores_lp_202607",
+      utm_source: "meta",
+      utm_medium: "paid_social",
+      utm_campaign: "store_recruit_202607"
+    )
     assert_equal StoreContactSubmission::SOURCE_STORES_LP, StoreContactSubmission.order(:id).last.source
   end
 
-  test "success message is displayed after create" do
+  test "thanks page is displayed after create and cannot be reloaded" do
     post stores_contact_path, params: submission_params
+    thanks_path = URI(response.location).request_uri
+
     follow_redirect!
 
     assert_response :success
-    assert_select ".alert-success", text: "お問い合わせを受け付けました。内容を確認のうえ、担当者よりご連絡いたします。"
+    assert_select "h1", text: "お問い合わせを受け付けました"
+    assert_select "a[href=?]", stores_lp_path, text: "店舗向けページへ戻る"
+
+    get thanks_path
+    assert_redirected_to stores_contact_path
   end
 
   test "validation errors are displayed when required attributes are missing" do
@@ -190,12 +226,45 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?]", stores_lp_202607_path
   end
 
+  test "validation errors keep utm params" do
+    assert_no_enqueued_emails do
+      assert_no_difference -> { StoreContactSubmission.count } do
+        post stores_contact_path(
+          from: "stores_lp_202607",
+          utm_source: "meta",
+          utm_medium: "paid_social",
+          utm_campaign: "store_recruit_202607"
+        ), params: submission_params(
+          name: "",
+          store_name: "",
+          email: "",
+          phone_number: ""
+        )
+      end
+    end
+
+    assert_response :unprocessable_entity
+    assert_select "form[action=?].store-contact-submission-form",
+      stores_contact_path(
+        from: "stores_lp_202607",
+        utm_source: "meta",
+        utm_medium: "paid_social",
+        utm_campaign: "store_recruit_202607"
+      )
+  end
+
+  test "thanks page redirects to form without completion session" do
+    get stores_contact_thanks_path(from: "stores_lp_202607")
+
+    assert_redirected_to stores_contact_path(from: "stores_lp_202607")
+  end
+
   test "body is optional when creating submission" do
     assert_difference -> { StoreContactSubmission.count }, +1 do
       post stores_contact_path, params: submission_params(body: "")
     end
 
-    assert_redirected_to stores_contact_path
+    assert_redirected_to stores_contact_thanks_path
     assert_equal "", StoreContactSubmission.order(:id).last.body
   end
 
@@ -204,7 +273,7 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
       post stores_contact_path, params: submission_params(contactable_time: "")
     end
 
-    assert_redirected_to stores_contact_path
+    assert_redirected_to stores_contact_thanks_path
     assert_equal "", StoreContactSubmission.order(:id).last.contactable_time
   end
 

@@ -26,13 +26,13 @@ TODO: プロフィール編集後に最初に案内する画面を、運用上�
 
 ## store_admin（店舗管理者）として店舗を登録する
 
-store_admin（店舗管理者）は、紹介コードつきの店舗登録 URL から店舗とアカウントを同時に作成します。
+store_admin（店舗管理者）は、店舗登録 URL から店舗とアカウントを同時に作成します。
 
 1. 受け取った店舗登録 URL を開きます。URL には referral code（紹介コード）が含まれる場合があります。
 
    ![店舗登録フォーム](images/account_creation/store_admin_registration/01_registration_form.png)
 
-2. 店舗名、メールアドレス、パスワード、確認用パスワード、紹介コードを入力します。
+2. 店舗名、メールアドレス、パスワード、確認用パスワードを入力します。紹介コードを持っている場合は紹介コードも入力します。
 
    ![店舗登録フォーム入力済み](images/account_creation/store_admin_registration/02_registration_filled.png)
 

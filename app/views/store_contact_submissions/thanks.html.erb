@@ -1,0 +1,17 @@
+<% content_for :title, "店舗向けお問い合わせ完了" %>
+
+<h1 class="container mt-4">お問い合わせを受け付けました</h1>
+
+<div class="container mt-3" style="max-width: 720px;">
+  <div class="card">
+    <div class="card-body">
+      <p>
+        お問い合わせいただきありがとうございます。<br>
+        ご入力いただいたメールアドレス宛に受付メールを送信しました。<br>
+        内容を確認後、担当者よりご連絡いたします。
+      </p>
+
+      <%= link_to "店舗向けページへ戻る", @store_contact_back_path, class: "btn btn-primary" %>
+    </div>
+  </div>
+</div>
