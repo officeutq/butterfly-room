@@ -42,6 +42,23 @@ module Stores
       assert_equal 0, booths.count
     end
 
+    test "defaults blank referral code to 0000" do
+      default_referral_code = ReferralCode.create!(
+        code: RegisterStoreAdmin::DEFAULT_REFERRAL_CODE,
+        enabled: true,
+        expires_at: 1.day.from_now
+      )
+
+      result = RegisterStoreAdmin.call!(
+        store_name: "デフォルト紹介コード店舗",
+        email: "store_registration_default_ref@example.com",
+        password: "password",
+        referral_code: ""
+      )
+
+      assert_equal default_referral_code, result.store.referral_code
+    end
+
     test "rolls back store, user, membership, and drink_items when default drink_item creation fails" do
       rc = ReferralCode.create!(
         code: "STORE-REG-NG",

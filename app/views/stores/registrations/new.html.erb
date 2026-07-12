@@ -36,8 +36,8 @@
 
         <div class="mb-3">
           <%= f.label :referral_code, "紹介コード", class: "form-label" %>
-          <%= f.text_field :referral_code, class: "form-control", required: true, autocomplete: "off" %>
-          <div class="form-text">QR/DMに記載のコードを入力してください。</div>
+          <%= f.text_field :referral_code, class: "form-control", autocomplete: "off" %>
+          <div class="form-text">お持ちの場合は入力してください。未入力の場合は標準コードで登録します。</div>
         </div>
 
         <p class="small text-secondary mb-3">

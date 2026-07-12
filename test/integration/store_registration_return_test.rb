@@ -27,6 +27,16 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?]", stores_lp_202607_path, text: "戻る"
   end
 
+  test "new registration allows blank referral code for store LP 202607" do
+    get stores_new_registration_path(from: "stores_lp_202607")
+
+    assert_response :success
+    assert_select "form[action=?]", stores_registrations_path(from: "stores_lp_202607")
+    assert_select "input[name='store_registration[referral_code]']", count: 1
+    assert_select "input[name='store_registration[referral_code]'][required]", count: 0
+    assert_select "a[href=?]", stores_lp_202607_path, text: "戻る"
+  end
+
   test "new registration keeps utm params in form action" do
     get stores_new_registration_path(
       ref: "1001",
@@ -145,6 +155,27 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
 
     get thanks_path
     assert_redirected_to edit_admin_store_path(store)
+  end
+
+  test "blank referral code defaults to 0000 on successful registration" do
+    default_referral_code = create_referral_code!(Stores::RegisterStoreAdmin::DEFAULT_REFERRAL_CODE)
+
+    assert_difference -> { Store.count }, +1 do
+      assert_difference -> { User.count }, +1 do
+        assert_difference -> { StoreMembership.count }, +1 do
+          post stores_registrations_path(from: "stores_lp_202607"), params: {
+            store_registration: valid_registration_params(referral_code: "")
+          }
+        end
+      end
+    end
+
+    store = Store.order(:id).last
+
+    assert_redirected_to stores_registration_thanks_path(from: "stores_lp_202607")
+    assert_no_match(/ref=/, response.location)
+    assert_equal default_referral_code, store.referral_code
+    assert_equal store.id, @request.session[:current_store_id].to_i
   end
 
   test "registration thanks requires login" do

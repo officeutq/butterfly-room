@@ -66,6 +66,6 @@ class SeoMetaTagsTest < ActionDispatch::IntegrationTest
     assert_equal stores_lp_202607_url, doc.at_css("meta[property='og:url']")["content"]
     assert_includes doc.at_css("meta[name='robots']")["content"], "noindex"
     assert_select ".store-lp-202607"
-    assert_select "a[href=?]", stores_new_registration_path(ref: "0000", from: "stores_lp_202607"), minimum: 1
+    assert_select "a[href=?]", stores_new_registration_path(from: "stores_lp_202607"), minimum: 1
   end
 end

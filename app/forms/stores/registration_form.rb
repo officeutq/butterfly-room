@@ -17,7 +17,6 @@ module Stores
     validates :email, presence: true
     validates :password, presence: true, confirmation: true
     validates :password_confirmation, presence: true
-    validates :referral_code, presence: true
     validate  :referral_code_must_be_usable
     validate  :email_must_be_unique
 
@@ -28,7 +27,7 @@ module Stores
         store_name: store_name,
         email: email,
         password: password,
-        referral_code: referral_code
+        referral_code: normalized_referral_code
       )
 
       @store = result.store
@@ -43,8 +42,12 @@ module Stores
 
     private
 
+    def normalized_referral_code
+      referral_code.to_s.strip.presence || Stores::RegisterStoreAdmin::DEFAULT_REFERRAL_CODE
+    end
+
     def referral_code_must_be_usable
-      rc = ReferralCode.find_by(code: referral_code)
+      rc = ReferralCode.find_by(code: normalized_referral_code)
       return if rc.present? && rc.usable?
 
       errors.add(:referral_code, :invalid)

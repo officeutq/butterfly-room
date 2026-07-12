@@ -32,7 +32,7 @@ class AuthenticationRequiredTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select ".store-lp-202607"
-    assert_select "a[href=?]", stores_new_registration_path(ref: "0000", from: "stores_lp_202607"), minimum: 1
+    assert_select "a[href=?]", stores_new_registration_path(from: "stores_lp_202607"), minimum: 1
     assert_select "a[href=?]", stores_contact_path(from: "stores_lp_202607"), minimum: 1
     assert_select "a[href=?]", legal_path, minimum: 1
     assert_select "a[href=?]", payment_services_act_path, minimum: 1
