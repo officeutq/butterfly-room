@@ -1,4 +1,8 @@
 class ApplicationController < ActionController::Base
+  GTM_CONTAINER_ID = "GTM-KNT7H4CG"
+  UTM_PARAM_KEYS = %i[utm_source utm_medium utm_campaign utm_content].freeze
+  UTM_PARAM_MAX_LENGTH = 100
+
   before_action :authenticate_user!
   before_action :set_default_meta_tags
 
@@ -15,7 +19,44 @@ class ApplicationController < ActionController::Base
     stored_location || super
   end
 
+  helper_method :gtm_enabled?, :gtm_container_id
+
   private
+
+  def enable_gtm
+    @gtm_enabled = true
+  end
+
+  def gtm_enabled?
+    @gtm_enabled == true
+  end
+
+  def gtm_container_id
+    GTM_CONTAINER_ID
+  end
+
+  def sanitized_utm_params(source = params)
+    UTM_PARAM_KEYS.each_with_object({}) do |key, sanitized|
+      raw_value = source[key] if source.respond_to?(:[])
+      raw_value = source[key.to_s] if raw_value.blank? && source.respond_to?(:[])
+
+      value = raw_value.to_s.strip
+      next if value.blank?
+
+      sanitized[key] = value[0, UTM_PARAM_MAX_LENGTH]
+    end
+  end
+
+  def tracking_query_params(from: nil, utm_params: sanitized_utm_params)
+    query = {}
+    query[:from] = from if from.present?
+    query.merge!(sanitized_utm_params(utm_params))
+    query
+  end
+
+  def tracking_session_payload(from: nil, utm_params: sanitized_utm_params)
+    tracking_query_params(from:, utm_params:).transform_keys(&:to_s)
+  end
 
   # 既存：完全一致（そのまま残す。階層が必要な箇所は require_at_least! を使う）
   def require_role!(*roles)

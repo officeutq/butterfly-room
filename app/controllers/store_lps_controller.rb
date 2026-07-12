@@ -1,7 +1,12 @@
 # frozen_string_literal: true
 
 class StoreLpsController < ApplicationController
+  STORE_LP_202607_FROM = "stores_lp_202607"
+  STORE_LP_202607_REF = "1001"
+
   skip_before_action :authenticate_user!, only: %i[show show_202607]
+  before_action :enable_gtm, only: %i[show show_202607]
+
   layout "store_lp_202607", only: %i[show_202607]
 
   def show
@@ -9,6 +14,9 @@ class StoreLpsController < ApplicationController
   end
 
   def show_202607
+    @store_lp_202607_contact_params = tracking_query_params(from: STORE_LP_202607_FROM)
+    @store_lp_202607_registration_params = @store_lp_202607_contact_params.merge(ref: STORE_LP_202607_REF)
+
     set_store_lp_202607_meta_tags
   end
 

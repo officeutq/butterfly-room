@@ -12,6 +12,7 @@ Rails.application.routes.draw do
   get "/stores/lp_202607", to: "store_lps#show_202607", as: :stores_lp_202607
   get "/stores/contact", to: "store_contact_submissions#new", as: :stores_contact
   post "/stores/contact", to: "store_contact_submissions#create"
+  get "/stores/contact/thanks", to: "store_contact_submissions#thanks", as: :stores_contact_thanks
   get "/legal", to: "legal#show", as: :legal
   get "/terms", to: "legal#terms", as: :terms
   get "/privacy_policy", to: "legal#privacy_policy", as: :privacy_policy
@@ -81,6 +82,7 @@ Rails.application.routes.draw do
   namespace :stores do
     get  :new_registration, to: "registrations#new"
     post :registrations, to: "registrations#create"
+    get  "registration/thanks", to: "registrations#thanks", as: :registration_thanks
   end
 
   # --- Public (cast invitation) ---
