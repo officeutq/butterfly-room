@@ -49,8 +49,6 @@ class StoreContactSubmissionsController < ApplicationController
       completion: @store_contact_completion
     )
 
-    delete_store_lp_202607_attribution
-
     set_store_contact_thanks_meta_tags
   end
 
@@ -89,7 +87,7 @@ class StoreContactSubmissionsController < ApplicationController
   def store_contact_back_path(from)
     case from
     when STORE_CONTACT_FROM_STORES_LP_202607
-      stores_lp_202607_path
+      stores_lp_202607_return_path
     else
       stores_lp_path
     end

@@ -52,6 +52,7 @@ module Stores
       )
 
       delete_store_lp_202607_attribution
+      delete_store_lp_202607_ref
 
       set_store_registration_thanks_meta_tags
     end
@@ -73,7 +74,7 @@ module Stores
       @store_registration_back_path =
         case @store_registration_from
         when STORE_REGISTRATION_FROM_STORES_LP_202607
-          stores_lp_202607_path
+          stores_lp_202607_return_path
         else
           stores_lp_path
         end

@@ -45,11 +45,12 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "form[action=?].store-contact-submission-form", stores_contact_path(from: "stores_lp_202607")
-    assert_select "a[href=?]", stores_lp_202607_path
+    assert_select "a[href=?]", stores_lp_202607_return_path
   end
 
   test "form keeps 202607 attribution in session without exposing utm params in action" do
     get stores_lp_202607_path, params: {
+      ref: "1001",
       utm_source: " meta ",
       utm_medium: "paid_social",
       utm_campaign: "store_recruit_202607",
@@ -62,6 +63,7 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
       stores_contact_path(from: "stores_lp_202607")
     assert_no_match(/utm_source/, response.body)
     assert_equal "meta", @request.session[ApplicationController::STORE_LP_202607_ATTRIBUTION_SESSION_KEY]["utm_source"]
+    assert_equal "1001", @request.session[ApplicationController::STORE_LP_202607_REF_SESSION_KEY]
   end
 
   test "form falls back to current store LP when from is invalid" do
@@ -149,6 +151,7 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
 
   test "create keeps store LP 202607 attribution in completion session and dataLayer" do
     get stores_lp_202607_path, params: {
+      ref: "1001",
       utm_source: " meta ",
       utm_medium: "paid_social",
       utm_campaign: "store_recruit_202607"
@@ -191,9 +194,19 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
       data_layer_events
     )
     assert_nil @request.session[:store_contact_completion]
-    assert_nil @request.session[ApplicationController::STORE_LP_202607_ATTRIBUTION_SESSION_KEY]
+    assert_equal "meta", @request.session[ApplicationController::STORE_LP_202607_ATTRIBUTION_SESSION_KEY]["utm_source"]
+    assert_equal "1001", @request.session[ApplicationController::STORE_LP_202607_REF_SESSION_KEY]
+    assert_select "a[href=?]", stores_lp_202607_return_path, text: "店舗向けページへ戻る"
     refute_includes response.body, "Owner Name"
     refute_includes response.body, "owner@example.com"
+
+    get stores_lp_202607_return_path
+    assert_redirected_to stores_lp_202607_path(ref: "1001")
+
+    follow_redirect!
+    assert_equal "meta", @request.session[ApplicationController::STORE_LP_202607_ATTRIBUTION_SESSION_KEY]["utm_source"]
+    assert_select "a[href=?]", stores_new_registration_path(ref: "1001", from: "stores_lp_202607"), minimum: 1
+    assert_no_match(/utm_source/, response.body)
   end
 
   test "thanks page is displayed after create and cannot be reloaded" do
@@ -248,7 +261,7 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_entity
     assert_select ".alert-danger"
     assert_select "form[action=?].store-contact-submission-form", stores_contact_path(from: "stores_lp_202607")
-    assert_select "a[href=?]", stores_lp_202607_path
+    assert_select "a[href=?]", stores_lp_202607_return_path
   end
 
   test "validation errors keep 202607 attribution session without exposing utm params" do
@@ -272,6 +285,7 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_entity
     assert_select "form[action=?].store-contact-submission-form",
       stores_contact_path(from: "stores_lp_202607")
+    assert_select "a[href=?]", stores_lp_202607_return_path
     assert_equal "meta", @request.session[ApplicationController::STORE_LP_202607_ATTRIBUTION_SESSION_KEY]["utm_source"]
     assert_no_match(/utm_source/, response.body)
   end

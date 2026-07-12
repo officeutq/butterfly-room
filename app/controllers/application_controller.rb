@@ -1,9 +1,12 @@
 class ApplicationController < ActionController::Base
   GTM_CONTAINER_ID = "GTM-KNT7H4CG"
   STORE_LP_202607_ATTRIBUTION_SESSION_KEY = :store_lp_202607_attribution
+  STORE_LP_202607_REF_SESSION_KEY = :store_lp_202607_ref
+  PRESERVE_STORE_LP_202607_ATTRIBUTION_ONCE_SESSION_KEY = :preserve_store_lp_202607_attribution_once
   STORE_LP_202607_FROM = "stores_lp_202607"
   UTM_PARAM_KEYS = %i[utm_source utm_medium utm_campaign utm_content].freeze
   UTM_PARAM_MAX_LENGTH = 100
+  STORE_LP_202607_REF_MAX_LENGTH = 100
 
   before_action :authenticate_user!
   before_action :set_default_meta_tags
@@ -50,6 +53,19 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  def sanitized_store_lp_202607_ref(source = params)
+    return nil unless source.respond_to?(:[])
+
+    raw_value = source[:ref]
+    raw_value = source["ref"] if raw_value.blank?
+    return nil unless raw_value.is_a?(String)
+
+    value = raw_value.strip
+    return nil if value.blank?
+
+    value[0, STORE_LP_202607_REF_MAX_LENGTH]
+  end
+
   def tracking_query_params(from: nil, utm_params: {})
     query = {}
     query[:from] = from if from.present?
@@ -63,6 +79,10 @@ class ApplicationController < ActionController::Base
 
   def store_lp_202607_attribution
     session[STORE_LP_202607_ATTRIBUTION_SESSION_KEY]
+  end
+
+  def store_lp_202607_ref
+    session[STORE_LP_202607_REF_SESSION_KEY]
   end
 
   def store_lp_202607_attribution_payload(from: STORE_LP_202607_FROM, source: params)
@@ -100,6 +120,18 @@ class ApplicationController < ActionController::Base
 
   def delete_store_lp_202607_attribution
     session.delete(STORE_LP_202607_ATTRIBUTION_SESSION_KEY)
+  end
+
+  def delete_store_lp_202607_ref
+    session.delete(STORE_LP_202607_REF_SESSION_KEY)
+  end
+
+  def preserve_store_lp_202607_attribution_once!
+    session[PRESERVE_STORE_LP_202607_ATTRIBUTION_ONCE_SESSION_KEY] = true
+  end
+
+  def consume_store_lp_202607_attribution_preservation
+    session.delete(PRESERVE_STORE_LP_202607_ATTRIBUTION_ONCE_SESSION_KEY) == true
   end
 
   def attribution_from(attribution)
