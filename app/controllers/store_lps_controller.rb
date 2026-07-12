@@ -3,7 +3,7 @@
 class StoreLpsController < ApplicationController
   STORE_LP_202607_FROM = "stores_lp_202607"
 
-  skip_before_action :authenticate_user!, only: %i[show show_202607]
+  skip_before_action :authenticate_user!, only: %i[show show_202607 return_202607]
   before_action :enable_gtm, only: %i[show show_202607]
 
   layout "store_lp_202607", only: %i[show_202607]
@@ -13,24 +13,46 @@ class StoreLpsController < ApplicationController
   end
 
   def show_202607
-    persist_store_lp_202607_attribution
+    preserve_attribution = consume_store_lp_202607_attribution_preservation
+    persist_store_lp_202607_attribution(preserve: preserve_attribution)
+    persist_store_lp_202607_ref(preserve: preserve_attribution)
 
     @store_lp_202607_contact_params = tracking_query_params(from: STORE_LP_202607_FROM)
     @store_lp_202607_registration_params = @store_lp_202607_contact_params.dup
-    @store_lp_202607_registration_params[:ref] = params[:ref] if params[:ref].present?
+    store_lp_202607_registration_ref = sanitized_store_lp_202607_ref || store_lp_202607_ref
+    @store_lp_202607_registration_params[:ref] = store_lp_202607_registration_ref if store_lp_202607_registration_ref.present?
 
     set_store_lp_202607_meta_tags
   end
 
+  def return_202607
+    preserve_store_lp_202607_attribution_once!
+
+    query = {}
+    query[:ref] = store_lp_202607_ref if store_lp_202607_ref.present?
+
+    redirect_to stores_lp_202607_path(query)
+  end
+
   private
 
-  def persist_store_lp_202607_attribution
+  def persist_store_lp_202607_attribution(preserve:)
     attribution = store_lp_202607_attribution_payload(from: STORE_LP_202607_FROM)
 
     if attribution.present?
       session[STORE_LP_202607_ATTRIBUTION_SESSION_KEY] = attribution
-    else
+    elsif !preserve
       delete_store_lp_202607_attribution
+    end
+  end
+
+  def persist_store_lp_202607_ref(preserve:)
+    ref = sanitized_store_lp_202607_ref
+
+    if ref.present?
+      session[STORE_LP_202607_REF_SESSION_KEY] = ref
+    elsif !preserve
+      delete_store_lp_202607_ref
     end
   end
 
