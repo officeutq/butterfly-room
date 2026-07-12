@@ -1,5 +1,7 @@
 <% content_for :title, "店舗向けお問い合わせ完了" %>
 
+<%= render "layouts/gtm_conversion_event", event_payload: @store_contact_gtm_event %>
+
 <h1 class="container mt-4">お問い合わせを受け付けました</h1>
 
 <div class="container mt-3" style="max-width: 720px;">

@@ -48,24 +48,20 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?]", stores_lp_202607_path
   end
 
-  test "form keeps allowed utm params in action" do
-    get stores_contact_path(
-      from: "stores_lp_202607",
+  test "form keeps 202607 attribution in session without exposing utm params in action" do
+    get stores_lp_202607_path, params: {
       utm_source: " meta ",
       utm_medium: "paid_social",
       utm_campaign: "store_recruit_202607",
       utm_content: "flyer_a"
-    )
+    }
+    get stores_contact_path(from: "stores_lp_202607")
 
     assert_response :success
     assert_select "form[action=?].store-contact-submission-form",
-      stores_contact_path(
-        from: "stores_lp_202607",
-        utm_source: "meta",
-        utm_medium: "paid_social",
-        utm_campaign: "store_recruit_202607",
-        utm_content: "flyer_a"
-      )
+      stores_contact_path(from: "stores_lp_202607")
+    assert_no_match(/utm_source/, response.body)
+    assert_equal "meta", @request.session[ApplicationController::STORE_LP_202607_ATTRIBUTION_SESSION_KEY]["utm_source"]
   end
 
   test "form falls back to current store LP when from is invalid" do
@@ -151,25 +147,53 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_equal StoreContactSubmission::SOURCE_STORES_LP, submission.source
   end
 
-  test "create keeps store LP 202607 contact source and utm params in thanks redirect" do
+  test "create keeps store LP 202607 attribution in completion session and dataLayer" do
+    get stores_lp_202607_path, params: {
+      utm_source: " meta ",
+      utm_medium: "paid_social",
+      utm_campaign: "store_recruit_202607"
+    }
+
     assert_difference -> { StoreContactSubmission.count }, +1 do
       assert_enqueued_emails 2 do
-        post stores_contact_path(
-          from: "stores_lp_202607",
-          utm_source: " meta ",
-          utm_medium: "paid_social",
-          utm_campaign: "store_recruit_202607"
-        ), params: submission_params
+        post stores_contact_path(from: "stores_lp_202607"), params: submission_params
       end
     end
 
-    assert_redirected_to stores_contact_thanks_path(
-      from: "stores_lp_202607",
-      utm_source: "meta",
-      utm_medium: "paid_social",
-      utm_campaign: "store_recruit_202607"
+    assert_redirected_to stores_contact_thanks_path(from: "stores_lp_202607")
+    assert_equal(
+      {
+        "from" => "stores_lp_202607",
+        "utm" => {
+          "utm_source" => "meta",
+          "utm_medium" => "paid_social",
+          "utm_campaign" => "store_recruit_202607"
+        },
+        "completed" => true
+      },
+      @request.session[:store_contact_completion]
     )
     assert_equal StoreContactSubmission::SOURCE_STORES_LP, StoreContactSubmission.order(:id).last.source
+
+    follow_redirect!
+
+    assert_response :success
+    assert_equal(
+      [
+        {
+          "event" => "store_contact_complete",
+          "from" => "stores_lp_202607",
+          "utm_source" => "meta",
+          "utm_medium" => "paid_social",
+          "utm_campaign" => "store_recruit_202607"
+        }
+      ],
+      data_layer_events
+    )
+    assert_nil @request.session[:store_contact_completion]
+    assert_nil @request.session[ApplicationController::STORE_LP_202607_ATTRIBUTION_SESSION_KEY]
+    refute_includes response.body, "Owner Name"
+    refute_includes response.body, "owner@example.com"
   end
 
   test "thanks page is displayed after create and cannot be reloaded" do
@@ -181,6 +205,7 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "h1", text: "お問い合わせを受け付けました"
     assert_select "a[href=?]", stores_lp_path, text: "店舗向けページへ戻る"
+    assert_equal [ { "event" => "store_contact_complete" } ], data_layer_events
 
     get thanks_path
     assert_redirected_to stores_contact_path
@@ -226,15 +251,16 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?]", stores_lp_202607_path
   end
 
-  test "validation errors keep utm params" do
+  test "validation errors keep 202607 attribution session without exposing utm params" do
+    get stores_lp_202607_path, params: {
+      utm_source: "meta",
+      utm_medium: "paid_social",
+      utm_campaign: "store_recruit_202607"
+    }
+
     assert_no_enqueued_emails do
       assert_no_difference -> { StoreContactSubmission.count } do
-        post stores_contact_path(
-          from: "stores_lp_202607",
-          utm_source: "meta",
-          utm_medium: "paid_social",
-          utm_campaign: "store_recruit_202607"
-        ), params: submission_params(
+        post stores_contact_path(from: "stores_lp_202607"), params: submission_params(
           name: "",
           store_name: "",
           email: "",
@@ -245,12 +271,21 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
 
     assert_response :unprocessable_entity
     assert_select "form[action=?].store-contact-submission-form",
-      stores_contact_path(
-        from: "stores_lp_202607",
-        utm_source: "meta",
-        utm_medium: "paid_social",
-        utm_campaign: "store_recruit_202607"
-      )
+      stores_contact_path(from: "stores_lp_202607")
+    assert_equal "meta", @request.session[ApplicationController::STORE_LP_202607_ATTRIBUTION_SESSION_KEY]["utm_source"]
+    assert_no_match(/utm_source/, response.body)
+  end
+
+  test "contact conversion event escapes unsafe utm values as JSON" do
+    unsafe_content = "\"'</script><script>alert(1)</script>&"
+    get stores_lp_202607_path, params: { utm_source: "meta", utm_content: unsafe_content }
+
+    post stores_contact_path(from: "stores_lp_202607"), params: submission_params
+    follow_redirect!
+
+    assert_response :success
+    assert_equal unsafe_content, data_layer_events.first["utm_content"]
+    refute_includes response.body, "</script><script>alert(1)</script>"
   end
 
   test "thanks page redirects to form without completion session" do

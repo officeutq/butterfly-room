@@ -21,14 +21,16 @@ module Stores
       @form = Stores::RegistrationForm.new(registration_params)
 
       if @form.save
+        completion_payload = completion_tracking_payload(from: @store_registration_from)
+
         sign_in(@form.user) # Devise
         session[:current_store_id] = @form.store.id
         session.delete(:current_booth_id)
         session[:store_registration_completion] =
-          tracking_session_payload(from: @store_registration_from, utm_params: @store_registration_utm_params)
+          completion_payload
             .merge("store_id" => @form.store.id)
 
-        redirect_to store_registration_thanks_path(@store_registration_from, @store_registration_utm_params)
+        redirect_to store_registration_thanks_path(@store_registration_from)
       else
         render :new, status: :unprocessable_entity
       end
@@ -44,7 +46,12 @@ module Stores
       end
 
       @store_registration_from = permitted_store_registration_from(@store_registration_completion)
-      @store_registration_utm_params = sanitized_utm_params(@store_registration_completion)
+      @store_registration_gtm_event = gtm_conversion_event_payload(
+        event: "store_registration_complete",
+        completion: @store_registration_completion
+      )
+
+      delete_store_lp_202607_attribution
 
       set_store_registration_thanks_meta_tags
     end
@@ -63,7 +70,6 @@ module Stores
 
     def set_store_registration_back_path
       @store_registration_from = permitted_store_registration_from
-      @store_registration_utm_params = sanitized_utm_params
       @store_registration_back_path =
         case @store_registration_from
         when STORE_REGISTRATION_FROM_STORES_LP_202607
@@ -72,8 +78,7 @@ module Stores
           stores_lp_path
         end
       @store_registration_form_path = store_registration_form_path(
-        @store_registration_from,
-        @store_registration_utm_params
+        @store_registration_from
       )
     end
 
@@ -84,15 +89,15 @@ module Stores
       nil
     end
 
-    def store_registration_form_path(from, utm_params = {})
-      query = tracking_query_params(from:, utm_params:)
+    def store_registration_form_path(from)
+      query = tracking_query_params(from:)
       return stores_registrations_path if query.blank?
 
       stores_registrations_path(query)
     end
 
-    def store_registration_thanks_path(from, utm_params)
-      query = tracking_query_params(from:, utm_params:)
+    def store_registration_thanks_path(from)
+      query = tracking_query_params(from:)
       return stores_registration_thanks_path if query.blank?
 
       stores_registration_thanks_path(query)

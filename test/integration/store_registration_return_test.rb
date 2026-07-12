@@ -37,25 +37,20 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?]", stores_lp_202607_path, text: "戻る"
   end
 
-  test "new registration keeps utm params in form action" do
-    get stores_new_registration_path(
-      ref: "1001",
-      from: "stores_lp_202607",
+  test "new registration keeps 202607 attribution in session without exposing utm params in action" do
+    get stores_lp_202607_path, params: {
       utm_source: " meta ",
       utm_medium: "paid_social",
       utm_campaign: "store_recruit_202607",
       utm_content: "flyer_a"
-    )
+    }
+    get stores_new_registration_path(ref: "1001", from: "stores_lp_202607")
 
     assert_response :success
     assert_select "form[action=?]",
-      stores_registrations_path(
-        from: "stores_lp_202607",
-        utm_source: "meta",
-        utm_medium: "paid_social",
-        utm_campaign: "store_recruit_202607",
-        utm_content: "flyer_a"
-      )
+      stores_registrations_path(from: "stores_lp_202607")
+    assert_no_match(/utm_source/, response.body)
+    assert_equal "meta", @request.session[ApplicationController::STORE_LP_202607_ATTRIBUTION_SESSION_KEY]["utm_source"]
   end
 
   test "new registration falls back to current store LP when from is invalid" do
@@ -85,16 +80,16 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?]", stores_lp_202607_path, text: "戻る"
   end
 
-  test "validation errors keep ref and utm params" do
+  test "validation errors keep ref and 202607 attribution session" do
     referral_code = create_referral_code!("STORE-REG-RETURN-ERROR")
+    get stores_lp_202607_path, params: {
+      utm_source: "meta",
+      utm_medium: "paid_social",
+      utm_campaign: "store_recruit_202607"
+    }
 
     assert_no_difference -> { Store.count } do
-      post stores_registrations_path(
-        from: "stores_lp_202607",
-        utm_source: "meta",
-        utm_medium: "paid_social",
-        utm_campaign: "store_recruit_202607"
-      ), params: {
+      post stores_registrations_path(from: "stores_lp_202607"), params: {
         store_registration: valid_registration_params(
           store_name: "",
           referral_code: referral_code.code
@@ -104,27 +99,24 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
 
     assert_response :unprocessable_entity
     assert_select "form[action=?]",
-      stores_registrations_path(
-        from: "stores_lp_202607",
-        utm_source: "meta",
-        utm_medium: "paid_social",
-        utm_campaign: "store_recruit_202607"
-      )
+      stores_registrations_path(from: "stores_lp_202607")
     assert_select "input[name='store_registration[referral_code]'][value=?]", referral_code.code
+    assert_equal "meta", @request.session[ApplicationController::STORE_LP_202607_ATTRIBUTION_SESSION_KEY]["utm_source"]
+    assert_no_match(/utm_source/, response.body)
   end
 
   test "successful registration redirects to thanks and keeps existing admin edit destination" do
     referral_code = create_referral_code!("STORE-REG-RETURN-OK")
+    get stores_lp_202607_path, params: {
+      utm_source: "meta",
+      utm_medium: "paid_social",
+      utm_campaign: "store_recruit_202607"
+    }
 
     assert_difference -> { Store.count }, +1 do
       assert_difference -> { User.count }, +1 do
         assert_difference -> { StoreMembership.count }, +1 do
-          post stores_registrations_path(
-            from: "stores_lp_202607",
-            utm_source: "meta",
-            utm_medium: "paid_social",
-            utm_campaign: "store_recruit_202607"
-          ), params: {
+          post stores_registrations_path(from: "stores_lp_202607"), params: {
             store_registration: valid_registration_params(referral_code: referral_code.code)
           }
         end
@@ -134,21 +126,47 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
     store = Store.order(:id).last
     thanks_path = URI(response.location).request_uri
 
-    assert_redirected_to stores_registration_thanks_path(
-      from: "stores_lp_202607",
-      utm_source: "meta",
-      utm_medium: "paid_social",
-      utm_campaign: "store_recruit_202607"
-    )
+    assert_redirected_to stores_registration_thanks_path(from: "stores_lp_202607")
     assert_no_match(/ref=/, response.location)
+    assert_no_match(/utm_/, response.location)
     assert_equal referral_code, store.referral_code
     assert_equal store.id, @request.session[:current_store_id].to_i
+    assert_equal(
+      {
+        "from" => "stores_lp_202607",
+        "utm" => {
+          "utm_source" => "meta",
+          "utm_medium" => "paid_social",
+          "utm_campaign" => "store_recruit_202607"
+        },
+        "store_id" => store.id
+      },
+      @request.session[:store_registration_completion]
+    )
 
     follow_redirect!
 
     assert_response :success
     assert_select "h1", text: "店舗登録が完了しました"
     assert_select "a[href=?]", edit_admin_store_path(store), text: "管理画面へ進む"
+    assert_equal(
+      [
+        {
+          "event" => "store_registration_complete",
+          "from" => "stores_lp_202607",
+          "utm_source" => "meta",
+          "utm_medium" => "paid_social",
+          "utm_campaign" => "store_recruit_202607"
+        }
+      ],
+      data_layer_events
+    )
+    assert_nil @request.session[:store_registration_completion]
+    assert_nil @request.session[ApplicationController::STORE_LP_202607_ATTRIBUTION_SESSION_KEY]
+    refute_includes data_layer_events.first.keys, "store_id"
+    refute_includes data_layer_events.first.keys, "user_id"
+    refute_includes data_layer_events.first.keys, "ref"
+    refute_includes data_layer_events.first.keys, "referral_code"
 
     get edit_admin_store_path(store)
     assert_response :success
@@ -176,6 +194,14 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
     assert_no_match(/ref=/, response.location)
     assert_equal default_referral_code, store.referral_code
     assert_equal store.id, @request.session[:current_store_id].to_i
+
+    follow_redirect!
+
+    assert_response :success
+    assert_equal(
+      [ { "event" => "store_registration_complete", "from" => "stores_lp_202607" } ],
+      data_layer_events
+    )
   end
 
   test "registration thanks requires login" do
