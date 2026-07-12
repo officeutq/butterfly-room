@@ -13,7 +13,10 @@
         内容を確認後、担当者よりご連絡いたします。
       </p>
 
-      <%= link_to "店舗向けページへ戻る", @store_contact_back_path, class: "btn btn-primary" %>
+      <%= link_to "店舗向けページへ戻る",
+            @store_contact_back_path,
+            class: "btn btn-primary",
+            data: (@store_contact_back_path == stores_lp_202607_return_path ? { turbo_prefetch: false, turbo: false } : {}) %>
     </div>
   </div>
 </div>

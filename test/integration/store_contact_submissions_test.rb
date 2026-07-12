@@ -38,6 +38,7 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "form[action=?].store-contact-submission-form", stores_contact_path(from: "stores_lp")
     assert_select "a[href=?]", stores_lp_path
+    assert_select "a[href=?][data-turbo-prefetch]", stores_lp_path, count: 0
   end
 
   test "form keeps back link for store LP 202607" do
@@ -46,6 +47,7 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "form[action=?].store-contact-submission-form", stores_contact_path(from: "stores_lp_202607")
     assert_select "a[href=?]", stores_lp_202607_return_path
+    assert_select "a[href=?][data-turbo-prefetch=?][data-turbo=?]", stores_lp_202607_return_path, "false", "false"
   end
 
   test "form keeps 202607 attribution in session without exposing utm params in action" do
@@ -197,13 +199,18 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_equal "meta", @request.session[ApplicationController::STORE_LP_202607_ATTRIBUTION_SESSION_KEY]["utm_source"]
     assert_equal "1001", @request.session[ApplicationController::STORE_LP_202607_REF_SESSION_KEY]
     assert_select "a[href=?]", stores_lp_202607_return_path, text: "店舗向けページへ戻る"
+    assert_select "a[href=?][data-turbo-prefetch=?][data-turbo=?]", stores_lp_202607_return_path, "false", "false"
     refute_includes response.body, "Owner Name"
     refute_includes response.body, "owner@example.com"
 
-    get stores_lp_202607_return_path
+    get stores_lp_202607_return_path, headers: { "X-Turbo-Request-ID" => "turbo-return" }
     assert_redirected_to stores_lp_202607_path(ref: "1001")
 
-    follow_redirect!
+    get stores_lp_202607_path(ref: "1001"), headers: { "X-Turbo-Request-ID" => "turbo-lp-fetch" }
+    assert_equal true, @request.session[ApplicationController::PRESERVE_STORE_LP_202607_ATTRIBUTION_ONCE_SESSION_KEY]
+    assert_equal "meta", @request.session[ApplicationController::STORE_LP_202607_ATTRIBUTION_SESSION_KEY]["utm_source"]
+
+    get stores_lp_202607_path(ref: "1001")
     assert_equal "meta", @request.session[ApplicationController::STORE_LP_202607_ATTRIBUTION_SESSION_KEY]["utm_source"]
     assert_select "a[href=?]", stores_new_registration_path(ref: "1001", from: "stores_lp_202607"), minimum: 1
     assert_no_match(/utm_source/, response.body)
@@ -218,6 +225,7 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "h1", text: "お問い合わせを受け付けました"
     assert_select "a[href=?]", stores_lp_path, text: "店舗向けページへ戻る"
+    assert_select "a[href=?][data-turbo-prefetch]", stores_lp_path, count: 0
     assert_equal [ { "event" => "store_contact_complete" } ], data_layer_events
 
     get thanks_path
@@ -262,6 +270,7 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_select ".alert-danger"
     assert_select "form[action=?].store-contact-submission-form", stores_contact_path(from: "stores_lp_202607")
     assert_select "a[href=?]", stores_lp_202607_return_path
+    assert_select "a[href=?][data-turbo-prefetch=?][data-turbo=?]", stores_lp_202607_return_path, "false", "false"
   end
 
   test "validation errors keep 202607 attribution session without exposing utm params" do
@@ -286,6 +295,7 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_select "form[action=?].store-contact-submission-form",
       stores_contact_path(from: "stores_lp_202607")
     assert_select "a[href=?]", stores_lp_202607_return_path
+    assert_select "a[href=?][data-turbo-prefetch=?][data-turbo=?]", stores_lp_202607_return_path, "false", "false"
     assert_equal "meta", @request.session[ApplicationController::STORE_LP_202607_ATTRIBUTION_SESSION_KEY]["utm_source"]
     assert_no_match(/utm_source/, response.body)
   end

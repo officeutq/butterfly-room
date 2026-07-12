@@ -16,6 +16,7 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "form[action=?]", stores_registrations_path
     assert_select "a[href=?]", stores_lp_path, text: "戻る"
+    assert_select "a[href=?][data-turbo-prefetch]", stores_lp_path, count: 0
   end
 
   test "new registration keeps back link for current store LP" do
@@ -24,6 +25,7 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "form[action=?]", stores_registrations_path(from: "stores_lp")
     assert_select "a[href=?]", stores_lp_path, text: "戻る"
+    assert_select "a[href=?][data-turbo-prefetch]", stores_lp_path, count: 0
   end
 
   test "new registration keeps back link for store LP 202607" do
@@ -32,6 +34,7 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "form[action=?]", stores_registrations_path(from: "stores_lp_202607")
     assert_select "a[href=?]", stores_lp_202607_return_path, text: "戻る"
+    assert_select "a[href=?][data-turbo-prefetch=?][data-turbo=?]", stores_lp_202607_return_path, "false", "false"
   end
 
   test "new registration allows blank referral code for store LP 202607" do
@@ -42,6 +45,7 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
     assert_select "input[name='store_registration[referral_code]']", count: 1
     assert_select "input[name='store_registration[referral_code]'][required]", count: 0
     assert_select "a[href=?]", stores_lp_202607_return_path, text: "戻る"
+    assert_select "a[href=?][data-turbo-prefetch=?][data-turbo=?]", stores_lp_202607_return_path, "false", "false"
   end
 
   test "new registration keeps 202607 attribution in session without exposing utm params in action" do
@@ -77,6 +81,7 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "a[href=?]", stores_lp_202607_return_path, text: "戻る"
+    assert_select "a[href=?][data-turbo-prefetch=?][data-turbo=?]", stores_lp_202607_return_path, "false", "false"
     assert_select "input[name='store_registration[referral_code]'][value=?]", referral_code.code
 
     get stores_lp_202607_return_path
@@ -125,6 +130,64 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
     assert_nil @request.session[ApplicationController::STORE_LP_202607_REF_SESSION_KEY]
     refute_includes data_layer_events.first.keys, "ref"
     refute_includes data_layer_events.first.keys, "referral_code"
+  end
+
+  test "store LP 202607 Turbo return reload keeps attribution through successful registration" do
+    referral_code = create_referral_code!("STORE-REG-TURBO-RETURN")
+    get stores_lp_202607_path, params: {
+      ref: referral_code.code,
+      utm_source: "test_meta",
+      utm_medium: "paid_social",
+      utm_campaign: "return_registration_test",
+      utm_content: "creative_registration"
+    }
+
+    get stores_new_registration_path(ref: referral_code.code, from: "stores_lp_202607")
+
+    assert_response :success
+    assert_select "a[href=?][data-turbo-prefetch=?][data-turbo=?]", stores_lp_202607_return_path, "false", "false"
+
+    get stores_lp_202607_return_path, headers: { "X-Turbo-Request-ID" => "turbo-return" }
+
+    assert_redirected_to stores_lp_202607_path(ref: referral_code.code)
+
+    get stores_lp_202607_path(ref: referral_code.code), headers: { "X-Turbo-Request-ID" => "turbo-lp-fetch" }
+
+    assert_response :success
+    assert_equal true, @request.session[ApplicationController::PRESERVE_STORE_LP_202607_ATTRIBUTION_ONCE_SESSION_KEY]
+    assert_equal "test_meta", @request.session[ApplicationController::STORE_LP_202607_ATTRIBUTION_SESSION_KEY]["utm_source"]
+
+    get stores_lp_202607_path(ref: referral_code.code)
+
+    assert_response :success
+    assert_nil @request.session[ApplicationController::PRESERVE_STORE_LP_202607_ATTRIBUTION_ONCE_SESSION_KEY]
+    assert_equal "test_meta", @request.session[ApplicationController::STORE_LP_202607_ATTRIBUTION_SESSION_KEY]["utm_source"]
+
+    assert_difference -> { Store.count }, +1 do
+      assert_difference -> { User.count }, +1 do
+        assert_difference -> { StoreMembership.count }, +1 do
+          post stores_registrations_path(from: "stores_lp_202607"), params: {
+            store_registration: valid_registration_params(referral_code: referral_code.code)
+          }
+        end
+      end
+    end
+
+    follow_redirect!
+
+    assert_equal(
+      [
+        {
+          "event" => "store_registration_complete",
+          "from" => "stores_lp_202607",
+          "utm_source" => "test_meta",
+          "utm_medium" => "paid_social",
+          "utm_campaign" => "return_registration_test",
+          "utm_content" => "creative_registration"
+        }
+      ],
+      data_layer_events
+    )
   end
 
   test "contact completion return keeps attribution and ref for later registration" do
@@ -197,6 +260,7 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "form[action=?]", stores_registrations_path
     assert_select "a[href=?]", stores_lp_path, text: "戻る"
+    assert_select "a[href=?][data-turbo-prefetch]", stores_lp_path, count: 0
     assert_no_match "https://example.com", response.body
   end
 
@@ -216,6 +280,7 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_entity
     assert_select "form[action=?]", stores_registrations_path(from: "stores_lp_202607")
     assert_select "a[href=?]", stores_lp_202607_return_path, text: "戻る"
+    assert_select "a[href=?][data-turbo-prefetch=?][data-turbo=?]", stores_lp_202607_return_path, "false", "false"
   end
 
   test "validation errors keep ref and 202607 attribution session" do
