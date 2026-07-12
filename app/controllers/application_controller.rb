@@ -131,7 +131,14 @@ class ApplicationController < ActionController::Base
   end
 
   def consume_store_lp_202607_attribution_preservation
+    # Turbo may fetch the LP before a tracked-asset full reload; keep the flag for the document request.
+    return true if session[PRESERVE_STORE_LP_202607_ATTRIBUTION_ONCE_SESSION_KEY] == true && turbo_drive_request?
+
     session.delete(PRESERVE_STORE_LP_202607_ATTRIBUTION_ONCE_SESSION_KEY) == true
+  end
+
+  def turbo_drive_request?
+    request.headers["X-Turbo-Request-ID"].present?
   end
 
   def attribution_from(attribution)

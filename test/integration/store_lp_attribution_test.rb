@@ -125,6 +125,39 @@ class StoreLpAttributionTest < ActionDispatch::IntegrationTest
     assert_nil @request.session[ApplicationController::STORE_LP_202607_REF_SESSION_KEY]
   end
 
+  test "store LP 202607 internal return keeps preservation through Turbo fetch reload" do
+    get stores_lp_202607_path, params: {
+      ref: "1001",
+      utm_source: "meta",
+      utm_medium: "paid_social"
+    }
+
+    get stores_lp_202607_return_path, headers: { "X-Turbo-Request-ID" => "turbo-return" }
+
+    assert_redirected_to stores_lp_202607_path(ref: "1001")
+    assert_equal true, @request.session[ApplicationController::PRESERVE_STORE_LP_202607_ATTRIBUTION_ONCE_SESSION_KEY]
+
+    get stores_lp_202607_path(ref: "1001"), headers: { "X-Turbo-Request-ID" => "turbo-lp-fetch" }
+
+    assert_response :success
+    assert_equal true, @request.session[ApplicationController::PRESERVE_STORE_LP_202607_ATTRIBUTION_ONCE_SESSION_KEY]
+    assert_equal "meta", @request.session[ApplicationController::STORE_LP_202607_ATTRIBUTION_SESSION_KEY]["utm_source"]
+    assert_equal "1001", @request.session[ApplicationController::STORE_LP_202607_REF_SESSION_KEY]
+
+    get stores_lp_202607_path(ref: "1001")
+
+    assert_response :success
+    assert_nil @request.session[ApplicationController::PRESERVE_STORE_LP_202607_ATTRIBUTION_ONCE_SESSION_KEY]
+    assert_equal "meta", @request.session[ApplicationController::STORE_LP_202607_ATTRIBUTION_SESSION_KEY]["utm_source"]
+    assert_equal "1001", @request.session[ApplicationController::STORE_LP_202607_REF_SESSION_KEY]
+
+    get stores_lp_202607_path
+
+    assert_response :success
+    assert_nil @request.session[ApplicationController::STORE_LP_202607_ATTRIBUTION_SESSION_KEY]
+    assert_nil @request.session[ApplicationController::STORE_LP_202607_REF_SESSION_KEY]
+  end
+
   test "store LP 202607 internal return without ref redirects without query" do
     get stores_lp_202607_path, params: { utm_source: "meta" }
 
