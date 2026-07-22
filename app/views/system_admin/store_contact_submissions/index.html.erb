@@ -28,6 +28,11 @@
           </div>
 
           <div class="referral-code-row">
+            <div class="referral-code-label">業態</div>
+            <div class="referral-code-value text-break"><%= store_contact_submission.business_type.presence || "-" %></div>
+          </div>
+
+          <div class="referral-code-row">
             <div class="referral-code-label">お名前</div>
             <div class="referral-code-value text-break"><%= store_contact_submission.name %></div>
           </div>

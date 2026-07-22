@@ -33,6 +33,9 @@ ja:
         business_type: 業種
         referral_code: 紹介コード
 
+      store_contact_submission:
+        business_type: 業態
+
       booth:
         name: ブース名
         description: ブース説明

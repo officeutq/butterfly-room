@@ -11,6 +11,7 @@ class StoreContactSubmissionMailerTest < ActionMailer::TestCase
     @store_contact_submission = StoreContactSubmission.create!(
       name: "Owner Name",
       store_name: "Sample Store",
+      business_type: "Girls Bar",
       email: "owner@example.com",
       phone_number: "090-1234-5678",
       body: "Question about registration.",
@@ -34,11 +35,13 @@ class StoreContactSubmissionMailerTest < ActionMailer::TestCase
     assert_match "店舗向けLPからお問い合わせがありました。", mail.text_part.body.decoded
     assert_match "Owner Name", mail.text_part.body.decoded
     assert_match "Sample Store", mail.text_part.body.decoded
+    assert_match "Girls Bar", mail.text_part.body.decoded
     assert_match "owner@example.com", mail.text_part.body.decoded
     assert_match "090-1234-5678", mail.text_part.body.decoded
     assert_match "Weekdays 10:00-18:00", mail.text_part.body.decoded
     assert_match "Question about registration.", mail.text_part.body.decoded
     assert_match I18n.l(@store_contact_submission.created_at), mail.text_part.body.decoded
+    assert_match "Girls Bar", mail.html_part.body.decoded
     assert_match "Question about registration.", mail.html_part.body.decoded
   end
 
@@ -55,6 +58,7 @@ class StoreContactSubmissionMailerTest < ActionMailer::TestCase
     assert_match "内容を確認のうえ、担当者よりご連絡いたします。", mail.text_part.body.decoded
     assert_match "入力内容の控え", mail.text_part.body.decoded
     assert_match "Sample Store", mail.text_part.body.decoded
+    assert_match "Girls Bar", mail.text_part.body.decoded
     assert_match "owner@example.com", mail.text_part.body.decoded
     assert_match "090-1234-5678", mail.text_part.body.decoded
     assert_match "Weekdays 10:00-18:00", mail.text_part.body.decoded
@@ -63,6 +67,7 @@ class StoreContactSubmissionMailerTest < ActionMailer::TestCase
     assert_match "お店とお客様を、ライブでつなぐ。", mail.text_part.body.decoded
     assert_match "https://butterflyve.jp/", mail.text_part.body.decoded
     assert_match "お問い合わせを受け付けました。", mail.html_part.body.decoded
+    assert_match "Girls Bar", mail.html_part.body.decoded
     assert_match "https://butterflyve.jp/", mail.html_part.body.decoded
   end
 
