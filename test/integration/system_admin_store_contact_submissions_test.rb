@@ -12,6 +12,7 @@ class SystemAdminStoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     @submission = create_store_contact_submission(
       name: "山田 太郎",
       store_name: "Butterflyve Bar 新宿店",
+      business_type: "ガールズバー",
       email: "owner@example.com",
       phone_number: "090-1234-5678",
       contactable_time: "平日 10:00-18:00",
@@ -69,6 +70,7 @@ class SystemAdminStoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     newer = create_store_contact_submission(
       name: "佐藤 花子",
       store_name: "Newest Store",
+      business_type: "",
       email: "newest@example.com",
       phone_number: "03-1234-5678",
       contactable_time: "",
@@ -86,6 +88,7 @@ class SystemAdminStoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?]", system_admin_store_contact_submission_path(older), text: "詳細"
     assert_select "a[href=?]", system_admin_store_contact_submission_path(newer), text: "詳細"
     assert_includes response.body, older.store_name
+    assert_includes response.body, older.business_type
     assert_includes response.body, newer.store_name
     assert_includes response.body, older.name
     assert_includes response.body, older.email
@@ -106,6 +109,7 @@ class SystemAdminStoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?]", system_admin_store_contact_submissions_path, text: "店舗LPお問い合わせ管理へ"
     assert_includes response.body, @submission.name
     assert_includes response.body, @submission.store_name
+    assert_includes response.body, @submission.business_type
     assert_includes response.body, @submission.email
     assert_includes response.body, @submission.phone_number
     assert_includes response.body, @submission.contactable_time
@@ -131,6 +135,7 @@ class SystemAdminStoreContactSubmissionsTest < ActionDispatch::IntegrationTest
       {
         name: "Owner Name",
         store_name: "Sample Store",
+        business_type: "Girls Bar",
         email: "owner@example.com",
         phone_number: "090-1234-5678",
         body: "Question about registration.",

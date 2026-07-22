@@ -50,6 +50,18 @@
         </div>
 
         <div class="mb-3">
+          <%= f.label :business_type, class: "form-label" do %>
+            業態<%= tag.span "任意",
+                  class: "badge rounded-pill text-bg-secondary store-contact-submission-field-badge" %>
+          <% end %>
+          <%= f.text_field :business_type,
+                class: "form-control",
+                maxlength: StoreContactSubmission::BUSINESS_TYPE_MAX_LENGTH,
+                placeholder: "例: ガールズバー",
+                autocomplete: "off" %>
+        </div>
+
+        <div class="mb-3">
           <%= f.label :email, class: "form-label" do %>
             メールアドレス<%= tag.span "必須",
                   class: "badge rounded-pill text-bg-danger store-contact-submission-field-badge" %>

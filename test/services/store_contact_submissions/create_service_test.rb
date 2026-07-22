@@ -33,6 +33,7 @@ class StoreContactSubmissions::CreateServiceTest < ActiveSupport::TestCase
 
     assert_equal "Owner Name", submission.name
     assert_equal "Sample Store", submission.store_name
+    assert_equal "Girls Bar", submission.business_type
     assert_equal "owner@example.com", submission.email
     assert_equal "090-1234-5678", submission.phone_number
     assert_equal "Question about registration.", submission.body
@@ -70,6 +71,7 @@ class StoreContactSubmissions::CreateServiceTest < ActiveSupport::TestCase
     {
       name: "Owner Name",
       store_name: "Sample Store",
+      business_type: "Girls Bar",
       email: "owner@example.com",
       phone_number: "090-1234-5678",
       body: "Question about registration.",

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_05_000100) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_23_000100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -423,6 +423,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_05_000100) do
 
   create_table "store_contact_submissions", force: :cascade do |t|
     t.text "body"
+    t.string "business_type", limit: 120
     t.string "contactable_time", limit: 120
     t.datetime "created_at", null: false
     t.string "email", limit: 255, null: false

@@ -3,6 +3,7 @@
 class StoreContactSubmission < ApplicationRecord
   NAME_MAX_LENGTH = 120
   STORE_NAME_MAX_LENGTH = 120
+  BUSINESS_TYPE_MAX_LENGTH = 120
   EMAIL_MAX_LENGTH = 255
   PHONE_NUMBER_MAX_LENGTH = 50
   BODY_MAX_LENGTH = 5_000
@@ -14,6 +15,7 @@ class StoreContactSubmission < ApplicationRecord
 
   validates :name, presence: true, length: { maximum: NAME_MAX_LENGTH }
   validates :store_name, presence: true, length: { maximum: STORE_NAME_MAX_LENGTH }
+  validates :business_type, length: { maximum: BUSINESS_TYPE_MAX_LENGTH }, allow_blank: true
   validates :email,
     presence: true,
     format: { with: URI::MailTo::EMAIL_REGEXP },

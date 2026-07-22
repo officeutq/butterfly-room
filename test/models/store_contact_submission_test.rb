@@ -58,6 +58,11 @@ class StoreContactSubmissionTest < ActiveSupport::TestCase
     assert build_submission(contactable_time: "").valid?
   end
 
+  test "business type is optional" do
+    assert build_submission(business_type: nil).valid?
+    assert build_submission(business_type: "").valid?
+  end
+
   test "source must be present" do
     submission = build_submission(source: nil)
 
@@ -75,6 +80,7 @@ class StoreContactSubmissionTest < ActiveSupport::TestCase
     length_limits = {
       name: StoreContactSubmission::NAME_MAX_LENGTH,
       store_name: StoreContactSubmission::STORE_NAME_MAX_LENGTH,
+      business_type: StoreContactSubmission::BUSINESS_TYPE_MAX_LENGTH,
       email: StoreContactSubmission::EMAIL_MAX_LENGTH,
       phone_number: StoreContactSubmission::PHONE_NUMBER_MAX_LENGTH,
       body: StoreContactSubmission::BODY_MAX_LENGTH,
@@ -104,6 +110,7 @@ class StoreContactSubmissionTest < ActiveSupport::TestCase
     {
       name: "Owner Name",
       store_name: "Sample Store",
+      business_type: "Girls Bar",
       email: "owner@example.com",
       phone_number: "090-1234-5678",
       body: "I would like to know more about registration.",

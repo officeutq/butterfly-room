@@ -26,6 +26,7 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?]", stores_lp_path
     assert_select "input[name='store_contact_submission[name]']"
     assert_select "input[name='store_contact_submission[store_name]']"
+    assert_select "input[name='store_contact_submission[business_type]']"
     assert_select "input[name='store_contact_submission[email]']"
     assert_select "input[name='store_contact_submission[phone_number]']"
     assert_select "textarea[name='store_contact_submission[body]']"
@@ -89,6 +90,10 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_select "label[for='store_contact_submission_store_name'] .badge.store-contact-submission-field-badge",
       text: "必須"
     assert_select "input[name='store_contact_submission[store_name]'][placeholder='例: Butterflyve Bar 新宿店']"
+    assert_select "label[for='store_contact_submission_business_type']", text: /業態/
+    assert_select "label[for='store_contact_submission_business_type'] .badge.store-contact-submission-field-badge",
+      text: "任意"
+    assert_select "input[name='store_contact_submission[business_type]'][placeholder='例: ガールズバー']"
     assert_select "label[for='store_contact_submission_email']", text: /メールアドレス/
     assert_select "label[for='store_contact_submission_email'] .badge.store-contact-submission-field-badge",
       text: "必須"
@@ -144,6 +149,7 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_redirected_to stores_contact_thanks_path
     assert_equal "Owner Name", submission.name
     assert_equal "Sample Store", submission.store_name
+    assert_equal "Girls Bar", submission.business_type
     assert_equal "owner@example.com", submission.email
     assert_equal "090-1234-5678", submission.phone_number
     assert_equal "Question about registration.", submission.body
@@ -250,6 +256,7 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?]", stores_lp_path
     assert_select "input[name='store_contact_submission[name]']"
     assert_select "input[name='store_contact_submission[store_name]']"
+    assert_select "input[name='store_contact_submission[business_type]']"
     assert_select "input[name='store_contact_submission[email]']"
     assert_select "input[name='store_contact_submission[phone_number]']"
   end
@@ -336,6 +343,15 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
     assert_equal "", StoreContactSubmission.order(:id).last.contactable_time
   end
 
+  test "business type is optional when creating submission" do
+    assert_difference -> { StoreContactSubmission.count }, +1 do
+      post stores_contact_path, params: submission_params(business_type: "")
+    end
+
+    assert_redirected_to stores_contact_thanks_path
+    assert_equal "", StoreContactSubmission.order(:id).last.business_type
+  end
+
   private
 
   def create_user(email: "store-contact-user@example.com")
@@ -347,6 +363,7 @@ class StoreContactSubmissionsTest < ActionDispatch::IntegrationTest
       store_contact_submission: {
         name: "Owner Name",
         store_name: "Sample Store",
+        business_type: "Girls Bar",
         email: "owner@example.com",
         phone_number: "090-1234-5678",
         body: "Question about registration.",

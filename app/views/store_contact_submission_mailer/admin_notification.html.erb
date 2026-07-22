@@ -7,6 +7,9 @@
   <dt>店舗名</dt>
   <dd><%= @store_contact_submission.store_name %></dd>
 
+  <dt>業態</dt>
+  <dd><%= @store_contact_submission.business_type.presence || "（未入力）" %></dd>
+
   <dt>メールアドレス</dt>
   <dd><%= @store_contact_submission.email %></dd>
 

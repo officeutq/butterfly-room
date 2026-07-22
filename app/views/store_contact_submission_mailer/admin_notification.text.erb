@@ -2,6 +2,7 @@
 
 お名前: <%= @store_contact_submission.name %>
 店舗名: <%= @store_contact_submission.store_name %>
+業態: <%= @store_contact_submission.business_type.presence || "（未入力）" %>
 メールアドレス: <%= @store_contact_submission.email %>
 電話番号: <%= @store_contact_submission.phone_number %>
 連絡可能時間帯: <%= @store_contact_submission.contactable_time.presence || "（未入力）" %>

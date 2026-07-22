@@ -64,6 +64,7 @@ class StoreContactSubmissionsController < ApplicationController
     params.require(:store_contact_submission).permit(
       :name,
       :store_name,
+      :business_type,
       :email,
       :phone_number,
       :body,
