@@ -80,9 +80,10 @@
             data-presence-poll-summary-url-value="<%= presence_summary_stream_session_path(@stream_session) %>"
             data-presence-poll-interval-ms-value="20000"
           >
-            <%= render "cast/stream_sessions/meta_display_frame",
-                      booth: @booth,
-                      stream_session: @stream_session %>
+            <turbo-frame id="stream_meta_display">
+              <%= render "stream_sessions/stream_meta_display",
+                        stream_session: @stream_session %>
+            </turbo-frame>
           </div>
         </div>
 
