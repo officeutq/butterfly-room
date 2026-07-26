@@ -34,6 +34,13 @@ class CastMetricsQueryTest < ActiveSupport::TestCase
       display_name: "店舗管理者配信者"
     )
 
+    @system_admin_performer = User.create!(
+      email: "system_admin_performer@example.com",
+      password: "password",
+      role: :system_admin,
+      display_name: "システム管理者配信者"
+    )
+
     @customer = User.create!(
       email: "metrics_customer@example.com",
       password: "password",
@@ -138,20 +145,67 @@ class CastMetricsQueryTest < ActiveSupport::TestCase
     assert_equal [ @cast_with_stream_only.id, @cast_with_sales.id ], rows.map { |r| r.cast_user.id }
   end
 
-test "includes store_admin performer when they have stream session" do
-  create_stream_session!(
-    booth: @booth_sales,
-    cast_user: @store_admin_performer,
-    broadcast_started_at: @from + 3.days,
-    ended_at: @from + 3.days + 45.minutes
-  )
+  test "includes store_admin performer when they have stream session" do
+    create_stream_session!(
+      booth: @booth_sales,
+      cast_user: @store_admin_performer,
+      broadcast_started_at: @from + 3.days,
+      ended_at: @from + 3.days + 45.minutes
+    )
 
-  rows = CastMetricsQuery.new(store: @store, from: @from, to: @to).call
+    rows = CastMetricsQuery.new(store: @store, from: @from, to: @to).call
 
-  assert_equal [ @store_admin_performer.id ], rows.map { |r| r.cast_user.id }
-  assert_equal "store_admin", rows.first.cast_user.role
-  assert_equal 2700, rows.first.stream_seconds
-end
+    assert_equal [ @store_admin_performer.id ], rows.map { |r| r.cast_user.id }
+    assert_equal "store_admin", rows.first.cast_user.role
+    assert_equal 2700, rows.first.stream_seconds
+  end
+
+  test "does not include stream actor without broadcast start when include_all_casts is true" do
+    create_stream_session!(
+      booth: @booth_sales,
+      cast_user: @system_admin_performer,
+      started_at: @from + 4.days,
+      broadcast_started_at: nil,
+      ended_at: @from + 4.days + 5.minutes
+    )
+
+    rows =
+      CastMetricsQuery.new(
+        store: @store,
+        from: @from,
+        to: @to,
+        include_all_casts: true
+      ).call
+
+    user_ids = rows.map { |r| r.cast_user.id }
+
+    assert_includes user_ids, @cast_without_metrics.id
+    refute_includes user_ids, @system_admin_performer.id
+  end
+
+  test "includes past broadcast actor when include_all_casts is true even without selected month metrics" do
+    create_stream_session!(
+      booth: @booth_sales,
+      cast_user: @system_admin_performer,
+      broadcast_started_at: @from - 10.days,
+      ended_at: @from - 10.days + 10.minutes
+    )
+
+    rows =
+      CastMetricsQuery.new(
+        store: @store,
+        from: @from,
+        to: @to,
+        include_all_casts: true
+      ).call
+
+    row = rows.find { |r| r.cast_user.id == @system_admin_performer.id }
+
+    assert_not_nil row
+    assert_equal "system_admin", row.cast_user.role
+    assert_equal 0, row.stream_sales_points
+    assert_equal 0, row.stream_seconds
+  end
 
   private
 

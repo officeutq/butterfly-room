@@ -60,6 +60,7 @@ class CastMetricsQuery
       StreamSession
         .where(store_id: store.id)
         .where.not(started_by_cast_user_id: nil)
+        .where.not(broadcast_started_at: nil)
         .pluck(:started_by_cast_user_id)
 
     user_ids = (booth_cast_user_ids + stream_actor_user_ids).uniq
