@@ -87,7 +87,21 @@
         </div>
 
         <div class="live-overlay-main-row">
-          <div class="live-overlay-main-spacer"></div>
+          <div class="live-overlay-main-spacer">
+            <button
+              type="button"
+              class="btn btn-primary d-inline-flex align-items-center gap-2 live-share-button"
+              data-controller="share"
+              data-action="click->share#share"
+              data-share-title="Butterflyve"
+              data-share-text="Butterflyveのブースはこちら"
+              data-share-url="<%= booth_url(@booth) %>"
+              aria-label="ブースを共有"
+              title="ブースを共有">
+              <i class="bi bi-share" aria-hidden="true"></i>
+              <span>ブースを共有</span>
+            </button>
+          </div>
 
           <div class="live-overlay-drink-slot">
             <%= turbo_stream_from [@stream_session, :cast_pending_drink_orders] %>

@@ -74,7 +74,7 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
     StreamSessions::StartService.new(booth: @booth, actor: @cast).call
     @booth.update!(status: :live)
 
-    sign_out @cast
+    sign_out :user
     sign_in @customer, scope: :user
 
     get booth_path(@booth)
@@ -155,6 +155,7 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "share#share"
     assert_includes response.body, 'data-share-text="Butterflyveのブースはこちら"'
     assert_includes response.body, "btn btn-primary d-inline-flex align-items-center gap-2"
+    assert_includes response.body, "live-share-button"
     assert_includes response.body, "<span>ブースを共有</span>"
     assert_includes response.body, booth_url(@booth)
   end
