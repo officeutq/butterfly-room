@@ -1,11 +1,10 @@
-<% booth = stream_session.booth %>
 <% user = stream_session.started_by_cast_user %>
-<% title_display = stream_session.title.presence || booth.name %>
+<% title_display = stream_session.title.presence || stream_session.booth.name %>
 
 <div class="live-meta-row viewer-meta-row">
-  <% if booth.live? || booth.away? %>
+  <% if stream_session.booth.live? || stream_session.booth.away? %>
     <div class="meta-live-badge">
-      <%= booth_status_badge(booth) %>
+      <%= booth_status_badge(stream_session.booth) %>
     </div>
   <% end %>
 
