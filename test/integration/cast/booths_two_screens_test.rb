@@ -6,6 +6,7 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
   setup do
     @store = Store.create!(name: "Test Store")
     @cast  = User.create!(email: "cast@example.com", password: "password", role: :cast)
+    @customer = User.create!(email: "customer@example.com", password: "password", role: :customer)
 
     @booth = Booth.create!(
       store: @store,
@@ -57,6 +58,29 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
 
     get live_cast_booth_path(@booth)
     assert_response :success
+    assert_cast_booth_share_button_rendered
+  end
+
+  test "live: live screen renders booth share button in ops slot" do
+    StreamSessions::StartService.new(booth: @booth, actor: @cast).call
+    @booth.update!(status: :live)
+
+    get live_cast_booth_path(@booth)
+    assert_response :success
+    assert_cast_booth_share_button_rendered
+  end
+
+  test "viewer live screen does not render cast booth share button" do
+    StreamSessions::StartService.new(booth: @booth, actor: @cast).call
+    @booth.update!(status: :live)
+
+    sign_out :user
+    sign_in @customer, scope: :user
+
+    get booth_path(@booth)
+    assert_response :success
+    refute_includes response.body, 'aria-label="ブースを共有"'
+    refute_includes response.body, 'data-controller="share"'
   end
 
   test "standby: finish ends session and redirects to result" do
@@ -121,5 +145,19 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
     end
 
     assert_response :conflict
+  end
+
+  private
+
+  def assert_cast_booth_share_button_rendered
+    assert_includes response.body, 'aria-label="ブースを共有"'
+    assert_includes response.body, 'data-controller="share"'
+    assert_includes response.body, "share#share"
+    assert_includes response.body, 'data-share-text="Butterflyveのブースはこちら"'
+    assert_includes response.body, "live-overlay-ops-slot"
+    assert_includes response.body, "live-ops-btn live-share-button"
+    assert_includes response.body, "live-share-button"
+    assert_includes response.body, '<span class="visually-hidden">ブースを共有</span>'
+    assert_includes response.body, booth_url(@booth)
   end
 end
