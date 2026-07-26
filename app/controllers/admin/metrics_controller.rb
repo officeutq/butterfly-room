@@ -29,9 +29,18 @@ module Admin
     def selected_month_param
       month = params[:month].to_s.strip
       return default_month if month.blank?
-      return month if /\A\d{4}-\d{2}\z/.match?(month)
+      return month if valid_month?(month)
 
       default_month
+    end
+
+    def valid_month?(month)
+      return false unless /\A\d{4}-\d{2}\z/.match?(month)
+
+      Date.strptime("#{month}-01", "%Y-%m-%d")
+      true
+    rescue Date::Error
+      false
     end
 
     def default_month
@@ -40,7 +49,8 @@ module Admin
 
     def month_options
       Time.use_zone(ZONE) do
-        start_month = metrics_start_month
+        selected_month = Date.strptime("#{@selected_month}-01", "%Y-%m-%d").beginning_of_month
+        start_month = [ metrics_start_month, selected_month ].min
         end_month = Time.zone.today.beginning_of_month
 
         months = []
