@@ -142,20 +142,6 @@
   align-items: flex-start;
 }
 
-.live-overlay-main-spacer {
-  padding: 8px 10px;
-}
-
-.live-share-button {
-  flex: 0 0 auto;
-  white-space: nowrap;
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.2);
-}
-
-.live-share-button i {
-  line-height: 1;
-}
-
 .live-overlay-meta-slot,
 .viewer-overlay-meta-slot {
   display: flex;
@@ -207,6 +193,12 @@
 .viewer-overlay-ops-slot {
   display: flex;
   align-items: flex-end;
+}
+
+.live-overlay-ops-slot {
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .live-overlay-comment-slot .live-comment-stack {

@@ -61,7 +61,7 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
     assert_cast_booth_share_button_rendered
   end
 
-  test "live: live screen renders booth share button in meta display" do
+  test "live: live screen renders booth share button in ops slot" do
     StreamSessions::StartService.new(booth: @booth, actor: @cast).call
     @booth.update!(status: :live)
 
@@ -154,9 +154,10 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
     assert_includes response.body, 'data-controller="share"'
     assert_includes response.body, "share#share"
     assert_includes response.body, 'data-share-text="Butterflyveのブースはこちら"'
-    assert_includes response.body, "btn btn-primary d-inline-flex align-items-center gap-2"
+    assert_includes response.body, "live-overlay-ops-slot"
+    assert_includes response.body, "live-ops-btn live-share-button"
     assert_includes response.body, "live-share-button"
-    assert_includes response.body, "<span>ブースを共有</span>"
+    assert_includes response.body, '<span class="visually-hidden">ブースを共有</span>'
     assert_includes response.body, booth_url(@booth)
   end
 end
