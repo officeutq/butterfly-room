@@ -2,6 +2,9 @@ require_relative "boot"
 
 require "rails/all"
 
+require_relative "../lib/staging/basic_auth"
+require_relative "../lib/staging/robots"
+
 Bundler.require(*Rails.groups)
 
 module App
@@ -18,5 +21,8 @@ module App
     config.assets.paths << Rails.root.join("vendor/assets/stylesheets")
 
     config.autoload_lib(ignore: %w[assets tasks])
+
+    config.middleware.use Staging::Robots
+    config.middleware.use Staging::BasicAuth
   end
 end

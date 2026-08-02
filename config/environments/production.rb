@@ -1,6 +1,7 @@
 require "active_support/core_ext/integer/time"
 
 Rails.application.configure do
+  app_host = ENV.fetch("APP_HOST", "butterflyve.jp")
   # Settings specified here will take precedence over those in config/application.rb.
 
   # Code is not reloaded between requests.
@@ -58,7 +59,7 @@ Rails.application.configure do
   config.action_mailer.raise_delivery_errors = true
 
   # Set host to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: "butterflyve.jp", protocol: "https" }
+  config.action_mailer.default_url_options = { host: app_host, protocol: "https" }
 
   # Specify outgoing SMTP server. Remember to add smtp/* credentials via bin/rails credentials:edit.
   config.action_mailer.perform_deliveries = true
@@ -95,6 +96,7 @@ Rails.application.configure do
   config.hosts << "butterflyve.jp"
   # Allow origin domain (ALB直アクセス用)
   config.hosts << "origin.butterflyve.jp"
+  config.hosts << app_host
   # Allow ALB host (healthcheck)
   config.hosts << /.*\.elb\.amazonaws\.com/
   # Allow ALB healthcheck host (VPC内IPが Host になることがある)
@@ -105,5 +107,5 @@ Rails.application.configure do
 
   config.time_zone = "Asia/Tokyo"
 
-  routes.default_url_options = { host: "butterflyve.jp", protocol: "https" }
+  routes.default_url_options = { host: app_host, protocol: "https" }
 end

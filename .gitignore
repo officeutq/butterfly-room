@@ -9,6 +9,7 @@
 
 # Ignore all environment files.
 /.env*
+!/.env.staging.example
 /.env.production
 
 # Ignore all logfiles and tempfiles.
@@ -53,3 +54,13 @@
 # メモ
 /docs/memo/非公開メモ/*
 /docs/aws_inventory/*
+
+# Terraform local state, plans, and local inputs
+**/.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+*.tfplan
+*.plan
+tfplan
+crash.log

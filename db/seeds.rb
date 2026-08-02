@@ -8,3 +8,5 @@
 #     MovieGenre.find_or_create_by!(name: genre_name)
 #   end
 load Rails.root.join("db/seeds/master_data.rb")
+
+load Rails.root.join("db/seeds/staging.rb") if ENV["APP_ENV"] == "staging"
