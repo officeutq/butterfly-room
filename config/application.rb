@@ -22,7 +22,7 @@ module App
 
     config.autoload_lib(ignore: %w[assets tasks])
 
-    config.middleware.use Staging::Robots
+    config.middleware.insert_before ActionDispatch::Static, Staging::Robots
     config.middleware.use Staging::BasicAuth
   end
 end
