@@ -1,13 +1,11 @@
 \set ON_ERROR_STOP on
 
 -- Run while connected to the existing RDS instance as an authorized database administrator.
--- The password is requested by psql and is never stored in this file.
-\prompt 'Password for butterfly_room_staging_user: ' staging_password
+-- The password is requested securely by psql and is never stored in this file.
 
 SELECT format(
-  'CREATE ROLE %I LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L',
-  'butterfly_room_staging_user',
-  :'staging_password'
+  'CREATE ROLE %I LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION',
+  'butterfly_room_staging_user'
 )
 WHERE NOT EXISTS (
   SELECT 1 FROM pg_roles WHERE rolname = 'butterfly_room_staging_user'
@@ -15,6 +13,8 @@ WHERE NOT EXISTS (
 
 ALTER ROLE butterfly_room_staging_user
   NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION;
+
+\password butterfly_room_staging_user
 
 SELECT format(
   'CREATE DATABASE %I OWNER %I',

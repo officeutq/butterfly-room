@@ -20,7 +20,7 @@ $env:PGSSLROOTCERT = "C:\path\to\global-bundle.pem"
 psql --host "<corporate-prod endpoint>" --port 5432 --username "<database administrator>" --dbname postgres --file ops/staging/create_staging_database.sql
 ```
 
-SQLは新規ロールのパスワードを対話入力で求めます。再実行時は既存ロールのパスワードを変更せず、権限属性、DB所有者向け権限、schema権限を再確認します。パスワード変更が必要な場合は、別途承認された安全な手順で行います。
+SQLは実行のたびに`\password`でパスワードを非表示入力し、新規・既存どちらのロールでも更新します。パスワードはSQL文字列へ埋め込まず、Gitやシェル履歴へ保存しません。権限属性、DB所有者向け権限、schema権限の処理は再実行されます。
 
 ## 実行前確認
 
@@ -56,6 +56,12 @@ SELECT has_database_privilege(
   'butterfly_room_production',
   'CONNECT'
 ) AS can_connect_production;
+```
+
+より詳細な分離確認には、権限変更を行わない検証SQLを管理者接続で実行します。
+
+```powershell
+psql --host "<corporate-prod endpoint>" --port 5432 --username "<database administrator>" --dbname postgres --file ops/staging/verify_staging_database_isolation.sql
 ```
 
 PostgreSQLでは`PUBLIC`に付与された`CONNECT`権限が全ロールへ波及します。最後の値が`true`でも、このテンプレートは本番DBの権限を付与していません。厳密に接続自体を拒否するには本番利用者への個別GRANTと`PUBLIC`からのREVOKEが必要ですが、本番への影響があるため、このSQLでは実施しません。DB管理者が既存ACLを調査して別途判断してください。
