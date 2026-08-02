@@ -29,6 +29,25 @@ class StagingBasicAuthTest < ActiveSupport::TestCase
     assert_equal 200, middleware.call(Rack::MockRequest.env_for("/robots.txt")).first
   end
 
+  test "allows the Stripe webhook endpoint without credentials" do
+    request_env = Rack::MockRequest.env_for("/webhooks/stripe", method: "POST")
+
+    assert_equal 200, middleware.call(request_env).first
+  end
+
+  test "requires credentials for paths similar to the Stripe webhook endpoint" do
+    request_env = Rack::MockRequest.env_for("/webhooks/stripe-test", method: "POST")
+
+    assert_equal 401, middleware.call(request_env).first
+  end
+
+  test "does not require credentials outside staging" do
+    env = STAGING_ENV.merge("APP_ENV" => "production")
+    production_middleware = Staging::BasicAuth.new(APP, env: env)
+
+    assert_equal 200, production_middleware.call(Rack::MockRequest.env_for("/")).first
+  end
+
   private
 
   def middleware

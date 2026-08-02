@@ -4,7 +4,7 @@ require "digest"
 
 module Staging
   class BasicAuth
-    EXCLUDED_PATHS = %w[/up /robots.txt].freeze
+    EXCLUDED_PATHS = %w[/up /robots.txt /webhooks/stripe].freeze
 
     def initialize(app, env: ENV)
       @app = app

@@ -99,6 +99,19 @@ class Webhooks::StripeControllerTest < ActionDispatch::IntegrationTest
     assert @purchase.reload.failed?
   end
 
+  test "invalid signature returns bad request in staging without Basic credentials" do
+    with_env(
+      "APP_ENV" => "staging",
+      "BASIC_AUTH_ENABLED" => "true",
+      "BASIC_AUTH_USERNAME" => "tester",
+      "BASIC_AUTH_PASSWORD" => "secret"
+    ) do
+      post webhooks_stripe_path, params: "{}", headers: @headers
+    end
+
+    assert_response :bad_request
+  end
+
   private
 
   def stripe_event(type:, payment_status:)
