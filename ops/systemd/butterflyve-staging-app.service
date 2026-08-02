@@ -1,0 +1,21 @@
+[Unit]
+Description=Butterflyve staging app and worker containers
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/butterfly-room/current
+Environment=STAGING_ENV_FILE=./.env.staging
+ExecStartPre=/usr/bin/test -f /opt/butterfly-room/current/.env.staging
+ExecStartPre=/usr/bin/docker compose -f docker-compose.staging.yml config --quiet
+ExecStart=/usr/bin/docker compose -f docker-compose.staging.yml up -d app worker
+ExecReload=/usr/bin/docker compose -f docker-compose.staging.yml up -d app worker
+ExecStop=/usr/bin/docker compose -f docker-compose.staging.yml down
+TimeoutStartSec=0
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target

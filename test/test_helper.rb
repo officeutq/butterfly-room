@@ -10,6 +10,20 @@ module ActiveSupport
   class TestCase
     parallelize(workers: :number_of_processors)
     fixtures :all
+
+    def with_env(values)
+      previous = values.keys.to_h { |key| [ key, ENV[key] ] }
+
+      values.each do |key, value|
+        value.nil? ? ENV.delete(key) : ENV[key] = value
+      end
+
+      yield
+    ensure
+      previous.each do |key, value|
+        value.nil? ? ENV.delete(key) : ENV[key] = value
+      end
+    end
   end
 end
 

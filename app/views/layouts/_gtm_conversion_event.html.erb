@@ -1,4 +1,6 @@
-<script>
-  window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push(<%= json_escape(event_payload.to_json).html_safe %>);
-</script>
+<% if gtm_enabled? %>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push(<%= json_escape(event_payload.to_json).html_safe %>);
+  </script>
+<% end %>

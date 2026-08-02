@@ -1,0 +1,16 @@
+[Unit]
+Description=Butterflyve staging monthly settlement generation
+Wants=network-online.target
+After=network-online.target docker.service butterflyve-staging-app.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/butterfly-room/current
+Environment=STAGING_ENV_FILE=./.env.staging
+ExecStartPre=/usr/bin/test -f /opt/butterfly-room/current/.env.staging
+ExecStart=/usr/bin/docker compose -f docker-compose.staging.yml run --rm app bundle exec rails settlements:monthly_generate
+TimeoutStartSec=1800
+
+[Install]
+WantedBy=multi-user.target

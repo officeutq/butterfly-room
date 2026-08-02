@@ -68,4 +68,15 @@ class SeoMetaTagsTest < ActionDispatch::IntegrationTest
     assert_select ".store-lp-202607"
     assert_select "a[href=?]", stores_new_registration_path(from: "stores_lp_202607"), minimum: 1
   end
+
+  test "staging forces noindex and nofollow on a public page" do
+    with_env("APP_ENV" => "staging", "BASIC_AUTH_ENABLED" => "false") do
+      get stores_lp_path
+    end
+
+    assert_response :success
+    robots = Nokogiri::HTML(response.body).at_css("meta[name='robots']")["content"]
+    assert_includes robots, "noindex"
+    assert_includes robots, "nofollow"
+  end
 end

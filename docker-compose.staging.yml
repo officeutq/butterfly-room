@@ -1,0 +1,37 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    image: butterfly_room_staging:latest
+    container_name: butterfly_room-staging-app
+    working_dir: /app
+    env_file:
+      - ${STAGING_ENV_FILE:-./.env.staging}
+    ports:
+      - "3000:3000"
+    environment:
+      RAILS_ENV: production
+      APP_ENV: staging
+      NODE_ENV: production
+      RAILS_SERVE_STATIC_FILES: "true"
+      RAILS_MAX_THREADS: "2"
+    restart: unless-stopped
+
+  worker:
+    image: butterfly_room_staging:latest
+    container_name: butterfly_room-staging-worker
+    working_dir: /app
+    env_file:
+      - ${STAGING_ENV_FILE:-./.env.staging}
+    environment:
+      RAILS_ENV: production
+      APP_ENV: staging
+      NODE_ENV: production
+      RAILS_SERVE_STATIC_FILES: "true"
+      RAILS_MAX_THREADS: "2"
+      JOB_CONCURRENCY: "1"
+    command: bundle exec rails solid_queue:start
+    restart: unless-stopped
+    depends_on:
+      - app

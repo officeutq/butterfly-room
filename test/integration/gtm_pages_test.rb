@@ -84,6 +84,20 @@ class GtmPagesTest < ActionDispatch::IntegrationTest
     assert_no_gtm
   end
 
+  test "staging disables GTM scripts and conversion events" do
+    with_env("APP_ENV" => "staging", "BASIC_AUTH_ENABLED" => "false", "GTM_ENABLED" => nil) do
+      get stores_lp_path
+      assert_response :success
+      assert_no_gtm
+
+      post stores_contact_path, params: submission_params
+      follow_redirect!
+      assert_response :success
+      assert_no_gtm
+      assert_no_match(/window\.dataLayer\.push/, response.body)
+    end
+  end
+
   private
 
   def assert_gtm_once

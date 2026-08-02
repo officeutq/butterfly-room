@@ -24,7 +24,7 @@ class ApplicationController < ActionController::Base
     stored_location || super
   end
 
-  helper_method :gtm_enabled?, :gtm_container_id
+  helper_method :gtm_enabled?, :gtm_container_id, :staging_environment?
 
   private
 
@@ -33,11 +33,15 @@ class ApplicationController < ActionController::Base
   end
 
   def gtm_enabled?
-    @gtm_enabled == true
+    @gtm_enabled == true && Staging::Runtime.gtm_enabled?
   end
 
   def gtm_container_id
-    GTM_CONTAINER_ID
+    ENV["GTM_CONTAINER_ID"].presence || GTM_CONTAINER_ID
+  end
+
+  def staging_environment?
+    Staging::Runtime.staging?
   end
 
   def sanitized_utm_params(source = params)

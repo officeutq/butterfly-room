@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Butterflyve staging monthly settlement generation
+
+[Timer]
+OnCalendar=*-*-01 03:00:00 Asia/Tokyo
+RandomizedDelaySec=15m
+Persistent=false
+Unit=butterflyve-monthly-settlement-staging.service
+
+[Install]
+WantedBy=timers.target
