@@ -70,10 +70,8 @@ class SeoMetaTagsTest < ActionDispatch::IntegrationTest
   end
 
   test "staging forces noindex and nofollow on a public page" do
-    Staging::Runtime.stub(:staging?, true) do
-      Staging::Runtime.stub(:enabled?, false) do
-        get stores_lp_path
-      end
+    with_env("APP_ENV" => "staging", "BASIC_AUTH_ENABLED" => "false") do
+      get stores_lp_path
     end
 
     assert_response :success

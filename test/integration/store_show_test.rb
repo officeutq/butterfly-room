@@ -12,12 +12,12 @@ class StoreShowTest < ActionDispatch::IntegrationTest
   end
 
   test "customer can view store show and see active booths only" do
+    address = "熊本県熊本市中央区本丸1-1"
     store = Store.create!(
       name: "store",
       description: "Store description",
       area: "渋谷",
       business_type: :girls_bar,
-      address: "熊本県熊本市中央区本丸1-1",
       phone_number: "090-1111-2222",
       business_hours: "平日 19:00〜1:00",
       website_url: "https://officeutq.co.jp",
@@ -26,6 +26,7 @@ class StoreShowTest < ActionDispatch::IntegrationTest
       tiktok_url: "https://www.tiktok.com/@aespa_official",
       youtube_url: "https://www.youtube.com/@SleepRelaxingHealingMusic"
     )
+    store.update_column(:address, address)
 
     store.thumbnail.attach(
       io: File.open(Rails.root.join("test/fixtures/files/thumb.png")),

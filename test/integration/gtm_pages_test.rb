@@ -85,7 +85,7 @@ class GtmPagesTest < ActionDispatch::IntegrationTest
   end
 
   test "staging disables GTM scripts and conversion events" do
-    Staging::Runtime.stub(:gtm_enabled?, false) do
+    with_env("APP_ENV" => "staging", "BASIC_AUTH_ENABLED" => "false", "GTM_ENABLED" => nil) do
       get stores_lp_path
       assert_response :success
       assert_no_gtm
