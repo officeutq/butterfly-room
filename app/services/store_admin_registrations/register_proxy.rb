@@ -88,6 +88,7 @@ module StoreAdminRegistrations
       mailer = StoreAdminRegistrationMailer.with(
         user: result.user,
         store: @store,
+        actor: @actor,
         reset_password_token: reset_password_token,
         registration_status: result.status
       )

@@ -7,7 +7,12 @@ module StoreAdminRegistrations
     setup do
       ActionMailer::Base.deliveries.clear
       @store = Store.create!(name: "Registration Target")
-      @actor = User.create!(email: "registration-actor@example.com", password: "password", role: :store_admin)
+      @actor = User.create!(
+        email: "registration-actor@example.com",
+        password: "password",
+        role: :store_admin,
+        display_name: "Registration Agent"
+      )
       StoreMembership.create!(store: @store, user: @actor, membership_role: :admin)
       UserPermission.create!(user: @actor, permission_type: "store_registration_proxy")
     end
@@ -38,6 +43,7 @@ module StoreAdminRegistrations
       body = ActionMailer::Base.deliveries.last.text_part.body.decoded
       assert_includes body, "パスワード設定URL"
       assert_includes body, result.user.email
+      assert_includes body, "Registration Agentによって"
       assert_not_includes body, "仮パスワード:"
     end
 

@@ -1,14 +1,17 @@
 <p><%= @user.display_name.presence || "店舗責任者" %> 様</p>
 
-<p>営業支援会社によって「<%= @store.name %>」の初期登録が行われ、Butterflyveの店舗管理者アカウントが作成されました。</p>
+<p><%= @registration_actor_name %>によって「<%= @store.name %>」の初期登録が行われ、Butterflyveの店舗管理者アカウントが作成されました。</p>
 
 <p>ログインID: <strong><%= @user.email %></strong></p>
 
+<p>以下のリンクからパスワードを設定してください。</p>
 <p><%= link_to "パスワードを設定する", @password_url %></p>
-<p>パスワード設定URLの有効期限は発行から<%= @password_url_expiration_hours %>時間です。</p>
-<p>期限切れの場合は、<%= link_to "パスワード再設定ページ", @password_request_url %>から新しいURLを発行してください。</p>
-<p><%= link_to "ログインページを開く", @login_url %></p>
+<p>このURLの有効期限は、発行から<%= @password_url_expiration_hours %>時間です。</p>
+<p>有効期限が切れた場合は、<%= link_to "新しいパスワード設定メールを再送", @password_request_url %>してください。</p>
 
-<p>パスワードを設定してログイン後、店舗情報と振込先口座をご確認ください。確認後、店舗で配信するキャストを招待してください。</p>
+<p>本メールにお心当たりがない場合は、リンクを開かずに本メールを破棄してください。</p>
 
-<p>このメールに仮パスワードは記載していません。</p>
+<hr>
+
+<p>本メールは送信専用です。返信いただいても対応できません。</p>
+<p>Butterflyve（バタフライブ）は、オフィスUTQが運営しています。</p>
