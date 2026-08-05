@@ -5,7 +5,7 @@ module StreamSessions
     before_action :authenticate_user!
 
     def create
-      stream_session = StreamSession.find(params[:stream_session_id])
+      stream_session = StreamSession.in_published_stores.find(params[:stream_session_id])
       role = params.require(:role)
       booth = stream_session.booth
 

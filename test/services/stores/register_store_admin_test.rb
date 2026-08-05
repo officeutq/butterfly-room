@@ -22,6 +22,7 @@ module Stores
       drink_items = store.drink_items.order(:position)
       booths = store.booths.order(:id)
 
+      assert_not store.published?
       assert_equal 6, drink_items.count
 
       assert_equal [ "ドリンク（大）", "ドリンク（中）", "ドリンク（小）", "オリジナルシャンパン", "エンジェル", "ショット" ],
@@ -83,14 +84,17 @@ module Stores
         }
       ]
 
-      service.singleton_class.define_method(:load_default_drink_items_attributes) do
-        invalid_items
-      end
+      original_method = RegistrationDefaults.method(:default_drink_item_attributes)
+      RegistrationDefaults.define_singleton_method(:default_drink_item_attributes) { invalid_items }
 
-      assert_no_difference [ "Store.count", "User.count", "StoreMembership.count", "DrinkItem.count", "Booth.count" ] do
-        assert_raises ActiveRecord::RecordInvalid do
-          service.call!
+      begin
+        assert_no_difference [ "Store.count", "User.count", "StoreMembership.count", "DrinkItem.count", "Booth.count" ] do
+          assert_raises ActiveRecord::RecordInvalid do
+            service.call!
+          end
         end
+      ensure
+        RegistrationDefaults.define_singleton_method(:default_drink_item_attributes, original_method)
       end
     end
   end

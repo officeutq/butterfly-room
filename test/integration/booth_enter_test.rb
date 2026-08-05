@@ -4,7 +4,7 @@ require "test_helper"
 
 class BoothEnterTest < ActionDispatch::IntegrationTest
   def create_store!(name: "store")
-    Store.create!(name: name)
+    Store.create!(name: name, published: true)
   end
 
   def create_booth!(store:, name: "booth", status: :offline)

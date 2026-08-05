@@ -172,7 +172,7 @@ Rails.application.routes.draw do
 
   # --- Store Admin ---
   namespace :admin do
-    resources :stores, only: %i[index edit update] do
+    resources :stores, only: %i[index new create edit update] do
       collection do
         get :select_modal
       end
@@ -204,6 +204,9 @@ Rails.application.routes.draw do
     resources :casts, only: %i[index destroy]
     resources :cast_invitations, only: %i[index create]
     resources :store_admin_invitations, only: %i[index create]
+    resource :store_admin_proxy_registration,
+             path: "store_admin_invitations/proxy_registration",
+             only: %i[new create]
 
     get "/sales", to: "sales#index"
     get "/cast_metrics", to: "metrics#cast"
@@ -217,6 +220,7 @@ Rails.application.routes.draw do
 
   # --- System Admin ---
   namespace :system_admin do
+    resources :user_permissions, only: %i[index new create destroy]
     resources :referral_codes, only: %i[index new create edit update]
     resources :users, only: %i[index new create edit update destroy]
     resources :effects, only: %i[index new create edit update]

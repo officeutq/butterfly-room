@@ -1,6 +1,15 @@
 <%# locals: f:, store:, submit_label:, back_path: %>
 
 <div class="mb-3">
+  <%= f.label :published, "公開状態", class: "form-label" %>
+  <%= f.select :published,
+        options_for_select([[ "公開", true ], [ "非公開", false ]], store.published?),
+        {},
+        class: "form-select" %>
+  <div class="form-text">非公開の店舗と所属ブースは一般ユーザー向け画面に表示されません。</div>
+</div>
+
+<div class="mb-3">
   <%= f.label :name, "店舗名（必須）", class: "form-label" %>
   <%= f.text_field :name, class: "form-control", required: true %>
 </div>
@@ -87,6 +96,8 @@
 </div>
 
 <div class="d-flex gap-2">
-  <%= f.submit submit_label, class: "btn btn-primary" %>
+  <%= f.submit submit_label,
+        class: "btn btn-primary",
+        data: { turbo_confirm: "店舗情報と公開状態を更新します。よろしいですか？" } %>
   <%= link_to "戻る", back_path, class: "btn btn-outline-secondary" %>
 </div>

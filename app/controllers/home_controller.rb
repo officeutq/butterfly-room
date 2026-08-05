@@ -50,7 +50,7 @@ class HomeController < ApplicationController
     end
 
     if @mode == "stores"
-      stores = Store.all
+      stores = Store.published
 
       keywords.each do |keyword|
         q_like = "%#{ActiveRecord::Base.sanitize_sql_like(keyword)}%"
@@ -119,7 +119,7 @@ class HomeController < ApplicationController
     end
 
     # --- mode=booths ---
-    booths = Booth.active
+    booths = Booth.active.in_published_stores
 
     booths =
       booths.joins(<<~SQL)

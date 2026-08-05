@@ -13,6 +13,7 @@ module Favorites
           .favorite_booths
           .joins(booth: :store)
           .merge(Booth.active)
+          .merge(Store.published)
           .includes(
             booth: [
               :store,
@@ -75,7 +76,7 @@ module Favorites
     private
 
     def set_booth
-      @booth = Booth.active.find(params[:booth_id])
+      @booth = Booth.active.in_published_stores.find(params[:booth_id])
     end
 
     def render_favorite_button(favorited:)

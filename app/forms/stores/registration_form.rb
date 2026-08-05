@@ -43,12 +43,11 @@ module Stores
     private
 
     def normalized_referral_code
-      referral_code.to_s.strip.presence || Stores::RegisterStoreAdmin::DEFAULT_REFERRAL_CODE
+      Stores::RegistrationDefaults.normalized_referral_code(referral_code)
     end
 
     def referral_code_must_be_usable
-      rc = ReferralCode.find_by(code: normalized_referral_code)
-      return if rc.present? && rc.usable?
+      return if Stores::RegistrationDefaults.usable_referral_code(normalized_referral_code).present?
 
       errors.add(:referral_code, :invalid)
     end

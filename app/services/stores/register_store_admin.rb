@@ -2,7 +2,7 @@
 
 module Stores
   class RegisterStoreAdmin
-    DEFAULT_REFERRAL_CODE = "0000"
+    DEFAULT_REFERRAL_CODE = RegistrationDefaults::DEFAULT_REFERRAL_CODE
 
     Result = Struct.new(:store, :user, keyword_init: true)
 
@@ -14,12 +14,11 @@ module Stores
       @store_name = store_name
       @email = email
       @password = password
-      @referral_code = referral_code.to_s.strip.presence || DEFAULT_REFERRAL_CODE
+      @referral_code = RegistrationDefaults.normalized_referral_code(referral_code)
     end
 
     def call!
-      rc = ReferralCode.find_by!(code: @referral_code)
-      raise ActiveRecord::RecordInvalid.new(rc) unless rc.usable?
+      rc = RegistrationDefaults.usable_referral_code!(@referral_code)
 
       store = nil
       user = nil
@@ -28,10 +27,11 @@ module Stores
         store = Store.create!(
           name: @store_name,
           referral_code: rc,
+          published: false,
           onboarding_step: :invite_cast
         )
 
-        create_default_drink_items!(store)
+        RegistrationDefaults.create_default_drink_items!(store)
 
         user = User.create!(
           email: @email,
@@ -48,27 +48,6 @@ module Stores
       end
 
       Result.new(store: store, user: user)
-    end
-
-    private
-
-    def create_default_drink_items!(store)
-      load_default_drink_items_attributes.each do |attrs|
-        store.drink_items.create!(
-          name: attrs.fetch("name"),
-          price_points: attrs.fetch("price_points"),
-          position: attrs.fetch("position"),
-          enabled: attrs.fetch("enabled"),
-          icon_key: attrs["icon_key"]
-        )
-      end
-    end
-
-    def load_default_drink_items_attributes
-      YAML.safe_load(
-        File.read(Rails.root.join("config/default_drink_items.yml")),
-        aliases: true
-      ).fetch(Rails.env).fetch("items")
     end
   end
 end

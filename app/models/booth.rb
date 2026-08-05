@@ -15,6 +15,7 @@ class Booth < ApplicationRecord
 
   scope :active, -> { where(archived_at: nil) }
   scope :archived, -> { where.not(archived_at: nil) }
+  scope :in_published_stores, -> { joins(:store).merge(Store.published) }
 
   def archived?
     archived_at.present?

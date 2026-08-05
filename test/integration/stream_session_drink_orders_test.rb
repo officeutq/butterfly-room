@@ -6,7 +6,7 @@ class StreamSessionDrinkOrdersTest < ActionDispatch::IntegrationTest
   include Devise::Test::IntegrationHelpers
 
   setup do
-    @store = Store.create!(name: "store-drink-orders")
+    @store = Store.create!(name: "store-drink-orders", published: true)
     @booth = Booth.create!(
       store: @store,
       name: "booth-drink-orders",

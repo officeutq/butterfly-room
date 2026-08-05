@@ -9,6 +9,8 @@ class StreamSession < ApplicationRecord
 
   validates :title, length: { maximum: 64 }, allow_nil: true
 
+  scope :in_published_stores, -> { joins(:store).merge(Store.published) }
+
   delegate :current_stream_session_id, :status, to: :booth, prefix: true
 
   def broadcast_duration_seconds

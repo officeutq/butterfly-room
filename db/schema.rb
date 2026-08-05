@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_23_000100) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_05_011000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -500,6 +500,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_23_000100) do
     t.datetime "onboarding_invite_copied_at"
     t.integer "onboarding_step"
     t.string "phone_number"
+    t.boolean "published", default: false, null: false
     t.bigint "referral_code_id"
     t.string "tiktok_url"
     t.datetime "updated_at", null: false
@@ -508,6 +509,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_23_000100) do
     t.string "youtube_url"
     t.index ["onboarding_invite_copied_at"], name: "index_stores_on_onboarding_invite_copied_at"
     t.index ["onboarding_step"], name: "index_stores_on_onboarding_step"
+    t.index ["published"], name: "index_stores_on_published"
     t.index ["referral_code_id"], name: "index_stores_on_referral_code_id"
   end
 
@@ -580,6 +582,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_23_000100) do
     t.index ["sender_user_id"], name: "index_support_inquiry_messages_on_sender_user_id"
     t.index ["support_inquiry_id", "created_at", "id"], name: "index_support_inquiry_messages_on_thread_order"
     t.index ["support_inquiry_id"], name: "index_support_inquiry_messages_on_support_inquiry_id"
+  end
+
+  create_table "user_permissions", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "permission_type", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["user_id", "permission_type"], name: "index_user_permissions_on_user_and_type", unique: true
+    t.index ["user_id"], name: "index_user_permissions_on_user_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -717,6 +728,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_23_000100) do
   add_foreign_key "support_inquiries", "users"
   add_foreign_key "support_inquiry_messages", "support_inquiries"
   add_foreign_key "support_inquiry_messages", "users", column: "sender_user_id"
+  add_foreign_key "user_permissions", "users"
   add_foreign_key "wallet_purchases", "wallets"
   add_foreign_key "wallet_transactions", "wallets"
   add_foreign_key "wallets", "users", column: "customer_user_id"

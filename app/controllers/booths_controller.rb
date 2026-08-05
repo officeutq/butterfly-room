@@ -134,7 +134,7 @@ class BoothsController < ApplicationController
   private
 
   def set_booth
-    @booth = Booth.active.find(params[:id])
+    @booth = Booth.active.in_published_stores.find(params[:id])
   end
 
   def set_viewer_stream_context

@@ -25,7 +25,7 @@ class StoresController < ApplicationController
   private
 
   def set_store
-    @store = Store.find(params[:id])
+    @store = Store.published.find(params[:id])
   end
 
   def reject_banned_customer_for_store!

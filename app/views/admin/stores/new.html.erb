@@ -1,0 +1,29 @@
+<% content_for :title, "代行対象店舗を作成" %>
+
+<% if @form.errors.any? %>
+  <div class="alert alert-danger">
+    <ul class="mb-0">
+      <% @form.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<%= form_with model: @form, url: admin_stores_path, scope: :proxy_store_registration do |form| %>
+  <div class="mb-3">
+    <%= form.label :store_name, "店舗名", class: "form-label" %>
+    <%= form.text_field :store_name, class: "form-control", required: true, autocomplete: "organization" %>
+  </div>
+
+  <div class="mb-3">
+    <%= form.label :referral_code, "紹介コード", class: "form-label" %>
+    <%= form.text_field :referral_code, class: "form-control", autocomplete: "off" %>
+    <div class="form-text">未入力の場合は標準コードで登録します。</div>
+  </div>
+
+  <div class="d-flex gap-2">
+    <%= form.submit "非公開で作成", class: "btn btn-primary" %>
+    <%= link_to "戻る", admin_stores_path, class: "btn btn-outline-secondary" %>
+  </div>
+<% end %>

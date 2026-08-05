@@ -15,6 +15,7 @@ class StoreShowTest < ActionDispatch::IntegrationTest
     address = "熊本県熊本市中央区本丸1-1"
     store = Store.create!(
       name: "store",
+      published: true,
       description: "Store description",
       area: "渋谷",
       business_type: :girls_bar,
@@ -74,6 +75,7 @@ class StoreShowTest < ActionDispatch::IntegrationTest
   test "unsafe website url is not linkified" do
     store = Store.create!(
       name: "store",
+      published: true,
       website_url: "javascript:alert(1)"
     )
 

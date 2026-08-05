@@ -196,7 +196,7 @@ class IvsParticipantTokensTest < ActionDispatch::IntegrationTest
   end
 
   def create_store!
-    Store.create!(name: "Test Store")
+    Store.create!(name: "Test Store", published: true)
   end
 
   def create_booth!(store:, status:)
