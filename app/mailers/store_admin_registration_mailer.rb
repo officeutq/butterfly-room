@@ -21,5 +21,6 @@ class StoreAdminRegistrationMailer < ApplicationMailer
     @password_url = edit_user_password_url(reset_password_token: reset_password_token)
     @login_url = new_user_session_url
     @password_request_url = new_user_password_url
+    @password_url_expiration_hours = Devise.reset_password_within.in_hours.to_i
   end
 end

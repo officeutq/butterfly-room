@@ -3,7 +3,9 @@
 Rails.application.routes.draw do
   get "up" => "rails/health#show", as: :rails_health_check
 
-  devise_for :users, skip: %i[registrations]
+  devise_for :users,
+             skip: %i[registrations],
+             controllers: { passwords: "users/passwords" }
 
   root "home#show"
 

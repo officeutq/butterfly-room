@@ -3,7 +3,8 @@
 class BoothsController < ApplicationController
   include StoreBanGuard
 
-  before_action :set_booth, only: %i[show enter enter_as_cast viewer_drink_menu]
+  before_action :set_public_booth, only: %i[show viewer_drink_menu]
+  before_action :set_entry_booth, only: %i[enter enter_as_cast]
   before_action :reject_banned_customer_for_booth!, only: %i[show viewer_drink_menu]
   before_action :set_viewer_stream_context, only: %i[show viewer_drink_menu]
 
@@ -133,8 +134,16 @@ class BoothsController < ApplicationController
 
   private
 
-  def set_booth
+  def set_public_booth
     @booth = Booth.active.in_published_stores.find(params[:id])
+  end
+
+  def set_entry_booth
+    @booth = Booth.active.find(params[:id])
+    return if @booth.store.published?
+    return if user_signed_in? && Authorization::BoothPolicy.new(current_user, @booth).update?
+
+    raise ActiveRecord::RecordNotFound
   end
 
   def set_viewer_stream_context

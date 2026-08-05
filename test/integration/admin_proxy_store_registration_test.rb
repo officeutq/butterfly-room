@@ -6,6 +6,30 @@ class AdminProxyStoreRegistrationTest < ActionDispatch::IntegrationTest
   setup do
     @referral_code = ReferralCode.create!(code: "PROXY-INTEGRATION", enabled: true, expires_at: 1.day.from_now)
     @actor = User.create!(email: "proxy-integration@example.com", password: "password", role: :store_admin)
+    @management_store = Store.create!(name: "Proxy Management Store", published: false)
+    StoreMembership.create!(store: @management_store, user: @actor, membership_role: :admin)
+  end
+
+  test "permission holder with one store can reach proxy store creation from the dashboard" do
+    UserPermission.create!(user: @actor, permission_type: "store_registration_proxy")
+    sign_in @actor, scope: :user
+
+    get dashboard_path
+
+    assert_response :success
+    assert_select "a[href=?]", new_admin_store_path, text: /代行対象店舗を作成/
+
+    get new_admin_store_path
+    assert_response :success
+  end
+
+  test "dashboard hides proxy store creation from a user without permission" do
+    sign_in @actor, scope: :user
+
+    get dashboard_path
+
+    assert_response :success
+    assert_select "a[href=?]", new_admin_store_path, count: 0
   end
 
   test "permission holder can create and switch to a proxy store" do

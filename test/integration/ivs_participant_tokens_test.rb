@@ -189,6 +189,48 @@ class IvsParticipantTokensTest < ActionDispatch::IntegrationTest
     assert_equal "ADMIN_PUB_TOKEN", body["participant_token"]
   end
 
+  test "publisher: assigned cast can get token for an unpublished store" do
+    @store.update!(published: false)
+    sign_in @cast, scope: :user
+
+    stub_ivs_token("HIDDEN_CAST_PUB_TOKEN") do
+      post stream_session_ivs_participant_tokens_path(@session),
+           params: { role: "publisher" }.to_json,
+           headers: json_headers
+    end
+
+    assert_response :success
+    assert_equal "HIDDEN_CAST_PUB_TOKEN", JSON.parse(response.body)["participant_token"]
+  end
+
+  test "publisher: store admin can get token for an unpublished store" do
+    @store.update!(published: false)
+    StoreMembership.create!(store: @store, user: @admin, membership_role: :admin)
+    sign_in @admin, scope: :user
+
+    stub_ivs_token("HIDDEN_ADMIN_PUB_TOKEN") do
+      post stream_session_ivs_participant_tokens_path(@session),
+           params: { role: "publisher" }.to_json,
+           headers: json_headers
+    end
+
+    assert_response :success
+    assert_equal "HIDDEN_ADMIN_PUB_TOKEN", JSON.parse(response.body)["participant_token"]
+  end
+
+  test "publisher: unrelated cast is forbidden for an unpublished store" do
+    @store.update!(published: false)
+    other_cast = User.create!(email: "hidden-other-cast@example.com", password: "password", role: :cast)
+    sign_in other_cast, scope: :user
+
+    post stream_session_ivs_participant_tokens_path(@session),
+         params: { role: "publisher" }.to_json,
+         headers: json_headers
+
+    assert_response :forbidden
+    assert_equal "forbidden", JSON.parse(response.body)["error"]
+  end
+
   private
 
   def json_headers

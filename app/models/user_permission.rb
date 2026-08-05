@@ -3,7 +3,7 @@
 class UserPermission < ApplicationRecord
   PERMISSION_DEFINITIONS = {
     "store_registration_proxy" => {
-      label: "店舗責任者の登録代行",
+      label: "店舗作成・責任者登録の代行",
       allowed_roles: %w[store_admin].freeze
     }.freeze
   }.freeze

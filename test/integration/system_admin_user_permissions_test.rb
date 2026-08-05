@@ -36,7 +36,7 @@ class SystemAdminUserPermissionsTest < ActionDispatch::IntegrationTest
     get system_admin_user_permissions_path
     assert_response :success
     assert_includes response.body, @store_admin.email
-    assert_includes response.body, "店舗責任者の登録代行"
+    assert_includes response.body, "店舗作成・責任者登録の代行"
 
     assert_difference "UserPermission.count", -1 do
       delete system_admin_user_permission_path(permission)

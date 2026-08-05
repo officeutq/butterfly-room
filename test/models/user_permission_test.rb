@@ -13,7 +13,7 @@ class UserPermissionTest < ActiveSupport::TestCase
       permission_type: "store_registration_proxy"
     )
 
-    assert_equal "店舗責任者の登録代行", permission.label
+    assert_equal "店舗作成・責任者登録の代行", permission.label
     assert @store_admin.permitted_for?(:store_registration_proxy)
   end
 

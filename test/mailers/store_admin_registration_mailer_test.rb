@@ -24,12 +24,16 @@ class StoreAdminRegistrationMailerTest < ActionMailer::TestCase
 
     assert_equal [ @user.email ], mail.to
     assert_includes mail.subject, "パスワードを設定"
-    assert_includes mail.text_part.body.decoded, @store.name
-    assert_includes mail.text_part.body.decoded, @user.email
-    assert_includes mail.text_part.body.decoded, "/users/password/edit?reset_password_token="
-    assert_includes mail.text_part.body.decoded, "振込先口座"
-    assert_includes mail.text_part.body.decoded, "キャストを招待"
-    assert_not_includes mail.text_part.body.decoded, "internal-random-password"
+    [ mail.text_part.body.decoded, mail.html_part.body.decoded ].each do |body|
+      assert_includes body, @store.name
+      assert_includes body, @user.email
+      assert_includes body, "/users/password/edit?reset_password_token="
+      assert_includes body, "有効期限は発行から6時間"
+      assert_includes body, "/users/password/new"
+      assert_includes body, "振込先口座"
+      assert_includes body, "キャストを招待"
+      assert_not_includes body, "internal-random-password"
+    end
   end
 
   test "existing user instructions contain login and password reset guidance" do
@@ -41,9 +45,13 @@ class StoreAdminRegistrationMailerTest < ActionMailer::TestCase
     ).existing_user_instructions
 
     assert_equal [ @user.email ], mail.to
-    assert_includes mail.text_part.body.decoded, @store.name
-    assert_includes mail.text_part.body.decoded, "/users/sign_in"
-    assert_includes mail.text_part.body.decoded, "/users/password/new"
-    assert_includes mail.text_part.body.decoded, "振込先口座"
+    [ mail.text_part.body.decoded, mail.html_part.body.decoded ].each do |body|
+      assert_includes body, @store.name
+      assert_includes body, "/users/sign_in"
+      assert_includes body, "/users/password/edit?reset_password_token="
+      assert_includes body, "有効期限は発行から6時間"
+      assert_includes body, "/users/password/new"
+      assert_includes body, "振込先口座"
+    end
   end
 end

@@ -23,6 +23,12 @@ class StorePublicationTest < ActionDispatch::IntegrationTest
       started_at: Time.current
     )
     @unpublished_booth.update!(current_stream_session: @stream_session)
+    @comment = Comment.create!(
+      stream_session: @stream_session,
+      booth: @unpublished_booth,
+      user: @customer,
+      body: "Hidden store comment"
+    )
 
     StoreMembership.create!(store: @published_store, user: @store_admin, membership_role: :admin)
     StoreMembership.create!(store: @unpublished_store, user: @store_admin, membership_role: :admin)
@@ -70,11 +76,23 @@ class StorePublicationTest < ActionDispatch::IntegrationTest
     assert_response :not_found
 
     sign_in @customer, scope: :user
+    get enter_booth_path(@unpublished_booth)
+    assert_response :not_found
+
+    sign_in @customer, scope: :user
+    post enter_as_cast_booth_path(@unpublished_booth)
+    assert_response :not_found
+
+    sign_in @customer, scope: :user
     post stream_session_ivs_participant_tokens_path(@stream_session), params: { role: "viewer" }
     assert_response :not_found
 
     sign_in @customer, scope: :user
     post stream_session_comments_path(@stream_session), params: { comment: { body: "hidden" } }
+    assert_response :not_found
+
+    sign_in @customer, scope: :user
+    post report_stream_session_comment_path(@stream_session, @comment)
     assert_response :not_found
 
     sign_in @customer, scope: :user
@@ -88,6 +106,63 @@ class StorePublicationTest < ActionDispatch::IntegrationTest
     sign_in @customer, scope: :user
     get presence_summary_stream_session_path(@stream_session)
     assert_response :not_found
+  end
+
+  test "authorized operators can use entry routes for an unpublished booth" do
+    sign_in @cast, scope: :user
+    get enter_booth_path(@unpublished_booth)
+    assert_redirected_to live_cast_booth_path(@unpublished_booth)
+
+    sign_in @store_admin, scope: :user
+    get enter_booth_path(@unpublished_booth)
+    assert_response :success
+
+    offline_booth = Booth.create!(
+      store: @unpublished_store,
+      name: "Hidden Offline Booth",
+      status: :offline,
+      ivs_stage_arn: "arn:aws:ivsrealtime:ap-northeast-1:123456789012:stage/hidden"
+    )
+    post enter_as_cast_booth_path(offline_booth)
+    assert_redirected_to live_cast_booth_path(offline_booth)
+
+    sign_in @system_admin, scope: :user
+    get enter_booth_path(@unpublished_booth)
+    assert_response :success
+  end
+
+  test "an unrelated cast cannot use entry routes for an unpublished booth" do
+    other_cast = User.create!(email: "publication-other-cast@example.com", password: "password", role: :cast)
+    sign_in other_cast, scope: :user
+
+    get enter_booth_path(@unpublished_booth)
+    assert_response :not_found
+
+    sign_in other_cast, scope: :user
+    post enter_as_cast_booth_path(@unpublished_booth)
+    assert_response :not_found
+  end
+
+  test "the stream owner can hide and unhide comments in an unpublished store" do
+    sign_in @cast, scope: :user
+
+    patch hide_stream_session_comment_path(@stream_session, @comment)
+    assert_response :success
+    assert @comment.reload.hidden?
+
+    patch unhide_stream_session_comment_path(@stream_session, @comment)
+    assert_response :success
+    assert_not @comment.reload.hidden?
+  end
+
+  test "a non moderator cannot hide comments in an unpublished store" do
+    other_cast = User.create!(email: "publication-non-moderator@example.com", password: "password", role: :cast)
+    sign_in other_cast, scope: :user
+
+    patch hide_stream_session_comment_path(@stream_session, @comment)
+
+    assert_response :forbidden
+    assert_not @comment.reload.hidden?
   end
 
   test "public records become visible after a store admin publishes the store" do
