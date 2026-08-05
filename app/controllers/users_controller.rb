@@ -17,6 +17,7 @@ class UsersController < ApplicationController
         @user
           .cast_booths
           .active
+          .in_published_stores
           .includes(
             :store,
             :current_stream_session,
@@ -44,6 +45,8 @@ class UsersController < ApplicationController
         @user
           .store_memberships
           .where(membership_role: :admin)
+          .joins(:store)
+          .merge(Store.published)
           .includes(:store)
           .map(&:store)
 

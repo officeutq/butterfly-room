@@ -5,8 +5,8 @@ module StreamSessions
     before_action :authenticate_user!
 
     def create
-      stream_session = StreamSession.find(params[:stream_session_id])
       role = params.require(:role)
+      stream_session = find_stream_session_for(role)
       booth = stream_session.booth
 
       # booth 固定 stage と stream_session の stage が一致しないのは不整合（事故/旧データ混在）
@@ -44,8 +44,6 @@ module StreamSessions
           return render json: { error: "stage_not_bound" }, status: :conflict
         end
 
-      else
-        return render json: { error: "invalid_role" }, status: :unprocessable_entity
       end
 
       token = Ivs::CreateParticipantTokenService.new(
@@ -72,6 +70,19 @@ module StreamSessions
       render json: { error: "not_joinable" }, status: :conflict
     rescue Ivs::CreateParticipantTokenService::NotAuthorized
       render json: { error: "forbidden" }, status: :forbidden
+    end
+
+    private
+
+    def find_stream_session_for(role)
+      case role
+      when "viewer"
+        StreamSession.in_published_stores.find(params[:stream_session_id])
+      when "publisher"
+        StreamSession.find(params[:stream_session_id])
+      else
+        raise Ivs::CreateParticipantTokenService::InvalidRole
+      end
     end
   end
 end

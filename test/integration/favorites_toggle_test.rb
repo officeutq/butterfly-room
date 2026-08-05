@@ -4,7 +4,7 @@ require "test_helper"
 
 class FavoritesToggleTest < ActionDispatch::IntegrationTest
   setup do
-    @store = Store.create!(name: "store1")
+    @store = Store.create!(name: "store1", published: true)
     @booth = Booth.create!(store: @store, name: "booth1", status: :offline)
     @user  = User.create!(email: "customer@example.com", password: "password", role: :customer)
   end

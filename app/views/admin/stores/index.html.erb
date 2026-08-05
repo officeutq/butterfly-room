@@ -1,5 +1,11 @@
 <% content_for :title, "店舗を選択" %>
 
+<% if current_user.store_admin? && current_user.permitted_for?(:store_registration_proxy) %>
+  <div class="mb-3">
+    <%= link_to "代行対象店舗を作成", new_admin_store_path, class: "btn btn-primary" %>
+  </div>
+<% end %>
+
 <% if @stores.blank? %>
   <div class="alert alert-warning" role="alert">
     管理可能な店舗がありません。
@@ -10,6 +16,7 @@
       <tr>
         <th>ID</th>
         <th>店舗名</th>
+        <th>公開状態</th>
         <th></th>
       </tr>
     </thead>
@@ -18,6 +25,13 @@
         <tr class="<%= "table-active" if store.id.to_s == @current_store_id.to_s %>">
           <td><%= store.id %></td>
           <td><%= store.name.presence || "(no name)" %></td>
+          <td>
+            <% if store.published? %>
+              <span class="badge text-bg-success">公開</span>
+            <% else %>
+              <span class="badge text-bg-secondary">非公開</span>
+            <% end %>
+          </td>
           <td class="text-end">
             <%= button_to "この店舗に切替",
                   admin_current_store_path,

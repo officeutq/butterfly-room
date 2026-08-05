@@ -39,6 +39,9 @@ class Store < ApplicationRecord
   validates :description, length: { maximum: 1000 }, allow_nil: true
   validates :area, length: { maximum: 50 }, allow_nil: true
 
+  scope :published, -> { where(published: true) }
+  scope :unpublished, -> { where(published: false) }
+
   geocoded_by :address
   after_validation :geocode, if: :should_geocode?
 

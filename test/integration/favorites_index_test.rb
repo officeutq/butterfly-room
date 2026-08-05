@@ -12,7 +12,7 @@ class FavoritesIndexTest < ActionDispatch::IntegrationTest
   end
 
   test "booth favorites index shows only active booths and orders by favorite created_at desc" do
-    store = Store.create!(name: "store1")
+    store = Store.create!(name: "store1", published: true)
     booth1 = Booth.create!(store: store, name: "booth1", status: :offline)
     booth2 = Booth.create!(store: store, name: "booth2", status: :offline)
 
@@ -37,8 +37,8 @@ class FavoritesIndexTest < ActionDispatch::IntegrationTest
   end
 
   test "store favorites index orders by favorite created_at desc" do
-    store1 = Store.create!(name: "store1")
-    store2 = Store.create!(name: "store2")
+    store1 = Store.create!(name: "store1", published: true)
+    store2 = Store.create!(name: "store2", published: true)
 
     user = User.create!(email: "customer@example.com", password: "password", role: :customer)
     sign_in user, scope: :user
@@ -58,8 +58,8 @@ class FavoritesIndexTest < ActionDispatch::IntegrationTest
   end
 
   test "customer favorites index excludes banned stores (preventive)" do
-    store_ok = Store.create!(name: "store_ok")
-    store_ng = Store.create!(name: "store_ng")
+    store_ok = Store.create!(name: "store_ok", published: true)
+    store_ng = Store.create!(name: "store_ng", published: true)
 
     booth_ok = Booth.create!(store: store_ok, name: "booth_ok", status: :offline)
     booth_ng = Booth.create!(store: store_ng, name: "booth_ng", status: :offline)
@@ -88,7 +88,7 @@ class FavoritesIndexTest < ActionDispatch::IntegrationTest
   end
 
   test "customer favorites index does not exclude revoked bans" do
-    store = Store.create!(name: "store_revoked")
+    store = Store.create!(name: "store_revoked", published: true)
     booth = Booth.create!(store: store, name: "booth_revoked", status: :offline)
     customer = User.create!(email: "customer_revoked@example.com", password: "password", role: :customer)
     admin = User.create!(email: "admin_revoked@example.com", password: "password", role: :store_admin)
@@ -115,7 +115,7 @@ class FavoritesIndexTest < ActionDispatch::IntegrationTest
   end
 
   test "system_admin favorites index does not exclude banned stores" do
-    store_ng = Store.create!(name: "ng")
+    store_ng = Store.create!(name: "ng", published: true)
     booth_ng = Booth.create!(store: store_ng, name: "booth_ng", status: :offline)
 
     customer = User.create!(email: "customer@example.com", password: "password", role: :customer)

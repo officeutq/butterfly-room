@@ -3,6 +3,15 @@
 require "test_helper"
 
 class StoreTest < ActiveSupport::TestCase
+  test "new stores are unpublished by default and scopes separate publication state" do
+    unpublished_store = Store.create!(name: "unpublished")
+    published_store = Store.create!(name: "published", published: true)
+
+    assert_not unpublished_store.published?
+    assert_equal [ published_store ], Store.published.where(id: [ unpublished_store.id, published_store.id ]).to_a
+    assert_equal [ unpublished_store ], Store.unpublished.where(id: [ unpublished_store.id, published_store.id ]).to_a
+  end
+
   test "name is required" do
     store = Store.new(name: nil)
 

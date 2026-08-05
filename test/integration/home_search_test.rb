@@ -13,7 +13,7 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
   end
 
   def create_store!(name:)
-    Store.create!(name: name)
+    Store.create!(name: name, published: true)
   end
 
   def create_booth!(store:, name:, status:, archived_at: nil, last_online_at: nil)

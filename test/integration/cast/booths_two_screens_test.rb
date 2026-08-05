@@ -4,7 +4,7 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
   include Devise::Test::IntegrationHelpers
 
   setup do
-    @store = Store.create!(name: "Test Store")
+    @store = Store.create!(name: "Test Store", published: true)
     @cast  = User.create!(email: "cast@example.com", password: "password", role: :cast)
     @customer = User.create!(email: "customer@example.com", password: "password", role: :customer)
 

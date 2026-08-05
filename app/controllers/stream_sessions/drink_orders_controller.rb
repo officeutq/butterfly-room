@@ -67,7 +67,7 @@ module StreamSessions
     private
 
     def set_stream_session
-      @stream_session = StreamSession.find(params[:stream_session_id])
+      @stream_session = StreamSession.in_published_stores.find(params[:stream_session_id])
     end
 
     def authorize_create_drink_order!

@@ -12,6 +12,7 @@ module Favorites
         current_user
           .favorite_stores
           .joins(:store)
+          .merge(Store.published)
           .includes(:store)
           .order(created_at: :desc, id: :desc)
 
@@ -50,7 +51,7 @@ module Favorites
     private
 
     def set_store
-      @store = Store.find(params[:store_id])
+      @store = Store.published.find(params[:store_id])
     end
 
     def render_favorite_button(favorited:)

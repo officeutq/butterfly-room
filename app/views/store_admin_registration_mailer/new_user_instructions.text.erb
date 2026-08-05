@@ -1,0 +1,18 @@
+<%= @user.display_name.presence || "店舗責任者" %> 様
+
+<%= @registration_actor_name %>によって「<%= @store.name %>」の初期登録が行われ、Butterflyveの店舗管理者アカウントが作成されました。
+
+ログインID: <%= @user.email %>
+
+以下のURLからパスワードを設定してください。
+パスワード設定URL: <%= @password_url %>
+このURLの有効期限は、発行から<%= @password_url_expiration_hours %>時間です。
+有効期限が切れた場合は、以下のURLから新しいパスワード設定メールを再送してください。
+新しいパスワード設定メールを再送: <%= @password_request_url %>
+
+本メールにお心当たりがない場合は、リンクを開かずに本メールを破棄してください。
+
+---
+
+本メールは送信専用です。返信いただいても対応できません。
+Butterflyve（バタフライブ）は、オフィスUTQが運営しています。

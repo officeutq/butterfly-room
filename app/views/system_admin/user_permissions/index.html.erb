@@ -1,0 +1,44 @@
+<% content_for :title, "追加権限管理" %>
+
+<div class="mb-3">
+  <%= link_to "追加権限を付与", new_system_admin_user_permission_path, class: "btn btn-primary" %>
+</div>
+
+<% if @user_permissions.blank? %>
+  <div class="alert alert-warning" role="alert">付与済みの追加権限はありません。</div>
+<% else %>
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th>ユーザーID</th>
+          <th>メールアドレス</th>
+          <th>表示名</th>
+          <th>ロール</th>
+          <th>追加権限</th>
+          <th>付与日時</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @user_permissions.each do |permission| %>
+          <tr>
+            <td><%= permission.user_id %></td>
+            <td class="text-break"><%= permission.user.email %></td>
+            <td><%= display_name_or_anonymous(permission.user) %></td>
+            <td><%= role_badge(permission.user) %></td>
+            <td><%= permission.label %></td>
+            <td><%= l(permission.created_at) %></td>
+            <td class="text-end">
+              <%= button_to "削除",
+                    system_admin_user_permission_path(permission),
+                    method: :delete,
+                    class: "btn btn-outline-danger btn-sm",
+                    data: { turbo_confirm: "この追加権限を削除します。よろしいですか？" } %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>

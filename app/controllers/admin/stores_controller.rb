@@ -7,9 +7,26 @@ module Admin
 
     before_action :set_store, only: %i[edit update]
     before_action :authorize_store_edit!, only: %i[edit update]
+    before_action :require_store_registration_proxy!, only: %i[new create]
 
     def index
       load_selectable_stores
+    end
+
+    def new
+      @form = Stores::ProxyRegistrationForm.new(actor: current_user)
+    end
+
+    def create
+      @form = Stores::ProxyRegistrationForm.new(proxy_store_params.merge(actor: current_user))
+
+      if @form.save
+        session[:current_store_id] = @form.store.id
+        session.delete(:current_booth_id)
+        redirect_to edit_admin_store_path(@form.store), notice: "代行対象店舗を作成しました"
+      else
+        render :new, status: :unprocessable_entity
+      end
     end
 
     def select_modal
@@ -150,8 +167,19 @@ module Admin
         :instagram_url,
         :tiktok_url,
         :youtube_url,
+        :published,
         :thumbnail
       )
+    end
+
+    def proxy_store_params
+      params.require(:proxy_store_registration).permit(:store_name, :referral_code)
+    end
+
+    def require_store_registration_proxy!
+      return if current_user.store_admin? && current_user.permitted_for?(:store_registration_proxy)
+
+      head :forbidden
     end
 
     def respond_store_update_error(messages)

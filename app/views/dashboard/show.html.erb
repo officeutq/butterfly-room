@@ -156,6 +156,19 @@
       </div>
     <% end %>
 
+    <% if current_user.permitted_for?(:store_registration_proxy) %>
+      <div class="col-12 col-md-6 col-xl-4">
+        <%= link_to new_admin_store_path, class: "text-decoration-none" do %>
+          <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
+            <div class="card-body">
+              <h5 class="card-title mb-2">代行対象店舗を作成</h5>
+              <p class="card-text mb-0">営業支援の対象となる店舗を新しく作成します</p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
     <% if current_user.at_least?(:store_admin) %>
       <div class="col-12 col-md-6 col-xl-4">
         <%= link_to admin_booths_path, class: "text-decoration-none" do %>
@@ -451,6 +464,17 @@
             <div class="card-body">
               <h5 class="card-title mb-2">ユーザー管理</h5>
               <p class="card-text mb-0">ユーザー情報を管理します</p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="col-12 col-md-6 col-xl-4">
+        <%= link_to system_admin_user_permissions_path, class: "text-decoration-none" do %>
+          <div class="card h-100 dashboard-role-card dashboard-role-card-system-admin" data-bs-theme="light">
+            <div class="card-body">
+              <h5 class="card-title mb-2">追加権限管理</h5>
+              <p class="card-text mb-0">ユーザー単位の追加権限を付与・削除します</p>
             </div>
           </div>
         <% end %>

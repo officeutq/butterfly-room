@@ -6,10 +6,20 @@
       招待URLを発行し、店舗管理者が承認した場合のみ、店舗に所属します。
     </p>
 
-    <%= button_to "招待URLを発行",
-          admin_store_admin_invitations_path,
-          method: :post,
-          class: "btn btn-primary" %>
+    <div class="d-flex flex-wrap gap-2">
+      <%= button_to "招待URLを発行",
+            admin_store_admin_invitations_path,
+            method: :post,
+            class: "btn btn-primary" %>
+
+      <% if current_user.store_admin? &&
+            current_user.admin_of_store?(current_store.id) &&
+            current_user.permitted_for?(:store_registration_proxy) %>
+        <%= link_to "店舗責任者を登録（代行用）",
+              new_admin_store_admin_proxy_registration_path,
+              class: "btn btn-outline-primary" %>
+      <% end %>
+    </div>
 
     <div class="mt-3 text-muted small">
       ※発行後、招待URLをコピーして共有してください。

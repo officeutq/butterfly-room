@@ -5,7 +5,8 @@ module StreamSessions
     include StoreBanGuard
 
     before_action :authenticate_user!
-    before_action :set_stream_session
+    before_action :set_public_stream_session, only: %i[create report]
+    before_action :set_stream_session, only: %i[hide unhide]
     before_action :set_comment, only: %i[hide unhide report]
     before_action :reject_banned_customer_for_stream_session!, only: %i[create]
     before_action :ensure_comment_moderator!, only: %i[hide unhide]
@@ -101,6 +102,10 @@ module StreamSessions
     end
 
     private
+
+    def set_public_stream_session
+      @stream_session = StreamSession.in_published_stores.find(params[:stream_session_id])
+    end
 
     def set_stream_session
       @stream_session = StreamSession.find(params[:stream_session_id])
