@@ -13,7 +13,9 @@ class AccountWithdrawalFlowTest < ActionDispatch::IntegrationTest
     document = Nokogiri::HTML(response.body)
     links = document.css("a[href='#{account_withdrawal_path}']")
     assert_equal 2, links.size
-    assert_includes response.body, "退会手続きへ"
+    profile_link = links.find { |link| link["class"].to_s.include?("btn-link") }
+    assert_equal "退会する", profile_link.text.strip
+    assert_nil document.at_css(".card.border-danger")
     assert_includes response.body, "退会する"
     assert_not_includes response.body, "Butterflyve Build"
   end
