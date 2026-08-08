@@ -103,13 +103,12 @@ module ImageAttachments
     end
 
     def metadata_candidate_scope(scope)
-      content_type_sql = "LOWER(COALESCE(active_storage_blobs.content_type, '')) IN (?)"
-      filename_sql = CANDIDATE_EXTENSIONS.map do
-        "LOWER(active_storage_blobs.filename) LIKE ?"
-      end.join(" OR ")
-
       scope.where(
-        "#{content_type_sql} OR #{filename_sql}",
+        <<~SQL.squish,
+          LOWER(COALESCE(active_storage_blobs.content_type, '')) IN (?)
+          OR LOWER(active_storage_blobs.filename) LIKE ?
+          OR LOWER(active_storage_blobs.filename) LIKE ?
+        SQL
         CANDIDATE_CONTENT_TYPES,
         *CANDIDATE_EXTENSIONS.map { |extension| "%#{extension}" }
       )
