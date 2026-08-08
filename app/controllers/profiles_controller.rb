@@ -1,9 +1,6 @@
 # frozen_string_literal: true
 
 class ProfilesController < ApplicationController
-  include RemovableImageAttachment
-  include AttachmentPersistenceChecker
-
   before_action :authenticate_user!
 
   def edit
@@ -14,38 +11,40 @@ class ProfilesController < ApplicationController
   def update
     @user = current_user
 
-    success = @user.update(profile_params)
+    attributes = profile_params.to_h.symbolize_keys
+    upload = attributes.delete(:avatar)
+    remove_avatar = attributes.delete(:remove_avatar)
 
-    if success
-      unless ensure_attachment_persisted!(record: @user, attachment_name: :avatar)
-        return respond_profile_update_error(@user.errors.full_messages)
-      end
-
-      purge_attachment_if_requested(
+    begin
+      ImageAttachments::UpdateService.new(
         record: @user,
         attachment_name: :avatar,
-        remove_param_name: :remove_avatar
-      )
+        attributes:,
+        upload:,
+        remove_attachment: remove_avatar,
+        max_width: 1024,
+        max_height: 1024
+      ).call
+    rescue ActiveRecord::RecordInvalid, ImageAttachments::UpdateService::Error
+      return respond_profile_update_error(@user.errors.full_messages)
+    end
 
-      if session.delete(:redirect_to_booth_edit_after_profile_update)
-        booth = current_booth_for_invitation_flow
+    if session.delete(:redirect_to_booth_edit_after_profile_update)
+      booth = current_booth_for_invitation_flow
 
-        if booth.present?
-          # ★追加：初回プロフィール入力時のみブース名を補完
-          if booth.name == "ななしさんのブース" && @user.display_name.present?
-            booth.update!(name: "#{@user.display_name}のブース")
-          end
-
-          session[:redirect_to_home_after_cast_booth_update] = true
-          redirect_to edit_cast_booth_path(booth), notice: "プロフィールを更新しました"
-        else
-          redirect_to root_path, notice: "プロフィールを更新しました"
+      if booth.present?
+        # ★追加：初回プロフィール入力時のみブース名を補完
+        if booth.name == "ななしさんのブース" && @user.display_name.present?
+          booth.update!(name: "#{@user.display_name}のブース")
         end
+
+        session[:redirect_to_home_after_cast_booth_update] = true
+        redirect_to edit_cast_booth_path(booth), notice: "プロフィールを更新しました"
       else
         redirect_to root_path, notice: "プロフィールを更新しました"
       end
     else
-      respond_profile_update_error(@user.errors.full_messages)
+      redirect_to root_path, notice: "プロフィールを更新しました"
     end
   end
 
@@ -113,7 +112,7 @@ class ProfilesController < ApplicationController
   private
 
   def profile_params
-    params.require(:user).permit(:display_name, :bio, :avatar)
+    params.require(:user).permit(:display_name, :bio, :avatar, :remove_avatar)
   end
 
   def phone_otp_params

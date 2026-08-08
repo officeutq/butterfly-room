@@ -3,6 +3,14 @@
 require "test_helper"
 
 class ProfileUpdateTest < ActionDispatch::IntegrationTest
+  include ActionDispatch::TestProcess
+  include ActiveJob::TestHelper
+
+  teardown do
+    clear_enqueued_jobs
+    clear_performed_jobs
+  end
+
   test "profile update redirects to home with notice" do
     user = User.create!(
       email: "profile_update@example.com",
@@ -88,6 +96,82 @@ class ProfileUpdateTest < ActionDispatch::IntegrationTest
     assert_equal "初期bio", user.bio
   end
 
+  test "profile update attaches a HEIC avatar as JPEG" do
+    user = create_profile_user("profile_avatar_create")
+    sign_in user, scope: :user
+
+    patch profile_path, params: {
+      user: {
+        display_name: "画像付きユーザー",
+        avatar: image_upload("sample.heic", "image/png")
+      }
+    }
+
+    assert_redirected_to root_path
+
+    user.reload
+    assert_equal "画像付きユーザー", user.display_name
+    assert user.avatar.attached?
+    assert_equal "sample.jpg", user.avatar.filename.to_s
+    assert_equal "image/jpeg", user.avatar.content_type
+    assert_equal "\xFF\xD8".b, user.avatar.download.first(2)
+  end
+
+  test "profile update replaces an existing avatar and purges the old blob" do
+    user = create_profile_user("profile_avatar_replace")
+    old_blob = attach_existing_avatar(user)
+    sign_in user, scope: :user
+
+    perform_enqueued_jobs do
+      patch profile_path, params: {
+        user: {
+          avatar: image_upload("sample.webp", "image/webp"),
+          remove_avatar: "1"
+        }
+      }
+    end
+
+    assert_redirected_to root_path
+
+    user.reload
+    assert user.avatar.attached?
+    assert_not_equal old_blob.id, user.avatar.blob.id
+    assert_not ActiveStorage::Blob.exists?(old_blob.id)
+  end
+
+  test "profile update removes an existing avatar" do
+    user = create_profile_user("profile_avatar_remove")
+    old_blob = attach_existing_avatar(user)
+    sign_in user, scope: :user
+
+    perform_enqueued_jobs do
+      patch profile_path, params: { user: { remove_avatar: "1" } }
+    end
+
+    assert_redirected_to root_path
+    assert_not user.reload.avatar.attached?
+    assert_not ActiveStorage::Blob.exists?(old_blob.id)
+  end
+
+  test "profile image conversion failure keeps existing avatar and attributes" do
+    user = create_profile_user("profile_avatar_failure", bio: "更新前bio")
+    old_blob = attach_existing_avatar(user)
+    sign_in user, scope: :user
+
+    patch profile_path, params: {
+      user: {
+        bio: "保存されないbio",
+        avatar: image_upload("corrupt.heic", "image/heic")
+      }
+    }
+
+    assert_redirected_to edit_profile_path
+
+    user.reload
+    assert_equal "更新前bio", user.bio
+    assert_equal old_blob.id, user.avatar.blob.id
+  end
+
   test "profile edit shows current email and email change link" do
     user = User.create!(
       email: "profile_email_link@example.com",
@@ -154,5 +238,35 @@ class ProfileUpdateTest < ActionDispatch::IntegrationTest
 
     user.reload
     assert_equal "unchanged_email@example.com", user.email
+  end
+
+  private
+
+  def create_profile_user(prefix, **attributes)
+    User.create!(
+      {
+        email: "#{prefix}@example.com",
+        password: "password",
+        password_confirmation: "password",
+        role: :customer
+      }.merge(attributes)
+    )
+  end
+
+  def attach_existing_avatar(user)
+    File.open(file_fixture("sample.jpg"), "rb") do |io|
+      user.avatar.attach(
+        io:,
+        filename: "old-avatar.jpg",
+        content_type: "image/jpeg",
+        identify: false
+      )
+    end
+
+    user.avatar.blob
+  end
+
+  def image_upload(filename, content_type)
+    fixture_file_upload(Rails.root.join("test/fixtures/files", filename), content_type)
   end
 end

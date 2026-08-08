@@ -2,9 +2,6 @@
 
 module Cast
   class BoothsController < Cast::BaseController
-    include RemovableImageAttachment
-    include AttachmentPersistenceChecker
-
     before_action :set_booth, only: %i[live status edit update]
     before_action :set_booth_for_show, only: %i[show]
     before_action :authorize_update!, only: %i[edit update]
@@ -131,39 +128,36 @@ module Cast
     end
 
     def update
-      success = false
+      attributes = booth_params.to_h.symbolize_keys
+      upload = attributes.delete(:thumbnail_image)
+      remove_thumbnail_image = attributes.delete(:remove_thumbnail_image)
 
-      Booth.transaction do
-        ok = create_initial_booth_cast_if_requested(@booth)
-        raise ActiveRecord::Rollback unless ok
-
-        @booth.assign_attributes(booth_params)
-
-        if @booth.save
-          success = true
-        else
-          raise ActiveRecord::Rollback
-        end
-      end
-
-      if success && ensure_attachment_persisted!(record: @booth, attachment_name: :thumbnail_image)
-        purge_attachment_if_requested(
+      begin
+        ImageAttachments::UpdateService.new(
           record: @booth,
           attachment_name: :thumbnail_image,
-          remove_param_name: :remove_thumbnail_image
-        )
+          attributes:,
+          upload:,
+          remove_attachment: remove_thumbnail_image,
+          max_width: 1920,
+          max_height: 1080
+        ).call do |booth|
+          next if create_initial_booth_cast_if_requested(booth)
 
-        redirect_path =
-          if session.delete(:redirect_to_home_after_cast_booth_update)
-            root_path
-          else
-            helpers.dashboard_path_for(current_user)
-          end
-
-        redirect_to redirect_path, notice: "ブースを更新しました"
-      else
-        respond_booth_update_error(@booth.errors.full_messages)
+          raise ActiveRecord::RecordInvalid, booth
+        end
+      rescue ActiveRecord::RecordInvalid, ImageAttachments::UpdateService::Error
+        return respond_booth_update_error(@booth.errors.full_messages)
       end
+
+      redirect_path =
+        if session.delete(:redirect_to_home_after_cast_booth_update)
+          root_path
+        else
+          helpers.dashboard_path_for(current_user)
+        end
+
+      redirect_to redirect_path, notice: "ブースを更新しました"
     end
 
     def status
@@ -323,7 +317,7 @@ module Cast
     end
 
     def booth_params
-      params.require(:booth).permit(:name, :description, :thumbnail_image)
+      params.require(:booth).permit(:name, :description, :thumbnail_image, :remove_thumbnail_image)
     end
 
     def respond_booth_update_error(messages)

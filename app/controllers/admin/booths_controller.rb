@@ -2,9 +2,6 @@
 
 module Admin
   class BoothsController < Admin::BaseController
-    include RemovableImageAttachment
-    include AttachmentPersistenceChecker
-
     before_action :require_current_store!
     before_action :set_booth, only: %i[archive force_end]
 
@@ -32,24 +29,27 @@ module Admin
       @booth = current_store.booths.new
       authorize_create!
 
-      @booth.assign_attributes(booth_create_params)
+      attributes = booth_create_params.to_h.symbolize_keys
+      upload = attributes.delete(:thumbnail_image)
+      remove_thumbnail_image = attributes.delete(:remove_thumbnail_image)
 
-      Booth.transaction do
-        @booth.save!
-        create_initial_booth_cast_if_requested!(@booth)
+      ImageAttachments::UpdateService.new(
+        record: @booth,
+        attachment_name: :thumbnail_image,
+        attributes:,
+        upload:,
+        remove_attachment: remove_thumbnail_image,
+        max_width: 1920,
+        max_height: 1080
+      ).call do |booth|
+        create_initial_booth_cast_if_requested!(booth)
       end
 
       Booths::ProvisionIvsStageService.new(booth: @booth).call!
 
-      purge_attachment_if_requested(
-        record: @booth,
-        attachment_name: :thumbnail_image,
-        remove_param_name: :remove_thumbnail_image
-      )
-
       redirect_to helpers.dashboard_path_for(current_user), notice: "ブースを作成しました"
 
-    rescue ActiveRecord::RecordInvalid
+    rescue ActiveRecord::RecordInvalid, ImageAttachments::UpdateService::Error
       load_cast_memberships
       render :new, status: :unprocessable_entity
 
@@ -172,7 +172,7 @@ module Admin
     end
 
     def booth_create_params
-      params.require(:booth).permit(:name, :description, :thumbnail_image)
+      params.require(:booth).permit(:name, :description, :thumbnail_image, :remove_thumbnail_image)
     end
 
     def booth_cast_params
