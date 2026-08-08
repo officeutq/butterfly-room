@@ -97,6 +97,9 @@ jobs:
             npm run build:css --if-present
           fi
 
+      - name: Run JavaScript tests
+        run: npm run test:js
+
       - name: Make node_modules visible to Dart Sass
         run: echo "SASS_PATH=node_modules" >> $GITHUB_ENV
 

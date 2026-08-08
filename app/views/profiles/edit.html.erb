@@ -42,8 +42,10 @@
           data: { "image-upload-target": "removeFlag" } %>
 
     <%= f.file_field :avatar,
-          accept: ".jpg,.jpeg,.png,.webp,.heic,.heif",
+          accept: ".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif",
           data: { "image-upload-target": "input" } %>
+
+    <%= render "shared/image_upload_help" %>
   </div>
 
   <div class="d-flex gap-2">
