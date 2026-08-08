@@ -222,7 +222,6 @@ Rails.application.routes.draw do
 
   # --- System Admin ---
   namespace :system_admin do
-    resources :user_permissions, only: %i[index new create destroy]
     resources :referral_codes, only: %i[index new create edit update]
     resources :users, only: %i[index new create edit update destroy]
     resources :effects, only: %i[index new create edit update]
