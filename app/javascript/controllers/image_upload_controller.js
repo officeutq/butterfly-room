@@ -1,7 +1,31 @@
 import { Controller } from "@hotwired/stimulus"
 
+const ACCEPTED_FILE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+]
+const CONTENT_TYPE_BY_EXTENSION = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  heic: "image/heic",
+  heif: "image/heif",
+}
+const FILEPOND_PLUGIN_GLOBALS = [
+  "FilePondPluginFileValidateType",
+  "FilePondPluginImagePreview",
+  "FilePondPluginImageResize",
+  "FilePondPluginImageTransform",
+]
+const MAX_SETUP_ATTEMPTS = 40
+const SETUP_RETRY_INTERVAL_MS = 50
+
 export default class extends Controller {
-  static targets = ["input", "removeFlag"]
+  static targets = ["input", "removeFlag", "error"]
   static values = {
     initialUrl: String,
     width: Number,
@@ -14,15 +38,17 @@ export default class extends Controller {
     this.initialFileRetryAttempted = false
     this.suppressRemoveFlagUpdate = false
     this.isDisconnected = false
+    this.setupTimer = null
 
-    setTimeout(() => {
-      this.setupFilePond()
-    }, 0)
+    this.scheduleSetup(0)
   }
 
   disconnect() {
     this.isDisconnected = true
-    if (this.setupTimer) clearTimeout(this.setupTimer)
+    if (this.setupTimer) {
+      clearTimeout(this.setupTimer)
+      this.setupTimer = null
+    }
     if (this.pond) {
       this.pond.destroy()
       this.pond = null
@@ -30,16 +56,16 @@ export default class extends Controller {
   }
 
   setupFilePond() {
+    this.setupTimer = null
+    if (this.isDisconnected) return
     if (this.pond) return
     if (!this.hasInputTarget) return
 
-    if (!window.FilePond) {
-      if (this.setupAttempts >= 40) return
+    if (!this.filePondReady()) {
+      if (this.setupAttempts >= MAX_SETUP_ATTEMPTS) return
 
       this.setupAttempts += 1
-      this.setupTimer = setTimeout(() => {
-        this.setupFilePond()
-      }, 50)
+      this.scheduleSetup(SETUP_RETRY_INTERVAL_MS)
       return
     }
 
@@ -60,17 +86,18 @@ export default class extends Controller {
       imageResizeMode: "contain",
       imageResizeUpscale: false,
 
+      // クライアント変換は通信量削減とプレビューの補助であり、保存形式はサーバー側で保証する。
+      // ブラウザがHEIC/HEIFを変換できない場合は原本が送信され、サーバー側でJPEGへ正規化される。
       imageTransformOutputMimeType: "image/jpeg",
       imageTransformOutputQuality: 94,
       imageTransformCanvasBackgroundColor: "#ffffff",
 
-      acceptedFileTypes: [
-        "image/jpeg",
-        "image/png",
-        "image/webp",
-        "image/heic",
-        "image/heif",
-      ],
+      acceptedFileTypes: ACCEPTED_FILE_TYPES,
+      labelFileTypeNotAllowed: "対応していない画像形式です",
+      fileValidateTypeLabelExpectedTypes:
+        "JPEG / PNG / WebP / HEIC / HEIFを選択してください",
+      fileValidateTypeDetectType: (file, browserType) =>
+        Promise.resolve(this.detectFileType(file, browserType)),
 
       labelIdle: `
         <div class="image-upload-picker">
@@ -86,14 +113,48 @@ export default class extends Controller {
     }
   }
 
+  scheduleSetup(delay) {
+    if (this.isDisconnected) return
+
+    this.setupTimer = setTimeout(() => {
+      this.setupFilePond()
+    }, delay)
+  }
+
+  filePondReady() {
+    return (
+      window.FilePond &&
+      FILEPOND_PLUGIN_GLOBALS.every((pluginName) => window[pluginName])
+    )
+  }
+
+  detectFileType(file, browserType) {
+    const normalizedBrowserType = browserType?.toLowerCase() || ""
+    if (normalizedBrowserType && normalizedBrowserType !== "application/octet-stream") {
+      return normalizedBrowserType
+    }
+
+    const filename = file?.name || ""
+    const extension = filename.split(".").pop()?.toLowerCase()
+
+    return CONTENT_TYPE_BY_EXTENSION[extension] || normalizedBrowserType
+  }
+
   bindEvents() {
-    this.pond.on("addfile", () => {
+    this.pond.on("addfile", (error, _file, status) => {
+      if (error) {
+        this.showInputError(status || error)
+        return
+      }
+
+      this.clearInputError()
       this.removeFlagTarget.value = "0"
     })
 
     this.pond.on("removefile", () => {
       if (this.suppressRemoveFlagUpdate) return
 
+      this.clearInputError()
       const currentFilesCount = this.pond.getFiles().length
 
       if (currentFilesCount > 0) {
@@ -130,6 +191,7 @@ export default class extends Controller {
       .then(() => {
         if (this.isDisconnected) return
 
+        this.clearInputError()
         console.log("[image-upload] retry initial file load succeeded")
       })
       .catch((error) => {
@@ -188,14 +250,26 @@ export default class extends Controller {
     this.removeFlagTarget.value = "0"
   }
 
+  showInputError(error) {
+    if (!this.hasErrorTarget) return
+
+    const message = [error?.main, error?.sub].filter(Boolean).join(" ")
+    this.errorTarget.textContent =
+      message || "画像を読み込めませんでした。別の画像を選択してください"
+    this.errorTarget.hidden = false
+  }
+
+  clearInputError() {
+    if (!this.hasErrorTarget) return
+
+    this.errorTarget.textContent = ""
+    this.errorTarget.hidden = true
+  }
+
   registerPlugins() {
     if (window.__filepondRegistered) return
 
-    const plugins = [
-      window.FilePondPluginImagePreview,
-      window.FilePondPluginImageResize,
-      window.FilePondPluginImageTransform,
-    ].filter(Boolean)
+    const plugins = FILEPOND_PLUGIN_GLOBALS.map((pluginName) => window[pluginName])
 
     plugins.forEach((plugin) => {
       window.FilePond.registerPlugin(plugin)

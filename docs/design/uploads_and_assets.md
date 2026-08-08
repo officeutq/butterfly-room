@@ -73,6 +73,8 @@ image/heic
 image/heif
 ```
 
+native file inputの`accept`には各形式の拡張子とMIME typeを併記し、FilePondの`acceptedFileTypes`は同じ5形式のMIME typeに揃える。拡張子だけではFilePondのtype検証に一致しないため、MIME typeを省略しない。`FilePondPluginFileValidateType`を共通headで読み込み、drag and dropを含む対応外形式はフォーム送信対象から除外し、共通の画面内alertへエラー表示する。ブラウザがHEIC / HEIFのMIME typeを空または`application/octet-stream`として返す場合だけ、拡張子からUI検証用のMIME typeを補完する。ただし、この検証は利用者への早期フィードバックであり、実データ形式の最終判定はサーバー側で行う。
+
 ---
 
 ## 4. サーバー側の画像正規化
@@ -138,13 +140,16 @@ magick identify -list format | grep -E 'HEIC|HEIF'
 
 既存画像がある場合、FilePondからファイルを削除すると removeFlag を `1` にする。
 新規選択またはファイルが残っている場合は `0` に戻す。
+初期画像の読込失敗や、cache bust再試行のためにFilePond内部の項目を取り除く場合は、removeFlagを変更しない。
 
 ---
 
 ## 6. 初期画像
 
 initialUrl がある場合は FilePond に既存画像を追加する。
-読み込み失敗時は無視する。
+初回の読込に失敗した場合だけ、同じURLへcache bust parameterを付けて1回再試行する。これは既存の初期画像取得失敗対策を維持するもので、無制限には再試行しない。再試行も失敗した場合は既存添付を削除扱いにせず、removeFlagを`0`のまま維持する。
+
+Turbo遷移などでControllerがdisconnectした場合は、初期化timerを停止し、作成済みFilePondを破棄する。disconnect後は初期画像の再試行結果を画面状態へ反映しない。
 
 ---
 
@@ -158,7 +163,10 @@ FilePond plugin は `window.__filepondRegistered` で二重登録を防止する
 FilePondPluginImagePreview
 FilePondPluginImageResize
 FilePondPluginImageTransform
+FilePondPluginFileValidateType
 ```
+
+FilePond本体と上記4pluginがすべて読み込まれるまで、50ms間隔で最大40回初期化を再試行する。一部pluginが未読込の状態では登録済み扱いにしない。
 
 ---
 
@@ -167,4 +175,12 @@ FilePondPluginImageTransform
 - FilePondのロードが遅れる可能性があるため、最大40回まで50ms間隔で初期化をリトライする
 - allowProcess: false のため、Railsフォーム送信時にファイルとして送る
 - HEIC/HEIF変換はブラウザ・FilePond plugin の対応状況に依存する
+- ブラウザがHEIC/HEIFをプレビュー・変換できない場合も選択を許可し、サーバー側でJPEGへ正規化する旨をStore / Booth / Userで共通表示する
+- 対応外形式はFilePondで送信前にエラー表示する
 - サーバー側では申告された `content_type` ではなく画像実体を検査する
+
+JavaScriptのlifecycle、初期画像再試行、削除フラグ、plugin登録は次で確認する。
+
+```bash
+npm run test:js
+```
