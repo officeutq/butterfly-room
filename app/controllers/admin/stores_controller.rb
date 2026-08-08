@@ -2,9 +2,6 @@
 
 module Admin
   class StoresController < Admin::BaseController
-    include RemovableImageAttachment
-    include AttachmentPersistenceChecker
-
     before_action :set_store, only: %i[edit update]
     before_action :authorize_store_edit!, only: %i[edit update]
     before_action :require_store_registration_proxy!, only: %i[new create]
@@ -55,19 +52,23 @@ module Admin
     end
 
     def update
-      success = @store.update(store_params)
+      attributes = store_params.to_h.symbolize_keys
+      upload = attributes.delete(:thumbnail)
+      remove_thumbnail = attributes.delete(:remove_thumbnail)
 
-      if success && ensure_attachment_persisted!(record: @store, attachment_name: :thumbnail)
-        purge_attachment_if_requested(
-          record: @store,
-          attachment_name: :thumbnail,
-          remove_param_name: :remove_thumbnail
-        )
+      ImageAttachments::UpdateService.new(
+        record: @store,
+        attachment_name: :thumbnail,
+        attributes:,
+        upload:,
+        remove_attachment: remove_thumbnail,
+        max_width: 1920,
+        max_height: 1080
+      ).call
 
-        redirect_to dashboard_path, notice: "店舗情報を更新しました"
-      else
-        respond_store_update_error(@store.errors.full_messages)
-      end
+      redirect_to dashboard_path, notice: "店舗情報を更新しました"
+    rescue ActiveRecord::RecordInvalid, ImageAttachments::UpdateService::Error
+      respond_store_update_error(@store.errors.full_messages)
     end
 
     private
@@ -168,7 +169,8 @@ module Admin
         :tiktok_url,
         :youtube_url,
         :published,
-        :thumbnail
+        :thumbnail,
+        :remove_thumbnail
       ]
       permitted_attributes << :sales_support_company if current_user.system_admin?
 

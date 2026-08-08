@@ -4,6 +4,7 @@ require "test_helper"
 
 class AdminStoreEditAuthorizationTest < ActionDispatch::IntegrationTest
   include ActionDispatch::TestProcess
+  include ActiveJob::TestHelper
 
   setup do
     @store1 = Store.create!(name: "store1")
@@ -14,6 +15,11 @@ class AdminStoreEditAuthorizationTest < ActionDispatch::IntegrationTest
     @system_admin = User.create!(email: "sys_s@example.com", password: "password", role: :system_admin)
 
     StoreMembership.create!(store: @store1, user: @store_admin, membership_role: :admin)
+  end
+
+  teardown do
+    clear_enqueued_jobs
+    clear_performed_jobs
   end
 
   test "customer cannot edit/update (403)" do
@@ -84,7 +90,7 @@ class AdminStoreEditAuthorizationTest < ActionDispatch::IntegrationTest
   test "store_admin can update fields and attach thumbnail" do
     sign_in @store_admin, scope: :user
 
-    file = fixture_file_upload(Rails.root.join("test/fixtures/files/thumb.png"), "image/png")
+    file = image_upload("sample.heic", "image/png")
 
     patch admin_store_path(@store1), params: {
       store: {
@@ -105,6 +111,73 @@ class AdminStoreEditAuthorizationTest < ActionDispatch::IntegrationTest
     assert_equal "渋谷", @store1.area
     assert_equal "girls_bar", @store1.business_type
     assert @store1.thumbnail.attached?
+    assert_equal "sample.jpg", @store1.thumbnail.filename.to_s
+    assert_equal "image/jpeg", @store1.thumbnail.content_type
+    assert_equal "\xFF\xD8".b, @store1.thumbnail.download.first(2)
+  end
+
+  test "store_admin can replace thumbnail and a new upload wins over removal" do
+    old_blob = attach_existing_thumbnail
+    sign_in @store_admin, scope: :user
+
+    perform_enqueued_jobs do
+      patch admin_store_path(@store1), params: {
+        store: {
+          thumbnail: image_upload("sample.webp", "image/webp"),
+          remove_thumbnail: "1"
+        }
+      }
+    end
+
+    assert_redirected_to dashboard_path
+
+    @store1.reload
+    assert @store1.thumbnail.attached?
+    assert_not_equal old_blob.id, @store1.thumbnail.blob.id
+    assert_not ActiveStorage::Blob.exists?(old_blob.id)
+  end
+
+  test "store_admin can remove thumbnail" do
+    old_blob = attach_existing_thumbnail
+    sign_in @store_admin, scope: :user
+
+    perform_enqueued_jobs do
+      patch admin_store_path(@store1), params: { store: { remove_thumbnail: "1" } }
+    end
+
+    assert_redirected_to dashboard_path
+    assert_not @store1.reload.thumbnail.attached?
+    assert_not ActiveStorage::Blob.exists?(old_blob.id)
+  end
+
+  test "store image conversion failure keeps existing thumbnail and attributes" do
+    old_blob = attach_existing_thumbnail
+    sign_in @store_admin, scope: :user
+
+    patch admin_store_path(@store1), params: {
+      store: {
+        name: "保存されない店舗名",
+        thumbnail: image_upload("corrupt.heic", "image/heic")
+      }
+    }
+
+    assert_redirected_to edit_admin_store_path(@store1)
+
+    @store1.reload
+    assert_equal "store1", @store1.name
+    assert_equal old_blob.id, @store1.thumbnail.blob.id
+  end
+
+  test "store update without an image keeps its existing blob" do
+    old_blob = attach_existing_thumbnail
+    sign_in @store_admin, scope: :user
+
+    assert_no_difference("ActiveStorage::Blob.count") do
+      patch admin_store_path(@store1), params: { store: { name: "画像未変更店舗" } }
+    end
+
+    assert_redirected_to dashboard_path
+    assert_equal old_blob.id, @store1.reload.thumbnail.blob.id
   end
 
   test "store_admin can update basic info fields" do
@@ -159,5 +232,24 @@ class AdminStoreEditAuthorizationTest < ActionDispatch::IntegrationTest
     assert_not_nil @store1.longitude
   ensure
     Geocoder.define_singleton_method(:search, original_search)
+  end
+
+  private
+
+  def attach_existing_thumbnail
+    File.open(file_fixture("sample.jpg"), "rb") do |io|
+      @store1.thumbnail.attach(
+        io:,
+        filename: "old-store.jpg",
+        content_type: "image/jpeg",
+        identify: false
+      )
+    end
+
+    @store1.thumbnail.blob
+  end
+
+  def image_upload(filename, content_type)
+    fixture_file_upload(Rails.root.join("test/fixtures/files", filename), content_type)
   end
 end

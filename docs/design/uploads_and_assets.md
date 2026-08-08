@@ -77,6 +77,8 @@ image/heif
 
 ## 4. サーバー側の画像正規化
 
+### 4.1 画像変換
+
 `ImageAttachments::NormalizeService` は、アップロードされた画像を Active Storage へ保存する前に JPEG へ正規化するための共通 Service（業務処理を集約するクラス）である。
 
 - 拡張子とリクエストの `content_type` は信用せず、ImageMagick が読み取った実体形式で判定する
@@ -91,7 +93,30 @@ image/heif
 - 失敗ログには画像内容、ファイル名、ローカルパスを記録しない
 - 入力画像は 60MP 以下かつ縦横それぞれ 16,384px 以下とし、ImageMagick 1処理の上限を30秒、memory 256MiB、map 512MiB、disk 1GiB、thread 2に制限する
 
-Service の Store / Booth / User 更新処理への組み込みと、保存サイズの指定は #1006 で行う。#1004 の時点では共通 Service とその回帰テストのみを追加する。
+### 4.2 添付更新
+
+`ImageAttachments::UpdateService` は、画像変換・保存先へのアップロード・DB transaction（データベースの一連処理）・旧画像削除を一つの更新処理として扱う。
+
+- Record、attachment名、通常属性、アップロード、削除指定、最大幅・最大高さを明示的に受け取る
+- JPEGへ正規化した新規Blobを保存先へアップロードし、実在を確認してからDB更新を始める
+- DB transaction内で通常属性と添付を保存する
+- 呼び出し元固有のDB処理はblockで同じtransactionへ参加できる。ブース初回キャスト紐づけはこのblock内で行う
+- DB更新またはblock内処理が失敗した場合はrollbackし、新規Blobをpurgeする
+- 差し替え・削除の旧BlobはDB commit後にpurgeする
+- 新規アップロードと削除指定が同時にある場合は新規アップロードを優先する
+- 画像未変更時は既存Blobの再アップロードや保存先への存在確認を行わない
+- 変換・アップロード失敗時は、既存添付とDB上の通常属性を維持する
+
+適用先と保存上限は次のとおりとする。
+
+- `Admin::StoresController#update`: `thumbnail`、1920x1080
+- `ProfilesController#update`: `avatar`、1024x1024
+- `Cast::BoothsController#update`: `thumbnail_image`、1920x1080
+- `Admin::BoothsController#create`: `thumbnail_image`、1920x1080
+
+削除用hidden parameterは各Controllerのstrong parameters（受け付けるパラメータの制限）へ明示し、Controllerからraw `params` を読む共通処理には渡さない。`AttachmentPersistenceChecker` と `RemovableImageAttachment` は上記4経路から外し、現時点ではドリンクアイコン処理だけが利用する。
+
+### 4.3 実行環境
 
 実行環境には HEIC delegate（HEIC 読み取り機能）を含む ImageMagick が必要である。開発用 `Dockerfile` と本番用 `Dockerfile.production` は `imagemagick` をインストールしている。デプロイ候補イメージでは次を実行し、HEIC/HEIF の読み取り対応が表示されることを確認する。
 
