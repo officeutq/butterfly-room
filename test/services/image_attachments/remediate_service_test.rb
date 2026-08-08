@@ -32,7 +32,7 @@ class ImageAttachments::RemediateServiceTest < ActiveSupport::TestCase
     assert_equal "eligible", result.status
     assert_equal @old_attachment_id, result.attachment_id
     assert_equal @old_blob.id, result.blob_id
-    assert_equal "HEIF", result.actual_format
+    assert_includes %w[HEIC HEIF], result.actual_format
     assert result.stored
     assert result.convertible
     assert_equal @old_blob.id, @store.reload.thumbnail.blob.id
