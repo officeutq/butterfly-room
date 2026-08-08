@@ -184,3 +184,17 @@ JavaScriptのlifecycle、初期画像再試行、削除フラグ、plugin登録�
 ```bash
 npm run test:js
 ```
+
+---
+
+## 9. 保存済み画像の棚卸し
+
+本番へ保存済みのStore thumbnail、Booth thumbnail_image、User avatarは、`ImageAttachments::InventoryService`を利用するdry-runタスクで棚卸しする。
+
+- 標準実行はHEIC / HEIF拡張子または対象Content-Typeを持つDBメタデータ候補だけを実体検査する
+- 保存先オブジェクトの存在、実体形式、JPEG変換可否を確認する
+- 全件実体検査は保存先ダウンロードと画像変換を伴うため、件数上限を必須とする
+- 棚卸し処理ではBlob、Attachment、対象Record、S3オブジェクトを更新・削除しない
+- S3キーを直接上書きせず、是正時は`ImageAttachments::UpdateService`を再利用して新規JPEGを再添付する
+
+実行方法と結果statusは`docs/ops/image_attachment_remediation.md`を参照する。
