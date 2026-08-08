@@ -25,6 +25,19 @@
 * `users.role` を enum で管理（DB設計に準拠）
 * ルーティング/Controller では「認証 → ロール/所属チェック → Service」の順に統一する
   * ロール/所属チェックは Policy（Pundit など）または `before_action` で実装（方針は後続Issueで確定）
+* Deviseの認証・パスワード再設定検索は`users.deleted_at IS NULL`に限定する
+* email / phone_numberの一意性は、model validationとDBの部分一意indexの両方で有効ユーザー間に限定する
+
+### ユーザー自身の退会
+
+* routeは`GET /account_withdrawal`（確認モーダル）と`DELETE /account_withdrawal`（実行）を使用する
+* `AccountWithdrawalsController`は、認証、system_admin除外、現在のパスワード、確認チェック、Service呼び出し、ログアウト、レスポンスだけを担当する
+* `Accounts::WithdrawalService`は、対象ユーザーと管理店舗をlockし、ロール別クリーンアップ完了後に`users.deleted_at`を設定する
+* `StoreMemberships::RemoveCastService`は、配信終了、ドリンク返却、関連ブースのアーカイブ、キャスト所属解除を共通化し、店舗管理画面と退会処理から利用する
+* `Booths::CloseAndArchiveService`は、必要な配信終了後にブース状態を再確認してアーカイブする
+* store_admin退会時は、退会者以外の`users.deleted_at IS NULL`な管理者所属を有効管理者として数える
+* 他に有効な管理者がいる店舗は変更せず、唯一管理者店舗だけを非公開化してブース・キャスト所属・未使用招待を整理する
+* IVS等の外部処理を含むため、各クリーンアップは完了済み状態を許容し、失敗後に再実行できる冪等性を持たせる
 
 
 ---

@@ -12,7 +12,7 @@ class PhoneSessionsController < ApplicationController
 
     session[:pending_phone_login_number] = normalized_phone_number
 
-    user = User.find_by(phone_number: normalized_phone_number)
+    user = User.active.find_by(phone_number: normalized_phone_number)
 
     if user&.phone_verified? && user.active_for_authentication?
       PhoneVerifications::IssueOtpService.new(
@@ -51,7 +51,7 @@ class PhoneSessionsController < ApplicationController
       otp_code:
     ).call!
 
-    user = User.find_by(phone_number: result.phone_verification.phone_number)
+    user = User.active.find_by(phone_number: result.phone_verification.phone_number)
 
     unless user&.phone_verified? && user.active_for_authentication?
       return redirect_to phone_session_path, alert: "電話番号または認証コードが正しくありません"

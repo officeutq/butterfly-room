@@ -135,11 +135,16 @@
                   <li><hr class="dropdown-divider"></li>
                 <% end %>
 
-                <li>
-                  <span class="dropdown-item-text small">
-                    <%= current_build_label %>
-                  </span>
-                </li>
+                <% unless current_user.system_admin? %>
+                  <li>
+                    <%= link_to account_withdrawal_path,
+                          data: { turbo_frame: "modal" },
+                          class: "dropdown-item text-danger d-flex align-items-center gap-2" do %>
+                      <i class="bi bi-person-x" aria-hidden="true"></i>
+                      <span>退会する</span>
+                    <% end %>
+                  </li>
+                <% end %>
 
                 <li><hr class="dropdown-divider"></li>
 
