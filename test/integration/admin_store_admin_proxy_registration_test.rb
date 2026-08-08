@@ -8,10 +8,11 @@ class AdminStoreAdminProxyRegistrationTest < ActionDispatch::IntegrationTest
     @store = Store.create!(name: "Proxy Registration Store")
     @actor = User.create!(email: "proxy-registration-actor@example.com", password: "password", role: :store_admin)
     StoreMembership.create!(store: @store, user: @actor, membership_role: :admin)
+    @support_company = Store.create!(name: "Support Company", sales_support_company: true)
+    StoreMembership.create!(store: @support_company, user: @actor, membership_role: :admin)
   end
 
-  test "permission holder sees the button and can register a responsible person" do
-    UserPermission.create!(user: @actor, permission_type: "store_registration_proxy")
+  test "sales support company admin sees the button and can register a responsible person" do
     sign_in @actor, scope: :user
     post admin_current_store_path, params: { store_id: @store.id }
 
@@ -37,6 +38,7 @@ class AdminStoreAdminProxyRegistrationTest < ActionDispatch::IntegrationTest
   end
 
   test "permission is checked on direct access and create" do
+    @support_company.update!(sales_support_company: false)
     sign_in @actor, scope: :user
     post admin_current_store_path, params: { store_id: @store.id }
 
@@ -55,7 +57,6 @@ class AdminStoreAdminProxyRegistrationTest < ActionDispatch::IntegrationTest
   end
 
   test "create revalidates an existing non store_admin" do
-    UserPermission.create!(user: @actor, permission_type: "store_registration_proxy")
     customer = User.create!(email: "proxy-existing-customer@example.com", password: "password", role: :customer)
     sign_in @actor, scope: :user
     post admin_current_store_path, params: { store_id: @store.id }

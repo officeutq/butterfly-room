@@ -51,6 +51,36 @@ class AdminStoreEditAuthorizationTest < ActionDispatch::IntegrationTest
     assert_equal "sys updated", @store2.reload.name
   end
 
+  test "system_admin sees and can update sales support company setting" do
+    sign_in @system_admin, scope: :user
+
+    get edit_admin_store_path(@store1)
+
+    assert_response :success
+    assert_select "input[name='store[sales_support_company]']"
+
+    patch admin_store_path(@store1), params: { store: { sales_support_company: "1" } }
+    assert_redirected_to dashboard_path
+    assert @store1.reload.sales_support_company?
+
+    patch admin_store_path(@store1), params: { store: { sales_support_company: "0" } }
+    assert_redirected_to dashboard_path
+    assert_not @store1.reload.sales_support_company?
+  end
+
+  test "store_admin neither sees nor can update sales support company setting" do
+    sign_in @store_admin, scope: :user
+
+    get edit_admin_store_path(@store1)
+
+    assert_response :success
+    assert_select "input[name='store[sales_support_company]']", count: 0
+
+    patch admin_store_path(@store1), params: { store: { sales_support_company: "1" } }
+    assert_redirected_to dashboard_path
+    assert_not @store1.reload.sales_support_company?
+  end
+
   test "store_admin can update fields and attach thumbnail" do
     sign_in @store_admin, scope: :user
 

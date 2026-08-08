@@ -17,7 +17,6 @@ class User < ApplicationRecord
 
   has_one :wallet, foreign_key: :customer_user_id, dependent: :destroy, inverse_of: :customer_user
   has_many :store_memberships, dependent: :destroy
-  has_many :user_permissions, dependent: :destroy
   has_many :stores, through: :store_memberships
   has_many :booth_casts, foreign_key: :cast_user_id, dependent: :restrict_with_error
   has_many :cast_booths, through: :booth_casts, source: :booth
@@ -68,14 +67,14 @@ class User < ApplicationRecord
     store_memberships.admin_only.exists?(store_id: store_id)
   end
 
-  def permitted_for?(permission_type)
-    return false if deleted?
+  def store_registration_proxy_allowed?
+    return false if deleted? || !store_admin?
 
-    definition = UserPermission.definition_for(permission_type)
-    return false if definition.blank?
-    return false unless definition.fetch(:allowed_roles).include?(role)
-
-    user_permissions.exists?(permission_type: permission_type.to_s)
+    store_memberships
+      .admin_only
+      .joins(:store)
+      .where(stores: { sales_support_company: true })
+      .exists?
   end
 
   def phone_verified?

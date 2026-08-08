@@ -12,6 +12,12 @@ class StoreTest < ActiveSupport::TestCase
     assert_equal [ unpublished_store ], Store.unpublished.where(id: [ unpublished_store.id, published_store.id ]).to_a
   end
 
+  test "new stores are not sales support companies by default" do
+    store = Store.create!(name: "regular store")
+
+    assert_not store.sales_support_company?
+  end
+
   test "name is required" do
     store = Store.new(name: nil)
 

@@ -154,7 +154,7 @@ module Admin
     end
 
     def store_params
-      params.require(:store).permit(
+      permitted_attributes = [
         :name,
         :description,
         :area,
@@ -169,7 +169,10 @@ module Admin
         :youtube_url,
         :published,
         :thumbnail
-      )
+      ]
+      permitted_attributes << :sales_support_company if current_user.system_admin?
+
+      params.require(:store).permit(*permitted_attributes)
     end
 
     def proxy_store_params
@@ -177,7 +180,7 @@ module Admin
     end
 
     def require_store_registration_proxy!
-      return if current_user.store_admin? && current_user.permitted_for?(:store_registration_proxy)
+      return if current_user.store_registration_proxy_allowed?
 
       head :forbidden
     end

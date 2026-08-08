@@ -14,7 +14,8 @@ module StoreAdminRegistrations
         display_name: "Registration Agent"
       )
       StoreMembership.create!(store: @store, user: @actor, membership_role: :admin)
-      UserPermission.create!(user: @actor, permission_type: "store_registration_proxy")
+      @support_company = Store.create!(name: "Support Company", sales_support_company: true)
+      StoreMembership.create!(store: @support_company, user: @actor, membership_role: :admin)
     end
 
     test "creates a new store_admin and membership then sends password setup instructions" do
@@ -154,6 +155,44 @@ module StoreAdminRegistrations
         )
         assert_equal :already_member, retry_result.status
         assert retry_result.mail_delivered
+      end
+    end
+
+    test "actor without proxy permission or target store admin membership is rejected" do
+      @support_company.update!(sales_support_company: false)
+
+      assert_raises RegisterProxy::NotAuthorized do
+        RegisterProxy.call!(
+          store: @store,
+          actor: @actor,
+          display_name: "Denied",
+          email: "denied-without-proxy@example.com"
+        )
+      end
+
+      @support_company.update!(sales_support_company: true)
+      other_store = Store.create!(name: "Other Store")
+
+      assert_raises RegisterProxy::NotAuthorized do
+        RegisterProxy.call!(
+          store: other_store,
+          actor: @actor,
+          display_name: "Denied",
+          email: "denied-without-membership@example.com"
+        )
+      end
+    end
+
+    test "stopped actor is rejected" do
+      @actor.update!(deleted_at: Time.current)
+
+      assert_raises RegisterProxy::NotAuthorized do
+        RegisterProxy.call!(
+          store: @store,
+          actor: @actor,
+          display_name: "Denied",
+          email: "denied-stopped-actor@example.com"
+        )
       end
     end
   end
