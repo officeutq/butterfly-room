@@ -90,14 +90,8 @@ module StoreAdminRegistrations
       assert @result.mail_delivered
     end
 
-    test "non store_admin and stopped users are rejected without side effects" do
+    test "an active non store_admin is rejected without side effects" do
       customer = User.create!(email: "wrong-role@example.com", password: "password", role: :customer)
-      stopped = User.create!(
-        email: "stopped-admin@example.com",
-        password: "password",
-        role: :store_admin,
-        deleted_at: Time.current
-      )
 
       assert_no_difference [ "User.count", "StoreMembership.count", "ActionMailer::Base.deliveries.size" ] do
         assert_raises RegisterProxy::InvalidExistingRole do
@@ -108,16 +102,32 @@ module StoreAdminRegistrations
             email: customer.email
           )
         end
+      end
+    end
 
-        assert_raises RegisterProxy::StoppedUser do
-          RegisterProxy.call!(
+    test "a retired email creates a new store_admin account" do
+      stopped = User.create!(
+        email: "stopped-admin@example.com",
+        password: "password",
+        role: :store_admin,
+        deleted_at: Time.current
+      )
+
+      result = nil
+      assert_difference "User.count", 1 do
+        assert_difference "StoreMembership.count", 1 do
+          result = RegisterProxy.call!(
             store: @store,
             actor: @actor,
-            display_name: "Stopped",
+            display_name: "New Account",
             email: stopped.email
           )
         end
       end
+
+      assert_equal :created, result.status
+      assert_not_equal stopped.id, result.user.id
+      assert result.user.active_for_authentication?
     end
 
     test "mail failure keeps data and a repeated call can resend instructions" do

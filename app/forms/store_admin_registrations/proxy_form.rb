@@ -28,9 +28,6 @@ module StoreAdminRegistrations
     rescue StoreAdminRegistrations::RegisterProxy::NotAuthorized
       errors.add(:base, "店舗責任者を登録代行する権限がありません")
       false
-    rescue StoreAdminRegistrations::RegisterProxy::StoppedUser
-      errors.add(:email, "は停止済みユーザーに使用されています。運営へお問い合わせください")
-      false
     rescue StoreAdminRegistrations::RegisterProxy::InvalidExistingRole
       errors.add(:email, "は店舗管理者以外のアカウントとして使用されています。別のメールアドレスを指定するか、運営へお問い合わせください")
       false
@@ -50,12 +47,10 @@ module StoreAdminRegistrations
     def existing_user_must_be_eligible
       return if email.blank?
 
-      user = User.find_by(email: normalized_email)
+      user = User.active.find_by(email: normalized_email)
       return if user.blank?
 
-      if user.deleted?
-        errors.add(:email, "は停止済みユーザーに使用されています。運営へお問い合わせください")
-      elsif !user.store_admin?
+      unless user.store_admin?
         errors.add(:email, "は店舗管理者以外のアカウントとして使用されています。別のメールアドレスを指定するか、運営へお問い合わせください")
       end
     end

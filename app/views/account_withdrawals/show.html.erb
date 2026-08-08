@@ -1,0 +1,78 @@
+<%= turbo_frame_tag "modal", data: { controller: "modal", action: "turbo:frame-load->modal#open" } do %>
+  <div class="modal fade" tabindex="-1" aria-labelledby="accountWithdrawalModalLabel" aria-modal="true" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="accountWithdrawalModalLabel">退会しますか？</h1>
+          <button
+            type="button"
+            class="btn-close"
+            aria-label="閉じる"
+            data-action="click->modal#close"></button>
+        </div>
+
+        <div class="modal-body">
+          <% if @errors.present? %>
+            <div class="alert alert-danger" role="alert">
+              <ul class="mb-0">
+                <% @errors.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <div class="alert alert-warning" role="alert">
+            <p class="fw-semibold mb-2">退会すると、このアカウントではログインできなくなります。</p>
+            <ul class="mb-0 ps-3">
+              <li>同じメールアドレスや電話番号で再登録しても、新しいアカウントになります。</li>
+              <li>ポイント、購入・注文履歴、所属、配信履歴、お問い合わせは新しいアカウントへ引き継がれません。</li>
+            </ul>
+          </div>
+
+          <% if current_user.customer? %>
+            <p class="small text-muted">
+              保有ポイント、予約ポイント、処理中の購入がある場合も退会できますが、新しいアカウントには引き継がれません。
+            </p>
+          <% elsif current_user.cast? %>
+            <p class="small text-muted">
+              配信中の場合は配信を停止し、関連ブースをアーカイブしたうえで、所属するすべての店舗からキャスト登録を解除します。
+            </p>
+          <% elsif current_user.store_admin? %>
+            <p class="small text-muted">
+              他に有効な管理者がいない店舗は非公開となり、配信・ブース・キャスト所属・未使用の招待を整理します。他に有効な管理者がいる店舗は現状態を維持します。
+            </p>
+          <% end %>
+
+          <%= form_with url: account_withdrawal_path,
+                method: :delete,
+                scope: :account_withdrawal do |form| %>
+            <div class="mb-3">
+              <%= form.label :current_password, "現在のパスワード", class: "form-label" %>
+              <%= form.password_field :current_password,
+                    class: "form-control",
+                    autocomplete: "current-password",
+                    required: true %>
+            </div>
+
+            <div class="form-check">
+              <%= form.check_box :confirmed, class: "form-check-input", required: true %>
+              <%= form.label :confirmed,
+                    "注意事項を確認し、退会後のデータが引き継がれないことに同意します",
+                    class: "form-check-label" %>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+              <button type="button" class="btn btn-outline-secondary" data-action="click->modal#close">
+                キャンセル
+              </button>
+              <%= form.submit "退会する",
+                    class: "btn btn-danger",
+                    data: { turbo_submits_with: "退会処理中…" } %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>

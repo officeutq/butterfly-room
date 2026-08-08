@@ -136,6 +136,33 @@ class PhoneLoginFlowTest < ActionDispatch::IntegrationTest
     assert_redirected_to root_path
   end
 
+  test "a phone number reused after retirement logs in the new active account" do
+    retired = User.create!(
+      email: "phone_login_retired@example.com",
+      password: "password",
+      role: :customer,
+      phone_number: "+819012345678",
+      phone_verified_at: Time.current,
+      deleted_at: Time.current
+    )
+    active = User.create!(
+      email: "phone_login_reused@example.com",
+      password: "password",
+      role: :customer,
+      phone_number: retired.phone_number,
+      phone_verified_at: Time.current
+    )
+
+    post phone_session_path, params: { phone_number: "09012345678" }
+    post verify_phone_session_path, params: { otp_code: latest_otp_code }
+
+    assert_redirected_to root_path
+    get edit_profile_path
+    assert_response :success
+    assert_includes response.body, active.email
+    assert_not_includes response.body, retired.email
+  end
+
   private
 
   FakeSmsClient = Struct.new(:deliveries) do

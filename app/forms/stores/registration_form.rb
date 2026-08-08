@@ -54,7 +54,7 @@ module Stores
 
     def email_must_be_unique
       return if email.blank?
-      return unless User.exists?(email: email)
+      return unless User.active.exists?(email: email.to_s.strip.downcase)
 
       errors.add(:email, :taken)
     end

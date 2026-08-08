@@ -1,10 +1,30 @@
 class User < ApplicationRecord
-  devise :database_authenticatable, :recoverable, :rememberable, :validatable
+  devise :database_authenticatable, :recoverable, :rememberable
 
   enum :role, { customer: 0, cast: 1, store_admin: 2, system_admin: 3 }
 
+  validates :email, presence: true
+  validates :email,
+            uniqueness: {
+              case_sensitive: true,
+              conditions: -> { where(deleted_at: nil) }
+            },
+            allow_blank: true,
+            if: :active_email_changed?
+  validates :email,
+            format: { with: Devise.email_regexp },
+            allow_blank: true,
+            if: :devise_will_save_change_to_email?
+  validates :password, presence: true, if: :password_required?
+  validates :password, confirmation: true, if: :password_required?
+  validates :password, length: { within: Devise.password_length }, allow_blank: true
   validates :bio, length: { maximum: 500 }, allow_nil: true
-  validates :phone_number, uniqueness: true, allow_nil: true
+  validates :phone_number,
+            uniqueness: { conditions: -> { where(deleted_at: nil) } },
+            allow_nil: true,
+            if: -> { deleted_at.nil? }
+
+  scope :active, -> { where(deleted_at: nil) }
 
   ROLE_LEVELS = {
     customer: 0,
@@ -85,5 +105,34 @@ class User < ApplicationRecord
     Notification.visible_to(self)
                 .where.not(id: notification_reads.select(:notification_id))
                 .exists?
+  end
+
+  class << self
+    def find_for_database_authentication(conditions)
+      sanitized = devise_parameter_filter.filter(conditions)
+
+      # 有効な再登録アカウントを優先する。退会済みレコードだけの場合は
+      # active_for_authentication? で停止理由を返すため、そのレコードを渡す。
+      active.find_by(sanitized) || where(sanitized).where.not(deleted_at: nil).first
+    end
+
+    def find_first_by_auth_conditions(tainted_conditions, opts = {})
+      super(tainted_conditions, opts.merge(deleted_at: nil))
+    end
+
+    def with_reset_password_token(token)
+      digest = Devise.token_generator.digest(self, :reset_password_token, token)
+      active.find_by(reset_password_token: digest)
+    end
+  end
+
+  protected
+
+  def password_required?
+    !persisted? || !password.nil? || !password_confirmation.nil?
+  end
+
+  def active_email_changed?
+    deleted_at.nil? && devise_will_save_change_to_email?
   end
 end

@@ -1,6 +1,7 @@
 <% content_for :head do %>
   <%= render "shared/filepond_head" %>
 <% end %>
+
 <% content_for :title, "プロフィール編集" %>
 
 <div class="card mb-3">
@@ -51,5 +52,20 @@
   <div class="d-flex gap-2">
     <%= f.submit "更新する", class: "btn btn-primary" %>
     <%= link_to "戻る", dashboard_path, class: "btn btn-outline-secondary" %>
+  </div>
+<% end %>
+
+<% unless current_user.system_admin? %>
+  <div class="card border-danger mt-4">
+    <div class="card-body">
+      <h2 class="h5 text-danger">退会</h2>
+      <p class="text-muted small">
+        退会すると、このアカウントの履歴やポイントを新しいアカウントへ引き継ぐことはできません。
+      </p>
+      <%= link_to "退会手続きへ",
+            account_withdrawal_path,
+            data: { turbo_frame: "modal" },
+            class: "btn btn-outline-danger" %>
+    </div>
   </div>
 <% end %>

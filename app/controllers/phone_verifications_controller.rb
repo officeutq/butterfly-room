@@ -56,7 +56,7 @@ class PhoneVerificationsController < ApplicationController
 
     normalized_phone_number = result.phone_verification.phone_number
 
-    if User.where.not(id: @user.id).exists?(phone_number: normalized_phone_number)
+    if User.active.where.not(id: @user.id).exists?(phone_number: normalized_phone_number)
       return redirect_to phone_verification_path,
                          alert: "この電話番号はすでに他のユーザーに登録されています"
     end

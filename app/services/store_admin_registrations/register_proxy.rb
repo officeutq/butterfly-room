@@ -4,7 +4,6 @@ module StoreAdminRegistrations
   class RegisterProxy
     class NotAuthorized < StandardError; end
     class InvalidExistingRole < StandardError; end
-    class StoppedUser < StandardError; end
 
     Result = Struct.new(
       :user,
@@ -48,10 +47,9 @@ module StoreAdminRegistrations
       result = nil
 
       ActiveRecord::Base.transaction do
-        user = User.lock.find_by(email: @email)
+        user = User.active.lock.find_by(email: @email)
 
         if user.present?
-          raise StoppedUser if user.deleted?
           raise InvalidExistingRole unless user.store_admin?
 
           user.update!(display_name: @display_name) if user.display_name.blank?
