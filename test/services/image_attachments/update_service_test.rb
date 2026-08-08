@@ -170,13 +170,46 @@ class ImageAttachments::UpdateServiceTest < ActiveSupport::TestCase
     assert_equal old_blob.id, booth.thumbnail_image.blob.id
   end
 
+  test "purges the pending blob and keeps a newer attachment when expected ids are stale" do
+    old_blob = attach_existing_thumbnail
+    old_attachment_id = @store.thumbnail.attachment.id
+    updater = update_service(
+      upload: uploaded_file("sample.heic", "image/heic"),
+      expected_attachment_id: old_attachment_id,
+      expected_blob_id: old_blob.id
+    )
+    newer_blob = attach_existing_image(@store.thumbnail, filename: "newer-store.jpg")
+
+    assert_no_difference("ActiveStorage::Blob.count") do
+      assert_raises(ImageAttachments::UpdateService::StaleAttachmentError) { updater.call }
+    end
+
+    @store.reload
+    assert_equal newer_blob.id, @store.thumbnail.blob.id
+  end
+
+  test "requires expected attachment and blob ids together" do
+    assert_raises(ArgumentError) do
+      update_service(expected_attachment_id: 1)
+    end
+    assert_raises(ArgumentError) do
+      update_service(expected_blob_id: 1)
+    end
+  end
+
   private
 
   def described_service
     ImageAttachments::UpdateService
   end
 
-  def update_service(attributes: {}, upload: nil, remove_attachment: false)
+  def update_service(
+    attributes: {},
+    upload: nil,
+    remove_attachment: false,
+    expected_attachment_id: nil,
+    expected_blob_id: nil
+  )
     described_service.new(
       record: @store,
       attachment_name: :thumbnail,
@@ -184,7 +217,9 @@ class ImageAttachments::UpdateServiceTest < ActiveSupport::TestCase
       upload:,
       remove_attachment:,
       max_width: 24,
-      max_height: 24
+      max_height: 24,
+      expected_attachment_id:,
+      expected_blob_id:
     )
   end
 
