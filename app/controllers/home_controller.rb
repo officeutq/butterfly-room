@@ -22,8 +22,9 @@ class HomeController < ApplicationController
 
     if @mode == "users"
       users =
-        User
+        User.active
           .where(role: %i[cast store_admin])
+          .left_joins(:avatar_attachment)
 
       keywords.each do |keyword|
         q_like = "%#{ActiveRecord::Base.sanitize_sql_like(keyword)}%"
@@ -34,6 +35,8 @@ class HomeController < ApplicationController
         users
           .order(
             Arel.sql("CASE WHEN users.display_name IS NULL OR btrim(users.display_name) = '' THEN 1 ELSE 0 END ASC"),
+            Arel.sql("CASE WHEN active_storage_attachments.id IS NULL THEN 1 ELSE 0 END ASC"),
+            Arel.sql("CASE WHEN users.bio IS NULL OR btrim(users.bio) = '' THEN 1 ELSE 0 END ASC"),
             id: :desc
           )
           .limit(30)
@@ -92,9 +95,11 @@ class HomeController < ApplicationController
         stores
           .joins("LEFT JOIN (#{online_started_at.to_sql}) online ON online.store_id = stores.id")
           .joins("LEFT JOIN (#{last_online.to_sql}) last_online ON last_online.store_id = stores.id")
+          .left_joins(:thumbnail_attachment)
           .order(
             Arel.sql("CASE WHEN online.max_started_at IS NOT NULL THEN 1 ELSE 0 END DESC"),
             Arel.sql("online.max_started_at DESC NULLS LAST"),
+            Arel.sql("CASE WHEN active_storage_attachments.id IS NULL THEN 1 ELSE 0 END ASC"),
             Arel.sql("last_online.max_last_online_at DESC NULLS LAST"),
             id: :desc
           )
@@ -127,6 +132,8 @@ class HomeController < ApplicationController
           ON current_ss.id = booths.current_stream_session_id
       SQL
 
+    booths = booths.left_joins(:thumbnail_image_attachment)
+
     keywords.each do |keyword|
       q_like = "%#{ActiveRecord::Base.sanitize_sql_like(keyword)}%"
       booths = booths.where("booths.name ILIKE :q OR booths.description ILIKE :q", q: q_like)
@@ -145,6 +152,7 @@ class HomeController < ApplicationController
               THEN current_ss.started_at
             END DESC NULLS LAST
           "),
+          Arel.sql("CASE WHEN active_storage_attachments.id IS NULL THEN 1 ELSE 0 END ASC"),
           Arel.sql("booths.last_online_at DESC NULLS LAST"),
           id: :desc
         )

@@ -10,7 +10,7 @@
           class: ["btn", (@mode == "stores" ? "btn-secondary active" : "btn-outline-secondary")],
           "aria-current": (@mode == "stores" ? "page" : nil) %>
 
-    <%= link_to "ユーザー",
+    <%= link_to "配信者",
           root_path(mode: "users", q: @q.presence),
           class: ["btn", (@mode == "users" ? "btn-secondary active" : "btn-outline-secondary")],
           "aria-current": (@mode == "users" ? "page" : nil) %>
