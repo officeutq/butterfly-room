@@ -6,6 +6,9 @@ require "nokogiri"
 require "devise"
 require "warden/test/helpers"
 
+# Rails 8 ではルートが遅延ロードされるため、Devise の Warden 設定を先に初期化する。
+Rails.application.routes_reloader.execute_unless_loaded
+
 module ActiveSupport
   class TestCase
     parallelize(workers: :number_of_processors)
