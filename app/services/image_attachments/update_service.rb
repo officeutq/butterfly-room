@@ -5,6 +5,7 @@ module ImageAttachments
     class Error < StandardError; end
     class ImageProcessingError < Error; end
     class UploadFailedError < Error; end
+    class StaleAttachmentError < Error; end
 
     def initialize(
       record:,
@@ -13,7 +14,9 @@ module ImageAttachments
       upload:,
       remove_attachment:,
       max_width:,
-      max_height:
+      max_height:,
+      expected_attachment_id: nil,
+      expected_blob_id: nil
     )
       @record = record
       @attachment_name = attachment_name.to_sym
@@ -22,10 +25,13 @@ module ImageAttachments
       @remove_attachment = ActiveModel::Type::Boolean.new.cast(remove_attachment)
       @max_width = positive_integer!(max_width, :max_width)
       @max_height = positive_integer!(max_height, :max_height)
+      @expected_attachment_id = optional_positive_integer!(expected_attachment_id, :expected_attachment_id)
+      @expected_blob_id = optional_positive_integer!(expected_blob_id, :expected_blob_id)
       @pending_blob = nil
 
       validate_attachment!
       validate_attributes!
+      validate_expected_attachment!
     end
 
     def call
@@ -35,6 +41,7 @@ module ImageAttachments
 
       @record.class.transaction do
         @record.lock! if @record.persisted? && attachment_change?
+        verify_expected_attachment! if attachment_change?
         @record.assign_attributes(@attributes)
         old_blob = current_blob if attachment_change?
         assign_attachment(new_blob)
@@ -71,6 +78,18 @@ module ImageAttachments
     def current_blob
       attachment = @record.public_send(@attachment_name)
       attachment.blob if attachment.attached?
+    end
+
+    def verify_expected_attachment!
+      return unless @expected_attachment_id
+
+      attachment = @record.public_send(@attachment_name).attachment
+      attachment&.lock!
+      return if attachment&.id == @expected_attachment_id && attachment.blob_id == @expected_blob_id
+
+      raise StaleAttachmentError, "attachment changed after inventory"
+    rescue ActiveRecord::RecordNotFound
+      raise StaleAttachmentError, "attachment changed after inventory"
     end
 
     def assign_attachment(new_blob)
@@ -184,6 +203,12 @@ module ImageAttachments
       raise ArgumentError, "attributes must not include #{@attachment_name}"
     end
 
+    def validate_expected_attachment!
+      return if @expected_attachment_id.present? == @expected_blob_id.present?
+
+      raise ArgumentError, "expected_attachment_id and expected_blob_id must be provided together"
+    end
+
     def positive_integer!(value, name)
       integer = Integer(value)
       raise ArgumentError, "#{name} must be positive" unless integer.positive?
@@ -191,6 +216,12 @@ module ImageAttachments
       integer
     rescue TypeError, ArgumentError
       raise ArgumentError, "#{name} must be a positive integer"
+    end
+
+    def optional_positive_integer!(value, name)
+      return nil if value.nil? || value.to_s.strip.empty?
+
+      positive_integer!(value, name)
     end
   end
 end

@@ -4,7 +4,7 @@
 
 Store thumbnail、Booth thumbnail_image、User avatarに保存済みのHEIC / HEIFや、メタデータと実体が一致しない画像をActive Storage経由で安全に是正する。
 
-この手順の第1段階はdry-run（変更なし）の棚卸しだけを行う。S3オブジェクト、Active StorageのBlob・Attachment、Store / Booth / Userは更新・削除しない。
+最初にdry-run（変更なし）で棚卸しし、対象を確認した後、1件ずつ明示的にJPEGへ再添付する。S3キーへ変換後のバイト列を直接上書きしない。
 
 ## 2. 対象候補
 
@@ -85,11 +85,69 @@ docker compose -f docker-compose.production.yml exec -T \
   app bin/rails image_attachments:inventory
 ```
 
-## 7. 禁止事項と次段階
+## 7. 1件を指定した補正dry-run
+
+棚卸し結果のrecord、attachment、blobをすべて指定する。既定では再検査だけを行い、添付を変更しない。
+
+```bash
+docker compose -f docker-compose.production.yml run --rm \
+  -e IMAGE_REMEDIATION_RECORD_TYPE=Store \
+  -e IMAGE_REMEDIATION_RECORD_ID=123 \
+  -e IMAGE_REMEDIATION_ATTACHMENT_NAME=thumbnail \
+  -e IMAGE_REMEDIATION_EXPECTED_ATTACHMENT_ID=456 \
+  -e IMAGE_REMEDIATION_EXPECTED_BLOB_ID=789 \
+  app bin/rails image_attachments:remediate
+```
+
+`status`が`eligible`であることと、出力されたattachment ID・blob IDが保存済みの棚卸し結果と一致することを確認する。この段階では`dry_run: true`であり、Blob、Attachment、対象Record、S3オブジェクトを変更しない。
+
+## 8. 1件を指定した補正apply
+
+dry-runと同じ5項目を指定し、`APPLY=true`と確認値を追加する。確認値は`record_type:record_id:attachment_name:attachment_id:blob_id`の順に連結する。
+
+```bash
+docker compose -f docker-compose.production.yml run --rm \
+  -e IMAGE_REMEDIATION_RECORD_TYPE=Store \
+  -e IMAGE_REMEDIATION_RECORD_ID=123 \
+  -e IMAGE_REMEDIATION_ATTACHMENT_NAME=thumbnail \
+  -e IMAGE_REMEDIATION_EXPECTED_ATTACHMENT_ID=456 \
+  -e IMAGE_REMEDIATION_EXPECTED_BLOB_ID=789 \
+  -e IMAGE_REMEDIATION_APPLY=true \
+  -e IMAGE_REMEDIATION_CONFIRM=Store:123:thumbnail:456:789 \
+  app bin/rails image_attachments:remediate
+```
+
+補正処理は次の順序で行う。
+
+1. 現在のrecord、attachment、blobが指定値と一致することを確認する
+2. 保存先の実体形式とJPEG変換可否を再検査する
+3. `ImageAttachments::UpdateService`でJPEGを新規Blobとしてアップロードし、保存先に存在することを確認する
+4. recordをロックし、attachment ID・blob IDを再照合してから新Blobを添付する
+5. 添付後の実体とメタデータが正常なJPEGであることを確認する
+6. transaction完了後に旧Blobの`purge_later`を登録する
+
+棚卸し後に対象添付が変更されていた場合は`StaleTargetError`で停止し、新しい添付を上書きしない。すでに正常なJPEGへ補正済みの場合は`skipped_already_normalized`となり、二重変換しない。成功時は`normalized`、失敗時は`failed`をJSONで出力する。
+補正中もActive Storage内部ログを抑止し、JSON結果へS3キーを出力しない。filenameは利用者入力を含む可能性があるため、結果ファイルは棚卸しレポートと同様に管理する。
+
+## 9. apply後の確認
+
+全件検査を対象recordの1件に限定し、新しい添付が`ok`であることを確認する。
+
+```bash
+docker compose -f docker-compose.production.yml run --rm \
+  -e IMAGE_INVENTORY_INSPECT_ALL=true \
+  -e IMAGE_INVENTORY_LIMIT=1 \
+  -e IMAGE_INVENTORY_RECORD_TYPE=Store \
+  -e IMAGE_INVENTORY_RECORD_ID=123 \
+  app bin/rails image_attachments:inventory
+```
+
+続いて対象画面を主要ブラウザで確認する。旧Blobの削除は非同期job（バックグラウンド処理）のため、workerが正常稼働していることも確認する。
+
+## 10. 禁止事項
 
 - S3キーへJPEGバイト列を直接上書きしない
-- dry-run結果の確認前に旧Blobをpurgeしない
+- dry-run結果の確認前にapplyしない
 - 孤児Blobや対象外添付を同時に削除しない
 - `missing`、`unreadable`、`conversion_failed`を自動的に削除しない
-
-実際の再添付は、dry-run結果を保存・確認した後に別の明示的なapply手順として実装する。新JPEGのアップロードと添付成功を確認してから旧Blobをpurgeし、1件単位で再実行可能にする。
+- attachment ID・blob IDの一致エラーを無視して強制更新しない

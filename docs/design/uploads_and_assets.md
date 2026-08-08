@@ -195,6 +195,9 @@ npm run test:js
 - 保存先オブジェクトの存在、実体形式、JPEG変換可否を確認する
 - 全件実体検査は保存先ダウンロードと画像変換を伴うため、件数上限を必須とする
 - 棚卸し処理ではBlob、Attachment、対象Record、S3オブジェクトを更新・削除しない
-- S3キーを直接上書きせず、是正時は`ImageAttachments::UpdateService`を再利用して新規JPEGを再添付する
+- S3キーを直接上書きせず、是正時は`ImageAttachments::RemediateService`から`ImageAttachments::UpdateService`を再利用して新規JPEGを再添付する
+- 是正は1件単位とし、棚卸し時のattachment ID・blob IDをrecordロック内で再照合する
+- 競合時は新しい添付を上書きせず、補正済みの正常なJPEGへ再実行した場合はスキップする
+- 旧Blobの削除は新JPEGのアップロード・添付・実体確認が成功し、transactionが完了した後に非同期で行う
 
 実行方法と結果statusは`docs/ops/image_attachment_remediation.md`を参照する。
