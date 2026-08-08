@@ -41,6 +41,16 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     ss
   end
 
+  def attach_image!(attachment)
+    File.open(file_fixture("thumb.png"), "rb") do |io|
+      attachment.attach(
+        io: io,
+        filename: "thumb.png",
+        content_type: "image/png"
+      )
+    end
+  end
+
   test "未ログイン: 公式トップ表示が出て、検索欄は出ない" do
     get root_path
     assert_response :success
@@ -222,6 +232,78 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     assert_operator body.index("Live Old"), :<, body.index("Standby Booth")
   end
 
+  test "並び順: booths は started_at の次にサムネイルを優先し、last_online_at と id が続く" do
+    store = create_store!(name: "Booth Thumbnail Order Store")
+    reference_time = Time.current
+
+    customer = create_user!(email: "booth_thumbnail_order_customer@example.com", role: :customer)
+    actor = create_user!(email: "booth_thumbnail_order_cast@example.com", role: :cast)
+    login_as(customer, scope: :user)
+
+    online_new_without_thumbnail =
+      create_booth!(store: store, name: "Online New Without Thumbnail", status: :live)
+    online_old_with_thumbnail =
+      create_booth!(store: store, name: "Online Old With Thumbnail", status: :live)
+
+    attach_current_stream_session!(
+      booth: online_new_without_thumbnail,
+      started_at: reference_time - 5.minutes,
+      actor: actor
+    )
+    attach_current_stream_session!(
+      booth: online_old_with_thumbnail,
+      started_at: reference_time - 1.hour,
+      actor: actor
+    )
+    attach_image!(online_old_with_thumbnail.thumbnail_image)
+
+    offline_thumbnail_old = create_booth!(
+      store: store,
+      name: "Offline Thumbnail Old",
+      status: :offline,
+      last_online_at: reference_time - 3.days
+    )
+    offline_thumbnail_new = create_booth!(
+      store: store,
+      name: "Offline Thumbnail New",
+      status: :offline,
+      last_online_at: reference_time - 2.days
+    )
+    attach_image!(offline_thumbnail_old.thumbnail_image)
+    attach_image!(offline_thumbnail_new.thumbnail_image)
+
+    offline_plain_recent = create_booth!(
+      store: store,
+      name: "Offline Plain Recent",
+      status: :offline,
+      last_online_at: reference_time - 1.hour
+    )
+    offline_plain_tie_old = create_booth!(
+      store: store,
+      name: "Offline Plain Tie Old Id",
+      status: :offline,
+      last_online_at: reference_time - 5.days
+    )
+    offline_plain_tie_new = create_booth!(
+      store: store,
+      name: "Offline Plain Tie New Id",
+      status: :offline,
+      last_online_at: reference_time - 5.days
+    )
+
+    get root_path, params: { mode: "booths" }
+    assert_response :success
+
+    body = @response.body
+
+    assert_operator body.index(online_new_without_thumbnail.name), :<, body.index(online_old_with_thumbnail.name)
+    assert_operator body.index(online_old_with_thumbnail.name), :<, body.index(offline_thumbnail_new.name)
+    assert_operator body.index(offline_thumbnail_new.name), :<, body.index(offline_thumbnail_old.name)
+    assert_operator body.index(offline_thumbnail_old.name), :<, body.index(offline_plain_recent.name)
+    assert_operator body.index(offline_plain_recent.name), :<, body.index(offline_plain_tie_new.name)
+    assert_operator body.index(offline_plain_tie_new.name), :<, body.index(offline_plain_tie_old.name)
+  end
+
   test "並び順: stores は online優先 → online_started_at desc → offlineは last_online_at desc → id desc" do
     store_a = create_store!(name: "Alpha Store")
     store_b = create_store!(name: "Beta Store")
@@ -258,6 +340,94 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
 
     # booth 0件の店舗は、last_online_at がある店舗より後ろ
     assert_operator body.index("Gamma Store"), :<, body.index("Delta Store")
+  end
+
+  test "並び順: stores は配信開始日時の次にサムネイルを優先し、last_online_at と id が続く" do
+    reference_time = Time.current
+
+    online_new_without_thumbnail = create_store!(name: "Online New Store Without Thumbnail")
+    online_old_with_thumbnail = create_store!(name: "Online Old Store With Thumbnail")
+    online_old_without_thumbnail = create_store!(name: "Online Old Store Without Thumbnail")
+    offline_thumbnail_old = create_store!(name: "Offline Thumbnail Old Store")
+    offline_thumbnail_new = create_store!(name: "Offline Thumbnail New Store")
+    offline_plain_recent = create_store!(name: "Offline Plain Recent Store")
+    offline_plain_tie_old = create_store!(name: "Offline Plain Tie Old Id Store")
+    offline_plain_tie_new = create_store!(name: "Offline Plain Tie New Id Store")
+
+    actor = create_user!(email: "store_thumbnail_order_cast@example.com", role: :cast)
+    customer = create_user!(email: "store_thumbnail_order_customer@example.com", role: :customer)
+    login_as(customer, scope: :user)
+
+    online_new_booth =
+      create_booth!(store: online_new_without_thumbnail, name: "Online New Store Booth", status: :live)
+    online_old_thumbnail_booth =
+      create_booth!(store: online_old_with_thumbnail, name: "Online Old Thumbnail Store Booth", status: :live)
+    online_old_plain_booth =
+      create_booth!(store: online_old_without_thumbnail, name: "Online Old Plain Store Booth", status: :live)
+
+    attach_current_stream_session!(
+      booth: online_new_booth,
+      started_at: reference_time - 5.minutes,
+      actor: actor
+    )
+    attach_current_stream_session!(
+      booth: online_old_thumbnail_booth,
+      started_at: reference_time - 1.hour,
+      actor: actor
+    )
+    attach_current_stream_session!(
+      booth: online_old_plain_booth,
+      started_at: reference_time - 1.hour,
+      actor: actor
+    )
+    attach_image!(online_old_with_thumbnail.thumbnail)
+
+    create_booth!(
+      store: offline_thumbnail_old,
+      name: "Offline Thumbnail Old Store Booth",
+      status: :offline,
+      last_online_at: reference_time - 3.days
+    )
+    create_booth!(
+      store: offline_thumbnail_new,
+      name: "Offline Thumbnail New Store Booth",
+      status: :offline,
+      last_online_at: reference_time - 2.days
+    )
+    attach_image!(offline_thumbnail_old.thumbnail)
+    attach_image!(offline_thumbnail_new.thumbnail)
+
+    create_booth!(
+      store: offline_plain_recent,
+      name: "Offline Plain Recent Store Booth",
+      status: :offline,
+      last_online_at: reference_time - 1.hour
+    )
+    create_booth!(
+      store: offline_plain_tie_old,
+      name: "Offline Plain Tie Old Id Store Booth",
+      status: :offline,
+      last_online_at: reference_time - 5.days
+    )
+    create_booth!(
+      store: offline_plain_tie_new,
+      name: "Offline Plain Tie New Id Store Booth",
+      status: :offline,
+      last_online_at: reference_time - 5.days
+    )
+
+    get root_path, params: { mode: "stores" }
+    assert_response :success
+
+    body = @response.body
+
+    assert_operator body.index(online_new_without_thumbnail.name), :<, body.index(online_old_with_thumbnail.name)
+    assert_operator body.index(online_old_with_thumbnail.name), :<, body.index(online_old_without_thumbnail.name)
+    assert_operator body.index(online_old_without_thumbnail.name), :<, body.index(offline_thumbnail_new.name)
+    assert_operator body.index(offline_thumbnail_new.name), :<, body.index(offline_thumbnail_old.name)
+    assert_operator body.index(offline_thumbnail_old.name), :<, body.index(offline_plain_recent.name)
+    assert_operator body.index(offline_plain_recent.name), :<, body.index(offline_plain_tie_new.name)
+    assert_operator body.index(offline_plain_tie_new.name), :<, body.index(offline_plain_tie_old.name)
   end
 
   test "customer のBAN: Homeで予防され、booths#show でも最終拒否される" do
@@ -318,6 +488,9 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     system_admin_user = create_user!(email: "system_admin_search@example.com", role: :system_admin)
     system_admin_user.update!(display_name: "System Admin Search User")
 
+    deleted_cast_user = create_user!(email: "deleted_cast_search@example.com", role: :cast)
+    deleted_cast_user.update!(display_name: "Deleted Cast Search User", deleted_at: Time.current)
+
     login_user = create_user!(email: "login_customer_search@example.com", role: :customer)
     login_user.update!(display_name: "Login Customer Search User")
     login_as(login_user, scope: :user)
@@ -328,13 +501,62 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     body = @response.body
 
     assert_includes body, "value=\"users\""
-    assert_includes body, ">ユーザー<"
+    assert_includes body, ">配信者<"
+    refute_includes body, ">ユーザー<"
 
     assert_includes body, "Cast Search User"
     assert_includes body, "Store Admin Search User"
 
     refute_includes body, "Hidden Customer Search User"
     refute_includes body, "System Admin Search User"
+    refute_includes body, "Deleted Cast Search User"
+  end
+
+  test "並び順: users は display_name → avatar → bio → id の優先順で表示される" do
+    customer = create_user!(email: "user_profile_order_customer@example.com", role: :customer)
+
+    plain_old = create_user!(email: "user_profile_order_plain_old@example.com", role: :cast)
+    plain_old.update!(display_name: "Profile Plain Old Id")
+
+    plain_new = create_user!(email: "user_profile_order_plain_new@example.com", role: :cast)
+    plain_new.update!(display_name: "Profile Plain New Id")
+
+    bio_without_avatar = create_user!(email: "user_profile_order_bio@example.com", role: :cast)
+    bio_without_avatar.update!(display_name: "Profile Bio Without Avatar", bio: "Bio Without Avatar Marker")
+
+    avatar_without_bio = create_user!(email: "user_profile_order_avatar@example.com", role: :cast)
+    avatar_without_bio.update!(display_name: "Profile Avatar Without Bio")
+    attach_image!(avatar_without_bio.avatar)
+
+    avatar_with_bio = create_user!(email: "user_profile_order_full@example.com", role: :cast)
+    avatar_with_bio.update!(display_name: "Profile Avatar With Bio", bio: "Avatar With Bio Marker")
+    attach_image!(avatar_with_bio.avatar)
+
+    unnamed_full = create_user!(email: "user_profile_order_unnamed@example.com", role: :cast)
+    unnamed_full.update!(bio: "Unnamed Full Profile Marker")
+    attach_image!(unnamed_full.avatar)
+
+    deleted_full = create_user!(email: "user_profile_order_deleted@example.com", role: :cast)
+    deleted_full.update!(
+      display_name: "Deleted Full Profile",
+      bio: "Deleted Full Profile Marker",
+      deleted_at: Time.current
+    )
+    attach_image!(deleted_full.avatar)
+
+    login_as(customer, scope: :user)
+
+    get root_path, params: { mode: "users" }
+    assert_response :success
+
+    body = @response.body
+
+    assert_operator body.index(avatar_with_bio.display_name), :<, body.index(avatar_without_bio.display_name)
+    assert_operator body.index(avatar_without_bio.display_name), :<, body.index(bio_without_avatar.display_name)
+    assert_operator body.index(bio_without_avatar.display_name), :<, body.index(plain_new.display_name)
+    assert_operator body.index(plain_new.display_name), :<, body.index(plain_old.display_name)
+    assert_operator body.index(plain_old.display_name), :<, body.index(unnamed_full.bio)
+    refute_includes body, deleted_full.display_name
   end
 
   test "qあり + mode=users: display_name の部分一致で絞り込まれる" do
