@@ -75,6 +75,7 @@ jobs:
             libyaml-dev \
             fonts-noto-cjk \
             fonts-ipaexfont \
+            libheif-plugin-libde265 \
             imagemagick
 
       - name: Set up Node (for npm/sass)
