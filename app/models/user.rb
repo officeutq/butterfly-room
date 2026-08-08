@@ -68,6 +68,16 @@ class User < ApplicationRecord
     store_memberships.admin_only.exists?(store_id: store_id)
   end
 
+  def store_registration_proxy_allowed?
+    return false if deleted? || !store_admin?
+
+    store_memberships
+      .admin_only
+      .joins(:store)
+      .where(stores: { sales_support_company: true })
+      .exists?
+  end
+
   def permitted_for?(permission_type)
     return false if deleted?
 

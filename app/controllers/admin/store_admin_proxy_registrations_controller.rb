@@ -29,9 +29,8 @@ module Admin
 
     def require_store_admin_registration_proxy!
       allowed =
-        current_user.store_admin? &&
-        current_user.admin_of_store?(current_store.id) &&
-        current_user.permitted_for?(:store_registration_proxy)
+        current_user.store_registration_proxy_allowed? &&
+        current_user.admin_of_store?(current_store.id)
 
       head :forbidden unless allowed
     end

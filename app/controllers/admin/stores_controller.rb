@@ -180,7 +180,7 @@ module Admin
     end
 
     def require_store_registration_proxy!
-      return if current_user.store_admin? && current_user.permitted_for?(:store_registration_proxy)
+      return if current_user.store_registration_proxy_allowed?
 
       head :forbidden
     end

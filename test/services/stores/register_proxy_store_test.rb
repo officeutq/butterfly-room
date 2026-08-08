@@ -7,7 +7,8 @@ module Stores
     setup do
       @referral_code = ReferralCode.create!(code: "PROXY-STORE", enabled: true, expires_at: 1.day.from_now)
       @actor = User.create!(email: "proxy-store-actor@example.com", password: "password", role: :store_admin)
-      UserPermission.create!(user: @actor, permission_type: "store_registration_proxy")
+      @support_company = Store.create!(name: "Support Company", sales_support_company: true)
+      StoreMembership.create!(store: @support_company, user: @actor, membership_role: :admin)
     end
 
     test "creates an unpublished store with defaults and actor membership without creating a user" do
@@ -27,6 +28,7 @@ module Stores
 
       store = @result.store
       assert_not store.published?
+      assert_not store.sales_support_company?
       assert store.onboarding_step_invite_cast?
       assert_equal @referral_code, store.referral_code
       assert_equal @actor, @result.membership.user
@@ -51,6 +53,16 @@ module Stores
       assert_no_difference [ "Store.count", "StoreMembership.count", "DrinkItem.count" ] do
         assert_raises RegisterProxyStore::NotAuthorized do
           RegisterProxyStore.call!(store_name: "Denied", referral_code: @referral_code.code, actor: actor)
+        end
+      end
+    end
+
+    test "stopped actor cannot create data" do
+      @actor.update!(deleted_at: Time.current)
+
+      assert_no_difference [ "Store.count", "StoreMembership.count", "DrinkItem.count" ] do
+        assert_raises RegisterProxyStore::NotAuthorized do
+          RegisterProxyStore.call!(store_name: "Denied", referral_code: @referral_code.code, actor: @actor)
         end
       end
     end

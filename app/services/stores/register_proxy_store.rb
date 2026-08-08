@@ -45,8 +45,7 @@ module Stores
     private
 
     def authorize_actor!
-      allowed = @actor&.store_admin? && @actor.permitted_for?(:store_registration_proxy)
-      raise NotAuthorized unless allowed
+      raise NotAuthorized unless @actor&.store_registration_proxy_allowed?
     end
   end
 end

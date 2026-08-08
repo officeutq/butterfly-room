@@ -37,10 +37,9 @@ module StoreAdminRegistrations
 
     def authorize_actor!
       allowed =
-        @actor&.store_admin? &&
-        !@actor.deleted? &&
-        @actor.admin_of_store?(@store.id) &&
-        @actor.permitted_for?(:store_registration_proxy)
+        @actor&.store_registration_proxy_allowed? &&
+        @store.present? &&
+        @actor.admin_of_store?(@store.id)
 
       raise NotAuthorized unless allowed
     end
