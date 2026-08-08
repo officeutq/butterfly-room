@@ -154,7 +154,7 @@ module Admin
     end
 
     def store_params
-      params.require(:store).permit(
+      permitted_attributes = [
         :name,
         :description,
         :area,
@@ -169,7 +169,10 @@ module Admin
         :youtube_url,
         :published,
         :thumbnail
-      )
+      ]
+      permitted_attributes << :sales_support_company if current_user.system_admin?
+
+      params.require(:store).permit(*permitted_attributes)
     end
 
     def proxy_store_params

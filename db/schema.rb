@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_05_011000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_08_010000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -502,6 +502,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_011000) do
     t.string "phone_number"
     t.boolean "published", default: false, null: false
     t.bigint "referral_code_id"
+    t.boolean "sales_support_company", default: false, null: false
     t.string "tiktok_url"
     t.datetime "updated_at", null: false
     t.string "website_url"
