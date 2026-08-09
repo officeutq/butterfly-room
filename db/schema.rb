@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_09_010000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_09_020000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -193,6 +193,50 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_09_010000) do
     t.datetime "created_at", null: false
     t.string "title"
     t.datetime "updated_at", null: false
+  end
+
+  create_table "lp_analytics_events", force: :cascade do |t|
+    t.uuid "browser_event_id"
+    t.datetime "created_at", null: false
+    t.string "dedupe_key", limit: 64
+    t.string "event_type", limit: 50, null: false
+    t.string "event_value", limit: 100
+    t.bigint "lp_analytics_visit_id", null: false
+    t.string "lp_identifier", limit: 100, null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "occurred_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["browser_event_id"], name: "uniq_lp_analytics_events_browser_event_id", unique: true, where: "(browser_event_id IS NOT NULL)"
+    t.index ["lp_analytics_visit_id", "dedupe_key"], name: "uniq_lp_analytics_events_visit_dedupe_key", unique: true, where: "(dedupe_key IS NOT NULL)"
+    t.index ["lp_analytics_visit_id", "event_type", "event_value"], name: "idx_lp_analytics_events_visit_type_value"
+    t.index ["lp_analytics_visit_id"], name: "index_lp_analytics_events_on_lp_analytics_visit_id"
+    t.index ["lp_identifier", "occurred_at"], name: "index_lp_analytics_events_on_lp_identifier_and_occurred_at"
+    t.index ["occurred_at"], name: "index_lp_analytics_events_on_occurred_at"
+  end
+
+  create_table "lp_analytics_visits", force: :cascade do |t|
+    t.string "browser_type", limit: 20
+    t.datetime "created_at", null: false
+    t.string "device_type", limit: 20, null: false
+    t.datetime "last_activity_at", null: false
+    t.string "lp_identifier", limit: 100, null: false
+    t.uuid "public_id", null: false
+    t.string "referral_code", limit: 100
+    t.datetime "started_at", null: false
+    t.string "traffic_source", limit: 100
+    t.datetime "updated_at", null: false
+    t.string "utm_campaign", limit: 100
+    t.string "utm_content", limit: 100
+    t.string "utm_medium", limit: 100
+    t.string "utm_source", limit: 100
+    t.index ["lp_identifier", "device_type", "started_at"], name: "idx_lp_analytics_visits_device_started_at"
+    t.index ["lp_identifier", "started_at"], name: "index_lp_analytics_visits_on_lp_identifier_and_started_at"
+    t.index ["lp_identifier", "traffic_source", "started_at"], name: "idx_lp_analytics_visits_source_started_at"
+    t.index ["lp_identifier", "utm_campaign", "started_at"], name: "idx_lp_analytics_visits_utm_campaign_started_at"
+    t.index ["lp_identifier", "utm_content", "started_at"], name: "idx_lp_analytics_visits_utm_content_started_at"
+    t.index ["lp_identifier", "utm_medium", "started_at"], name: "idx_lp_analytics_visits_utm_medium_started_at"
+    t.index ["lp_identifier", "utm_source", "started_at"], name: "idx_lp_analytics_visits_utm_source_started_at"
+    t.index ["public_id"], name: "index_lp_analytics_visits_on_public_id", unique: true
   end
 
   create_table "notification_reads", force: :cascade do |t|
@@ -675,6 +719,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_09_010000) do
   add_foreign_key "favorite_stores", "users"
   add_foreign_key "favorite_users", "users"
   add_foreign_key "favorite_users", "users", column: "target_user_id"
+  add_foreign_key "lp_analytics_events", "lp_analytics_visits"
   add_foreign_key "notification_reads", "notifications"
   add_foreign_key "notification_reads", "users"
   add_foreign_key "notification_taggings", "notification_tags"

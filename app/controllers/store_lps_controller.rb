@@ -16,6 +16,7 @@ class StoreLpsController < ApplicationController
     preserve_attribution = consume_store_lp_202607_attribution_preservation
     persist_store_lp_202607_attribution(preserve: preserve_attribution)
     persist_store_lp_202607_ref(preserve: preserve_attribution)
+    resolve_lp_analytics_visit(preserve_existing_traffic: preserve_attribution)
 
     @store_lp_202607_contact_params = tracking_query_params(from: STORE_LP_202607_FROM)
     @store_lp_202607_registration_params = @store_lp_202607_contact_params.dup
@@ -35,6 +36,30 @@ class StoreLpsController < ApplicationController
   end
 
   private
+
+  def resolve_lp_analytics_visit(preserve_existing_traffic:)
+    visit = LpAnalytics::Visits::ResolveService.new(
+      public_id: lp_analytics_visit_public_id,
+      lp_identifier: STORE_LP_202607_FROM,
+      traffic_attributes: {
+        traffic_source: params[:from],
+        utm_source: params[:utm_source],
+        utm_medium: params[:utm_medium],
+        utm_campaign: params[:utm_campaign],
+        utm_content: params[:utm_content],
+        referral_code: params[:ref]
+      },
+      user_agent: request.user_agent,
+      preserve_existing_traffic: preserve_existing_traffic
+    ).call
+
+    session[LP_ANALYTICS_VISIT_PUBLIC_ID_SESSION_KEY] = visit.public_id
+    @lp_analytics_visit_public_id = visit.public_id
+  rescue ActiveRecord::ActiveRecordError => error
+    Rails.logger.warn("[lp_analytics] visit resolution failed error=#{error.class.name}")
+    session.delete(LP_ANALYTICS_VISIT_PUBLIC_ID_SESSION_KEY)
+    @lp_analytics_visit_public_id = nil
+  end
 
   def persist_store_lp_202607_attribution(preserve:)
     attribution = store_lp_202607_attribution_payload(from: STORE_LP_202607_FROM)
