@@ -30,6 +30,9 @@ class LpAnalytics::DailyAggregationQueryTest < ActiveSupport::TestCase
     record_event(first, "scroll_reached", "25")
     record_event(first, "scroll_reached", "50")
     record_event(first, "scroll_reached", "90", occurred_at: start_time + 1.day + 1.hour)
+    LpAnalytics::Configuration::SECTION_LABELS.each_key do |section|
+      record_event(first, "section_reached", section)
+    end
     2.times { record_event(first, "cta_clicked", "hero_registration") }
     record_event(first, "store_registration_form_view")
     2.times { record_registration_completion(first) }
@@ -39,6 +42,7 @@ class LpAnalytics::DailyAggregationQueryTest < ActiveSupport::TestCase
 
     record_event(second, "scroll_reached", "25")
     record_event(second, "scroll_reached", "75")
+    record_event(second, "section_reached", "USAGE")
     record_event(second, "cta_clicked", "flow_registration")
     record_event(second, "store_registration_form_view")
 
@@ -52,6 +56,20 @@ class LpAnalytics::DailyAggregationQueryTest < ActiveSupport::TestCase
     assert_equal 1, meta.scroll_50_visit_count
     assert_equal 1, meta.scroll_75_visit_count
     assert_equal 1, meta.scroll_90_visit_count
+    assert_equal 2, meta.section_usage_visit_count
+    assert_in_delta 1.0, meta.section_usage_rate
+    %i[
+      strengths
+      system
+      pricing
+      flow
+      cast
+      qa
+      bottom_cta
+    ].each do |section|
+      assert_equal 1, meta.public_send("section_#{section}_visit_count")
+      assert_in_delta 0.5, meta.public_send("section_#{section}_rate")
+    end
     assert_equal 2, meta.registration_cta_click_visit_count
     assert_equal 3, meta.registration_cta_click_count
     assert_equal 2, meta.registration_form_visit_count
@@ -65,6 +83,7 @@ class LpAnalytics::DailyAggregationQueryTest < ActiveSupport::TestCase
     assert_in_delta 0.5, meta.contact_cv_rate
 
     assert_equal 1, direct_row.visit_count
+    assert_equal "pc", direct_row.device_type
     assert_equal "", direct_row.utm_source
     assert_equal 0.0, direct_row.registration_cv_rate
     assert_equal 0.0, direct_row.contact_cv_rate
@@ -80,6 +99,28 @@ class LpAnalytics::DailyAggregationQueryTest < ActiveSupport::TestCase
     rows = LpAnalytics::DailyAggregationQuery.new(aggregation_date: TARGET_DATE).call
 
     assert_equal 3, rows.size
+    assert_equal 3, rows.map(&:aggregation_key).uniq.size
+  end
+
+  test "同じ流入情報でも端末が異なる訪問を別行にして端末別CV率を返す" do
+    time = Time.zone.parse("2026-08-09 12:00:00")
+    pc = create_visit(started_at: time, traffic_source: "meta", device_type: "pc")
+    smartphone = create_visit(started_at: time, traffic_source: "meta", device_type: "smartphone")
+    create_visit(started_at: time, traffic_source: "meta", device_type: "tablet")
+    record_registration_completion(pc)
+    record_contact_completion(smartphone)
+
+    rows = LpAnalytics::DailyAggregationQuery.new(aggregation_date: TARGET_DATE).call
+    rows_by_device = rows.index_by(&:device_type)
+
+    assert_equal %w[pc smartphone tablet], rows_by_device.keys.sort
+    assert_equal 1, rows_by_device.fetch("pc").visit_count
+    assert_in_delta 1.0, rows_by_device.fetch("pc").registration_cv_rate
+    assert_in_delta 0.0, rows_by_device.fetch("pc").contact_cv_rate
+    assert_in_delta 0.0, rows_by_device.fetch("smartphone").registration_cv_rate
+    assert_in_delta 1.0, rows_by_device.fetch("smartphone").contact_cv_rate
+    assert_in_delta 0.0, rows_by_device.fetch("tablet").registration_cv_rate
+    assert_in_delta 0.0, rows_by_device.fetch("tablet").contact_cv_rate
     assert_equal 3, rows.map(&:aggregation_key).uniq.size
   end
 

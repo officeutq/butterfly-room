@@ -78,6 +78,8 @@ https://staging.butterflyve.jp/stores/lp_202607?from=staging_validation&utm_sour
 - `lp_analytics_sheet_exports`は`succeeded`、最終`attempt_count=3`、`row_count=4`、`needs_retry=false`
 - 自動出力は検証後も`false`のままで、worker再起動後にも予期しない試行回数増加がないことを確認した
 
+#1043の端末・セクション列追加後は、上記に加えて`device_type`別の訪問数・完了訪問数・CV率と、8つの主要セクションの到達訪問数・到達率をRails DBと照合する。旧headerからの移行では対象期間を全件再出力し、端末軸を含まない旧aggregation keyが残っていないことを確認する。実Spreadsheetの移行はPR・自動testでは行わず、[Google Sheets連携運用手順](lp_analytics_google_sheets.md)の承認手順に従う。
+
 ### 個人情報・秘密情報
 
 | 対象 | 結果 |

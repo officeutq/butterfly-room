@@ -13,6 +13,7 @@ module LpAnalytics
       utm_medium
       utm_campaign
       utm_content
+      device_type
     ].freeze
 
     class << self
