@@ -6,3 +6,6 @@
 Rails.application.config.filter_parameters += [
   :passw, :email, :secret, :token, :_key, :crypt, :salt, :certificate, :otp, :ssn, :cvv, :cvc
 ]
+
+# LP行動イベントは不正payloadを含めて内容全体をログへ出さない。
+Rails.application.config.filter_parameters += [ :lp_analytics_event ]

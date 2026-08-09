@@ -4,6 +4,7 @@ class ApplicationController < ActionController::Base
   STORE_LP_202607_REF_SESSION_KEY = :store_lp_202607_ref
   PRESERVE_STORE_LP_202607_ATTRIBUTION_ONCE_SESSION_KEY = :preserve_store_lp_202607_attribution_once
   STORE_LP_202607_FROM = "stores_lp_202607"
+  LP_ANALYTICS_VISIT_PUBLIC_ID_SESSION_KEY = :lp_analytics_visit_public_id
   UTM_PARAM_KEYS = %i[utm_source utm_medium utm_campaign utm_content].freeze
   UTM_PARAM_MAX_LENGTH = 100
   STORE_LP_202607_REF_MAX_LENGTH = 100
@@ -87,6 +88,10 @@ class ApplicationController < ActionController::Base
 
   def store_lp_202607_ref
     session[STORE_LP_202607_REF_SESSION_KEY]
+  end
+
+  def lp_analytics_visit_public_id
+    session[LP_ANALYTICS_VISIT_PUBLIC_ID_SESSION_KEY]
   end
 
   def store_lp_202607_attribution_payload(from: STORE_LP_202607_FROM, source: params)

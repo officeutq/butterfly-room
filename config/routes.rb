@@ -16,6 +16,9 @@ Rails.application.routes.draw do
   get "/stores/contact", to: "store_contact_submissions#new", as: :stores_contact
   post "/stores/contact", to: "store_contact_submissions#create"
   get "/stores/contact/thanks", to: "store_contact_submissions#thanks", as: :stores_contact_thanks
+  namespace :lp_analytics do
+    resources :events, only: :create
+  end
   get "/legal", to: "legal#show", as: :legal
   get "/terms", to: "legal#terms", as: :terms
   get "/privacy_policy", to: "legal#privacy_policy", as: :privacy_policy
