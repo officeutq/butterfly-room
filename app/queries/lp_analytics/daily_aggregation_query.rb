@@ -13,11 +13,28 @@ module LpAnalytics
       :utm_medium,
       :utm_campaign,
       :utm_content,
+      :device_type,
       :visit_count,
       :scroll_25_visit_count,
       :scroll_50_visit_count,
       :scroll_75_visit_count,
       :scroll_90_visit_count,
+      :section_usage_visit_count,
+      :section_usage_rate,
+      :section_strengths_visit_count,
+      :section_strengths_rate,
+      :section_system_visit_count,
+      :section_system_rate,
+      :section_pricing_visit_count,
+      :section_pricing_rate,
+      :section_flow_visit_count,
+      :section_flow_rate,
+      :section_cast_visit_count,
+      :section_cast_rate,
+      :section_qa_visit_count,
+      :section_qa_rate,
+      :section_bottom_cta_visit_count,
+      :section_bottom_cta_rate,
       :registration_cta_click_visit_count,
       :registration_cta_click_count,
       :registration_form_visit_count,
@@ -40,7 +57,8 @@ module LpAnalytics
           COALESCE(utm_source, '') AS utm_source,
           COALESCE(utm_medium, '') AS utm_medium,
           COALESCE(utm_campaign, '') AS utm_campaign,
-          COALESCE(utm_content, '') AS utm_content
+          COALESCE(utm_content, '') AS utm_content,
+          device_type
         FROM lp_analytics_visits
         WHERE started_at >= :start_time
           AND started_at < :end_time
@@ -53,6 +71,14 @@ module LpAnalytics
           COUNT(*) FILTER (WHERE events.event_type = 'scroll_reached' AND events.event_value = '50') AS scroll_50_count,
           COUNT(*) FILTER (WHERE events.event_type = 'scroll_reached' AND events.event_value = '75') AS scroll_75_count,
           COUNT(*) FILTER (WHERE events.event_type = 'scroll_reached' AND events.event_value = '90') AS scroll_90_count,
+          COUNT(*) FILTER (WHERE events.event_type = 'section_reached' AND events.event_value = 'USAGE') AS section_usage_count,
+          COUNT(*) FILTER (WHERE events.event_type = 'section_reached' AND events.event_value = 'STRENGTHS') AS section_strengths_count,
+          COUNT(*) FILTER (WHERE events.event_type = 'section_reached' AND events.event_value = 'SYSTEM') AS section_system_count,
+          COUNT(*) FILTER (WHERE events.event_type = 'section_reached' AND events.event_value = 'PRICING') AS section_pricing_count,
+          COUNT(*) FILTER (WHERE events.event_type = 'section_reached' AND events.event_value = 'FLOW') AS section_flow_count,
+          COUNT(*) FILTER (WHERE events.event_type = 'section_reached' AND events.event_value = 'CAST') AS section_cast_count,
+          COUNT(*) FILTER (WHERE events.event_type = 'section_reached' AND events.event_value = 'QA') AS section_qa_count,
+          COUNT(*) FILTER (WHERE events.event_type = 'section_reached' AND events.event_value = 'bottom_cta') AS section_bottom_cta_count,
           COUNT(*) FILTER (
             WHERE events.event_type = 'cta_clicked'
               AND events.event_value IN (:registration_cta_values)
@@ -76,11 +102,20 @@ module LpAnalytics
         visits.utm_medium,
         visits.utm_campaign,
         visits.utm_content,
+        visits.device_type,
         COUNT(*) AS visit_count,
         COUNT(*) FILTER (WHERE COALESCE(totals.scroll_25_count, 0) > 0) AS scroll_25_visit_count,
         COUNT(*) FILTER (WHERE COALESCE(totals.scroll_50_count, 0) > 0) AS scroll_50_visit_count,
         COUNT(*) FILTER (WHERE COALESCE(totals.scroll_75_count, 0) > 0) AS scroll_75_visit_count,
         COUNT(*) FILTER (WHERE COALESCE(totals.scroll_90_count, 0) > 0) AS scroll_90_visit_count,
+        COUNT(*) FILTER (WHERE COALESCE(totals.section_usage_count, 0) > 0) AS section_usage_visit_count,
+        COUNT(*) FILTER (WHERE COALESCE(totals.section_strengths_count, 0) > 0) AS section_strengths_visit_count,
+        COUNT(*) FILTER (WHERE COALESCE(totals.section_system_count, 0) > 0) AS section_system_visit_count,
+        COUNT(*) FILTER (WHERE COALESCE(totals.section_pricing_count, 0) > 0) AS section_pricing_visit_count,
+        COUNT(*) FILTER (WHERE COALESCE(totals.section_flow_count, 0) > 0) AS section_flow_visit_count,
+        COUNT(*) FILTER (WHERE COALESCE(totals.section_cast_count, 0) > 0) AS section_cast_visit_count,
+        COUNT(*) FILTER (WHERE COALESCE(totals.section_qa_count, 0) > 0) AS section_qa_visit_count,
+        COUNT(*) FILTER (WHERE COALESCE(totals.section_bottom_cta_count, 0) > 0) AS section_bottom_cta_visit_count,
         COUNT(*) FILTER (WHERE COALESCE(totals.registration_cta_click_count, 0) > 0) AS registration_cta_click_visit_count,
         COALESCE(SUM(totals.registration_cta_click_count), 0) AS registration_cta_click_count,
         COUNT(*) FILTER (WHERE COALESCE(totals.registration_form_count, 0) > 0) AS registration_form_visit_count,
@@ -98,13 +133,15 @@ module LpAnalytics
         visits.utm_source,
         visits.utm_medium,
         visits.utm_campaign,
-        visits.utm_content
+        visits.utm_content,
+        visits.device_type
       ORDER BY
         visits.traffic_source,
         visits.utm_source,
         visits.utm_medium,
         visits.utm_campaign,
-        visits.utm_content
+        visits.utm_content,
+        visits.device_type
     SQL
 
     def initialize(aggregation_date:, lp_identifier: Configuration::STORE_LP_202607)
@@ -155,9 +192,18 @@ module LpAnalytics
         utm_source: attributes.fetch("utm_source"),
         utm_medium: attributes.fetch("utm_medium"),
         utm_campaign: attributes.fetch("utm_campaign"),
-        utm_content: attributes.fetch("utm_content")
+        utm_content: attributes.fetch("utm_content"),
+        device_type: attributes.fetch("device_type")
       }
       visit_count = attributes.fetch("visit_count").to_i
+      section_usage_visits = attributes.fetch("section_usage_visit_count").to_i
+      section_strengths_visits = attributes.fetch("section_strengths_visit_count").to_i
+      section_system_visits = attributes.fetch("section_system_visit_count").to_i
+      section_pricing_visits = attributes.fetch("section_pricing_visit_count").to_i
+      section_flow_visits = attributes.fetch("section_flow_visit_count").to_i
+      section_cast_visits = attributes.fetch("section_cast_visit_count").to_i
+      section_qa_visits = attributes.fetch("section_qa_visit_count").to_i
+      section_bottom_cta_visits = attributes.fetch("section_bottom_cta_visit_count").to_i
       registration_completion_visits = attributes.fetch("registration_completion_visit_count").to_i
       contact_completion_visits = attributes.fetch("contact_completion_visit_count").to_i
 
@@ -169,6 +215,22 @@ module LpAnalytics
         scroll_50_visit_count: attributes.fetch("scroll_50_visit_count").to_i,
         scroll_75_visit_count: attributes.fetch("scroll_75_visit_count").to_i,
         scroll_90_visit_count: attributes.fetch("scroll_90_visit_count").to_i,
+        section_usage_visit_count: section_usage_visits,
+        section_usage_rate: rate(section_usage_visits, visit_count),
+        section_strengths_visit_count: section_strengths_visits,
+        section_strengths_rate: rate(section_strengths_visits, visit_count),
+        section_system_visit_count: section_system_visits,
+        section_system_rate: rate(section_system_visits, visit_count),
+        section_pricing_visit_count: section_pricing_visits,
+        section_pricing_rate: rate(section_pricing_visits, visit_count),
+        section_flow_visit_count: section_flow_visits,
+        section_flow_rate: rate(section_flow_visits, visit_count),
+        section_cast_visit_count: section_cast_visits,
+        section_cast_rate: rate(section_cast_visits, visit_count),
+        section_qa_visit_count: section_qa_visits,
+        section_qa_rate: rate(section_qa_visits, visit_count),
+        section_bottom_cta_visit_count: section_bottom_cta_visits,
+        section_bottom_cta_rate: rate(section_bottom_cta_visits, visit_count),
         registration_cta_click_visit_count: attributes.fetch("registration_cta_click_visit_count").to_i,
         registration_cta_click_count: attributes.fetch("registration_cta_click_count").to_i,
         registration_form_visit_count: attributes.fetch("registration_form_visit_count").to_i,

@@ -10,7 +10,7 @@ module LpAnalytics
       class SheetStructureError < StandardError; end
       class UpdateCountMismatchError < StandardError; end
 
-      HEADERS = %w[
+      LEGACY_HEADERS = %w[
         aggregation_key
         aggregation_date
         lp_identifier
@@ -24,6 +24,51 @@ module LpAnalytics
         scroll_50_visit_count
         scroll_75_visit_count
         scroll_90_visit_count
+        registration_cta_click_visit_count
+        registration_cta_click_count
+        registration_form_visit_count
+        registration_completion_count
+        registration_completion_visit_count
+        registration_cv_rate
+        contact_cta_click_visit_count
+        contact_form_visit_count
+        contact_completion_count
+        contact_completion_visit_count
+        contact_cv_rate
+        exported_at
+      ].freeze
+
+      HEADERS = %w[
+        aggregation_key
+        aggregation_date
+        lp_identifier
+        traffic_source
+        utm_source
+        utm_medium
+        utm_campaign
+        utm_content
+        device_type
+        lp_visit_count
+        scroll_25_visit_count
+        scroll_50_visit_count
+        scroll_75_visit_count
+        scroll_90_visit_count
+        section_usage_visit_count
+        section_usage_rate
+        section_strengths_visit_count
+        section_strengths_rate
+        section_system_visit_count
+        section_system_rate
+        section_pricing_visit_count
+        section_pricing_rate
+        section_flow_visit_count
+        section_flow_rate
+        section_cast_visit_count
+        section_cast_rate
+        section_qa_visit_count
+        section_qa_rate
+        section_bottom_cta_visit_count
+        section_bottom_cta_rate
         registration_cta_click_visit_count
         registration_cta_click_count
         registration_form_visit_count
@@ -53,6 +98,7 @@ module LpAnalytics
         existing_rows, updates = inspect_sheet(sheet_values)
         updates.concat(build_row_updates(rows, existing_rows, sheet_values.length, date, exported_at))
         updates.concat(build_stale_row_updates(rows, existing_rows, date))
+        updates = collapse_updates(updates)
 
         response = updates.empty? ? nil : client.batch_update(updates)
         validate_response!(response, updates)
@@ -74,17 +120,43 @@ module LpAnalytics
         end
 
         header = Array(sheet_values.first).map(&:to_s)
-        raise HeaderMismatchError, "worksheet header does not match" unless header == HEADERS
+        unless [ HEADERS, LEGACY_HEADERS ].include?(header)
+          raise HeaderMismatchError, "worksheet header does not match"
+        end
 
+        rows = inspect_managed_rows(sheet_values.drop(1), headers: header)
+        return [ rows, [] ] if header == HEADERS
+
+        migrated_rows = rows.map do |row|
+          legacy_values = LEGACY_HEADERS.zip(row.values).to_h
+          values = HEADERS.map { |column| legacy_values.fetch(column, "") }
+          ExistingRow.new(
+            row_number: row.row_number,
+            aggregation_key: row.aggregation_key,
+            aggregation_date: row.aggregation_date,
+            values: values
+          )
+        end
+        updates = [ update_for(row_number: 1, values: HEADERS) ]
+        updates.concat(
+          migrated_rows.map do |row|
+            update_for(row_number: row.row_number, values: row.values)
+          end
+        )
+
+        [ migrated_rows, updates ]
+      end
+
+      def inspect_managed_rows(sheet_rows, headers:)
         seen_keys = {}
-        rows = Array(sheet_values.drop(1)).each_with_index.filter_map do |values, index|
+        Array(sheet_rows).each_with_index.filter_map do |values, index|
           row_number = index + 2
           normalized = Array(values).map(&:to_s)
           next if normalized.all?(&:blank?)
 
           key = normalized.fetch(0, "")
           date = normalized.fetch(1, "")
-          if normalized.length != HEADERS.length || key.blank? || date.blank?
+          if normalized.length != headers.length || key.blank? || date.blank?
             raise SheetStructureError, "worksheet contains a partial managed row"
           end
           raise DuplicateAggregationKeyError, "worksheet contains duplicate aggregation keys" if seen_keys.key?(key)
@@ -92,8 +164,6 @@ module LpAnalytics
           seen_keys[key] = row_number
           ExistingRow.new(row_number: row_number, aggregation_key: key, aggregation_date: date, values: normalized)
         end
-
-        [ rows, [] ]
       end
 
       def build_row_updates(rows, existing_rows, existing_sheet_length, date, exported_at)
@@ -136,11 +206,28 @@ module LpAnalytics
           row.utm_medium,
           row.utm_campaign,
           row.utm_content,
+          row.device_type,
           row.visit_count,
           row.scroll_25_visit_count,
           row.scroll_50_visit_count,
           row.scroll_75_visit_count,
           row.scroll_90_visit_count,
+          row.section_usage_visit_count,
+          row.section_usage_rate,
+          row.section_strengths_visit_count,
+          row.section_strengths_rate,
+          row.section_system_visit_count,
+          row.section_system_rate,
+          row.section_pricing_visit_count,
+          row.section_pricing_rate,
+          row.section_flow_visit_count,
+          row.section_flow_rate,
+          row.section_cast_visit_count,
+          row.section_cast_rate,
+          row.section_qa_visit_count,
+          row.section_qa_rate,
+          row.section_bottom_cta_visit_count,
+          row.section_bottom_cta_rate,
           row.registration_cta_click_visit_count,
           row.registration_cta_click_count,
           row.registration_form_visit_count,
@@ -154,6 +241,12 @@ module LpAnalytics
           row.contact_cv_rate,
           exported_at.iso8601(6)
         ]
+      end
+
+      def collapse_updates(updates)
+        updates.each_with_object({}) do |update, by_range|
+          by_range[update.fetch(:range)] = update
+        end.values
       end
 
       def update_for(row_number:, values:)

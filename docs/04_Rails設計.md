@@ -703,13 +703,15 @@ end
 * 対象期間は日本時間の訪問開始日時で判定する。訪問開始後のイベントは、翌日発生分を含めて訪問開始日の実績へ集計する
 * `AnalysisQuery`がKPI、連続ファネル、スクロール、セクション、CTA別集計を返す
 * 最近のコンバージョンは1ページ20件、最大100件でページングし、訪問をpreloadしてN+1 queryを防ぐ
-* 日次集計は`DailyAggregationQuery`が訪問単位のevent集計CTEを作ってから流入軸でまとめ、複数eventのjoinによる直積を避ける
+* 日次集計は`DailyAggregationQuery`が訪問単位のevent集計CTEを作ってから流入・UTM・端末軸でまとめ、複数eventのjoinによる直積を避ける
+* 日次集計は主要セクションごとの到達訪問数と、同じ集計行のLP訪問数を分母とする到達率を返す
 
 ## 7.5 Googleスプレッドシート出力
 
 * `LpAnalytics::Sheets::ExportRecentDaysJob`を毎日02:20 JSTに起動し、前日を終端とする直近7日を再集計する
 * 自動出力は`LP_ANALYTICS_SHEETS_EXPORT_ENABLED`でGoogle Sheets部分だけを無効化できる
 * 書込みは`spreadsheets.values.batchUpdate`へまとめ、`aggregation_key`で既存行を更新して重複行を作らない
+* Rails管理header変更時は、完全一致する既知の旧headerだけを新schemaへ移行する。未知のheader不一致、重複key、不完全な管理行は書込みを停止する
 * Google API通信中にDB transactionを保持せず、429・5xx・timeoutだけを有限回retryする
 * Secret値はAWS Secrets Managerからworker実行時に取得し、Git、環境変数、通常log、Googleスプレッドシートへ出さない
 * 詳細な設定・障害復旧は[LP行動分析 Google Sheets連携運用手順](ops/lp_analytics_google_sheets.md)、横断確認は[LP行動分析 横断検証・rollout手順](ops/lp_analytics_validation.md)に従う

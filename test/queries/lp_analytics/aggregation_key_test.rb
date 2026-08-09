@@ -11,7 +11,8 @@ class LpAnalytics::AggregationKeyTest < ActiveSupport::TestCase
       utm_source: "facebook",
       utm_medium: "paid_social",
       utm_campaign: "campaign_a",
-      utm_content: "creative_a"
+      utm_content: "creative_a",
+      device_type: "pc"
     }
 
     first = LpAnalytics::AggregationKey.generate(**dimensions)
@@ -27,12 +28,30 @@ class LpAnalytics::AggregationKeyTest < ActiveSupport::TestCase
       lp_identifier: "stores_lp_202607",
       utm_medium: "",
       utm_campaign: "",
-      utm_content: ""
+      utm_content: "",
+      device_type: "pc"
     }
 
     first = LpAnalytics::AggregationKey.generate(**common, traffic_source: "a|b", utm_source: "c")
     second = LpAnalytics::AggregationKey.generate(**common, traffic_source: "a", utm_source: "b|c")
 
     refute_equal first, second
+  end
+
+  test "端末が異なるdimensionを区別する" do
+    common = {
+      aggregation_date: Date.new(2026, 8, 9),
+      lp_identifier: "stores_lp_202607",
+      traffic_source: "meta",
+      utm_source: "facebook",
+      utm_medium: "paid_social",
+      utm_campaign: "campaign_a",
+      utm_content: "creative_a"
+    }
+
+    pc = LpAnalytics::AggregationKey.generate(**common, device_type: "pc")
+    smartphone = LpAnalytics::AggregationKey.generate(**common, device_type: "smartphone")
+
+    refute_equal pc, smartphone
   end
 end
