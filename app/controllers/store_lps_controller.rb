@@ -53,7 +53,7 @@ class StoreLpsController < ApplicationController
       preserve_existing_traffic: preserve_existing_traffic
     ).call
 
-    session[LP_ANALYTICS_VISIT_PUBLIC_ID_SESSION_KEY] = visit.public_id
+    remember_lp_analytics_visit!(visit.public_id)
     @lp_analytics_visit_public_id = visit.public_id
   rescue ActiveRecord::ActiveRecordError => error
     Rails.logger.warn("[lp_analytics] visit resolution failed error=#{error.class.name}")

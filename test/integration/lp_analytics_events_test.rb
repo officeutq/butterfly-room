@@ -104,6 +104,41 @@ class LpAnalyticsEventsTest < ActionDispatch::IntegrationTest
     assert_equal({ "recorded" => true, "duplicate" => true }, response.parsed_body)
   end
 
+  test "session内で許可された過去の訪問IDへ複数tabのイベントを記録できる" do
+    get stores_lp_202607_path, params: { utm_content: "creative_a" }
+    first_visit = LpAnalytics::Visit.order(:id).last
+    get stores_lp_202607_path, params: { utm_content: "creative_b" }
+    second_visit = LpAnalytics::Visit.order(:id).last
+
+    refute_equal first_visit.id, second_visit.id
+
+    assert_difference -> { first_visit.events.count }, 1 do
+      post_event(
+        visit_id: first_visit.public_id,
+        event_id: SecureRandom.uuid,
+        event_type: "cta_clicked",
+        event_value: "hero_registration"
+      )
+    end
+
+    assert_response :created
+    assert_equal first_visit.id, LpAnalytics::Event.order(:id).last.lp_analytics_visit_id
+  end
+
+  test "session内で許可されていない訪問IDへのイベントを拒否する" do
+    get stores_lp_202607_path
+
+    assert_no_difference "LpAnalytics::Event.count" do
+      post_event(
+        visit_id: SecureRandom.uuid,
+        event_id: SecureRandom.uuid,
+        event_type: "lp_view"
+      )
+    end
+
+    assert_response :unprocessable_entity
+  end
+
   test "訪問sessionがない場合と未許可payloadは保存しない" do
     assert_no_difference "LpAnalytics::Event.count" do
       post_event(event_id: SecureRandom.uuid, event_type: "lp_view")
@@ -177,10 +212,18 @@ class LpAnalyticsEventsTest < ActionDispatch::IntegrationTest
 
   private
 
-  def post_event(event_id:, event_type:, event_value: nil, metadata: {}, origin: "http://www.example.com")
+  def post_event(
+    event_id:,
+    event_type:,
+    visit_id: nil,
+    event_value: nil,
+    metadata: {},
+    origin: "http://www.example.com"
+  )
     post lp_analytics_events_path,
       params: {
         lp_analytics_event: {
+          visit_id: visit_id,
           event_id: event_id,
           event_type: event_type,
           event_value: event_value,

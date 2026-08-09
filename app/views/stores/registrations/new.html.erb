@@ -13,7 +13,10 @@
 
   <div class="card">
     <div class="card-body">
-      <%= form_with model: @form, url: @store_registration_form_path, scope: :store_registration do |f| %>
+      <%= form_with model: @form,
+            url: @store_registration_form_path,
+            scope: :store_registration,
+            data: lp_analytics_form_tracking_data(@lp_analytics_form_event_type) do |f| %>
         <div class="mb-3">
           <%= f.label :store_name, "店舗名", class: "form-label" %>
           <%= f.text_field :store_name, class: "form-control", required: true, autocomplete: "organization" %>

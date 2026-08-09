@@ -1,4 +1,8 @@
-<div class="store-lp-202607" data-controller="store-lp-202607">
+<div
+  class="store-lp-202607"
+  data-controller="store-lp-202607"
+  data-store-lp-202607-events-url-value="<%= lp_analytics_events_path %>"
+  data-store-lp-202607-visit-id-value="<%= @lp_analytics_visit_public_id %>">
 <main>
 
 <div class="pc_only">
@@ -14,7 +18,12 @@
                     夜のお店のための新しい<br>
                     <span class="big">遠隔配信<span>ツール</span></span>
                 </div>
-                <a href="<%= stores_new_registration_path(@store_lp_202607_registration_params) %>" class="hover_01">今すぐ始める</a>
+                <a
+                  href="<%= stores_new_registration_path(@store_lp_202607_registration_params) %>"
+                  class="hover_01"
+                  data-lp-analytics-reach-type="cta_reached"
+                  data-lp-analytics-event-value="pc_sidebar_registration"
+                  data-lp-analytics-click-value="pc_sidebar_registration">今すぐ始める</a>
             </div>
         </div>
     </div>
@@ -127,14 +136,23 @@
 
     <div class="btn_up_text">＼毎月5店舗限定で／</div>
     <!-- ============ view more button ============ -->
-    <a href="<%= stores_new_registration_path(@store_lp_202607_registration_params) %>" class="view_more fluffy">
+    <a
+      href="<%= stores_new_registration_path(@store_lp_202607_registration_params) %>"
+      class="view_more fluffy"
+      data-lp-analytics-reach-type="cta_reached"
+      data-lp-analytics-event-value="hero_registration"
+      data-lp-analytics-click-value="hero_registration">
         <div class="view_more_text">無料登録!</div>
         <div class="view_more_icon"><%= image_tag "store_lp_202607/icon/arrow_01.png", alt: "" %></div>
     </a>
     <!-- ============ view more button ============ -->
 </div>
 
-<section class="usage sec" id="USAGE">
+<section
+  class="usage sec"
+  id="USAGE"
+  data-lp-analytics-reach-type="section_reached"
+  data-lp-analytics-event-value="USAGE">
     <div class="usage_blur_01 pc_tab"><%= image_tag "store_lp_202607/bulur/02.png", alt: "" %></div>
     <div class="usage_blur_02 pc_tab"><%= image_tag "store_lp_202607/bulur/03.png", alt: "" %></div>
     <div class="section_top_head">ガールズバー・コンカフェの<br>オーナー様へ</div>
@@ -172,7 +190,11 @@
     </div>
 </section>
 
-<section class="strengths sec" id="STRENGTHS">
+<section
+  class="strengths sec"
+  id="STRENGTHS"
+  data-lp-analytics-reach-type="section_reached"
+  data-lp-analytics-event-value="STRENGTHS">
     <div class="strengths_blur_01 pc_tab"><%= image_tag "store_lp_202607/bulur/02.png", alt: "" %></div>
     <div class="section_top_head">「Butterflyve」4つの特徴</div>
     <ul class="item_list">
@@ -221,7 +243,11 @@
     </ul>
 </section>
 
-<section class="system sec" id="SYSTEM">
+<section
+  class="system sec"
+  id="SYSTEM"
+  data-lp-analytics-reach-type="section_reached"
+  data-lp-analytics-event-value="SYSTEM">
     <div class="system_blur_01 pc_tab"><%= image_tag "store_lp_202607/bulur/01.png", alt: "" %></div>
     <div class="section_top_head">遠隔営業の仕組みと収益</div>
     <ul class="system_list">
@@ -276,7 +302,11 @@
     </div>
 </section>
 
-<section class="pricing" id="PRICING">
+<section
+  class="pricing"
+  id="PRICING"
+  data-lp-analytics-reach-type="section_reached"
+  data-lp-analytics-event-value="PRICING">
     <div class="top_angle_box">
         <div class="top_angle_img_box"><%= image_tag "store_lp_202607/system/12.png", alt: "" %></div>
         <div class="content_box">
@@ -317,7 +347,11 @@
     </div>
 </section>
 
-<section class="flow sec" id="FLOW">
+<section
+  class="flow sec"
+  id="FLOW"
+  data-lp-analytics-reach-type="section_reached"
+  data-lp-analytics-event-value="FLOW">
     <div class="top_banner">
         <div class="banner_bg"><%= image_tag "store_lp_202607/system/07.jpg", alt: "" %></div>
         <div class="banner_top_inner_box">
@@ -329,7 +363,12 @@
             </div>
         </div>
         <div class="center_logo_box"><%= image_tag "store_lp_202607/logo/01.png", alt: "" %></div>
-        <a href="<%= stores_new_registration_path(@store_lp_202607_registration_params) %>" class="start_btn hover_01">今すぐ始める</a>
+        <a
+          href="<%= stores_new_registration_path(@store_lp_202607_registration_params) %>"
+          class="start_btn hover_01"
+          data-lp-analytics-reach-type="cta_reached"
+          data-lp-analytics-event-value="flow_registration"
+          data-lp-analytics-click-value="flow_registration">今すぐ始める</a>
     </div>
     <div class="section_top_head">導入から配信開始までの流れ</div>
     <div class="head_sub">
@@ -431,7 +470,11 @@
     </div>
 </section>
 
-<section class="cast sec" id="CAST">
+<section
+  class="cast sec"
+  id="CAST"
+  data-lp-analytics-reach-type="section_reached"
+  data-lp-analytics-event-value="CAST">
     <div class="section_top_head">導入店舗・キャストを紹介！</div>
     <div class="cast_item cast_item_first">
         <div class="img_box"><%= image_tag "store_lp_202607/cast/01.jpg", alt: "" %></div>
@@ -453,10 +496,14 @@
     </div>
 </section>
 
-<section class="qa sec" id="QA">
+<section
+  class="qa sec"
+  id="QA"
+  data-lp-analytics-reach-type="section_reached"
+  data-lp-analytics-event-value="QA">
     <div class="section_top_head">よくある質問</div>
     <ul class="qa_list">
-        <li class="qa_item">
+        <li class="qa_item" data-lp-analytics-faq-value="faq_1">
             <div class="q">
                 <p class="q_heading">Q</p>
                 <p class="q_content">
@@ -475,7 +522,7 @@
                 </p>
             </div>
         </li>
-        <li class="qa_item">
+        <li class="qa_item" data-lp-analytics-faq-value="faq_2">
             <div class="q">
                 <p class="q_heading">Q</p>
                 <p class="q_content">
@@ -493,7 +540,7 @@
                 </p>
             </div>
         </li>
-        <li class="qa_item">
+        <li class="qa_item" data-lp-analytics-faq-value="faq_3">
             <div class="q">
                 <p class="q_heading">Q</p>
                 <p class="q_content">
@@ -513,7 +560,7 @@
                 </p>
             </div>
         </li>
-        <li class="qa_item">
+        <li class="qa_item" data-lp-analytics-faq-value="faq_4">
             <div class="q">
                 <p class="q_heading">Q</p>
                 <p class="q_content">
@@ -536,12 +583,25 @@
     </ul>
 </section>
 
-<div class="bottom_btns sec">
-    <a href="<%= stores_contact_path(@store_lp_202607_contact_params) %>" class="view_more bottom_btn_01">
+<div
+  class="bottom_btns sec"
+  data-lp-analytics-reach-type="section_reached"
+  data-lp-analytics-event-value="bottom_cta">
+    <a
+      href="<%= stores_contact_path(@store_lp_202607_contact_params) %>"
+      class="view_more bottom_btn_01"
+      data-lp-analytics-reach-type="cta_reached"
+      data-lp-analytics-event-value="bottom_contact"
+      data-lp-analytics-click-value="bottom_contact">
         <div class="view_more_text">お問い合わせはこちら</div>
         <div class="view_more_icon"><%= image_tag "store_lp_202607/icon/arrow_01.png", alt: "" %></div>
     </a>
-    <a href="<%= stores_new_registration_path(@store_lp_202607_registration_params) %>" class="view_more bottom_btn_02">
+    <a
+      href="<%= stores_new_registration_path(@store_lp_202607_registration_params) %>"
+      class="view_more bottom_btn_02"
+      data-lp-analytics-reach-type="cta_reached"
+      data-lp-analytics-event-value="bottom_registration"
+      data-lp-analytics-click-value="bottom_registration">
         <div class="view_more_text">店舗登録はこちら</div>
         <div class="view_more_icon"><%= image_tag "store_lp_202607/icon/arrow_01.png", alt: "" %></div>
     </a>
