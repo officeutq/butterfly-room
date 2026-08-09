@@ -216,11 +216,25 @@ class LpAnalyticsEventsTest < ActionDispatch::IntegrationTest
         "lp_analytics_event" => {
           "event_type" => "invalid-owner@example.com",
           "metadata" => { "body" => "private text" }
+        },
+        "store_registration" => {
+          "store_name" => "Private Store",
+          "email" => "registration-owner@example.com",
+          "password" => "private password"
+        },
+        "store_contact_submission" => {
+          "name" => "Private Owner",
+          "store_name" => "Private Store",
+          "email" => "contact-owner@example.com",
+          "phone_number" => "090-1234-5678",
+          "body" => "private inquiry"
         }
       )
 
     assert_equal "[FILTERED]", filtered["lp_analytics_event"]
     assert_equal "[FILTERED]", filtered["lp_analytics_visit_id"]
+    assert_equal "[FILTERED]", filtered["store_registration"]
+    assert_equal "[FILTERED]", filtered["store_contact_submission"]
   end
 
   private
