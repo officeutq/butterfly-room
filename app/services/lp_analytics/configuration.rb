@@ -31,6 +31,12 @@ module LpAnalytics
         kind: :contact
       }.freeze
     }.freeze
+    REGISTRATION_CTA_KEYS = CTA_DEFINITIONS.filter_map do |key, definition|
+      key if definition.fetch(:kind) == :registration
+    end.freeze
+    CONTACT_CTA_KEYS = CTA_DEFINITIONS.filter_map do |key, definition|
+      key if definition.fetch(:kind) == :contact
+    end.freeze
 
     SECTION_LABELS = {
       "USAGE" => "USAGE",

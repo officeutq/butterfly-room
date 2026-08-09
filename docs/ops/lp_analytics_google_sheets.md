@@ -10,7 +10,7 @@ LP行動分析の日次集計をGoogleスプレッドシートへ出力するた
 - production（本番環境）とstaging（検証環境）の認証情報・出力先・IAM権限を分離する
 - 秘密値や実際のSpreadsheet ID、Secret ARNはこの文書やGitHubへ記録しない
 
-2026年8月9日時点では、環境別のGoogle Cloud・Spreadsheet・Secret・IAM・サーバー環境変数は手動設定済みである。Rails側の日次集計、Google Sheets API client、Job（定期処理）、手動再出力、失敗記録は未実装であり、#1032で実装する。
+2026年8月9日時点では、環境別のGoogle Cloud・Spreadsheet・Secret・IAM・サーバー環境変数は手動設定済みである。Rails側の日次集計、Google Sheets API client、Job（定期処理）、手動再出力、失敗記録は#1032で実装する。実環境への反映・staging接続確認・production初回出力は#1033のrolloutで行う。
 
 ## 2. 構成と役割分担
 
@@ -25,7 +25,7 @@ LP行動分析の日次集計をGoogleスプレッドシートへ出力するた
 | EC2 | `butterfly-room-app-1` | `butterfly-room-staging-app-1` |
 | EC2 IAM role | `butterfly-room-ec2-role` | `butterfly-room-staging-ec2-role` |
 | 環境設定 | `.env.production` | `.env.staging` |
-| 自動出力 | `true`を設定済み。#1032実装後に有効 | `false`を維持 |
+| 自動出力 | `true`を設定済み。#1032のdeploy後に有効 | `false`を維持 |
 
 サービスアカウントは人ではなくアプリケーションに属する単一目的のアカウントとして扱う。管理責任者はGoogle Cloud、AWS、productionサーバーへの管理権限を持つシステム管理責任者とする。担当者個人の氏名と引継ぎ先は公開リポジトリではなく、社内のアクセス権限管理台帳に記録する。
 
@@ -45,8 +45,8 @@ Google Cloud上の現行表示名は上表のとおり確認済みである。�
 | EC2 IAM | 対応環境のSecretだけを取得可能。反対環境は`AccessDenied`確認済み |
 | CloudTrail | 両環境の`GetSecretValue`成功eventを確認済み |
 | EC2の環境設定 | 環境別に設定済み |
-| app / workerへの設定反映 | 同じ環境別env fileを参照する構成は確認済み。実process確認は#1032実装後に行う |
-| Sheets API実接続 | 未実施。#1032のclient実装後に安全な手順で確認する |
+| app / workerへの設定反映 | 同じ環境別env fileを参照する構成は確認済み。実process確認は#1032のdeploy後に#1033で行う |
+| Sheets API実接続 | 未実施。#1032のmock test完了後、#1033でstagingから安全に確認する |
 | 現行表示名 | production / stagingとも確認済み |
 
 ## 3. 実値の保存場所と確認手順
@@ -94,7 +94,7 @@ done
 | `GOOGLE_SHEETS_WORKSHEET_NAME` | 非秘密 | `daily_raw` |
 | `GOOGLE_SHEETS_CREDENTIALS_SECRET_ID` | 機微な識別子 | 対応環境のSecretだけを指定。実値を公開しない |
 
-サービスアカウントJSONやprivate keyは環境変数へ格納しない。環境変数に置くのはSecret IDだけとし、#1032でworkerが実行時に自身のEC2 IAM roleを使ってSecret値を取得する。
+サービスアカウントJSONやprivate keyは環境変数へ格納しない。環境変数に置くのはSecret IDだけとし、`LpAnalytics::Sheets::CredentialsProvider`がworker実行時に自身のEC2 IAM roleを使ってSecret値を取得する。
 
 ## 5. Secretの形式と管理
 
@@ -151,7 +151,7 @@ Secretの存在とmetadataは、権限を持つ担当者がAWS Secrets Manager C
 4. 対象サービスアカウントに新しいJSON鍵を1つ発行する。
 5. JSONファイルを表示せず、直ちに対応する環境の既存Secretへ新versionとして登録する。新しいSecretを増やさない。
 6. 作業端末上のJSONファイルを安全に削除し、shell履歴、クリップボード、ダウンロード同期先に残っていないことを確認する。
-7. #1032実装後の接続確認手順で対応環境だけに接続できることを確認する。productionへの書き込み確認は別途承認を必要とする。
+7. #1033の接続確認手順で対応環境だけに接続できることを確認する。productionへの書き込み確認は別途承認を必要とする。
 8. 新鍵での動作確認後、Google Cloudで旧鍵を先に無効化する。
 9. 24時間以上監視し、旧鍵利用がないことと日次出力への影響がないことを確認してから旧鍵を削除する。
 10. 一時的なproject例外を解除して親policy継承へ戻し、`iam.disableServiceAccountKeyCreation`が再度適用されていることを確認する。
@@ -188,7 +188,7 @@ Google Cloudは、不要な鍵をまず無効化し、利用されていない�
 ### worksheet運用
 
 - `daily_raw`はRails管理領域とし、人が値、行、列、header、数式を直接追加・変更・削除しない
-- 誤編集に気づいた場合はRails DBを正として#1032の再出力機能で復旧する。手作業で帳尻を合わせない
+- 誤編集に気づいた場合はRails DBを正として`lp_analytics:sheets:export_date`または`export_range`で復旧する。手作業で帳尻を合わせない
 - 週次集計、グラフ、ピボット、外部共有向け表示は別worksheetで作成し、`daily_raw`を参照する
 - 週次CV率は日別CV率の平均ではなく、週間完了訪問数合計を週間LP訪問数合計で割る
 - 現時点では週次用worksheetの作成は必須とせず、必要になった時点で追加する
@@ -201,7 +201,7 @@ Google Cloudは、不要な鍵をまず無効化し、利用されていない�
 - stagingのappとworkerは、どちらも`${STAGING_ENV_FILE:-./.env.staging}`を参照する
 - productionとstagingで別Compose file・別env file・別container名を使用する
 
-この構造により両processへ同じ環境別設定を渡せることはソース上で確認済みである。現時点では#1032のアプリ実装がなく設定を消費しないため、確認だけを目的としたcontainer再作成は行わない。実process内の存在確認は、#1032実装後の反映・接続確認に含める。
+この構造により両processへ同じ環境別設定を渡せることはソース上で確認済みである。実process内の存在確認は、#1032のdeploy後に#1033の反映・接続確認で行う。
 
 Docker Composeの`restart`だけでは変更した環境変数は反映されないため、反映時はcontainerを再作成する。productionでは勝手に実行せず、停止影響と実施時間の承認を得る。
 
@@ -213,23 +213,23 @@ docker compose -f docker-compose.production.yml up -d --force-recreate app worke
 docker compose -f docker-compose.staging.yml up -d --force-recreate app worker
 ```
 
-再作成後は値を表示せず、各containerで必須keyが存在し空でないこと、flagとworksheet名だけが期待値であることを確認する。Spreadsheet IDやSecret IDを標準出力へ出さない。現在は#1032のアプリ実装前であるため、設定が存在してもGoogle Sheets出力は実行されない。
+再作成後は値を表示せず、各containerで必須keyが存在し空でないこと、flagとworksheet名だけが期待値であることを確認する。Spreadsheet IDやSecret IDを標準出力へ出さない。stagingはflagが`false`のため、recurring Jobが起動してもSecret取得・Google Sheets出力を行わない。
 
 ## 11. production / staging誤接続の防止
 
 1. サービスアカウント、Spreadsheet、Secret、EC2 IAM role、env fileを環境ごとに分離する。
-2. productionは`LP_ANALYTICS_SHEETS_EXPORT_ENABLED=true`、stagingは`false`とし、#1032でflagを明示的に判定する。
+2. productionは`LP_ANALYTICS_SHEETS_EXPORT_ENABLED=true`、stagingは`false`とし、`LpAnalytics::Sheets::ExportRecentDaysJob`がflagを明示的に判定する。
 3. Secret IDとSpreadsheet IDを変更するときは、同じ環境の2項目を二者で照合する。
 4. production roleからstaging Secret、staging roleからproduction Secretへの`AccessDenied`を維持する。
 5. Google Sheets共有一覧で反対環境のサービスアカウントに権限がないことを確認する。
-6. #1032では起動・Jobログに実IDやSecret名を出さず、必要なら不可逆な出力先fingerprintだけを使用する。
+6. 起動・Jobログに実IDやSecret名を出さず、不可逆な出力先fingerprintだけを使用する。
 7. productionへのテスト書き込みは明示承認なしに行わない。
 
 ## 12. Sheets API接続確認
 
-現時点では#1032のGoogle Sheets API clientが未実装であるため、秘密値を取得する使い捨てscriptは作らず、実API確認は#1032へ持ち越す。共有画面上では、各サービスアカウントが対応Spreadsheetの編集者で、反対環境と一般アクセスには権限がないことを確認済みである。
+Google Sheets API clientは#1032で実装し、通常testではAWS Secrets ManagerとGoogle APIをmockして実接続しない。共有画面上では、各サービスアカウントが対応Spreadsheetの編集者で、反対環境と一般アクセスには権限がないことを確認済みである。実API確認は#1033のrolloutで行う。
 
-#1032で実接続確認を行うときは次の順序を守る。
+#1033で実接続確認を行うときは次の順序を守る。
 
 1. 通常testではGoogle APIをmockし、実Spreadsheetへ接続しない。
 2. 最初にstagingで、対応Spreadsheetへの`spreadsheets.get`相当のread-only metadata取得を行う。値や`daily_raw`の内容はログへ出さない。
@@ -256,15 +256,52 @@ AWS CloudTrailはSecrets Manager API callを記録する。AWS Consoleで対象�
 
 ## 14. 日次Job・手動再出力・ログ
 
-次の機能は未実装であり、#1032で実装後にこの節を具体的なclass名・task名・log識別子・実行例へ更新する。
+### 自動実行
 
-- 毎日02:20 JSTに前日を含む直近7日を出力するSolid Queue recurring task
-- 対象日・日付範囲の手動再出力
-- 成功・失敗・試行回数・再実行要否のDB記録とlog確認
-- Google API一時障害の有限retry
-- `daily_raw`のheader・重複key・更新件数検証
+`LpAnalytics::Sheets::ExportRecentDaysJob`をSolid Queue recurring taskとして、毎日02:20 JST（`20 2 * * * Asia/Tokyo`）に起動する。前日を終了日とする直近7日を古い順に処理する。
 
-現時点では存在しないJob名、Rake task、log messageを仮定して実行しない。障害時もRails DBを正本とし、Google Spreadsheetを手修正せず、#1032実装後の冪等な再出力で復旧する。
+- `LP_ANALYTICS_SHEETS_EXPORT_ENABLED=true`かつ`RAILS_ENV=production`の場合だけ処理する
+- stagingは`RAILS_ENV=production`でもflagを`false`にして自動出力しない
+- 1日が失敗しても残りの日付を処理し、全日処理後にJobを失敗状態にする
+- 429、5xx、timeout等はGoogle API call単位で最大3回、指数バックオフにより再試行する
+- 401、403、header不一致等は再試行しない
+
+### 手動再出力
+
+stagingを含む手動出力はflagに関係なく明示的なRake taskから実行する。実行前に対象環境・Spreadsheet・日付を確認する。
+
+```bash
+# 1日
+docker compose exec -T worker bin/rails "lp_analytics:sheets:export_date[2026-08-09]"
+
+# 開始日・終了日を含む期間（最大366日）
+docker compose exec -T worker bin/rails "lp_analytics:sheets:export_range[2026-08-01,2026-08-09]"
+```
+
+成功時は日付別の成功数を表示する。1日でも失敗した場合は失敗日とerror classだけを表示して非0で終了する。Spreadsheet ID、Secret ID、認証responseは表示しない。
+
+### 出力状態
+
+`lp_analytics_sheet_exports`で対象日、LP、出力先fingerprint、worksheetごとに次を確認できる。
+
+- `status`: `pending` / `running` / `succeeded` / `failed`
+- `attempt_count`, `row_count`, `payload_checksum`
+- `started_at`, `completed_at`, `failed_at`
+- `error_class`, 秘密値を除いた`error_message`, `needs_retry`
+
+同じ対象の実行中Jobは二重実行せず、1時間以上更新されていない`running`状態だけを再取得可能とする。Google API通信中はDB transactionを保持しない。
+
+### `daily_raw` schemaと復旧
+
+1行目はRails管理headerであり、人が変更しない。主な列は`aggregation_key`、対象日、LP、流入元、UTM、訪問数、スクロール到達数、登録・お問い合わせのCTA/フォーム/完了件数・完了訪問数・CV率、`exported_at`である。CV率は文字列ではなく0〜1の小数を`RAW`で書く。
+
+- 空のworksheetだけは初回にheaderを作成する
+- header不一致、duplicate key、管理行の一部欠損では書込みを停止する
+- 既存keyは同じ行を更新し、新規keyは空き行または末尾へ追加する
+- 再集計で消えた対象日行は空欄化する
+- 書込みは`spreadsheets.values.batchUpdate`へまとめ、応答行数・セル数を検証する
+
+障害時もRails DBを正本とし、Google Spreadsheetを手修正せず、原因修正後に上記Rake taskで再出力する。
 
 ## 15. 障害の切り分けと復旧
 
@@ -298,14 +335,13 @@ Google Sheets障害はLP閲覧、店舗登録、お問い合わせ、Rails DB保
 
 ## 17. Issue境界
 
-#1027では、Google Cloud・Spreadsheet・Secret・IAM・環境設定の準備、環境分離、運用手順、Docker Compose上のapp / worker参照経路までを完了条件とする。
+#1027では、Google Cloud・Spreadsheet・Secret・IAM・環境設定の準備、環境分離、運用手順、Docker Compose上のapp / worker参照経路までを完了条件とする。#1032では日次集計・API client・冪等出力・Job・Rake task・失敗状態を実装する。
 
-次は#1032へ持ち越す。
+実環境での次の確認は#1033へ持ち越す。
 
 - app / workerの実processでの環境変数存在確認
-- Google Sheets API clientとSecret取得処理
 - stagingの実接続と環境間のread-only拒否確認
-- 日次Job、手動再出力、失敗状態・ログ確認
+- recurring Jobと手動再出力の実process確認
 - 承認後のproduction実書き込み確認
 
 #1027対応ではproduction containerの再作成、Spreadsheetへの書き込み、Secret値取得を行わない。
