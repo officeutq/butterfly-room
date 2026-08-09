@@ -46,6 +46,16 @@ data "aws_iam_policy_document" "app" {
   }
 
   statement {
+    sid    = "ReadGoogleSheetsCredentialsSecret"
+    effect = "Allow"
+    actions = [
+      "secretsmanager:DescribeSecret",
+      "secretsmanager:GetSecretValue"
+    ]
+    resources = [data.external.google_sheets_credentials_secret.result.arn]
+  }
+
+  statement {
     sid       = "CreateTaggedStagingStages"
     effect    = "Allow"
     actions   = ["ivs:CreateStage"]

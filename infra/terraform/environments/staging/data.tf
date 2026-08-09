@@ -93,3 +93,20 @@ data "external" "http_priority_check" {
     region       = local.aws_region
   }
 }
+
+data "external" "google_sheets_credentials_secret" {
+  program = [
+    "powershell",
+    "-NoProfile",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-File",
+    "${path.module}/scripts/describe_staging_secret.ps1"
+  ]
+
+  query = {
+    secret_name = var.google_sheets_credentials_secret_name
+    profile     = local.aws_profile
+    region      = local.aws_region
+  }
+}

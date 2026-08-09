@@ -22,6 +22,17 @@ variable "existing_rds_identifier" {
   default     = "corporate-prod"
 }
 
+variable "google_sheets_credentials_secret_name" {
+  description = "Name of the existing staging Secrets Manager secret containing Google Sheets service account credentials. The secret value is not managed by Terraform."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = trimspace(var.google_sheets_credentials_secret_name) != ""
+    error_message = "google_sheets_credentials_secret_name must not be empty."
+  }
+}
+
 variable "hosted_zone_name" {
   description = "Existing public Route 53 hosted zone."
   type        = string
