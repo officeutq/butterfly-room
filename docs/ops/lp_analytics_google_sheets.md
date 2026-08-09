@@ -10,7 +10,9 @@ LP行動分析の日次集計をGoogleスプレッドシートへ出力するた
 - production（本番環境）とstaging（検証環境）の認証情報・出力先・IAM権限を分離する
 - 秘密値や実際のSpreadsheet ID、Secret ARNはこの文書やGitHubへ記録しない
 
-2026年8月9日時点では、環境別のGoogle Cloud・Spreadsheet・Secret・IAM・サーバー環境変数は手動設定済みである。Rails側の日次集計、Google Sheets API client、Job（定期処理）、手動再出力、失敗記録は#1032で実装する。実環境への反映・staging接続確認・production初回出力は#1033のrolloutで行う。
+2026年8月9日時点では、環境別のGoogle Cloud・Spreadsheet・Secret・IAM・サーバー環境変数は手動設定済みである。Rails側の日次集計、Google Sheets API client、Job（定期処理）、手動再出力、失敗記録は#1032で実装済みで、stagingの実接続・手動出力・冪等再出力は#1033で確認済みである。production初回出力と自動出力の有効性確認は、別途承認を得たrolloutで行う。
+
+横断シナリオ、staging実施結果、production持ち越し項目は[LP行動分析 横断検証・rollout手順](lp_analytics_validation.md)を参照する。
 
 ## 2. 構成と役割分担
 
@@ -45,8 +47,8 @@ Google Cloud上の現行表示名は上表のとおり確認済みである。�
 | EC2 IAM | 対応環境のSecretだけを取得可能。反対環境は`AccessDenied`確認済み |
 | CloudTrail | 両環境の`GetSecretValue`成功eventを確認済み |
 | EC2の環境設定 | 環境別に設定済み |
-| app / workerへの設定反映 | 同じ環境別env fileを参照する構成は確認済み。実process確認は#1032のdeploy後に#1033で行う |
-| Sheets API実接続 | 未実施。#1032のmock test完了後、#1033でstagingから安全に確認する |
+| app / workerへの設定反映 | 同じ環境別env fileを参照する構成を確認済み。stagingはcontainer再作成後のRails process、workerの定期task、無効化guardを確認済み。productionの再作成・実process確認は未実施 |
+| Sheets API実接続 | staging専用出力先でread、手動出力、同日再出力を確認済み。productionは未実施 |
 | 現行表示名 | production / stagingとも確認済み |
 
 ## 3. 実値の保存場所と確認手順
@@ -201,7 +203,7 @@ Google Cloudは、不要な鍵をまず無効化し、利用されていない�
 - stagingのappとworkerは、どちらも`${STAGING_ENV_FILE:-./.env.staging}`を参照する
 - productionとstagingで別Compose file・別env file・別container名を使用する
 
-この構造により両processへ同じ環境別設定を渡せることはソース上で確認済みである。実process内の存在確認は、#1032のdeploy後に#1033の反映・接続確認で行う。
+この構造により両processへ同じ環境別設定を渡せることはソース上で確認済みである。stagingでは#1033でcontainer再作成後のRails実行環境、recurring task、手動Job、無効化guardを確認済みである。productionのcontainer再作成と実process確認は、停止影響の承認後に行う。
 
 Docker Composeの`restart`だけでは変更した環境変数は反映されないため、反映時はcontainerを再作成する。productionでは勝手に実行せず、停止影響と実施時間の承認を得る。
 
@@ -227,9 +229,9 @@ docker compose -f docker-compose.staging.yml up -d --force-recreate app worker
 
 ## 12. Sheets API接続確認
 
-Google Sheets API clientは#1032で実装し、通常testではAWS Secrets ManagerとGoogle APIをmockして実接続しない。共有画面上では、各サービスアカウントが対応Spreadsheetの編集者で、反対環境と一般アクセスには権限がないことを確認済みである。実API確認は#1033のrolloutで行う。
+Google Sheets API clientは#1032で実装し、通常testではAWS Secrets ManagerとGoogle APIをmockして実接続しない。共有画面上では、各サービスアカウントが対応Spreadsheetの編集者で、反対環境と一般アクセスには権限がないことを確認済みである。#1033ではstagingから空の`daily_raw`をreadし、匿名の日次4行を書込み、同日再出力後もaggregation keyの重複がないことを確認済みである。
 
-#1033で実接続確認を行うときは次の順序を守る。
+#1033または将来の再検証で実接続確認を行うときは次の順序を守る。
 
 1. 通常testではGoogle APIをmockし、実Spreadsheetへ接続しない。
 2. 最初にstagingで、対応Spreadsheetへの`spreadsheets.get`相当のread-only metadata取得を行う。値や`daily_raw`の内容はログへ出さない。
@@ -335,14 +337,15 @@ Google Sheets障害はLP閲覧、店舗登録、お問い合わせ、Rails DB保
 
 ## 17. Issue境界
 
-#1027では、Google Cloud・Spreadsheet・Secret・IAM・環境設定の準備、環境分離、運用手順、Docker Compose上のapp / worker参照経路までを完了条件とする。#1032では日次集計・API client・冪等出力・Job・Rake task・失敗状態を実装する。
+#1027では、Google Cloud・Spreadsheet・Secret・IAM・環境設定の準備、環境分離、運用手順、Docker Compose上のapp / worker参照経路までを完了した。#1032では日次集計・API client・冪等出力・Job・Rake task・失敗状態を実装した。
 
-実環境での次の確認は#1033へ持ち越す。
+実環境での次の確認は#1033でstaging分を完了した。
 
-- app / workerの実processでの環境変数存在確認
-- stagingの実接続と環境間のread-only拒否確認
-- recurring Jobと手動再出力の実process確認
-- 承認後のproduction実書き込み確認
+- app / workerの実行環境とworker無効化guard
+- staging専用Spreadsheetのread、手動出力、冪等再出力
+- recurring Job設定と手動再出力の実process確認
+
+承認後のproduction実書き込み、Rails DBとの初回突合、自動出力確認は未実施である。#1033のstaging検証を根拠に自動実行せず、[LP行動分析 横断検証・rollout手順](lp_analytics_validation.md)のproductionチェックリストに従う。
 
 #1027対応ではproduction containerの再作成、Spreadsheetへの書き込み、Secret値取得を行わない。
 
