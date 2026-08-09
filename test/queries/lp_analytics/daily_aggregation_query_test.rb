@@ -83,6 +83,34 @@ class LpAnalytics::DailyAggregationQueryTest < ActiveSupport::TestCase
     assert_equal 3, rows.map(&:aggregation_key).uniq.size
   end
 
+  test "23時59分台に開始して翌日00時台に完了した訪問を開始日の集計へ含める" do
+    started_at = Time.zone.parse("2026-08-09 23:59:30")
+    completed_at = Time.zone.parse("2026-08-10 00:00:30")
+    visit = create_visit(started_at: started_at, traffic_source: "date_boundary")
+    store = Store.create!(name: "日付境界店舗", lp_analytics_visit: visit)
+
+    record_completion(
+      visit,
+      "store_registration_complete",
+      store,
+      occurred_at: completed_at
+    )
+
+    start_date_row = LpAnalytics::DailyAggregationQuery
+      .new(aggregation_date: TARGET_DATE)
+      .call
+      .sole
+    next_date_rows = LpAnalytics::DailyAggregationQuery
+      .new(aggregation_date: TARGET_DATE + 1.day)
+      .call
+
+    assert_equal 1, start_date_row.visit_count
+    assert_equal 1, start_date_row.registration_completion_count
+    assert_equal 1, start_date_row.registration_completion_visit_count
+    assert_in_delta 1.0, start_date_row.registration_cv_rate
+    assert_empty next_date_rows
+  end
+
   test "訪問がなければ空配列を返す" do
     rows = LpAnalytics::DailyAggregationQuery.new(aggregation_date: Date.new(2020, 1, 1)).call
 
@@ -131,11 +159,16 @@ class LpAnalytics::DailyAggregationQueryTest < ActiveSupport::TestCase
     record_completion(visit, "store_contact_complete", submission)
   end
 
-  def record_completion(visit, event_type, completion_record)
+  def record_completion(
+    visit,
+    event_type,
+    completion_record,
+    occurred_at: visit.started_at + 2.minutes
+  )
     visit.events.create!(
       event_type: event_type,
       lp_identifier: visit.lp_identifier,
-      occurred_at: visit.started_at + 2.minutes,
+      occurred_at: occurred_at,
       completion_record: completion_record,
       metadata: {}
     )

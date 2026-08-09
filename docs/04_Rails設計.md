@@ -665,3 +665,51 @@ end
 
 * 未消化カラム：`#pending_drinks`
 * ステータスバー：`#cast_stats`
+
+---
+
+# 7. LP行動分析
+
+## 7.1 対象と正本
+
+* 初期対象は`stores/lp_202607`で、内部識別子は`stores_lp_202607`とする
+* `lp_analytics_visits`が匿名訪問、`lp_analytics_events`が訪問内の行動、`lp_analytics_sheet_exports`が日次出力状態を保持する
+* 行動・登録・お問い合わせ実績の正本はRails DBとし、Googleスプレッドシートは匿名の日次集計を共有するための派生データとする
+* 分析テーブルには氏名、メールアドレス、電話番号、フォーム本文、IPアドレス、raw User-Agent、cookie値を保存しない
+* 店舗登録とお問い合わせの業務レコードは従来のテーブルに保存し、分析イベントからはpolymorphic association（複数種類の完了レコードへの関連）で参照する
+
+## 7.2 匿名訪問
+
+* ブラウザへUUID形式の公開訪問IDを発行し、同じIDでLP表示からフォーム表示・完了までを関連付ける
+* 最後の操作から30分以内で、LP・UTM・referral codeが同じ場合は同一訪問を継続する
+* 30分を超えた場合、UTMが変わった場合、referral codeが変わった場合、または有効な公開訪問IDがない場合は新規訪問とする
+* 対象LPを経由していない通常フォーム流入では、分析訪問やフォーム表示イベントを作成しない
+* `LpAnalytics::Visits::ResolveService`が訪問の継続・新規判定を担当し、Controller（リクエストを受ける層）は流入値と現在の公開訪問IDを渡す
+
+## 7.3 イベント記録
+
+* ブラウザイベントAPIは`POST /lp_analytics/events`で受け付け、`LpAnalytics::Events::RecordService`が許可されたイベント種別・値・metadataだけを保存する
+* ブラウザイベントにはUUID形式の`browser_event_id`を付け、unique indexにより通信再送を冪等にする
+* スクロール、セクション、CTA位置到達は訪問内の`dedupe_key`でも重複を防止する。CTAクリックとFAQ操作は複数回保存できる
+* ブラウザ送信は`keepalive`を使い、失敗を画面遷移やフォーム操作へ伝播させない
+* Turbo preview / prerenderではLP表示・フォーム表示イベントを送信しない
+* 店舗登録完了とお問い合わせ完了は、業務保存成功後に`LpAnalytics::Completions::RecordService`から記録し、ブラウザやGTMの成功に依存させない
+* 分析記録失敗は業務保存をrollbackせず、安全なerror classだけをlogへ残す
+
+## 7.4 集計と管理画面
+
+* system_adminだけが`/system_admin/lp_analytics`と匿名訪問詳細を閲覧できる
+* `AnalysisFilter`は今日・過去7日・過去30日・任意期間（最大366日）と、LP・流入元・UTM・端末の絞り込みを扱う
+* 対象期間は日本時間の訪問開始日時で判定する。訪問開始後のイベントは、翌日発生分を含めて訪問開始日の実績へ集計する
+* `AnalysisQuery`がKPI、連続ファネル、スクロール、セクション、CTA別集計を返す
+* 最近のコンバージョンは1ページ20件、最大100件でページングし、訪問をpreloadしてN+1 queryを防ぐ
+* 日次集計は`DailyAggregationQuery`が訪問単位のevent集計CTEを作ってから流入軸でまとめ、複数eventのjoinによる直積を避ける
+
+## 7.5 Googleスプレッドシート出力
+
+* `LpAnalytics::Sheets::ExportRecentDaysJob`を毎日02:20 JSTに起動し、前日を終端とする直近7日を再集計する
+* 自動出力は`LP_ANALYTICS_SHEETS_EXPORT_ENABLED`でGoogle Sheets部分だけを無効化できる
+* 書込みは`spreadsheets.values.batchUpdate`へまとめ、`aggregation_key`で既存行を更新して重複行を作らない
+* Google API通信中にDB transactionを保持せず、429・5xx・timeoutだけを有限回retryする
+* Secret値はAWS Secrets Managerからworker実行時に取得し、Git、環境変数、通常log、Googleスプレッドシートへ出さない
+* 詳細な設定・障害復旧は[LP行動分析 Google Sheets連携運用手順](ops/lp_analytics_google_sheets.md)、横断確認は[LP行動分析 横断検証・rollout手順](ops/lp_analytics_validation.md)に従う

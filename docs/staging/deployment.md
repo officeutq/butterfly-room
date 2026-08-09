@@ -128,11 +128,17 @@ docker compose -f docker-compose.staging.yml build app
 docker compose -f docker-compose.staging.yml run --rm app bundle exec rails db:prepare
 docker compose -f docker-compose.staging.yml run --rm app bundle exec rails db:seed
 docker compose -f docker-compose.staging.yml up -d app
-curl --fail --silent --show-error http://127.0.0.1:3000/up
+curl --fail --silent --show-error \
+  --output /dev/null \
+  --write-out '%{http_code}\n' \
+  -H 'Host: staging.butterflyve.jp' \
+  http://127.0.0.1:3000/up
 docker compose -f docker-compose.staging.yml logs --tail=100 app
 ```
 
-起動時安全guardが失敗した場合、値をlogへ貼らず変数名と設定元を確認します。`db:prepare`前にDB名が`butterfly_room_staging`であることを再確認します。
+RailsのHost AuthorizationによりHost headerなしのloopback確認は403になり得るため、上記のstaging hostを付けます。起動時安全guardが失敗した場合、値をlogへ貼らず変数名と設定元を確認します。`db:prepare`前にDB名が`butterfly_room_staging`であることを再確認します。
+
+build前に`df -h /`と`docker system df`を確認します。空き容量不足時は、稼働中imageと明示的に付けたrollback tagを残したまま、未使用build cacheだけを`docker builder prune`で削除します。対象を確認せず`docker system prune -a`やvolume削除を実行しません。
 
 ## 6. workerを起動
 

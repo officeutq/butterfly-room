@@ -92,6 +92,22 @@ class LpAnalytics::AnalysisQueryTest < ActiveSupport::TestCase
     assert result.cta_metrics.all? { |metric| metric.click_rate.zero? }
   end
 
+  test "対象訪問が増えてもSELECTクエリ数が増えない" do
+    baseline_query_count = count_select_queries { query.call }
+
+    50.times do |index|
+      create_visit(
+        traffic_source: "meta",
+        started_at: @base_time + index.minutes
+      )
+    end
+
+    increased_query_count = count_select_queries { query.call }
+
+    assert_operator baseline_query_count, :positive?
+    assert_equal baseline_query_count, increased_query_count
+  end
+
   private
 
   def query(**params)
@@ -158,5 +174,24 @@ class LpAnalytics::AnalysisQueryTest < ActiveSupport::TestCase
       completion_record: record,
       metadata: {}
     )
+  end
+
+  def count_select_queries
+    count = 0
+    subscriber = lambda do |_name, _started, _finished, _unique_id, payload|
+      sql = payload[:sql].to_s.lstrip
+      next if payload[:cached] || payload[:name] == "SCHEMA"
+      next unless sql.start_with?("SELECT", "WITH")
+
+      count += 1
+    end
+
+    ActiveRecord::Base.uncached do
+      ActiveSupport::Notifications.subscribed(subscriber, "sql.active_record") do
+        yield
+      end
+    end
+
+    count
   end
 end
