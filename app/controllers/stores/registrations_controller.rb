@@ -81,6 +81,12 @@ module Stores
       @store_registration_form_path = store_registration_form_path(
         @store_registration_from
       )
+      @lp_analytics_form_event_type = "store_registration_form_view" if lp_analytics_form_tracking?
+    end
+
+    def lp_analytics_form_tracking?
+      @store_registration_from == STORE_REGISTRATION_FROM_STORES_LP_202607 &&
+        lp_analytics_visit_public_id.present?
     end
 
     def permitted_store_registration_from(source = params)

@@ -22,7 +22,10 @@
       <%= form_with model: @store_contact_submission,
             url: @store_contact_form_path,
             scope: :store_contact_submission,
-            html: { class: "store-contact-submission-form" } do |f| %>
+            html: {
+              class: "store-contact-submission-form",
+              data: lp_analytics_form_tracking_data(@lp_analytics_form_event_type)
+            } do |f| %>
         <div class="mb-3">
           <%= f.label :name, class: "form-label" do %>
             お名前<%= tag.span "必須",

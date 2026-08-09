@@ -5,6 +5,8 @@ class ApplicationController < ActionController::Base
   PRESERVE_STORE_LP_202607_ATTRIBUTION_ONCE_SESSION_KEY = :preserve_store_lp_202607_attribution_once
   STORE_LP_202607_FROM = "stores_lp_202607"
   LP_ANALYTICS_VISIT_PUBLIC_ID_SESSION_KEY = :lp_analytics_visit_public_id
+  LP_ANALYTICS_VISIT_PUBLIC_IDS_SESSION_KEY = :lp_analytics_visit_public_ids
+  LP_ANALYTICS_MAX_SESSION_VISITS = 10
   UTM_PARAM_KEYS = %i[utm_source utm_medium utm_campaign utm_content].freeze
   UTM_PARAM_MAX_LENGTH = 100
   STORE_LP_202607_REF_MAX_LENGTH = 100
@@ -92,6 +94,28 @@ class ApplicationController < ActionController::Base
 
   def lp_analytics_visit_public_id
     session[LP_ANALYTICS_VISIT_PUBLIC_ID_SESSION_KEY]
+  end
+
+  def remember_lp_analytics_visit!(public_id)
+    normalized_public_id = public_id.to_s.strip
+    return unless LpAnalytics::Visit::UUID_PATTERN.match?(normalized_public_id)
+
+    public_ids = lp_analytics_authorized_visit_public_ids
+    public_ids.delete(normalized_public_id)
+    public_ids << normalized_public_id
+
+    session[LP_ANALYTICS_VISIT_PUBLIC_ID_SESSION_KEY] = normalized_public_id
+    session[LP_ANALYTICS_VISIT_PUBLIC_IDS_SESSION_KEY] = public_ids.last(LP_ANALYTICS_MAX_SESSION_VISITS)
+  end
+
+  def lp_analytics_authorized_visit_public_ids
+    current_public_id = lp_analytics_visit_public_id
+    remembered_public_ids = Array(session[LP_ANALYTICS_VISIT_PUBLIC_IDS_SESSION_KEY])
+
+    ([ current_public_id ] + remembered_public_ids).filter_map do |public_id|
+      normalized_public_id = public_id.to_s.strip
+      normalized_public_id if LpAnalytics::Visit::UUID_PATTERN.match?(normalized_public_id)
+    end.uniq
   end
 
   def store_lp_202607_attribution_payload(from: STORE_LP_202607_FROM, source: params)

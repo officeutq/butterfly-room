@@ -8,5 +8,6 @@ pin_all_from "app/javascript/controllers", under: "controllers"
 
 pin "@popperjs/core", to: "/esm/@popperjs/core/index.js"
 pin "bootstrap", to: "/esm/bootstrap/bootstrap.esm.js"
+pin "lp_analytics/event_sender"
 
 pin "banuba-web-sdk", to: "/banuba/sdk/BanubaSDK.browser.esm.js"

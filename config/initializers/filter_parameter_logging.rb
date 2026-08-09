@@ -8,4 +8,4 @@ Rails.application.config.filter_parameters += [
 ]
 
 # LP行動イベントは不正payloadを含めて内容全体をログへ出さない。
-Rails.application.config.filter_parameters += [ :lp_analytics_event ]
+Rails.application.config.filter_parameters += [ :lp_analytics_event, :lp_analytics_visit_id ]

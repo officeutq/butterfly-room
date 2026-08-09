@@ -3,6 +3,16 @@
 require "uri"
 
 module ApplicationHelper
+  def lp_analytics_form_tracking_data(event_type)
+    return {} if event_type.blank?
+
+    {
+      controller: "lp-analytics-form",
+      lp_analytics_form_events_url_value: lp_analytics_events_path,
+      lp_analytics_form_event_type_value: event_type
+    }
+  end
+
   def seconds_to_human_time(seconds)
     s = seconds.to_i
     return "0分" if s <= 0

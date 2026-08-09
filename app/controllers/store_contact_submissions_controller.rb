@@ -76,6 +76,12 @@ class StoreContactSubmissionsController < ApplicationController
     @store_contact_from = permitted_store_contact_from
     @store_contact_back_path = store_contact_back_path(@store_contact_from)
     @store_contact_form_path = store_contact_form_path(@store_contact_from)
+    @lp_analytics_form_event_type = "store_contact_form_view" if lp_analytics_form_tracking?
+  end
+
+  def lp_analytics_form_tracking?
+    @store_contact_from == STORE_CONTACT_FROM_STORES_LP_202607 &&
+      lp_analytics_visit_public_id.present?
   end
 
   def permitted_store_contact_from(source = params)
