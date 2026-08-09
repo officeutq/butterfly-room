@@ -1,0 +1,220 @@
+<% content_for :title, "LP行動分析" %>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h1 class="mb-1">LP行動分析</h1>
+    <p class="text-muted mb-0">匿名訪問単位のRails保存実績です。期間は日本時間の訪問開始日時で判定します。</p>
+  </div>
+  <%= link_to "ダッシュボードへ", dashboard_path, class: "btn btn-outline-secondary" %>
+</div>
+
+<% @filter.warnings.each do |warning| %>
+  <div class="alert alert-warning"><%= warning %></div>
+<% end %>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <%= form_with url: system_admin_lp_analytics_path, method: :get, local: true, class: "row g-3" do %>
+      <div class="col-12 col-md-3">
+        <%= label_tag :period, "対象期間", class: "form-label" %>
+        <%= select_tag :period,
+              options_for_select([
+                [ "今日", "today" ],
+                [ "過去7日", "last_7_days" ],
+                [ "過去30日", "last_30_days" ],
+                [ "任意期間", "custom" ]
+              ], @filter.period),
+              class: "form-select" %>
+      </div>
+      <div class="col-6 col-md-2">
+        <%= label_tag :start_date, "開始日", class: "form-label" %>
+        <%= date_field_tag :start_date, @filter.start_date, class: "form-control" %>
+      </div>
+      <div class="col-6 col-md-2">
+        <%= label_tag :end_date, "終了日", class: "form-label" %>
+        <%= date_field_tag :end_date, @filter.end_date, class: "form-control" %>
+      </div>
+      <div class="col-12 col-md-5">
+        <%= label_tag :lp_identifier, "LP", class: "form-label" %>
+        <%= select_tag :lp_identifier,
+              options_for_select(@dimension_options.lp_identifiers, @filter.lp_identifier),
+              class: "form-select" %>
+      </div>
+
+      <div class="col-12 col-md-3">
+        <%= label_tag :traffic_source, "流入元", class: "form-label" %>
+        <%= select_tag :traffic_source,
+              options_for_select(
+                [ [ "すべて", "" ], [ "直接・流入元不明", LpAnalytics::AnalysisFilter::DIRECT_VALUE ] ] +
+                  @dimension_options.traffic_sources.map { |source| [ source, source ] },
+                @filter.traffic_source
+              ),
+              class: "form-select" %>
+      </div>
+      <div class="col-12 col-md-3">
+        <%= label_tag :utm_source, "utm_source", class: "form-label" %>
+        <%= text_field_tag :utm_source, @filter.utm_source, class: "form-control", maxlength: 100 %>
+      </div>
+      <div class="col-12 col-md-3">
+        <%= label_tag :utm_campaign, "utm_campaign", class: "form-label" %>
+        <%= text_field_tag :utm_campaign, @filter.utm_campaign, class: "form-control", maxlength: 100 %>
+      </div>
+      <div class="col-12 col-md-3">
+        <%= label_tag :utm_content, "utm_content", class: "form-label" %>
+        <%= text_field_tag :utm_content, @filter.utm_content, class: "form-control", maxlength: 100 %>
+      </div>
+      <div class="col-12 col-md-3">
+        <%= label_tag :device_type, "端末", class: "form-label" %>
+        <%= select_tag :device_type,
+              options_for_select(
+                [ [ "すべて", "" ] ] + @dimension_options.device_types.map { |device| [ lp_analytics_device_label(device), device ] },
+                @filter.device_type
+              ),
+              class: "form-select" %>
+      </div>
+      <div class="col-12 col-md-9 d-flex align-items-end gap-2">
+        <%= submit_tag "絞り込む", class: "btn btn-primary" %>
+        <%= link_to "条件をクリア", system_admin_lp_analytics_path, class: "btn btn-outline-secondary" %>
+        <span class="text-muted small">任意期間は最大<%= LpAnalytics::AnalysisFilter::MAX_RANGE_DAYS %>日です。</span>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<h2 class="h4">KPI</h2>
+<div class="row g-3 mb-4">
+  <% @analysis.kpis.each do |kpi| %>
+    <div class="col-6 col-lg-4 col-xl-2">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="small text-muted"><%= kpi.label %></div>
+          <div class="fs-3 fw-semibold"><%= number_with_delimiter(kpi.count) %></div>
+          <% if kpi.supplement.present? %>
+            <div class="small text-muted"><%= kpi.supplement %></div>
+          <% end %>
+          <% unless kpi.rate.nil? %>
+            <div class="small">CV率 <%= lp_analytics_percentage(kpi.rate) %></div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-12 col-xl-6">
+    <h2 class="h4">店舗登録ファネル</h2>
+    <p class="small text-muted">前段まで到達した訪問に絞った連続ファネルです。ファーストビューなど前段より早いCTAの実績はKPI・CTA別分析に含まれます。</p>
+    <%= render "funnel_table", metrics: @analysis.registration_funnel %>
+  </div>
+  <div class="col-12 col-xl-6">
+    <h2 class="h4">お問い合わせファネル</h2>
+    <p class="small text-muted">前段まで到達した訪問に絞った連続ファネルです。</p>
+    <%= render "funnel_table", metrics: @analysis.contact_funnel %>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-12 col-xl-5">
+    <h2 class="h4">スクロール到達率</h2>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead><tr><th>到達位置</th><th class="text-end">訪問数</th><th class="text-end">LP訪問比</th></tr></thead>
+        <tbody>
+          <% @analysis.scroll_metrics.each do |metric| %>
+            <tr><td><%= metric.label %></td><td class="text-end"><%= metric.visit_count %></td><td class="text-end"><%= lp_analytics_percentage(metric.overall_rate) %></td></tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-12 col-xl-7">
+    <h2 class="h4">セクション到達率</h2>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead><tr><th>セクション</th><th class="text-end">訪問数</th><th class="text-end">LP訪問比</th><th class="text-end">前セクション比</th></tr></thead>
+        <tbody>
+          <% @analysis.section_metrics.each do |metric| %>
+            <tr>
+              <td><%= metric.label %></td>
+              <td class="text-end"><%= metric.visit_count %></td>
+              <td class="text-end"><%= lp_analytics_percentage(metric.overall_rate) %></td>
+              <td class="text-end"><%= metric.previous_rate.nil? ? "-" : lp_analytics_percentage(metric.previous_rate) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<h2 class="h4">CTA別分析</h2>
+<div class="table-responsive mb-4">
+  <table class="table table-sm align-middle">
+    <thead>
+      <tr><th>CTA名</th><th>設置位置</th><th>種別</th><th class="text-end">位置到達訪問</th><th class="text-end">クリック訪問</th><th class="text-end">総クリック</th><th class="text-end">到達者CTR</th></tr>
+    </thead>
+    <tbody>
+      <% @analysis.cta_metrics.each do |metric| %>
+        <tr>
+          <td><%= metric.name %><div class="small text-muted"><%= metric.key %></div></td>
+          <td><%= metric.position %></td>
+          <td><%= lp_analytics_cta_kind_label(metric.kind) %></td>
+          <td class="text-end"><%= metric.reached_visit_count %></td>
+          <td class="text-end"><%= metric.clicked_visit_count %></td>
+          <td class="text-end"><%= metric.click_count %></td>
+          <td class="text-end"><%= lp_analytics_percentage(metric.click_rate) %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <h2 class="h4 mb-0">最近のコンバージョン</h2>
+  <span class="text-muted small"><%= @recent_conversions.total_count %>件</span>
+</div>
+<div class="table-responsive">
+  <table class="table table-sm align-middle">
+    <thead><tr><th>完了日時</th><th>種別</th><th>流入元</th><th>utm_source</th><th>utm_campaign</th><th>utm_content</th><th></th></tr></thead>
+    <tbody>
+      <% if @recent_conversions.records.empty? %>
+        <tr><td colspan="7" class="text-center text-muted py-4">対象期間のコンバージョンはありません。</td></tr>
+      <% else %>
+        <% @recent_conversions.records.each do |event| %>
+          <tr>
+            <td><%= l(event.occurred_at) %></td>
+            <td><%= lp_analytics_conversion_label(event) %></td>
+            <td><%= lp_analytics_traffic_value(event.visit.traffic_source) %></td>
+            <td><%= event.visit.utm_source.presence || "-" %></td>
+            <td><%= event.visit.utm_campaign.presence || "-" %></td>
+            <td><%= event.visit.utm_content.presence || "-" %></td>
+            <td class="text-end"><%= link_to "訪問詳細", system_admin_lp_analytics_visit_path(event.visit.public_id), class: "btn btn-sm btn-outline-secondary" %></td>
+          </tr>
+        <% end %>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<% if @recent_conversions.total_pages > 1 %>
+  <nav aria-label="最近のコンバージョンのページ切り替え">
+    <ul class="pagination justify-content-center">
+      <li class="page-item <%= "disabled" unless @recent_conversions.previous_page %>">
+        <% if @recent_conversions.previous_page %>
+          <%= link_to "前へ", system_admin_lp_analytics_path(@filter.to_params.merge(page: @recent_conversions.previous_page)), class: "page-link" %>
+        <% else %>
+          <span class="page-link">前へ</span>
+        <% end %>
+      </li>
+      <li class="page-item disabled"><span class="page-link"><%= @recent_conversions.current_page %> / <%= @recent_conversions.total_pages %></span></li>
+      <li class="page-item <%= "disabled" unless @recent_conversions.next_page %>">
+        <% if @recent_conversions.next_page %>
+          <%= link_to "次へ", system_admin_lp_analytics_path(@filter.to_params.merge(page: @recent_conversions.next_page)), class: "page-link" %>
+        <% else %>
+          <span class="page-link">次へ</span>
+        <% end %>
+      </li>
+    </ul>
+  </nav>
+<% end %>

@@ -1,0 +1,15 @@
+<div class="table-responsive">
+  <table class="table table-sm align-middle">
+    <thead><tr><th>ステップ</th><th class="text-end">訪問数</th><th class="text-end">LP訪問比</th><th class="text-end">前段比</th></tr></thead>
+    <tbody>
+      <% metrics.each do |metric| %>
+        <tr>
+          <td><%= metric.label %></td>
+          <td class="text-end"><%= metric.visit_count %></td>
+          <td class="text-end"><%= lp_analytics_percentage(metric.overall_rate) %></td>
+          <td class="text-end"><%= metric.previous_rate.nil? ? "-" : lp_analytics_percentage(metric.previous_rate) %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

@@ -514,6 +514,17 @@
       </div>
 
       <div class="col-12 col-md-6 col-xl-4">
+        <%= link_to system_admin_lp_analytics_path, class: "text-decoration-none" do %>
+          <div class="card h-100 dashboard-role-card dashboard-role-card-system-admin" data-bs-theme="light">
+            <div class="card-body">
+              <h5 class="card-title mb-2">LP行動分析</h5>
+              <p class="card-text mb-0">LP訪問から登録・お問い合わせ完了までの実績を確認します。</p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="col-12 col-md-6 col-xl-4">
         <%= link_to "/system_admin/settlements/manual/new", class: "text-decoration-none" do %>
           <div class="card h-100 dashboard-role-card dashboard-role-card-system-admin" data-bs-theme="light">
             <div class="card-body">

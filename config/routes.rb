@@ -231,6 +231,8 @@ Rails.application.routes.draw do
     resources :effects, only: %i[index new create edit update]
     resources :notifications, only: %i[index new create edit update]
     resources :store_contact_submissions, only: %i[index show]
+    get "lp_analytics", to: "lp_analytics#index", as: :lp_analytics
+    get "lp_analytics/visits/:public_id", to: "lp_analytics#show", as: :lp_analytics_visit
     resources :support_inquiries, only: %i[index show update] do
       resources :messages, only: %i[create], controller: "support_inquiry_messages"
     end

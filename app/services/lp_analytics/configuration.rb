@@ -4,16 +4,49 @@ module LpAnalytics
   class Configuration
     STORE_LP_202607 = "stores_lp_202607"
 
+    CTA_DEFINITIONS = {
+      "pc_sidebar_registration" => {
+        name: "今すぐ始める",
+        position: "PC左側",
+        kind: :registration
+      }.freeze,
+      "hero_registration" => {
+        name: "無料登録",
+        position: "ファーストビュー",
+        kind: :registration
+      }.freeze,
+      "flow_registration" => {
+        name: "今すぐ始める",
+        position: "FLOW付近",
+        kind: :registration
+      }.freeze,
+      "bottom_registration" => {
+        name: "店舗登録はこちら",
+        position: "最下部",
+        kind: :registration
+      }.freeze,
+      "bottom_contact" => {
+        name: "お問い合わせはこちら",
+        position: "最下部",
+        kind: :contact
+      }.freeze
+    }.freeze
+
+    SECTION_LABELS = {
+      "USAGE" => "USAGE",
+      "STRENGTHS" => "STRENGTHS",
+      "SYSTEM" => "SYSTEM",
+      "PRICING" => "PRICING",
+      "FLOW" => "FLOW",
+      "CAST" => "CAST",
+      "QA" => "QA",
+      "bottom_cta" => "最下部CTA"
+    }.freeze
+
     LP_DEFINITIONS = {
       STORE_LP_202607 => {
-        sections: %w[USAGE STRENGTHS SYSTEM PRICING FLOW CAST QA bottom_cta].freeze,
-        ctas: %w[
-          pc_sidebar_registration
-          hero_registration
-          flow_registration
-          bottom_registration
-          bottom_contact
-        ].freeze,
+        sections: SECTION_LABELS.keys.freeze,
+        ctas: CTA_DEFINITIONS.keys.freeze,
         faqs: %w[faq_1 faq_2 faq_3 faq_4].freeze
       }.freeze
     }.freeze
