@@ -24,10 +24,6 @@ module LpAnalytics
       :cta_metrics
     )
 
-    REGISTRATION_CTA_KEYS = Configuration::CTA_DEFINITIONS.filter_map do |key, definition|
-      key if definition.fetch(:kind) == :registration
-    end.freeze
-
     def initialize(filter:)
       @filter = filter
     end
@@ -118,7 +114,7 @@ module LpAnalytics
           [
             :registration_cta,
             "店舗登録CTAクリック",
-            event_visit_ids(event_type: "cta_clicked", values: REGISTRATION_CTA_KEYS)
+            event_visit_ids(event_type: "cta_clicked", values: Configuration::REGISTRATION_CTA_KEYS)
           ],
           [
             :registration_form,
@@ -147,7 +143,7 @@ module LpAnalytics
           [
             :contact_cta,
             "お問い合わせCTAクリック",
-            event_visit_ids(event_type: "cta_clicked", values: [ "bottom_contact" ])
+            event_visit_ids(event_type: "cta_clicked", values: Configuration::CONTACT_CTA_KEYS)
           ],
           [
             :contact_form,

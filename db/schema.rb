@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_09_052000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_09_080000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -215,6 +215,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_09_052000) do
     t.index ["lp_analytics_visit_id"], name: "index_lp_analytics_events_on_lp_analytics_visit_id"
     t.index ["lp_identifier", "occurred_at"], name: "index_lp_analytics_events_on_lp_identifier_and_occurred_at"
     t.index ["occurred_at"], name: "index_lp_analytics_events_on_occurred_at"
+  end
+
+  create_table "lp_analytics_sheet_exports", force: :cascade do |t|
+    t.date "aggregation_date", null: false
+    t.integer "attempt_count", default: 0, null: false
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.string "destination_fingerprint", limit: 64, null: false
+    t.string "error_class", limit: 200
+    t.string "error_message", limit: 500
+    t.datetime "failed_at"
+    t.string "lp_identifier", limit: 100, null: false
+    t.boolean "needs_retry", default: false, null: false
+    t.string "payload_checksum", limit: 64
+    t.integer "row_count", default: 0, null: false
+    t.datetime "started_at"
+    t.integer "status", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.string "worksheet_name", limit: 100, null: false
+    t.index ["aggregation_date", "lp_identifier", "destination_fingerprint", "worksheet_name"], name: "uniq_lp_analytics_sheet_exports_target", unique: true
+    t.index ["status", "needs_retry"], name: "index_lp_analytics_sheet_exports_on_status_and_needs_retry"
   end
 
   create_table "lp_analytics_visits", force: :cascade do |t|

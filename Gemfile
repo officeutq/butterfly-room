@@ -73,7 +73,10 @@ gem "devise", "~> 4.9"
 gem "stripe"
 gem "aws-sdk-ivsrealtime"
 gem "aws-sdk-s3", require: false
+gem "aws-sdk-secretsmanager", require: false
 gem "aws-sdk-sns"
+gem "google-apis-sheets_v4", require: false
+gem "googleauth", require: false
 gem "mini_magick"
 gem "rails-i18n"
 gem "geocoder"
