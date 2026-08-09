@@ -18,7 +18,7 @@ LP行動分析の日次集計をGoogleスプレッドシートへ出力するた
 | --- | --- | --- |
 | Google Cloud project | `Butterflyve LP Analytics` | productionと同じproject内でアカウントを分離 |
 | サービスアカウントの用途 | production日次集計の書き込み専用 | staging接続・出力検証専用 |
-| サービスアカウント表示名（運用標準） | `Butterflyve LP Analytics Sheets Export - production` | `Butterflyve LP Analytics Sheets Export - staging` |
+| サービスアカウント表示名（現行） | `Butterflyve LP Analytics Production` | `Butterflyve LP Analytics Staging` |
 | Spreadsheet | production専用。実IDは公開しない | staging専用。実IDは公開しない |
 | Rails管理worksheet | `daily_raw` | `daily_raw` |
 | AWS Secrets Manager | production専用Secret | staging専用Secret |
@@ -29,7 +29,7 @@ LP行動分析の日次集計をGoogleスプレッドシートへ出力するた
 
 サービスアカウントは人ではなくアプリケーションに属する単一目的のアカウントとして扱う。管理責任者はGoogle Cloud、AWS、productionサーバーへの管理権限を持つシステム管理責任者とする。担当者個人の氏名と引継ぎ先は公開リポジトリではなく、社内のアクセス権限管理台帳に記録する。
 
-Google Cloud上の表示名は上表を標準とする。既存アカウントの表示名が異なる場合は、権限を持つ担当者がGoogle Cloud Consoleの「IAMと管理」→「サービス アカウント」で対象環境とメールアドレスを照合して修正する。メールアドレスやproject IDの実値はIssue・PRへ転記しない。
+Google Cloud上の現行表示名は上表のとおり確認済みである。変更時は、権限を持つ担当者がGoogle Cloud Consoleの「IAMと管理」→「サービス アカウント」で対象環境とメールアドレスを照合する。メールアドレスやproject IDの実値はIssue・PRへ転記しない。
 
 ### 現在の確認状況
 
@@ -39,15 +39,15 @@ Google Cloud上の表示名は上表を標準とする。既存アカウント�
 | production / stagingサービスアカウントとJSON鍵 | 作成済み。鍵は対応Secretへ保存後、作業端末から削除済み |
 | 鍵作成禁止policy | 鍵発行時のproject限定例外を解除し、親policy継承による禁止を再適用済み |
 | Spreadsheetと`daily_raw` | 環境別に作成済み |
-| Spreadsheet共有 | 対応環境のサービスアカウントだけが編集者。反対環境は権限なし。一般アクセスは制限付き |
+| Spreadsheet共有 | 対応環境のサービスアカウントだけが編集者。反対環境は権限なし。一般アクセスは制限付き。外部関係者への共有なし |
 | 週次・graph・pivot用worksheet | 未作成。必要時に`daily_raw`とは別worksheetで作成する |
 | AWS Secret | 環境別に作成済み。AWS管理KMS keyを使用し、自動rotationは無効 |
 | EC2 IAM | 対応環境のSecretだけを取得可能。反対環境は`AccessDenied`確認済み |
 | CloudTrail | 両環境の`GetSecretValue`成功eventを確認済み |
 | EC2の環境設定 | 環境別に設定済み |
-| app / workerへの設定反映 | container再作成後の実process確認は未実施 |
+| app / workerへの設定反映 | 同じ環境別env fileを参照する構成は確認済み。実process確認は#1032実装後に行う |
 | Sheets API実接続 | 未実施。#1032のclient実装後に安全な手順で確認する |
-| 現行表示名と担当者個人 | Google Cloud Consoleと社内アクセス権限管理台帳で人間が最終確認する |
+| 現行表示名 | production / stagingとも確認済み |
 
 ## 3. 実値の保存場所と確認手順
 
@@ -201,7 +201,7 @@ Google Cloudは、不要な鍵をまず無効化し、利用されていない�
 - stagingのappとworkerは、どちらも`${STAGING_ENV_FILE:-./.env.staging}`を参照する
 - productionとstagingで別Compose file・別env file・別container名を使用する
 
-この構造により両processへ同じ環境別設定を渡せることはソース上で確認済みである。ただし、環境変数追加後のcontainer再作成と実process内の存在確認は未実施である。
+この構造により両processへ同じ環境別設定を渡せることはソース上で確認済みである。現時点では#1032のアプリ実装がなく設定を消費しないため、確認だけを目的としたcontainer再作成は行わない。実process内の存在確認は、#1032実装後の反映・接続確認に含める。
 
 Docker Composeの`restart`だけでは変更した環境変数は反映されないため、反映時はcontainerを再作成する。productionでは勝手に実行せず、停止影響と実施時間の承認を得る。
 
@@ -296,7 +296,21 @@ Google Sheets障害はLP閲覧、店舗登録、お問い合わせ、Rails DB保
 
 例示には`dummy-project-id`、`<PRODUCTION_SPREADSHEET_ID>`、`<STAGING_SECRET_ID>`等のダミーだけを使用する。エラーlogは認証response bodyやrequest payloadを出さず、環境、対象日、error class、HTTP status、retry要否だけを記録する。
 
-## 17. 公式資料
+## 17. Issue境界
+
+#1027では、Google Cloud・Spreadsheet・Secret・IAM・環境設定の準備、環境分離、運用手順、Docker Compose上のapp / worker参照経路までを完了条件とする。
+
+次は#1032へ持ち越す。
+
+- app / workerの実processでの環境変数存在確認
+- Google Sheets API clientとSecret取得処理
+- stagingの実接続と環境間のread-only拒否確認
+- 日次Job、手動再出力、失敗状態・ログ確認
+- 承認後のproduction実書き込み確認
+
+#1027対応ではproduction containerの再作成、Spreadsheetへの書き込み、Secret値取得を行わない。
+
+## 18. 公式資料
 
 - [Google Cloud: Best practices for using service accounts securely](https://docs.cloud.google.com/iam/docs/best-practices-service-accounts)
 - [Google Cloud: Best practices for managing service account keys](https://docs.cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys)
