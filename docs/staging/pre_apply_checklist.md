@@ -40,6 +40,9 @@
 - [ ] staging S3だけが対象で、public block、SSE-S3、versioningが有効
 - [ ] IAM独自policyに不要な`Resource: "*"`がない
 - [ ] `AmazonSSMManagedInstanceCore`はSession Manager運用に必要なAWS managed policyとして承認済み
+- [ ] Google Sheets認証用data sourceは`DescribeSecret`で既存のstaging Secretの名前とARNだけを参照し、Secret値・version・resource policyを参照していない
+- [ ] staging EC2 roleのSecrets Manager権限は対象のstaging用Secret ARN 1件だけに制限されている
+- [ ] production用Google Sheets認証Secretへの権限がない
 - [ ] SNS permissionと`ivs:DeleteStage`がない
 - [ ] IVS permissionがStage ARNと`app/env`tag条件に制限されている
 - [ ] User Dataに秘密値、GitHub token、private clone、`.env.staging`生成がない

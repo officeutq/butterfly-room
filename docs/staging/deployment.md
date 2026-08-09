@@ -27,6 +27,23 @@ CloudFrontとWAFは追加しません。RDS instanceは共有しますが、DB�
 
 既存ALBのdefault action、本番Target Group、RDS instance、本番S3、既存DNSはTerraformで変更しません。
 
+### Google Sheets認証Secretの参照
+
+Google Sheets用のstagingサービスアカウント認証情報は、既存のAWS Secrets Manager Secretで管理します。Secret自体とSecret値はTerraformで作成・更新せず、`DescribeSecret`だけを呼ぶexternal data sourceで名前とARNを参照して、staging EC2 roleの読取対象ARNを限定します。
+
+Secret名は公開リポジトリへ固定せず、Git管理外の`infra/terraform/environments/staging/terraform.tfvars`で次のvariableへ設定します。
+
+```hcl
+google_sheets_credentials_secret_name = "<existing-staging-secret-name>"
+```
+
+- 設定するのはSecret名だけで、ARNやサービスアカウントJSONは記載しない
+- Secret値、Secret version、private keyはTerraformから参照しない
+- `terraform.tfvars`をGitへ追加しない
+- planでは`data.external.google_sheets_credentials_secret`が既存Secretの名前とARNのreadだけであることを確認する
+- IAM policyのResourceがdata sourceから得たstaging用Secret ARNの1件だけであることを確認する
+- production用SecretのARNや権限がplanへ含まれていた場合は中止する
+
 ## 2. DB手動作業
 
 詳細は[ops/staging/README.md](../../ops/staging/README.md)に従います。SQLはTerraform、User Data、systemd、Rails taskから実行しません。
