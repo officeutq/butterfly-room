@@ -31,6 +31,8 @@ CloudFrontとWAFは追加しません。RDS instanceは共有しますが、DB�
 
 Google Sheets用のstagingサービスアカウント認証情報は、既存のAWS Secrets Manager Secretで管理します。Secret自体とSecret値はTerraformで作成・更新せず、`DescribeSecret`だけを呼ぶexternal data sourceで名前とARNを参照して、staging EC2 roleの読取対象ARNを限定します。
 
+環境分離、実値の確認場所、鍵rotation、Spreadsheet共有、CloudTrail、障害対応は[LP行動分析 Google Sheets連携運用手順](../ops/lp_analytics_google_sheets.md)に従います。
+
 Secret名は公開リポジトリへ固定せず、Git管理外の`infra/terraform/environments/staging/terraform.tfvars`で次のvariableへ設定します。
 
 ```hcl
