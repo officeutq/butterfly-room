@@ -20,7 +20,8 @@ class StoreContactSubmissionsController < ApplicationController
 
   def create
     StoreContactSubmissions::CreateService.new(
-      attributes: store_contact_submission_params
+      attributes: store_contact_submission_params,
+      lp_analytics_visit: store_contact_lp_analytics_visit
     ).call
 
     session[:store_contact_completion] =
@@ -82,6 +83,14 @@ class StoreContactSubmissionsController < ApplicationController
   def lp_analytics_form_tracking?
     @store_contact_from == STORE_CONTACT_FROM_STORES_LP_202607 &&
       lp_analytics_visit_public_id.present?
+  end
+
+  def store_contact_lp_analytics_visit
+    return unless @store_contact_from == STORE_CONTACT_FROM_STORES_LP_202607
+
+    authorized_lp_analytics_completion_visit(
+      lp_identifier: LpAnalytics::Configuration::STORE_LP_202607
+    )
   end
 
   def permitted_store_contact_from(source = params)

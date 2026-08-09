@@ -2,6 +2,9 @@
 
 class Store < ApplicationRecord
   belongs_to :referral_code, optional: true
+  belongs_to :lp_analytics_visit,
+    class_name: "LpAnalytics::Visit",
+    optional: true
 
   has_many :booths, dependent: :destroy
   has_many :store_memberships, dependent: :destroy

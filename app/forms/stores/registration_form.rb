@@ -11,6 +11,7 @@ module Stores
     attribute :password_confirmation, :string
     attribute :referral_code, :string
 
+    attr_accessor :lp_analytics_visit
     attr_reader :user, :store
 
     validates :store_name, presence: true
@@ -27,7 +28,8 @@ module Stores
         store_name: store_name,
         email: email,
         password: password,
-        referral_code: normalized_referral_code
+        referral_code: normalized_referral_code,
+        lp_analytics_visit: lp_analytics_visit
       )
 
       @store = result.store

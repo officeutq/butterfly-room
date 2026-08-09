@@ -19,12 +19,18 @@ module LpAnalytics
       store_contact_complete
     ].freeze
     DEDUPLICATED_EVENT_TYPES = %w[scroll_reached section_reached cta_reached].freeze
+    COMPLETION_EVENT_RECORD_TYPES = {
+      "store_registration_complete" => "Store",
+      "store_contact_complete" => "StoreContactSubmission"
+    }.freeze
+    BROWSER_EVENT_TYPES = (EVENT_TYPES - COMPLETION_EVENT_RECORD_TYPES.keys).freeze
     UUID_PATTERN = Visit::UUID_PATTERN
 
     belongs_to :visit,
       class_name: "LpAnalytics::Visit",
       foreign_key: :lp_analytics_visit_id,
       inverse_of: :events
+    belongs_to :completion_record, polymorphic: true, optional: true
 
     before_validation :normalize_fields
 
@@ -36,10 +42,14 @@ module LpAnalytics
       format: { with: UUID_PATTERN },
       allow_nil: true
     validates :dedupe_key, length: { is: 64 }, allow_nil: true
+    validates :completion_record_id,
+      uniqueness: { scope: :completion_record_type },
+      allow_nil: true
     validate :lp_identifier_matches_visit
     validate :event_value_is_allowed
     validate :dedupe_key_is_valid
     validate :metadata_is_allowed
+    validate :completion_record_is_valid
 
     def self.dedupe_key_for(event_type, event_value)
       return unless DEDUPLICATED_EVENT_TYPES.include?(event_type)
@@ -85,6 +95,26 @@ module LpAnalytics
       return if Configuration.valid_metadata?(metadata)
 
       errors.add(:metadata, :invalid)
+    end
+
+    def completion_record_is_valid
+      expected_type = COMPLETION_EVENT_RECORD_TYPES[event_type]
+      if expected_type.nil?
+        return if completion_record_type.blank? && completion_record_id.blank?
+
+        errors.add(:completion_record, :invalid)
+        return
+      end
+
+      unless completion_record_type == expected_type && completion_record_id.present?
+        errors.add(:completion_record, :invalid)
+        return
+      end
+
+      record = completion_record
+      return if record.present? && record.lp_analytics_visit_id == lp_analytics_visit_id
+
+      errors.add(:completion_record, :invalid)
     end
   end
 end

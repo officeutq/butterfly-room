@@ -19,6 +19,7 @@ module Stores
 
     def create
       @form = Stores::RegistrationForm.new(registration_params)
+      @form.lp_analytics_visit = store_registration_lp_analytics_visit
 
       if @form.save
         completion_payload = completion_tracking_payload(from: @store_registration_from)
@@ -87,6 +88,14 @@ module Stores
     def lp_analytics_form_tracking?
       @store_registration_from == STORE_REGISTRATION_FROM_STORES_LP_202607 &&
         lp_analytics_visit_public_id.present?
+    end
+
+    def store_registration_lp_analytics_visit
+      return unless @store_registration_from == STORE_REGISTRATION_FROM_STORES_LP_202607
+
+      authorized_lp_analytics_completion_visit(
+        lp_identifier: LpAnalytics::Configuration::STORE_LP_202607
+      )
     end
 
     def permitted_store_registration_from(source = params)

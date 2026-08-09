@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_09_020000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_09_052000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -197,6 +197,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_09_020000) do
 
   create_table "lp_analytics_events", force: :cascade do |t|
     t.uuid "browser_event_id"
+    t.bigint "completion_record_id"
+    t.string "completion_record_type"
     t.datetime "created_at", null: false
     t.string "dedupe_key", limit: 64
     t.string "event_type", limit: 50, null: false
@@ -207,6 +209,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_09_020000) do
     t.datetime "occurred_at", null: false
     t.datetime "updated_at", null: false
     t.index ["browser_event_id"], name: "uniq_lp_analytics_events_browser_event_id", unique: true, where: "(browser_event_id IS NOT NULL)"
+    t.index ["completion_record_type", "completion_record_id"], name: "uniq_lp_analytics_events_completion_record", unique: true, where: "((completion_record_type IS NOT NULL) AND (completion_record_id IS NOT NULL))"
     t.index ["lp_analytics_visit_id", "dedupe_key"], name: "uniq_lp_analytics_events_visit_dedupe_key", unique: true, where: "(dedupe_key IS NOT NULL)"
     t.index ["lp_analytics_visit_id", "event_type", "event_value"], name: "idx_lp_analytics_events_visit_type_value"
     t.index ["lp_analytics_visit_id"], name: "index_lp_analytics_events_on_lp_analytics_visit_id"
@@ -471,12 +474,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_09_020000) do
     t.string "contactable_time", limit: 120
     t.datetime "created_at", null: false
     t.string "email", limit: 255, null: false
+    t.bigint "lp_analytics_visit_id"
     t.string "name", limit: 120, null: false
     t.string "phone_number", limit: 50, null: false
     t.string "source", limit: 50, default: "stores_lp", null: false
     t.string "store_name", limit: 120, null: false
     t.datetime "updated_at", null: false
     t.index ["created_at"], name: "index_store_contact_submissions_on_created_at"
+    t.index ["lp_analytics_visit_id"], name: "index_store_contact_submissions_on_lp_analytics_visit_id"
     t.index ["source"], name: "index_store_contact_submissions_on_source"
   end
 
@@ -540,6 +545,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_09_020000) do
     t.string "instagram_url"
     t.float "latitude"
     t.float "longitude"
+    t.bigint "lp_analytics_visit_id"
     t.string "name", null: false
     t.datetime "onboarding_invite_copied_at"
     t.integer "onboarding_step"
@@ -552,6 +558,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_09_020000) do
     t.string "website_url"
     t.string "x_url"
     t.string "youtube_url"
+    t.index ["lp_analytics_visit_id"], name: "index_stores_on_lp_analytics_visit_id"
     t.index ["onboarding_invite_copied_at"], name: "index_stores_on_onboarding_invite_copied_at"
     t.index ["onboarding_step"], name: "index_stores_on_onboarding_step"
     t.index ["published"], name: "index_stores_on_published"
@@ -749,6 +756,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_09_020000) do
   add_foreign_key "store_cast_invitations", "stores"
   add_foreign_key "store_cast_invitations", "users", column: "accepted_by_user_id"
   add_foreign_key "store_cast_invitations", "users", column: "invited_by_user_id"
+  add_foreign_key "store_contact_submissions", "lp_analytics_visits"
   add_foreign_key "store_ledger_entries", "drink_orders"
   add_foreign_key "store_ledger_entries", "stores"
   add_foreign_key "store_ledger_entries", "stream_sessions"
@@ -756,6 +764,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_09_020000) do
   add_foreign_key "store_memberships", "users"
   add_foreign_key "store_payout_accounts", "stores"
   add_foreign_key "store_payout_accounts", "users", column: "updated_by_user_id"
+  add_foreign_key "stores", "lp_analytics_visits"
   add_foreign_key "stores", "referral_codes"
   add_foreign_key "stream_sessions", "booths"
   add_foreign_key "stream_sessions", "stores"

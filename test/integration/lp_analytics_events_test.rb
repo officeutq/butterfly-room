@@ -157,6 +157,17 @@ class LpAnalyticsEventsTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_entity
   end
 
+  test "完了イベントをブラウザAPIから記録できない" do
+    get stores_lp_202607_path
+
+    assert_no_difference "LpAnalytics::Event.count" do
+      %w[store_registration_complete store_contact_complete].each do |event_type|
+        post_event(event_id: SecureRandom.uuid, event_type: event_type)
+        assert_response :unprocessable_entity
+      end
+    end
+  end
+
   test "異なるoriginと上限超過requestを拒否する" do
     get stores_lp_202607_path
 
@@ -201,6 +212,7 @@ class LpAnalyticsEventsTest < ActionDispatch::IntegrationTest
     filtered = ActiveSupport::ParameterFilter
       .new(Rails.application.config.filter_parameters)
       .filter(
+        "lp_analytics_visit_id" => SecureRandom.uuid,
         "lp_analytics_event" => {
           "event_type" => "invalid-owner@example.com",
           "metadata" => { "body" => "private text" }
@@ -208,6 +220,7 @@ class LpAnalyticsEventsTest < ActionDispatch::IntegrationTest
       )
 
     assert_equal "[FILTERED]", filtered["lp_analytics_event"]
+    assert_equal "[FILTERED]", filtered["lp_analytics_visit_id"]
   end
 
   private
