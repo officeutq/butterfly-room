@@ -85,7 +85,7 @@ module LpAnalytics
         raise InvalidEventError unless @visit.is_a?(Visit) && @visit.persisted?
         raise InvalidEventError unless @event_value_input_valid
         raise InvalidEventError unless @browser_event_id_input_valid
-        raise InvalidEventError unless Event::EVENT_TYPES.include?(@event_type)
+        raise InvalidEventError unless Event::BROWSER_EVENT_TYPES.include?(@event_type)
         raise InvalidEventError unless Configuration.allowed_event_value?(
           lp_identifier: @visit.lp_identifier,
           event_type: @event_type,

@@ -103,6 +103,8 @@ class LpAnalytics::Events::RecordServiceTest < ActiveSupport::TestCase
   test "未許可のevent type・value・metadataを保存しない" do
     invalid_attributes = [
       { event_type: "arbitrary", event_value: nil, metadata: {} },
+      { event_type: "store_registration_complete", event_value: nil, metadata: {} },
+      { event_type: "store_contact_complete", event_value: nil, metadata: {} },
       { event_type: "scroll_reached", event_value: "100", metadata: {} },
       { event_type: "cta_clicked", event_value: "unknown_cta", metadata: {} },
       { event_type: "lp_view", event_value: { email: "owner@example.com" }, metadata: {} },

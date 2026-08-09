@@ -13,6 +13,10 @@ class StoreContactSubmission < ApplicationRecord
 
   attribute :source, :string, default: SOURCE_STORES_LP
 
+  belongs_to :lp_analytics_visit,
+    class_name: "LpAnalytics::Visit",
+    optional: true
+
   validates :name, presence: true, length: { maximum: NAME_MAX_LENGTH }
   validates :store_name, presence: true, length: { maximum: STORE_NAME_MAX_LENGTH }
   validates :business_type, length: { maximum: BUSINESS_TYPE_MAX_LENGTH }, allow_blank: true

@@ -60,6 +60,29 @@ module Stores
       assert_equal default_referral_code, result.store.referral_code
     end
 
+    test "records an LP analytics completion after the registration transaction commits" do
+      rc = ReferralCode.create!(
+        code: "STORE-REG-ANALYTICS",
+        enabled: true,
+        expires_at: 1.day.from_now
+      )
+      visit = create_lp_analytics_visit
+      result = nil
+
+      assert_difference -> { LpAnalytics::Event.where(event_type: "store_registration_complete").count }, 1 do
+        result = RegisterStoreAdmin.call!(
+          store_name: "行動分析対象店舗",
+          email: "store-registration-analytics@example.com",
+          password: "password",
+          referral_code: rc.code,
+          lp_analytics_visit: visit
+        )
+      end
+
+      assert_equal visit, result.store.lp_analytics_visit
+      assert_equal result.store, LpAnalytics::Event.order(:id).last.completion_record
+    end
+
     test "rolls back store, user, membership, and drink_items when default drink_item creation fails" do
       rc = ReferralCode.create!(
         code: "STORE-REG-NG",
@@ -71,7 +94,8 @@ module Stores
         store_name: "ロールバック確認店舗",
         email: "store_registration_rollback@example.com",
         password: "password",
-        referral_code: rc.code
+        referral_code: rc.code,
+        lp_analytics_visit: create_lp_analytics_visit
       )
 
       invalid_items = [
@@ -88,7 +112,14 @@ module Stores
       RegistrationDefaults.define_singleton_method(:default_drink_item_attributes) { invalid_items }
 
       begin
-        assert_no_difference [ "Store.count", "User.count", "StoreMembership.count", "DrinkItem.count", "Booth.count" ] do
+        assert_no_difference [
+          "Store.count",
+          "User.count",
+          "StoreMembership.count",
+          "DrinkItem.count",
+          "Booth.count",
+          "LpAnalytics::Event.count"
+        ] do
           assert_raises ActiveRecord::RecordInvalid do
             service.call!
           end
@@ -96,6 +127,18 @@ module Stores
       ensure
         RegistrationDefaults.define_singleton_method(:default_drink_item_attributes, original_method)
       end
+    end
+
+    private
+
+    def create_lp_analytics_visit
+      now = Time.current
+      LpAnalytics::Visit.create!(
+        lp_identifier: LpAnalytics::Configuration::STORE_LP_202607,
+        device_type: "pc",
+        started_at: now,
+        last_activity_at: now
+      )
     end
   end
 end

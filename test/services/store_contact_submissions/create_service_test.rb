@@ -54,15 +54,41 @@ class StoreContactSubmissions::CreateServiceTest < ActiveSupport::TestCase
   end
 
   test "does not enqueue emails when submission is invalid" do
+    visit = create_lp_analytics_visit
+
     assert_no_enqueued_emails do
-      assert_no_difference -> { StoreContactSubmission.count } do
+      assert_no_difference [
+        -> { StoreContactSubmission.count },
+        -> { LpAnalytics::Event.count }
+      ] do
         assert_raises(ActiveRecord::RecordInvalid) do
           StoreContactSubmissions::CreateService.new(
-            attributes: valid_attributes.merge(name: "")
+            attributes: valid_attributes.merge(name: ""),
+            lp_analytics_visit: visit
           ).call
         end
       end
     end
+  end
+
+  test "counts a saved submission as complete even when mail enqueue fails" do
+    visit = create_lp_analytics_visit
+    service = StoreContactSubmissions::CreateService.new(
+      attributes: valid_attributes,
+      lp_analytics_visit: visit
+    )
+    service.define_singleton_method(:enqueue_mail!) { |_submission| raise "mail enqueue failed" }
+
+    assert_difference [
+      -> { StoreContactSubmission.count },
+      -> { LpAnalytics::Event.where(event_type: "store_contact_complete").count }
+    ], 1 do
+      assert_raises(RuntimeError) { service.call }
+    end
+
+    submission = StoreContactSubmission.order(:id).last
+    assert_equal visit, submission.lp_analytics_visit
+    assert_equal submission, LpAnalytics::Event.order(:id).last.completion_record
   end
 
   private
@@ -77,6 +103,16 @@ class StoreContactSubmissions::CreateServiceTest < ActiveSupport::TestCase
       body: "Question about registration.",
       contactable_time: "Weekdays 10:00-18:00"
     }
+  end
+
+  def create_lp_analytics_visit
+    now = Time.current
+    LpAnalytics::Visit.create!(
+      lp_identifier: LpAnalytics::Configuration::STORE_LP_202607,
+      device_type: "pc",
+      started_at: now,
+      last_activity_at: now
+    )
   end
 
   def restore_admin_email_env
