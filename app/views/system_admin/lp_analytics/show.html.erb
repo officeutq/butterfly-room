@@ -1,0 +1,44 @@
+<% content_for :title, "LP匿名訪問詳細" %>
+<% detail = @visit_detail %>
+<% visit = detail.visit %>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="mb-0">LP匿名訪問詳細</h1>
+  <%= link_to "LP行動分析へ", system_admin_lp_analytics_path, class: "btn btn-outline-secondary" %>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <dl class="row mb-0">
+      <dt class="col-sm-3">訪問ID</dt><dd class="col-sm-9"><code><%= visit.public_id %></code></dd>
+      <dt class="col-sm-3">訪問日時</dt><dd class="col-sm-9"><%= l(visit.started_at) %></dd>
+      <dt class="col-sm-3">LP</dt><dd class="col-sm-9"><%= visit.lp_identifier %></dd>
+      <dt class="col-sm-3">流入元</dt><dd class="col-sm-9"><%= lp_analytics_traffic_value(visit.traffic_source) %></dd>
+      <dt class="col-sm-3">UTM</dt>
+      <dd class="col-sm-9">
+        source: <%= visit.utm_source.presence || "-" %> / medium: <%= visit.utm_medium.presence || "-" %> /
+        campaign: <%= visit.utm_campaign.presence || "-" %> / content: <%= visit.utm_content.presence || "-" %>
+      </dd>
+      <dt class="col-sm-3">紹介コード</dt><dd class="col-sm-9"><%= visit.referral_code.presence || "-" %></dd>
+      <dt class="col-sm-3">端末・ブラウザ</dt><dd class="col-sm-9"><%= lp_analytics_device_label(visit.device_type) %> / <%= visit.browser_type.presence || "-" %></dd>
+      <dt class="col-sm-3">最終到達地点</dt><dd class="col-sm-9"><%= detail.final_reach_event ? lp_analytics_event_label(detail.final_reach_event) : "-" %></dd>
+      <dt class="col-sm-3">最終結果</dt><dd class="col-sm-9"><%= detail.final_result_event ? lp_analytics_event_label(detail.final_result_event) : "-" %></dd>
+    </dl>
+  </div>
+</div>
+
+<h2 class="h4">行動履歴</h2>
+<div class="table-responsive">
+  <table class="table table-sm align-middle">
+    <thead><tr><th>発生日時</th><th>行動</th></tr></thead>
+    <tbody>
+      <% if detail.events.empty? %>
+        <tr><td colspan="2" class="text-center text-muted py-4">記録された行動はありません。</td></tr>
+      <% else %>
+        <% detail.events.each do |event| %>
+          <tr><td><%= l(event.occurred_at) %></td><td><%= lp_analytics_event_label(event) %></td></tr>
+        <% end %>
+      <% end %>
+    </tbody>
+  </table>
+</div>
