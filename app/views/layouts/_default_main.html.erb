@@ -30,6 +30,6 @@
   </div>
 </main>
 
-<% if user_signed_in? %>
+<% if user_signed_in? || show_guest_app_footer? %>
   <%= render "layouts/footer" %>
 <% end %>

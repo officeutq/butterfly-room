@@ -147,7 +147,7 @@
             <div class="col-12 col-md-6 col-xl-4">
               <%= render "booths/card",
                     booth: booth,
-                    booth_favorited: current_user.favorite_booths.exists?(booth_id: booth.id),
+                    booth_favorited: @favorite_booth_ids.include?(booth.id),
                     store_favorited: @store_favorited %>
             </div>
           <% end %>

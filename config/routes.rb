@@ -8,6 +8,7 @@ Rails.application.routes.draw do
              controllers: { passwords: "users/passwords" }
 
   root "home#show"
+  get "/welcome", to: "home#welcome", as: :welcome
 
   get "/sitemap.xml", to: "seo#sitemap", as: :sitemap, defaults: { format: :xml }
   get "/stores/lp", to: "store_lps#show", as: :stores_lp

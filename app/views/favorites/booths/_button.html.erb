@@ -1,6 +1,13 @@
 <%# locals: booth:, favorited: %>
 
-<% if favorited %>
+<% if !user_signed_in? %>
+  <%= link_to welcome_path,
+        class: "viewer-favorite-btn",
+        aria: { label: "ログインしてお気に入り" },
+        title: "ログインしてお気に入り" do %>
+    <i class="bi bi-star" aria-hidden="true"></i>
+  <% end %>
+<% elsif favorited %>
   <%= button_to booth_favorite_path(booth),
         method: :delete,
         class: "viewer-favorite-btn is-active",

@@ -3,4 +3,12 @@
   <url>
     <loc><%= root_url %></loc>
   </url>
+  <url>
+    <loc><%= welcome_url %></loc>
+  </url>
+  <% @stores.each do |store| %>
+    <url>
+      <loc><%= store_url(store) %></loc>
+    </url>
+  <% end %>
 </urlset>

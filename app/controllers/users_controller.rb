@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 class UsersController < ApplicationController
-  before_action :authenticate_user!
+  skip_before_action :authenticate_user!, only: %i[show]
+  before_action :redirect_guest_to_welcome, only: %i[show]
 
   def show
     @user = User.where(deleted_at: nil).find(params[:id])
@@ -57,5 +58,11 @@ class UsersController < ApplicationController
           current_user.favorite_stores.where(store_id: store_ids).pluck(:store_id).to_set
         )
     end
+  end
+
+  private
+
+  def redirect_guest_to_welcome
+    redirect_to welcome_path unless user_signed_in?
   end
 end

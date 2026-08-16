@@ -1,7 +1,14 @@
 <% dom_id_value = local_assigns[:dom_id] %>
 <% button_params = dom_id_value.present? ? { dom_id: dom_id_value } : {} %>
 
-<% if favorited %>
+<% if !user_signed_in? %>
+  <%= link_to welcome_path,
+        class: "viewer-favorite-btn",
+        aria: { label: "ログインしてお気に入り" },
+        title: "ログインしてお気に入り" do %>
+    <i class="bi bi-star" aria-hidden="true"></i>
+  <% end %>
+<% elsif favorited %>
   <%= button_to user_favorite_path(user),
         method: :delete,
         params: button_params,
