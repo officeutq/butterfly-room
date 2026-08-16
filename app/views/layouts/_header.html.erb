@@ -159,15 +159,17 @@
               </ul>
             </div>
           <% else %>
-            <%= link_to welcome_path,
+            <%= link_to guest_auth_prompt_path,
                   class: "header-wallet text-decoration-none d-inline-flex align-items-center gap-1",
-                  aria: { label: "公式トップでログインまたは新規作成" } do %>
+                  data: { turbo_frame: "modal" },
+                  aria: { label: "ログインが必要な操作について案内を開く" } do %>
               <%= render "wallets/balance", wallet: nil %>
             <% end %>
 
-            <%= link_to welcome_path,
+            <%= link_to guest_auth_prompt_path,
                   class: "btn btn-sm header-trigger d-flex align-items-center gap-2 text-decoration-none",
-                  aria: { label: "未ログイン。公式トップを開く" } do %>
+                  data: { turbo_frame: "modal" },
+                  aria: { label: "未ログイン。ログイン案内を開く" } do %>
               <span class="badge text-bg-secondary d-none d-md-inline-flex align-items-center">
                 GUEST
               </span>

@@ -1,9 +1,12 @@
 <%# locals: user: %>
-<% user_profile_path = user_signed_in? ? user_path(user) : welcome_path %>
+<% user_profile_path = user_signed_in? ? user_path(user) : guest_auth_prompt_path %>
+<% user_profile_data = user_signed_in? ? {} : { turbo_frame: "modal" } %>
 
 <div class="card h-100 shadow-sm users-card" data-bs-theme="light">
   <div class="users-card-thumbnail-wrap">
-    <%= link_to user_profile_path, class: "d-block users-card-thumbnail-link" do %>
+    <%= link_to user_profile_path,
+          class: "d-block users-card-thumbnail-link",
+          data: user_profile_data do %>
       <% if user.avatar.attached? %>
         <%= image_tag user.avatar, class: "card-img-top users-card-thumbnail" %>
       <% else %>
@@ -21,6 +24,7 @@
       <div class="users-card-value users-card-value-emphasis d-flex align-items-center gap-2">
         <%= link_to display_name_or_anonymous(user),
               user_profile_path,
+              data: user_profile_data,
               class: "users-card-name-link text-decoration-none text-reset" %>
 
         <% if (role_label = user_role_label(user)).present? %>

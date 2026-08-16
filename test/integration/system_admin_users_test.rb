@@ -116,7 +116,7 @@ class SystemAdminUsersTest < ActionDispatch::IntegrationTest
     # ログインできていないこと（root がGUEST表示のまま）
     get root_path
     assert_response :success
-    assert_select "a[href=?]", welcome_path, text: /GUEST.*未ログイン/m
+    assert_select "a[href=?][data-turbo-frame='modal']", guest_auth_prompt_path, text: /GUEST.*未ログイン/m
     refute_includes response.body, stopped.email
   end
 end

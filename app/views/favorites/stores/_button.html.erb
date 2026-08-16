@@ -3,8 +3,9 @@
 <% button_params = dom_id_value.present? ? { dom_id: dom_id_value } : {} %>
 
 <% if !user_signed_in? %>
-  <%= link_to welcome_path,
+  <%= link_to guest_auth_prompt_path,
         class: "viewer-favorite-btn",
+        data: { turbo_frame: "modal" },
         aria: { label: "ログインしてお気に入り" },
         title: "ログインしてお気に入り" do %>
     <i class="bi bi-star" aria-hidden="true"></i>

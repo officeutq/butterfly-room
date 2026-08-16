@@ -64,12 +64,12 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     assert_select "input[name='q'][placeholder='キーワード']"
     assert_includes @response.body, store.name
 
-    assert_select "a[href=?]", welcome_path, text: /0pt/
-    assert_select "a[href=?]", welcome_path, text: /GUEST.*未ログイン/m
+    assert_select "a[href=?][data-turbo-frame='modal']", guest_auth_prompt_path, text: /0pt/
+    assert_select "a[href=?][data-turbo-frame='modal']", guest_auth_prompt_path, text: /GUEST.*未ログイン/m
     refute_includes @response.body, "guest@example.com"
 
     assert_select "#app_footer a[href=?]", root_path, text: /ホーム/
-    assert_select "#app_footer a[href=?]", welcome_path, count: 3
+    assert_select "#app_footer a[href=?][data-turbo-frame='modal']", guest_auth_prompt_path, count: 3
     assert_select "#app_footer", text: /お気に入り.*お知らせ.*ダッシュボード/m
     refute_select "#app_footer", text: /配信/
   end
@@ -84,16 +84,17 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     get root_path, params: { mode: "booths" }
     assert_response :success
 
-    assert_select "form[action=?]", welcome_path, minimum: 2
-    assert_select "a[href=?]", welcome_path, text: cast.display_name
-    assert_select "a.viewer-favorite-btn[href=?]", welcome_path, minimum: 3
+    assert_select "form[action=?][data-turbo-frame='modal']", guest_auth_prompt_path, minimum: 2
+    assert_select "a[href=?][data-turbo-frame='modal']", guest_auth_prompt_path, text: cast.display_name
+    assert_select "a.viewer-favorite-btn[href=?][data-turbo-frame='modal']", guest_auth_prompt_path, minimum: 3
     assert_select "a[href=?]", store_path(store), text: store.name
 
     get root_path, params: { mode: "users" }
     assert_response :success
 
-    assert_select "a[href=?]", welcome_path, text: cast.display_name
-    assert_select "a.viewer-favorite-btn[href=?]", welcome_path, minimum: 1
+    assert_select "a[href=?][data-turbo-frame='modal']", guest_auth_prompt_path, text: cast.display_name
+    assert_select "a.viewer-favorite-btn[href=?][data-turbo-frame='modal']", guest_auth_prompt_path, minimum: 1
+    assert_select "a.users-card-thumbnail-link[href=?][data-turbo-frame='modal']", guest_auth_prompt_path
   end
 
   test "qなし + mode未指定: booths がデフォルトで表示され、archived は出ない" do

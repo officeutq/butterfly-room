@@ -1,0 +1,39 @@
+<%= turbo_frame_tag "modal", data: { controller: "modal", action: "turbo:frame-load->modal#open" } do %>
+  <div
+    class="modal fade"
+    tabindex="-1"
+    aria-labelledby="guestAuthPromptModalLabel"
+    aria-describedby="guestAuthPromptModalDescription"
+    aria-modal="true"
+    role="dialog">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="guestAuthPromptModalLabel">ログインが必要です</h1>
+          <button
+            type="button"
+            class="btn-close"
+            aria-label="閉じる"
+            data-action="click->modal#close"></button>
+        </div>
+
+        <div class="modal-body">
+          <p class="mb-0" id="guestAuthPromptModalDescription">
+            この操作を利用するには、ログインまたは視聴者アカウントの新規作成が必要です。
+          </p>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-action="click->modal#close">
+            キャンセル
+          </button>
+
+          <%= link_to "ログイン・新規作成へ",
+                welcome_path,
+                class: "btn btn-primary",
+                data: { turbo_frame: "_top" } %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>

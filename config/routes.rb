@@ -9,6 +9,7 @@ Rails.application.routes.draw do
 
   root "home#show"
   get "/welcome", to: "home#welcome", as: :welcome
+  get "/guest/auth_prompt", to: "guest_auth_prompts#show", as: :guest_auth_prompt
 
   get "/sitemap.xml", to: "seo#sitemap", as: :sitemap, defaults: { format: :xml }
   get "/stores/lp", to: "store_lps#show", as: :stores_lp

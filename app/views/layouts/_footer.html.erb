@@ -9,8 +9,9 @@
           <span class="app-footer-nav-label">ホーム</span>
         <% end %>
 
-        <%= link_to (guest_footer ? welcome_path : favorites_booths_path),
-              class: footer_nav_item_classes(active: !guest_footer && footer_favorites_active?) do %>
+        <%= link_to (guest_footer ? guest_auth_prompt_path : favorites_booths_path),
+              class: footer_nav_item_classes(active: !guest_footer && footer_favorites_active?),
+              data: (guest_footer ? { turbo_frame: "modal" } : {}) do %>
           <i class="bi bi-star-fill app-footer-nav-icon" aria-hidden="true"></i>
           <span class="app-footer-nav-label">お気に入り</span>
         <% end %>
@@ -43,8 +44,9 @@
           </div>
         <% end %>
 
-        <%= link_to (guest_footer ? welcome_path : notifications_path),
-              class: footer_nav_item_classes(active: !guest_footer && footer_notifications_active?) do %>
+        <%= link_to (guest_footer ? guest_auth_prompt_path : notifications_path),
+              class: footer_nav_item_classes(active: !guest_footer && footer_notifications_active?),
+              data: (guest_footer ? { turbo_frame: "modal" } : {}) do %>
           <span class="app-footer-nav-icon-wrap">
             <i class="bi bi-bell app-footer-nav-icon" aria-hidden="true"></i>
             <% if !guest_footer && current_user.unread_notifications_exists? %>
@@ -54,9 +56,9 @@
           <span class="app-footer-nav-label">お知らせ</span>
         <% end %>
 
-        <%= link_to (guest_footer ? welcome_path : dashboard_path_for(current_user)),
+        <%= link_to (guest_footer ? guest_auth_prompt_path : dashboard_path_for(current_user)),
               class: footer_nav_item_classes(active: !guest_footer && footer_dashboard_active?),
-              data: (guest_footer ? {} : { onboarding_target_element: "footer-dashboard" }) do %>
+              data: (guest_footer ? { turbo_frame: "modal" } : { onboarding_target_element: "footer-dashboard" }) do %>
           <i class="bi bi-list app-footer-nav-icon" aria-hidden="true"></i>
           <span class="app-footer-nav-label">ダッシュボード</span>
         <% end %>
