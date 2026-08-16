@@ -113,10 +113,10 @@ class SystemAdminUsersTest < ActionDispatch::IntegrationTest
     follow_redirect!
     assert_response :success
 
-    # ログインできていないこと（root が未ログイン表示のまま）
+    # ログインできていないこと（root がGUEST表示のまま）
     get root_path
     assert_response :success
-    assert_select "a", text: "ログイン", href: new_user_session_path
-    assert_select "a", text: "視聴者アカウント 新規作成", href: sign_up_path
+    assert_select "a[href=?]", welcome_path, text: /GUEST.*未ログイン/m
+    refute_includes response.body, stopped.email
   end
 end

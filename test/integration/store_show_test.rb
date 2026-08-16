@@ -3,12 +3,34 @@
 require "test_helper"
 
 class StoreShowTest < ActionDispatch::IntegrationTest
-  test "guest is redirected to login" do
-    store = Store.create!(name: "store")
+  test "guest can view a published store and protected card actions lead to welcome" do
+    store = Store.create!(name: "Guest Store", published: true)
+    booth = Booth.create!(store: store, name: "Guest Booth", status: :offline)
+    cast = User.create!(
+      email: "guest-store-cast@example.com",
+      password: "password",
+      role: :cast,
+      display_name: "Guest Store Cast"
+    )
+    BoothCast.create!(booth: booth, cast_user: cast)
 
     get store_path(store)
-    assert_response :redirect
-    assert_redirected_to new_user_session_path
+    assert_response :success
+
+    assert_select "h1", text: store.name
+    assert_includes @response.body, booth.name
+    assert_select "form[action=?]", welcome_path, minimum: 2
+    assert_select "a[href=?]", welcome_path, text: cast.display_name
+    assert_select "a.viewer-favorite-btn[href=?]", welcome_path, minimum: 4
+    assert_select "#app_footer a[href=?]", welcome_path, count: 3
+  end
+
+  test "guest cannot view an unpublished store" do
+    store = Store.create!(name: "Hidden Store", published: false)
+
+    get store_path(store)
+
+    assert_response :not_found
   end
 
   test "customer can view store show and see active booths only" do

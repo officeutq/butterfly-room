@@ -51,15 +51,49 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "未ログイン: 公式トップ表示が出て、検索欄は出ない" do
+  test "未ログイン: 3タブを表示し、店舗がデフォルトになる" do
+    store = create_store!(name: "Guest Store")
+
     get root_path
     assert_response :success
 
-    assert_includes @response.body, "Butterflyve（バタフライブ）"
-    assert_includes @response.body, "店舗向けページを見る"
-    refute_includes @response.body, "input-group"
-    refute_includes @response.body, "mode"
-    refute_includes @response.body, "placeholder=\"ブース名 / ストア名で検索（部分一致）\""
+    assert_select "a", text: "ブース", href: root_path(mode: "booths")
+    assert_select "a.active", text: "店舗", href: root_path(mode: "stores")
+    assert_select "a", text: "配信者", href: root_path(mode: "users")
+    assert_select "input[name='mode'][value='stores']"
+    assert_select "input[name='q'][placeholder='キーワード']"
+    assert_includes @response.body, store.name
+
+    assert_select "a[href=?]", welcome_path, text: /0pt/
+    assert_select "a[href=?]", welcome_path, text: /GUEST.*未ログイン/m
+    refute_includes @response.body, "guest@example.com"
+
+    assert_select "#app_footer a[href=?]", root_path, text: /ホーム/
+    assert_select "#app_footer a[href=?]", welcome_path, count: 3
+    assert_select "#app_footer", text: /お気に入り.*お知らせ.*ダッシュボード/m
+    refute_select "#app_footer", text: /配信/
+  end
+
+  test "未ログイン: ブース・配信者・お気に入りの導線は公式トップへ遷移する" do
+    store = create_store!(name: "Guest Navigation Store")
+    booth = create_booth!(store: store, name: "Guest Navigation Booth", status: :offline)
+    cast = create_user!(email: "guest-navigation-cast@example.com", role: :cast)
+    cast.update!(display_name: "Guest Navigation Cast")
+    BoothCast.create!(booth: booth, cast_user: cast)
+
+    get root_path, params: { mode: "booths" }
+    assert_response :success
+
+    assert_select "form[action=?]", welcome_path, minimum: 2
+    assert_select "a[href=?]", welcome_path, text: cast.display_name
+    assert_select "a.viewer-favorite-btn[href=?]", welcome_path, minimum: 3
+    assert_select "a[href=?]", store_path(store), text: store.name
+
+    get root_path, params: { mode: "users" }
+    assert_response :success
+
+    assert_select "a[href=?]", welcome_path, text: cast.display_name
+    assert_select "a.viewer-favorite-btn[href=?]", welcome_path, minimum: 1
   end
 
   test "qなし + mode未指定: booths がデフォルトで表示され、archived は出ない" do
