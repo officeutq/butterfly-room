@@ -3,13 +3,22 @@
 require "test_helper"
 
 class CustomerSignUpTest < ActionDispatch::IntegrationTest
-  test "guest home shows login and sign_up links" do
-    get root_path
+  test "guest welcome shows login and sign_up links" do
+    get welcome_path
     assert_response :success
 
     assert_select "a", text: "ログイン", href: new_user_session_path
     assert_select "a", text: "視聴者アカウント 新規作成", href: sign_up_path
     assert_select "a", text: "店舗向けページを見る", href: stores_lp_path
+  end
+
+  test "signed in user is redirected from welcome to the normal home" do
+    user = User.create!(email: "welcome-signed-in@example.com", password: "password", role: :customer)
+    sign_in user, scope: :user
+
+    get welcome_path
+
+    assert_redirected_to root_path
   end
 
   test "customer can sign up with role fixed and becomes signed in" do

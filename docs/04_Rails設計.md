@@ -355,7 +355,10 @@
 Rails.application.routes.draw do
   # Customer
   root "home#show"
+  get  "/welcome", to: "home#welcome"
   get  "/home_feed", to: "home#feed" # JSONでもHTMLでもOK
+
+  resources :stores, only: %i[show]
 
   resources :booths, only: %i[show] do
     # booth視聴画面。showで必要な初期データを提供
@@ -382,6 +385,14 @@ Rails.application.routes.draw do
   end
 end
 ```
+
+### 公開閲覧と認証境界（Phase2）
+
+* `home#show`、`home#welcome`、`stores#show` は `authenticate_user!` の対象外とする
+* `stores#show` は `Store.published.find` で公開状態を必ず検証し、配下のブースは `active` のみ取得する
+* `booths#show`、`booths#enter`、`users#show` は未ログイン時に `/welcome` へリダイレクトし、Deviseの保存済み遷移先を作らない
+* お気に入りの作成・解除Controllerは従来どおり認証必須とし、未ログイン表示ではPOST/DELETE formを生成しない
+* sitemapは `/`、`/welcome`、`Store.published` の店舗詳細URLを列挙する
 
 ---
 

@@ -158,17 +158,39 @@
                 </li>
               </ul>
             </div>
+          <% else %>
+            <%= link_to welcome_path,
+                  class: "header-wallet text-decoration-none d-inline-flex align-items-center gap-1",
+                  aria: { label: "公式トップでログインまたは新規作成" } do %>
+              <%= render "wallets/balance", wallet: nil %>
+            <% end %>
+
+            <%= link_to welcome_path,
+                  class: "btn btn-sm header-trigger d-flex align-items-center gap-2 text-decoration-none",
+                  aria: { label: "未ログイン。公式トップを開く" } do %>
+              <span class="badge text-bg-secondary d-none d-md-inline-flex align-items-center">
+                GUEST
+              </span>
+
+              <span
+                class="rounded-circle border text-muted d-inline-flex align-items-center justify-content-center"
+                style="width: 24px; height: 24px; font-size: 11px; line-height: 1;"
+                aria-hidden="true">
+                未
+              </span>
+
+              <span class="d-none d-md-inline-block header-trigger-name text-truncate">
+                未ログイン
+              </span>
+            <% end %>
           <% end %>
         </div>
       </div>
     </div>
   </div>
   <% header_subnav_layout =
-       user_signed_in? &&
-       (
-         (controller_path == "home" && action_name == "show") ||
-         controller_path.start_with?("favorites/")
-       ) %>
+       (controller_path == "home" && action_name == "show") ||
+       (user_signed_in? && controller_path.start_with?("favorites/")) %>
 
   <% if header_subnav_layout %>
     <div class="border-top header-subnav">

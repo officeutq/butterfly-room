@@ -3,13 +3,34 @@
 require "test_helper"
 
 class SeoMetaTagsTest < ActionDispatch::IntegrationTest
-  ROOT_DESCRIPTION =
+  WELCOME_DESCRIPTION =
     "Butterflyve（バタフライブ）は、視聴者・キャスト・店舗をつなぐライブ配信サービスです。配信を見て、コメントし、ドリンクで応援できます。"
+  BROWSE_DESCRIPTION =
+    "Butterflyve（バタフライブ）で公開中の店舗、ブース、配信者を検索できます。気になる店舗の情報を会員登録前に確認できます。"
   STORE_LP_DESCRIPTION =
     "Butterflyve（バタフライブ）は、夜の店が既存客向けにライブ配信を行い、ドリンク送信と消化で売上をつくる店舗向けサービスです。"
 
-  test "guest root exposes brand h1 and SEO metadata" do
+  test "guest root exposes browse page SEO metadata" do
     get root_path
+
+    assert_response :success
+
+    doc = Nokogiri::HTML(@response.body)
+
+    assert_equal 1, doc.css("h1").size
+    assert_includes doc.at_css("h1").text, "店舗・ブース・配信者を探す"
+    assert_equal "店舗・ブース・配信者を探す | Butterflyve（バタフライブ）", doc.at_css("title").text
+    assert_equal BROWSE_DESCRIPTION, doc.at_css("meta[name='description']")["content"]
+    assert_equal root_url, doc.at_css("link[rel='canonical']")["href"]
+    assert_equal root_url, doc.at_css("meta[property='og:url']")["content"]
+    assert_equal "Butterflyve（バタフライブ）", doc.at_css("meta[property='og:site_name']")["content"]
+    assert_equal "Butterflyve（バタフライブ）", doc.at_css("meta[name='application-name']")["content"]
+    assert_nil doc.at_css("meta[name='robots']")
+    assert_nil doc.at_css("script[type='application/ld+json']")
+  end
+
+  test "welcome exposes official top SEO metadata and structured data" do
+    get welcome_path
 
     assert_response :success
 
@@ -18,9 +39,9 @@ class SeoMetaTagsTest < ActionDispatch::IntegrationTest
     assert_equal 1, doc.css("h1").size
     assert_includes doc.at_css("h1").text, "Butterflyve（バタフライブ）"
     assert_equal "夜を、ライブ体験に。 | Butterflyve（バタフライブ）", doc.at_css("title").text
-    assert_equal ROOT_DESCRIPTION, doc.at_css("meta[name='description']")["content"]
-    assert_equal "Butterflyve（バタフライブ）", doc.at_css("meta[property='og:site_name']")["content"]
-    assert_equal "Butterflyve（バタフライブ）", doc.at_css("meta[name='application-name']")["content"]
+    assert_equal WELCOME_DESCRIPTION, doc.at_css("meta[name='description']")["content"]
+    assert_equal welcome_url, doc.at_css("link[rel='canonical']")["href"]
+    assert_equal welcome_url, doc.at_css("meta[property='og:url']")["content"]
     assert_nil doc.at_css("meta[name='robots']")
 
     structured_data = JSON.parse(doc.at_css("script[type='application/ld+json']").text)
@@ -28,7 +49,48 @@ class SeoMetaTagsTest < ActionDispatch::IntegrationTest
     assert_equal "WebSite", structured_data["@type"]
     assert_equal "Butterflyve", structured_data["name"]
     assert_equal "バタフライブ", structured_data["alternateName"]
-    assert_equal "https://butterflyve.jp/", structured_data["url"]
+    assert_equal welcome_url, structured_data["url"]
+  end
+
+  test "published store exposes store-specific SEO metadata" do
+    store = Store.create!(
+      name: "SEO Store",
+      published: true,
+      description: "SEO Store description"
+    )
+    store.thumbnail.attach(
+      io: File.open(file_fixture("thumb.png")),
+      filename: "thumb.png",
+      content_type: "image/png"
+    )
+
+    get store_path(store)
+
+    assert_response :success
+
+    doc = Nokogiri::HTML(@response.body)
+
+    assert_equal "SEO Store | Butterflyve（バタフライブ）", doc.at_css("title").text
+    assert_equal store.description, doc.at_css("meta[name='description']")["content"]
+    assert_equal store_url(store), doc.at_css("link[rel='canonical']")["href"]
+    assert_equal store_url(store), doc.at_css("meta[property='og:url']")["content"]
+    assert_equal "SEO Store | Butterflyve（バタフライブ）", doc.at_css("meta[property='og:title']")["content"]
+    assert_equal store.description, doc.at_css("meta[property='og:description']")["content"]
+    assert_match %r{\Ahttps?://}, doc.at_css("meta[property='og:image']")["content"]
+    assert_nil doc.at_css("meta[name='robots']")
+  end
+
+  test "sitemap includes root, welcome and published stores only" do
+    published_store = Store.create!(name: "Published Sitemap Store", published: true)
+    unpublished_store = Store.create!(name: "Hidden Sitemap Store", published: false)
+
+    get sitemap_path(format: :xml)
+
+    assert_response :success
+    assert_includes response.body, root_url
+    assert_includes response.body, welcome_url
+    assert_includes response.body, store_url(published_store)
+    refute_includes response.body, store_url(unpublished_store)
   end
 
   test "store LP exposes individual SEO metadata without ref in canonical URL" do

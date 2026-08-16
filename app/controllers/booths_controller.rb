@@ -3,6 +3,8 @@
 class BoothsController < ApplicationController
   include StoreBanGuard
 
+  skip_before_action :authenticate_user!, only: %i[show enter]
+  before_action :redirect_guest_to_welcome, only: %i[show enter]
   before_action :set_public_booth, only: %i[show viewer_drink_menu]
   before_action :set_entry_booth, only: %i[enter enter_as_cast]
   before_action :reject_banned_customer_for_booth!, only: %i[show viewer_drink_menu]
@@ -47,7 +49,7 @@ class BoothsController < ApplicationController
 
   def enter
     unless user_signed_in?
-      redirect_to new_user_session_path
+      redirect_to welcome_path
       return
     end
 
@@ -133,6 +135,10 @@ class BoothsController < ApplicationController
   end
 
   private
+
+  def redirect_guest_to_welcome
+    redirect_to welcome_path unless user_signed_in?
+  end
 
   def set_public_booth
     @booth = Booth.active.in_published_stores.find(params[:id])

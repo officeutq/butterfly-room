@@ -6,10 +6,11 @@
      ) %>
 <% primary_cast = booth.primary_cast_user %>
 <% stream_title = booth.current_stream_session&.title.to_s.strip %>
+<% booth_entry_path = user_signed_in? ? enter_booth_path(booth) : welcome_path %>
 
 <div class="card h-100 shadow-sm booths-card" data-bs-theme="light">
   <div class="booths-card-thumbnail-wrap">
-    <%= button_to enter_booth_path(booth),
+    <%= button_to booth_entry_path,
           method: :get,
           class: "w-100 p-0 border-0 bg-transparent text-start booths-card-thumbnail-button",
           form: {
@@ -50,7 +51,7 @@
 
       <div class="booths-card-value booths-card-value-emphasis">
         <%= button_to booth.name,
-              enter_booth_path(booth),
+              booth_entry_path,
               method: :get,
               class: "btn btn-link p-0 text-decoration-none text-reset align-baseline text-start fw-semibold booths-card-name-button",
               form: {
@@ -73,7 +74,7 @@
       <div class="booths-card-value">
         <% if primary_cast.present? %>
           <%= link_to display_name_or_anonymous(primary_cast),
-                user_path(primary_cast),
+                (user_signed_in? ? user_path(primary_cast) : welcome_path),
                 class: "text-decoration-none text-reset" %>
         <% else %>
           <span class="text-muted">（未設定）</span>

@@ -9,6 +9,14 @@ class AuthenticationRequiredTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "未ログインでも公式トップを表示できる" do
+    get welcome_path
+
+    assert_response :success
+    assert_select "a", text: "ログイン", href: new_user_session_path
+    assert_select "a", text: "視聴者アカウント 新規作成", href: sign_up_path
+  end
+
   test "未ログインでも店舗LPを表示できる" do
     get stores_lp_path
 
@@ -113,7 +121,7 @@ class AuthenticationRequiredTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_user_session_path
   end
 
-  test "未ログインでブース視聴ページへアクセス後、ログインすると元のブースへ戻る" do
+  test "未ログインでブース詳細へアクセスすると公式トップを経由し、ログイン後は通常のトップへ進む" do
     store = Store.create!(name: "store-return-to-login")
     booth = Booth.create!(store: store, name: "booth-return-to-login", status: :offline)
     user = User.create!(
@@ -124,7 +132,9 @@ class AuthenticationRequiredTest < ActionDispatch::IntegrationTest
 
     get booth_path(booth)
 
-    assert_redirected_to new_user_session_path
+    assert_redirected_to welcome_path
+    follow_redirect!
+    assert_response :success
 
     post user_session_path, params: {
       user: {
@@ -133,16 +143,18 @@ class AuthenticationRequiredTest < ActionDispatch::IntegrationTest
       }
     }
 
-    assert_redirected_to booth_path(booth)
+    assert_redirected_to root_path
   end
 
-  test "未ログインでブース視聴ページへアクセス後、顧客新規登録すると元のブースへ戻る" do
+  test "未ログインでブース詳細へアクセスすると公式トップを経由し、新規登録後は通常の初期画面へ進む" do
     store = Store.create!(name: "store-return-to-sign-up")
     booth = Booth.create!(store: store, name: "booth-return-to-sign-up", status: :offline)
 
     get booth_path(booth)
 
-    assert_redirected_to new_user_session_path
+    assert_redirected_to welcome_path
+    follow_redirect!
+    assert_response :success
 
     post sign_up_path, params: {
       customer_registration: {
@@ -152,6 +164,14 @@ class AuthenticationRequiredTest < ActionDispatch::IntegrationTest
       }
     }
 
-    assert_redirected_to booth_path(booth)
+    assert_redirected_to edit_profile_path
+  end
+
+  test "未ログインでユーザー詳細へアクセスすると公式トップへ遷移する" do
+    cast = User.create!(email: "guest-user-detail@example.com", password: "password", role: :cast)
+
+    get user_path(cast)
+
+    assert_redirected_to welcome_path
   end
 end

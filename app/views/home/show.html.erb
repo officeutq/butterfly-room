@@ -1,55 +1,55 @@
+<h1 class="visually-hidden">店舗・ブース・配信者を探す</h1>
+
 <% if user_signed_in? %>
   <%= render "install_prompt" %>
+<% end %>
 
-  <%# --- Results (cards) --- %>
-  <% if @mode == "users" %>
-    <% if @users.present? %>
-      <div class="row row-cols-1 row-cols-md-3 g-3">
-        <% @users.each do |user| %>
-          <div class="col">
-            <%= render "users/card", user: user %>
-          </div>
-        <% end %>
-      </div>
-    <% else %>
-      <div class="alert alert-secondary" role="alert">
-        表示できるユーザーがありません。
-      </div>
-    <% end %>
-  <% elsif @mode == "stores" %>
-    <% if @stores.present? %>
-      <div class="row row-cols-1 row-cols-md-3 g-3">
-        <% @stores.each do |store| %>
-          <% favorited = @favorite_store_ids.include?(store.id) %>
-
-          <div class="col">
-            <%= render "stores/card", store: store, favorited: favorited %>
-          </div>
-        <% end %>
-      </div>
-    <% else %>
-      <div class="alert alert-secondary" role="alert">
-        表示できる店舗がありません。
-      </div>
-    <% end %>
+<%# --- Results (cards) --- %>
+<% if @mode == "users" %>
+  <% if @users.present? %>
+    <div class="row row-cols-1 row-cols-md-3 g-3">
+      <% @users.each do |user| %>
+        <div class="col">
+          <%= render "users/card", user: user %>
+        </div>
+      <% end %>
+    </div>
   <% else %>
-    <% if @booths.present? %>
-      <div class="row row-cols-1 row-cols-md-3 g-3">
-        <% @booths.each do |booth| %>
-          <div class="col">
-            <%= render "booths/card",
-                  booth: booth,
-                  booth_favorited: @favorite_booth_ids.include?(booth.id),
-                  store_favorited: @favorite_store_ids.include?(booth.store_id) %>
-          </div>
-        <% end %>
-      </div>
-    <% else %>
-      <div class="alert alert-secondary" role="alert">
-        表示できるブースがありません。
-      </div>
-    <% end %>
+    <div class="alert alert-secondary" role="alert">
+      表示できるユーザーがありません。
+    </div>
+  <% end %>
+<% elsif @mode == "stores" %>
+  <% if @stores.present? %>
+    <div class="row row-cols-1 row-cols-md-3 g-3">
+      <% @stores.each do |store| %>
+        <% favorited = @favorite_store_ids.include?(store.id) %>
+
+        <div class="col">
+          <%= render "stores/card", store: store, favorited: favorited %>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="alert alert-secondary" role="alert">
+      表示できる店舗がありません。
+    </div>
   <% end %>
 <% else %>
-  <%= render "guest_home" %>
+  <% if @booths.present? %>
+    <div class="row row-cols-1 row-cols-md-3 g-3">
+      <% @booths.each do |booth| %>
+        <div class="col">
+          <%= render "booths/card",
+                booth: booth,
+                booth_favorited: @favorite_booth_ids.include?(booth.id),
+                store_favorited: @favorite_store_ids.include?(booth.store_id) %>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="alert alert-secondary" role="alert">
+      表示できるブースがありません。
+    </div>
+  <% end %>
 <% end %>

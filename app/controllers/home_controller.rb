@@ -1,13 +1,15 @@
 # frozen_string_literal: true
 
 class HomeController < ApplicationController
-  skip_before_action :authenticate_user!, only: %i[show]
+  skip_before_action :authenticate_user!, only: %i[show welcome]
 
   def show
-    set_top_page_meta_tags unless user_signed_in?
+    set_browse_page_meta_tags unless user_signed_in?
 
     @mode = params[:mode].to_s
-    @mode = "booths" unless %w[booths stores users].include?(@mode)
+    unless %w[booths stores users].include?(@mode)
+      @mode = user_signed_in? ? "booths" : "stores"
+    end
 
     @q = params[:q].to_s.strip
     keywords =
@@ -184,12 +186,21 @@ class HomeController < ApplicationController
     end
   end
 
+  def welcome
+    if user_signed_in?
+      redirect_to root_path
+      return
+    end
+
+    set_welcome_page_meta_tags
+  end
+
   private
 
-  def set_top_page_meta_tags
+  def set_browse_page_meta_tags
     brand_name = "Butterflyve（バタフライブ）"
-    title = "夜を、ライブ体験に。"
-    description = "#{brand_name}は、視聴者・キャスト・店舗をつなぐライブ配信サービスです。配信を見て、コメントし、ドリンクで応援できます。"
+    title = "店舗・ブース・配信者を探す"
+    description = "#{brand_name}で公開中の店舗、ブース、配信者を検索できます。気になる店舗の情報を会員登録前に確認できます。"
 
     set_meta_tags(
       title: title,
@@ -202,6 +213,30 @@ class HomeController < ApplicationController
         description: description,
         type: "website",
         url: root_url,
+        image: view_context.image_url("logo.png")
+      },
+      twitter: {
+        card: "summary_large_image"
+      }
+    )
+  end
+
+  def set_welcome_page_meta_tags
+    brand_name = "Butterflyve（バタフライブ）"
+    title = "夜を、ライブ体験に。"
+    description = "#{brand_name}は、視聴者・キャスト・店舗をつなぐライブ配信サービスです。配信を見て、コメントし、ドリンクで応援できます。"
+
+    set_meta_tags(
+      title: title,
+      description: description,
+      noindex: false,
+      nofollow: false,
+      canonical: welcome_url,
+      og: {
+        title: "#{title} | #{brand_name}",
+        description: description,
+        type: "website",
+        url: welcome_url,
         image: view_context.image_url("logo.png")
       },
       twitter: {

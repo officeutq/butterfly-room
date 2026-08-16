@@ -245,6 +245,13 @@ module ApplicationHelper
     current_page?(dashboard_path_for(current_user))
   end
 
+  def show_guest_app_footer?
+    return false if user_signed_in?
+
+    (controller_path == "home" && %w[show welcome].include?(action_name)) ||
+      (controller_path == "stores" && action_name == "show")
+  end
+
   def lp_ref_code
     params[:ref].presence || "0000"
   end
