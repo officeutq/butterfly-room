@@ -6,7 +6,8 @@
      ) %>
 <% primary_cast = booth.primary_cast_user %>
 <% stream_title = booth.current_stream_session&.title.to_s.strip %>
-<% booth_entry_path = user_signed_in? ? enter_booth_path(booth) : welcome_path %>
+<% booth_entry_path = user_signed_in? ? enter_booth_path(booth) : guest_auth_prompt_path %>
+<% booth_entry_frame_data = (open_in_modal || !user_signed_in?) ? { turbo_frame: "modal" } : {} %>
 
 <div class="card h-100 shadow-sm booths-card" data-bs-theme="light">
   <div class="booths-card-thumbnail-wrap">
@@ -16,8 +17,7 @@
           form: {
             class: "d-block w-100 m-0",
             data: (
-              (open_in_modal ? { turbo_frame: "modal" } : {})
-                .merge(turbo_confirm: enter_booth_switch_confirm_message(booth))
+              booth_entry_frame_data.merge(turbo_confirm: enter_booth_switch_confirm_message(booth))
             )
           } do %>
       <% if booth.thumbnail_image.attached? %>
@@ -57,8 +57,7 @@
               form: {
                 class: "d-inline",
                 data: (
-                  (open_in_modal ? { turbo_frame: "modal" } : {})
-                    .merge(turbo_confirm: enter_booth_switch_confirm_message(booth))
+                  booth_entry_frame_data.merge(turbo_confirm: enter_booth_switch_confirm_message(booth))
                 )
               } %>
       </div>
@@ -74,7 +73,8 @@
       <div class="booths-card-value">
         <% if primary_cast.present? %>
           <%= link_to display_name_or_anonymous(primary_cast),
-                (user_signed_in? ? user_path(primary_cast) : welcome_path),
+                (user_signed_in? ? user_path(primary_cast) : guest_auth_prompt_path),
+                data: (user_signed_in? ? {} : { turbo_frame: "modal" }),
                 class: "text-decoration-none text-reset" %>
         <% else %>
           <span class="text-muted">（未設定）</span>

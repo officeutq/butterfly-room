@@ -356,6 +356,7 @@ Rails.application.routes.draw do
   # Customer
   root "home#show"
   get  "/welcome", to: "home#welcome"
+  get  "/guest/auth_prompt", to: "guest_auth_prompts#show"
   get  "/home_feed", to: "home#feed" # JSONでもHTMLでもOK
 
   resources :stores, only: %i[show]
@@ -388,10 +389,12 @@ end
 
 ### 公開閲覧と認証境界（Phase2）
 
-* `home#show`、`home#welcome`、`stores#show` は `authenticate_user!` の対象外とする
+* `home#show`、`home#welcome`、`stores#show`、`guest_auth_prompts#show` は `authenticate_user!` の対象外とする
 * `stores#show` は `Store.published.find` で公開状態を必ず検証し、配下のブースは `active` のみ取得する
 * `booths#show`、`booths#enter`、`users#show` は未ログイン時に `/welcome` へリダイレクトし、Deviseの保存済み遷移先を作らない
 * お気に入りの作成・解除Controllerは従来どおり認証必須とし、未ログイン表示ではPOST/DELETE formを生成しない
+* 未ログイン画面内の保護対象リンクは `guest_auth_prompt_path` を `modal` Turbo Frameへ読み込み、共通モーダルから `/welcome` へ進ませる
+* `guest_auth_prompts#show` の通常GETは `/welcome` へリダイレクトし、Turbo Frameリクエストだけモーダル本文を返す
 * sitemapは `/`、`/welcome`、`Store.published` の店舗詳細URLを列挙する
 
 ---

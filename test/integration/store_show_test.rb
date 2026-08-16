@@ -19,10 +19,10 @@ class StoreShowTest < ActionDispatch::IntegrationTest
 
     assert_select "h1", text: store.name
     assert_includes @response.body, booth.name
-    assert_select "form[action=?]", welcome_path, minimum: 2
-    assert_select "a[href=?]", welcome_path, text: cast.display_name
-    assert_select "a.viewer-favorite-btn[href=?]", welcome_path, minimum: 4
-    assert_select "#app_footer a[href=?]", welcome_path, count: 3
+    assert_select "form[action=?][data-turbo-frame='modal']", guest_auth_prompt_path, minimum: 2
+    assert_select "a[href=?][data-turbo-frame='modal']", guest_auth_prompt_path, text: cast.display_name
+    assert_select "a.viewer-favorite-btn[href=?][data-turbo-frame='modal']", guest_auth_prompt_path, minimum: 4
+    assert_select "#app_footer a[href=?][data-turbo-frame='modal']", guest_auth_prompt_path, count: 3
   end
 
   test "guest cannot view an unpublished store" do
