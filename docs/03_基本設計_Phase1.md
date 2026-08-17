@@ -1329,7 +1329,7 @@ Phase1の認可・売上・配信状態の不変条件を維持したまま、�
 
 - `HomeController#show` は認証を必須とせず、ブース・店舗・配信者の3タブを提供する
 - mode未指定時は、未ログインでは店舗、ログイン済みでは従来どおりブースを初期表示する
-- 配信者タブは有効なcastとstore_adminを対象とし、`sales_support_company = true` の店舗へ管理者所属するstore_adminは除外する
+- 配信者タブは有効なcastを対象とする。store_adminは、管理者所属する同一店舗について `stores.published = true` かつ `booths.archived_at IS NULL` を満たすブースが1件以上ある場合だけ対象とし、`sales_support_company = true` の店舗へ管理者所属するstore_adminは除外する。ブースの現在のstatusと`booth_casts`の有無は判定に使用しない
 - `StoresController#show` は `Store.published` の店舗だけを公開し、表示ブースは `Booth.active` に限定する
 - ブース詳細・ユーザー詳細は公開せず、未ログインアクセスを `/welcome` へリダイレクトする
 - 未ログインのお気に入り表示は状態を作成・更新せず、共通ログイン要求モーダルを開くGETリンクとして扱う
