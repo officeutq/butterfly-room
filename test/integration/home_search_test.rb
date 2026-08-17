@@ -12,8 +12,8 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     )
   end
 
-  def create_store!(name:)
-    Store.create!(name: name, published: true)
+  def create_store!(name:, published: true)
+    Store.create!(name: name, published: published)
   end
 
   def create_booth!(store:, name:, status:, archived_at: nil, last_online_at: nil)
@@ -514,6 +514,8 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     regular_store = create_store!(name: "Regular User Search Store")
     sales_support_company = create_store!(name: "Sales Support Company")
     sales_support_company.update!(sales_support_company: true)
+    create_booth!(store: regular_store, name: "Regular User Search Booth", status: :offline)
+    create_booth!(store: sales_support_company, name: "Sales Support Company Booth", status: :offline)
 
     cast_user = create_user!(email: "cast_search@example.com", role: :cast)
     cast_user.update!(display_name: "Cast Search User")
@@ -531,6 +533,7 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
       user: support_company_cast_member,
       membership_role: :cast
     )
+    StoreMembership.create!(store: regular_store, user: support_company_cast_member, membership_role: :admin)
 
     support_company_admin = create_user!(email: "support_company_admin@example.com", role: :store_admin)
     support_company_admin.update!(display_name: "Sales Support Company Admin")
@@ -589,6 +592,78 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     refute_includes body, "Deleted Cast Search User"
   end
 
+  test "mode=users: store_admin は公開店舗に active ブースがある場合のみ表示する" do
+    public_active_store = create_store!(name: "Public Active Admin Store")
+    create_booth!(store: public_active_store, name: "Public Offline Admin Booth", status: :offline)
+
+    public_archived_store = create_store!(name: "Public Archived Admin Store")
+    create_booth!(
+      store: public_archived_store,
+      name: "Public Archived Admin Booth",
+      status: :live,
+      archived_at: Time.current
+    )
+
+    public_empty_store = create_store!(name: "Public Empty Admin Store")
+    unpublished_active_store = create_store!(name: "Unpublished Active Admin Store", published: false)
+    create_booth!(store: unpublished_active_store, name: "Unpublished Active Admin Booth", status: :live)
+
+    visible_admin = create_user!(email: "visible_public_booth_admin@example.com", role: :store_admin)
+    visible_admin.update!(display_name: "Visible Public Booth Admin")
+    StoreMembership.create!(store: public_active_store, user: visible_admin, membership_role: :admin)
+
+    unpublished_only_admin = create_user!(email: "unpublished_only_admin@example.com", role: :store_admin)
+    unpublished_only_admin.update!(display_name: "Hidden Unpublished Only Admin")
+    StoreMembership.create!(store: unpublished_active_store, user: unpublished_only_admin, membership_role: :admin)
+
+    archived_only_admin = create_user!(email: "archived_only_admin@example.com", role: :store_admin)
+    archived_only_admin.update!(display_name: "Hidden Archived Only Admin")
+    StoreMembership.create!(store: public_archived_store, user: archived_only_admin, membership_role: :admin)
+
+    public_empty_admin = create_user!(email: "public_empty_admin@example.com", role: :store_admin)
+    public_empty_admin.update!(display_name: "Hidden Public Empty Admin")
+    StoreMembership.create!(store: public_empty_store, user: public_empty_admin, membership_role: :admin)
+
+    split_condition_admin = create_user!(email: "split_condition_admin@example.com", role: :store_admin)
+    split_condition_admin.update!(display_name: "Hidden Split Condition Admin")
+    StoreMembership.create!(store: public_empty_store, user: split_condition_admin, membership_role: :admin)
+    StoreMembership.create!(store: unpublished_active_store, user: split_condition_admin, membership_role: :admin)
+
+    no_admin_membership = create_user!(email: "no_admin_membership@example.com", role: :store_admin)
+    no_admin_membership.update!(display_name: "Hidden No Admin Membership")
+    StoreMembership.create!(store: public_active_store, user: no_admin_membership, membership_role: :cast)
+
+    cast_user = create_user!(email: "unchanged_cast_user@example.com", role: :cast)
+    cast_user.update!(display_name: "Visible Cast Without Membership")
+
+    get root_path, params: { mode: "users" }
+    assert_response :success
+
+    guest_body = @response.body
+    assert_includes guest_body, "Visible Public Booth Admin"
+    assert_includes guest_body, "Visible Cast Without Membership"
+    refute_includes guest_body, "Hidden Unpublished Only Admin"
+    refute_includes guest_body, "Hidden Archived Only Admin"
+    refute_includes guest_body, "Hidden Public Empty Admin"
+    refute_includes guest_body, "Hidden Split Condition Admin"
+    refute_includes guest_body, "Hidden No Admin Membership"
+
+    login_user = create_user!(email: "public_booth_filter_customer@example.com", role: :customer)
+    login_as(login_user, scope: :user)
+
+    get root_path, params: { mode: "users" }
+    assert_response :success
+
+    body = @response.body
+    assert_includes body, "Visible Public Booth Admin"
+    assert_includes body, "Visible Cast Without Membership"
+    refute_includes body, "Hidden Unpublished Only Admin"
+    refute_includes body, "Hidden Archived Only Admin"
+    refute_includes body, "Hidden Public Empty Admin"
+    refute_includes body, "Hidden Split Condition Admin"
+    refute_includes body, "Hidden No Admin Membership"
+  end
+
   test "並び順: users は display_name → avatar → bio → id の優先順で表示される" do
     customer = create_user!(email: "user_profile_order_customer@example.com", role: :customer)
 
@@ -645,6 +720,7 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
 
     sales_support_company = create_store!(name: "Users Search Support Company")
     sales_support_company.update!(sales_support_company: true)
+    create_booth!(store: sales_support_company, name: "Users Search Support Booth", status: :offline)
     hidden_support_admin = create_user!(email: "users_hidden_support_admin@example.com", role: :store_admin)
     hidden_support_admin.update!(display_name: "Rose Support Admin")
     StoreMembership.create!(
@@ -652,6 +728,19 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
       user: hidden_support_admin,
       membership_role: :admin
     )
+
+    unpublished_store = create_store!(name: "Users Search Unpublished Store", published: false)
+    create_booth!(store: unpublished_store, name: "Users Search Unpublished Booth", status: :offline)
+    hidden_unpublished_admin =
+      create_user!(email: "users_hidden_unpublished_admin@example.com", role: :store_admin)
+    hidden_unpublished_admin.update!(display_name: "Rose Unpublished Admin")
+    StoreMembership.create!(store: unpublished_store, user: hidden_unpublished_admin, membership_role: :admin)
+
+    public_store = create_store!(name: "Users Search Public Store")
+    create_booth!(store: public_store, name: "Users Search Public Booth", status: :offline)
+    visible_public_admin = create_user!(email: "users_visible_public_admin@example.com", role: :store_admin)
+    visible_public_admin.update!(display_name: "Rose Public Admin")
+    StoreMembership.create!(store: public_store, user: visible_public_admin, membership_role: :admin)
 
     customer = create_user!(email: "users_search_customer@example.com", role: :customer)
     login_as(customer, scope: :user)
@@ -662,8 +751,10 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     body = @response.body
 
     assert_includes body, "Rose User"
+    assert_includes body, "Rose Public Admin"
     refute_includes body, "Tulip User"
     refute_includes body, "Rose Support Admin"
+    refute_includes body, "Rose Unpublished Admin"
   end
 
   test "mode=users: ユーザー名クリックで user詳細に遷移できるリンクが含まれる" do
