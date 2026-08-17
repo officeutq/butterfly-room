@@ -23,9 +23,17 @@ class HomeController < ApplicationController
     @users = User.none
 
     if @mode == "users"
+      sales_support_company_admin_user_ids =
+        StoreMembership
+          .admin_only
+          .joins(:store)
+          .where(stores: { sales_support_company: true })
+          .select(:user_id)
+
       users =
         User.active
           .where(role: %i[cast store_admin])
+          .where.not(role: :store_admin, id: sales_support_company_admin_user_ids)
           .left_joins(:avatar_attachment)
 
       keywords.each do |keyword|

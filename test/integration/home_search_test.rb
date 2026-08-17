@@ -510,12 +510,40 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Alpha Store"
   end
 
-  test "mode=users: cast と store_admin のみ表示され、customer/system_admin は表示されない" do
+  test "mode=users: 営業支援会社所属の store_admin を除外する" do
+    regular_store = create_store!(name: "Regular User Search Store")
+    sales_support_company = create_store!(name: "Sales Support Company")
+    sales_support_company.update!(sales_support_company: true)
+
     cast_user = create_user!(email: "cast_search@example.com", role: :cast)
     cast_user.update!(display_name: "Cast Search User")
+    StoreMembership.create!(store: sales_support_company, user: cast_user, membership_role: :cast)
 
     store_admin_user = create_user!(email: "store_admin_search@example.com", role: :store_admin)
     store_admin_user.update!(display_name: "Store Admin Search User")
+    StoreMembership.create!(store: regular_store, user: store_admin_user, membership_role: :admin)
+
+    support_company_cast_member =
+      create_user!(email: "support_company_cast_member@example.com", role: :store_admin)
+    support_company_cast_member.update!(display_name: "Support Company Cast Member")
+    StoreMembership.create!(
+      store: sales_support_company,
+      user: support_company_cast_member,
+      membership_role: :cast
+    )
+
+    support_company_admin = create_user!(email: "support_company_admin@example.com", role: :store_admin)
+    support_company_admin.update!(display_name: "Sales Support Company Admin")
+    StoreMembership.create!(
+      store: sales_support_company,
+      user: support_company_admin,
+      membership_role: :admin
+    )
+
+    dual_store_admin = create_user!(email: "dual_store_admin@example.com", role: :store_admin)
+    dual_store_admin.update!(display_name: "Dual Store Admin")
+    StoreMembership.create!(store: regular_store, user: dual_store_admin, membership_role: :admin)
+    StoreMembership.create!(store: sales_support_company, user: dual_store_admin, membership_role: :admin)
 
     hidden_customer_user = create_user!(email: "hidden_customer_search@example.com", role: :customer)
     hidden_customer_user.update!(display_name: "Hidden Customer Search User")
@@ -525,6 +553,17 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
 
     deleted_cast_user = create_user!(email: "deleted_cast_search@example.com", role: :cast)
     deleted_cast_user.update!(display_name: "Deleted Cast Search User", deleted_at: Time.current)
+
+    get root_path, params: { mode: "users" }
+    assert_response :success
+
+    guest_body = @response.body
+
+    assert_includes guest_body, "Cast Search User"
+    assert_includes guest_body, "Store Admin Search User"
+    assert_includes guest_body, "Support Company Cast Member"
+    refute_includes guest_body, "Sales Support Company Admin"
+    refute_includes guest_body, "Dual Store Admin"
 
     login_user = create_user!(email: "login_customer_search@example.com", role: :customer)
     login_user.update!(display_name: "Login Customer Search User")
@@ -541,7 +580,10 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
 
     assert_includes body, "Cast Search User"
     assert_includes body, "Store Admin Search User"
+    assert_includes body, "Support Company Cast Member"
 
+    refute_includes body, "Sales Support Company Admin"
+    refute_includes body, "Dual Store Admin"
     refute_includes body, "Hidden Customer Search User"
     refute_includes body, "System Admin Search User"
     refute_includes body, "Deleted Cast Search User"
@@ -601,6 +643,16 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     cast_miss = create_user!(email: "users_miss@example.com", role: :cast)
     cast_miss.update!(display_name: "Tulip User")
 
+    sales_support_company = create_store!(name: "Users Search Support Company")
+    sales_support_company.update!(sales_support_company: true)
+    hidden_support_admin = create_user!(email: "users_hidden_support_admin@example.com", role: :store_admin)
+    hidden_support_admin.update!(display_name: "Rose Support Admin")
+    StoreMembership.create!(
+      store: sales_support_company,
+      user: hidden_support_admin,
+      membership_role: :admin
+    )
+
     customer = create_user!(email: "users_search_customer@example.com", role: :customer)
     login_as(customer, scope: :user)
 
@@ -611,6 +663,7 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
 
     assert_includes body, "Rose User"
     refute_includes body, "Tulip User"
+    refute_includes body, "Rose Support Admin"
   end
 
   test "mode=users: ユーザー名クリックで user詳細に遷移できるリンクが含まれる" do
