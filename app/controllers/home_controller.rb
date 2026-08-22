@@ -214,8 +214,10 @@ class HomeController < ApplicationController
 
   def set_browse_page_meta_tags
     brand_name = "Butterflyve（バタフライブ）"
-    title = "店舗・ブース・配信者を探す"
-    description = "#{brand_name}で公開中の店舗、ブース、配信者を検索できます。気になる店舗の情報を会員登録前に確認できます。"
+    title = "夜を、ライブ体験に。"
+    description =
+      "#{brand_name}は、視聴者・キャスト・店舗をつなぐライブ配信サービスです。" \
+      "公開中の店舗・ブース・配信者を探し、配信視聴やコメント、ドリンクでの応援を楽しめます。"
 
     set_meta_tags(
       title: title,
@@ -238,8 +240,10 @@ class HomeController < ApplicationController
 
   def set_welcome_page_meta_tags
     brand_name = "Butterflyve（バタフライブ）"
-    title = "夜を、ライブ体験に。"
-    description = "#{brand_name}は、視聴者・キャスト・店舗をつなぐライブ配信サービスです。配信を見て、コメントし、ドリンクで応援できます。"
+    title = "ログイン・新規作成"
+    description =
+      "#{brand_name}のログイン・視聴者アカウント新規作成ページです。" \
+      "ライブ配信の視聴、コメント、アプリ内ドリンクでの応援を始められます。"
 
     set_meta_tags(
       title: title,

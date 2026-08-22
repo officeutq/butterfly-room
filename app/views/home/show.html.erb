@@ -1,4 +1,21 @@
-<h1 class="visually-hidden">店舗・ブース・配信者を探す</h1>
+<% content_for :head do %>
+  <script type="application/ld+json"><%= raw({
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Butterflyve",
+    "alternateName": "バタフライブ",
+    "url": root_url,
+    "description": "Butterflyve（バタフライブ）は、視聴者・キャスト・店舗をつなぐライブ配信サービスです。公開中の店舗・ブース・配信者を探し、配信視聴やコメント、ドリンクでの応援を楽しめます。",
+    "about": {
+      "@type": "Service",
+      "name": "Butterflyve",
+      "alternateName": "バタフライブ",
+      "slogan": "夜を、ライブ体験に。"
+    }
+  }.to_json) %></script>
+<% end %>
+
+<h1 class="visually-hidden">夜を、ライブ体験に。</h1>
 
 <% if user_signed_in? %>
   <%= render "install_prompt" %>
