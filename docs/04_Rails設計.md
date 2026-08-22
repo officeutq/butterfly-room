@@ -397,7 +397,7 @@ end
 * `guest_auth_prompts#show` の通常GETは `/welcome` へリダイレクトし、Turbo Frameリクエストだけモーダル本文を返す
 * `home#show` のtitle、description、canonical、OGP、非表示H1はサービス公開トップとして設定し、ドメインルートを示す `WebSite` 構造化データを出力する。既存の表示要素と配置は変更しない
 * `home#welcome` のtitle、description、canonical、OGPはログイン・視聴者アカウント新規作成の案内ページとして設定し、`WebSite` 構造化データは出力しない
-* `stores#show` のdescriptionとOGP descriptionは `Stores::MetaDescriptionBuilder` で同一内容を生成する。登録済みの店舗名・エリア・業態の日本語表示名・営業時間・店舗説明だけを使用し、店舗説明の空白を正規化して最終結果を160文字以内とする。住所全文は使用しない
+* `stores#show` のdescriptionとOGP descriptionは `Stores::MetaDescriptionBuilder` で同一内容を生成する。登録済みの店舗名・エリア・業態の日本語表示名・営業時間・店舗説明だけを使用し、店舗説明の空白を正規化して最終結果を160文字以内とする。業態の「その他」は未入力として扱い、住所全文は使用しない
 * sitemapは `/`、`/welcome`、`Store.published` の店舗詳細URLを列挙する
 
 ---

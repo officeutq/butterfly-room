@@ -41,6 +41,25 @@ module Stores
       )
     end
 
+    test "treats the other business type as blank when an area is registered" do
+      store = Store.new(name: "〇〇", area: "福岡・中洲", business_type: :other)
+
+      assert_equal(
+        "〇〇は福岡・中洲の店舗です。Butterflyveで店舗情報と公開中のブースを確認できます。",
+        MetaDescriptionBuilder.call(store)
+      )
+      refute_includes MetaDescriptionBuilder.call(store), "その他"
+    end
+
+    test "uses the fixed fallback when only the other business type is registered" do
+      store = Store.new(name: "〇〇", business_type: :other)
+
+      assert_equal(
+        "〇〇の店舗情報と公開中のブースをButterflyve（バタフライブ）で確認できます。",
+        MetaDescriptionBuilder.call(store)
+      )
+    end
+
     test "uses the fixed fallback when only the store name is registered" do
       store = Store.new(name: "〇〇")
 

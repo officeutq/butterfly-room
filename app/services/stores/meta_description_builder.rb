@@ -28,12 +28,12 @@ module Stores
     private
 
     def store_details?
-      [ @store.area, @store.business_type, @store.business_hours, @store.description ].any?(&:present?)
+      [ @store.area, business_type_label, @store.business_hours, @store.description ].any?(&:present?)
     end
 
     def store_summary
       area = @store.area.presence
-      business_type = Store::BUSINESS_TYPE_LABELS[@store.business_type&.to_sym]
+      business_type = business_type_label
 
       if area && business_type
         "#{@store.name}は#{area}の#{business_type}です。"
@@ -44,6 +44,12 @@ module Stores
       else
         "#{@store.name}の店舗情報です。"
       end
+    end
+
+    def business_type_label
+      return if @store.business_type == "other"
+
+      Store::BUSINESS_TYPE_LABELS[@store.business_type&.to_sym]
     end
 
     def business_hours
