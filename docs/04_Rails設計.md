@@ -395,6 +395,8 @@ end
 * お気に入りの作成・解除Controllerは従来どおり認証必須とし、未ログイン表示ではPOST/DELETE formを生成しない
 * 未ログイン画面内の保護対象リンクは `guest_auth_prompt_path` を `modal` Turbo Frameへ読み込み、共通モーダルから `/welcome` へ進ませる
 * `guest_auth_prompts#show` の通常GETは `/welcome` へリダイレクトし、Turbo Frameリクエストだけモーダル本文を返す
+* `home#show` のtitle、description、canonical、OGP、非表示H1はサービス公開トップとして設定し、ドメインルートを示す `WebSite` 構造化データを出力する。既存の表示要素と配置は変更しない
+* `home#welcome` のtitle、description、canonical、OGPはログイン・視聴者アカウント新規作成の案内ページとして設定し、`WebSite` 構造化データは出力しない
 * sitemapは `/`、`/welcome`、`Store.published` の店舗詳細URLを列挙する
 
 ---
