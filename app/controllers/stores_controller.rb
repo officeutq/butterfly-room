@@ -44,9 +44,7 @@ class StoresController < ApplicationController
 
   def set_store_meta_tags
     brand_name = "Butterflyve（バタフライブ）"
-    description =
-      @store.description.presence ||
-      "#{@store.name}の店舗情報、営業時間、所在地、公開中のブースを#{brand_name}で確認できます。"
+    description = Stores::MetaDescriptionBuilder.call(@store)
     og_image =
       if @store.thumbnail.attached?
         url_for(@store.thumbnail)

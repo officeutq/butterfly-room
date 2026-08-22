@@ -64,7 +64,10 @@ class SeoMetaTagsTest < ActionDispatch::IntegrationTest
     store = Store.create!(
       name: "SEO Store",
       published: true,
-      description: "SEO Store description"
+      description: "SEO Store description",
+      area: "福岡・中洲",
+      business_type: :girls_bar,
+      business_hours: "20:00〜翌1:00"
     )
     store.thumbnail.attach(
       io: File.open(file_fixture("thumb.png")),
@@ -77,13 +80,21 @@ class SeoMetaTagsTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     doc = Nokogiri::HTML(@response.body)
+    expected_description =
+      "SEO Storeは福岡・中洲のガールズバーです。営業時間は20:00〜翌1:00。" \
+        "SEO Store description。Butterflyveで店舗情報と公開中のブースを確認できます。"
 
     assert_equal "SEO Store | Butterflyve（バタフライブ）", doc.at_css("title").text
-    assert_equal store.description, doc.at_css("meta[name='description']")["content"]
+    assert_equal "SEO Store", doc.at_css("h1").text.strip
+    assert_equal expected_description, doc.at_css("meta[name='description']")["content"]
     assert_equal store_url(store), doc.at_css("link[rel='canonical']")["href"]
     assert_equal store_url(store), doc.at_css("meta[property='og:url']")["content"]
     assert_equal "SEO Store | Butterflyve（バタフライブ）", doc.at_css("meta[property='og:title']")["content"]
-    assert_equal store.description, doc.at_css("meta[property='og:description']")["content"]
+    assert_equal expected_description, doc.at_css("meta[property='og:description']")["content"]
+    assert_equal(
+      doc.at_css("meta[name='description']")["content"],
+      doc.at_css("meta[property='og:description']")["content"]
+    )
     assert_match %r{\Ahttps?://}, doc.at_css("meta[property='og:image']")["content"]
     assert_nil doc.at_css("meta[name='robots']")
   end
