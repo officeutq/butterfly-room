@@ -50,7 +50,7 @@ Rails全体testには、202609版のroute・View・attribution引き継ぎ、FAQ
 
 ## 3. staging確認
 
-2026年8月23日18時57分（JST）の再確認では、`https://staging.butterflyve.jp/up`がHTTP 200へ復旧した。Basic認証なしで`https://staging.butterflyve.jp/stores/lp_202609`へアクセスするとHTTP 401と`WWW-Authenticate: Basic realm="Butterfly Room Staging"`が返り、認証境界も有効だった。認証後の実画面確認は未完了である。
+2026年8月23日18時57分（JST）の再確認では、`https://staging.butterflyve.jp/up`がHTTP 200へ復旧した。Basic認証なしで`https://staging.butterflyve.jp/stores/lp_202609`へアクセスするとHTTP 401と`WWW-Authenticate: Basic realm="Butterfly Room Staging"`が返り、認証境界も有効だった。19時台には認証済みChromeで実画面と主要導線を確認した。
 
 staging復旧またはデプロイは、[ステージング環境デプロイ手順](../staging/deployment.md)と[ステージング構築後チェックリスト](../staging/post_apply_checklist.md)に従い、権限を持つ担当者が実施する。
 
@@ -60,9 +60,12 @@ staging復旧またはデプロイは、[ステージング環境デプロイ手
 - [x] Basic認証なしのLPアクセスをHTTP 401で拒否する
 - [x] `/up`と認証拒否応答に`X-Robots-Tag: noindex, nofollow`が付く
 - [ ] AWS上でTarget Groupがhealthyである
-- [ ] 認証後の画面でGTM無効等のstaging安全設定が有効である
-- [ ] PC、タブレット、スマートフォンで202609版と202607版を表示できる
-- [ ] 202609版から店舗登録、お問い合わせ、FAQへ遷移し、LPへ戻れる
+- [x] 認証後の画面で`noindex, nofollow`とGTM scriptなしを確認する
+- [x] 202609版をPC 1440 x 900、タブレット 768 x 1024、スマートフォン 390 x 844で表示できる
+- [x] 202609版の各画面幅で横スクロールと画像読込み失敗がない
+- [x] 202607版をPC、タブレット、スマートフォンで専用layout・stylesheetのまま表示できる
+- [x] 202609版から店舗登録、お問い合わせ、FAQへ遷移し、LPへ戻れる
+- [x] 戻った202609版で`ref`と`from=stores_lp_202609`の導線を保持する
 - [ ] staging専用の検証値で店舗登録・お問い合わせを各1件だけ完了する
 - [ ] LP表示、スクロール、CTA、フォーム表示、完了が`stores_lp_202609`としてRails DBへ記録される
 - [ ] system_adminで202607版と202609版を分けて確認できる
@@ -71,6 +74,8 @@ staging復旧またはデプロイは、[ステージング環境デプロイ手
 - [ ] 検証後も自動出力設定とworkerが承認前の状態から変わっていない
 
 検証用店舗名、氏名、メールアドレス等へ個人の実情報を使わない。production用Spreadsheet、production Secret、production DBへstagingデータを書き込まない。
+
+202607版は1440 x 900で23pxの横方向overflowを確認した。タブレット・スマートフォンでは横方向overflowはなかった。このPRでは202607版のView、layout、CSSを変更していないため既存挙動として記録し、202609版の公開準備とは分けて扱う。
 
 ## 4. production公開前確認
 
