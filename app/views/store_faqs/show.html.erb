@@ -4,7 +4,9 @@
   <div class="store-faq__background" aria-hidden="true"></div>
 
   <div class="container store-faq__container">
-    <%= link_to @return_to, class: "store-faq__back-link" do %>
+    <%= link_to @return_to,
+                class: "store-faq__back-link",
+                data: { turbo_prefetch: false, turbo: false } do %>
       <span aria-hidden="true">←</span>
       戻る
     <% end %>
@@ -71,7 +73,9 @@
           </div>
 
           <nav class="store-faq__section-actions" aria-label="<%= category.fetch(:title) %>を読み終えた後の操作">
-            <%= link_to @return_to, class: "store-faq__section-action store-faq__section-action--back" do %>
+            <%= link_to @return_to,
+                        class: "store-faq__section-action store-faq__section-action--back",
+                        data: { turbo_prefetch: false, turbo: false } do %>
               <span aria-hidden="true">←</span>
               戻る
             <% end %>

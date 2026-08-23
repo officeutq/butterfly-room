@@ -165,6 +165,48 @@ class LpAnalyticsBrowserTrackingTest < ActionDispatch::IntegrationTest
     )
   end
 
+  test "202609 FAQから戻っても流入情報と同じ匿名訪問を維持する" do
+    get stores_lp_202609_path, params: {
+      from: "meta",
+      utm_source: "facebook",
+      utm_medium: "paid_social",
+      utm_campaign: "campaign_202609",
+      utm_content: "faq_return",
+      ref: "partner-202609"
+    }
+
+    original_visit = LpAnalytics::Visit.order(:id).last
+    original_traffic = original_visit.traffic_attributes
+    original_attribution = @request.session[
+      ApplicationController::STORE_LP_202609_ATTRIBUTION_SESSION_KEY
+    ].dup
+    faq_link = css_select("a").find { |link| link.text.strip == "店舗向けFAQを見る" }
+
+    get faq_link["href"]
+
+    assert_response :success
+    assert_select "a.store-faq__back-link[href=?][data-turbo-prefetch=?][data-turbo=?]",
+                  stores_lp_202609_return_path,
+                  "false",
+                  "false",
+                  count: 1
+
+    assert_no_difference "LpAnalytics::Visit.count" do
+      get stores_lp_202609_return_path
+      assert_redirected_to stores_lp_202609_path(ref: "partner-202609")
+      follow_redirect!
+    end
+
+    assert_response :success
+    assert_equal original_visit.public_id,
+                 @request.session[ApplicationController::LP_ANALYTICS_VISIT_PUBLIC_ID_SESSION_KEY]
+    assert_equal original_attribution,
+                 @request.session[ApplicationController::STORE_LP_202609_ATTRIBUTION_SESSION_KEY]
+    assert_equal "partner-202609",
+                 @request.session[ApplicationController::STORE_LP_202609_REF_SESSION_KEY]
+    assert_equal original_traffic, original_visit.reload.traffic_attributes
+  end
+
   test "別LPの訪問sessionだけでは202609 formの表示計測を設定しない" do
     get stores_lp_202607_path
     get stores_new_registration_path(from: "stores_lp_202609")

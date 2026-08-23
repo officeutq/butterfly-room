@@ -58,10 +58,7 @@ class StoreLpsController < ApplicationController
     registration_ref = sanitized_store_lp_202609_ref || store_lp_202609_ref
     @store_lp_202609_registration_params[:ref] = registration_ref if registration_ref.present?
 
-    return_query = sanitized_utm_params
-    return_query[:ref] = registration_ref if registration_ref.present?
-    return_path = stores_lp_202609_path(return_query)
-    @store_lp_202609_faq_path = stores_faq_path(return_to: return_path)
+    @store_lp_202609_faq_path = stores_faq_path(return_to: stores_lp_202609_return_path)
 
     set_store_lp_202609_meta_tags
     render layout: "store_lp_202609"

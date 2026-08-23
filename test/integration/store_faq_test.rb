@@ -75,6 +75,15 @@ class StoreFaqTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "a[href=?]", return_to, minimum: 2
 
+    get stores_faq_path(return_to: stores_lp_202609_return_path)
+
+    assert_response :success
+    assert_select "a[href=?][data-turbo-prefetch=?][data-turbo=?]",
+                  stores_lp_202609_return_path,
+                  "false",
+                  "false",
+                  minimum: 2
+
     [
       "https://example.com/steal",
       "//example.com/steal",
@@ -101,7 +110,9 @@ class StoreFaqTest < ActionDispatch::IntegrationTest
 
     get stores_lp_202609_path
     assert_response :success
-    assert_select "a[href=?]", stores_faq_path(return_to: stores_lp_202609_path), minimum: 2
+    assert_select "a[href=?]",
+                  stores_faq_path(return_to: stores_lp_202609_return_path),
+                  minimum: 2
 
     get stores_lp_202607_path
     assert_response :success
