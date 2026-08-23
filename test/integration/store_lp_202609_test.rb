@@ -16,15 +16,29 @@ class StoreLp202609Test < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select ".store-lp-202609[data-controller='store-lp-202609']"
-    assert_select "h1", count: 1, text: /営業時間外に売上が止まるのは、.*本当に当たり前でしょうか？/
+    assert_select ".lp-eyebrow", count: 1, text: /FOR NIGHT STORES.*お店とキャストとお客様をつなぐ/
+    assert_select "h1", count: 1, text: /来店がなければ、.*売上もない。.*それ、当たり前ですか？/
     assert_includes response.body, "夜のお店のためにつくられたライブ配信サービス"
     assert_includes response.body, "配信終了時に未消化だったギフトはお客様へ返却され"
     assert_includes response.body, "アカウント作成・ログインが必要です"
     assert_includes response.body, "そのキャスト専用のブースが自動で作成されます"
+    assert_includes response.body, "飲みに出られない"
+    assert_includes response.body, "会いたいけれどお店には行けない"
+    assert_includes response.body, "投資は必要ありません"
+    assert_includes response.body, "オンラインでもつながる。"
+    assert_includes response.body, "「売り上げになる」"
+    assert_includes response.body, "夜のお店での利用を想定しています。"
+    assert_select ".lp-service__choice", count: 1, text: "「オンライン」という新しい選択肢"
+    assert_includes response.body, "「店舗を登録する」から始められます。"
+    assert_includes response.body, "&copy; Office UTQ Inc."
+    assert_not_includes response.body, "最初から夜のお店での利用を想定しています。"
+    assert_select ".lp-step-card__icon, .lp-easy-card__mark, .lp-no-app__phone, .lp-start-card__icon", count: 0
 
-    assert_select "a[href=?]", stores_new_registration_path(from: "stores_lp_202609"), minimum: 3
-    assert_select "a[href=?]", stores_contact_path(from: "stores_lp_202609"), minimum: 2
+    assert_select "a[href=?]", stores_new_registration_path(from: "stores_lp_202609"), minimum: 4
+    assert_select "a[href=?]", stores_contact_path(from: "stores_lp_202609"), minimum: 4
     assert_select "a[href=?]", "/stores/faq?return_to=%2Fstores%2Flp_202609", minimum: 2
+    assert_select ".lp-header__actions a", count: 2
+    assert_select ".lp-mobile-cta a", count: 2
 
     assert_select "img[src*='store_lp_202609/hero_cast_customer_connection']", count: 1
     assert_select "img[src*='store_lp_202609/use_case_before_open']", count: 1
@@ -69,8 +83,8 @@ class StoreLp202609Test < ActionDispatch::IntegrationTest
     assert_equal "partner-202609", @request.session[ApplicationController::STORE_LP_202609_REF_SESSION_KEY]
     assert_select "a[href=?]",
                   stores_new_registration_path(from: "stores_lp_202609", ref: "partner-202609"),
-                  minimum: 3
-    assert_select "a[href=?]", stores_contact_path(from: "stores_lp_202609"), minimum: 2
+                  minimum: 4
+    assert_select "a[href=?]", stores_contact_path(from: "stores_lp_202609"), minimum: 4
     assert_no_match(/stores\/new_registration[^\"]*utm_source/, response.body)
     assert_no_match(/stores\/contact[^\"]*utm_source/, response.body)
 
