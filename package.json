@@ -1,8 +1,8 @@
 {
   "scripts": {
     "copy:bi": "node -e \"const fs=require('fs');const path=require('path');const dest='app/assets/builds/bootstrap-icons';fs.mkdirSync(path.join(dest,'fonts'),{recursive:true});fs.copyFileSync('node_modules/bootstrap-icons/font/bootstrap-icons.css',path.join(dest,'bootstrap-icons.css'));for(const file of fs.readdirSync('node_modules/bootstrap-icons/font/fonts')){fs.copyFileSync(path.join('node_modules/bootstrap-icons/font/fonts',file),path.join(dest,'fonts',file));}\"",
-    "build:css": "sass ./app/assets/stylesheets/application.scss:./app/assets/builds/application.css ./app/assets/stylesheets/store_lp_202607.scss:./app/assets/builds/store_lp_202607.css --no-source-map --load-path=node_modules && npm run copy:bi",
-    "watch:css": "npm run copy:bi && sass --watch ./app/assets/stylesheets/application.scss:./app/assets/builds/application.css ./app/assets/stylesheets/store_lp_202607.scss:./app/assets/builds/store_lp_202607.css --load-path=node_modules",
+    "build:css": "sass ./app/assets/stylesheets/application.scss:./app/assets/builds/application.css ./app/assets/stylesheets/store_lp_202607.scss:./app/assets/builds/store_lp_202607.css ./app/assets/stylesheets/store_lp_202609.scss:./app/assets/builds/store_lp_202609.css --no-source-map --load-path=node_modules && npm run copy:bi",
+    "watch:css": "npm run copy:bi && sass --watch ./app/assets/stylesheets/application.scss:./app/assets/builds/application.css ./app/assets/stylesheets/store_lp_202607.scss:./app/assets/builds/store_lp_202607.css ./app/assets/stylesheets/store_lp_202609.scss:./app/assets/builds/store_lp_202609.css --load-path=node_modules",
     "test:js": "node --test test/javascript/*.cjs",
     "manual:capture:install": "playwright install chromium",
     "manual:capture:smoke": "playwright test --config=playwright.config.js --project=chromium tests/manual_capture/smoke.spec.js",

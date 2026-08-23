@@ -3,9 +3,11 @@
 class StoreContactSubmissionsController < ApplicationController
   STORE_CONTACT_FROM_STORES_LP = "stores_lp"
   STORE_CONTACT_FROM_STORES_LP_202607 = "stores_lp_202607"
+  STORE_CONTACT_FROM_STORES_LP_202609 = "stores_lp_202609"
   STORE_CONTACT_FROM_SOURCES = [
     STORE_CONTACT_FROM_STORES_LP,
-    STORE_CONTACT_FROM_STORES_LP_202607
+    STORE_CONTACT_FROM_STORES_LP_202607,
+    STORE_CONTACT_FROM_STORES_LP_202609
   ].freeze
 
   skip_before_action :authenticate_user!, raise: false
@@ -104,6 +106,8 @@ class StoreContactSubmissionsController < ApplicationController
     case from
     when STORE_CONTACT_FROM_STORES_LP_202607
       stores_lp_202607_return_path
+    when STORE_CONTACT_FROM_STORES_LP_202609
+      stores_lp_202609_return_path
     else
       stores_lp_path
     end

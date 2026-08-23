@@ -2,9 +2,10 @@
 
 class StoreLpsController < ApplicationController
   STORE_LP_202607_FROM = "stores_lp_202607"
+  STORE_LP_202609_FROM = "stores_lp_202609"
 
-  skip_before_action :authenticate_user!, only: %i[show show_202607 return_202607]
-  before_action :enable_gtm, only: %i[show show_202607]
+  skip_before_action :authenticate_user!, only: %i[show show_202607 return_202607 show_202609 return_202609]
+  before_action :enable_gtm, only: %i[show show_202607 show_202609]
 
   layout "store_lp_202607", only: %i[show_202607]
 
@@ -33,6 +34,34 @@ class StoreLpsController < ApplicationController
     query[:ref] = store_lp_202607_ref if store_lp_202607_ref.present?
 
     redirect_to stores_lp_202607_path(query)
+  end
+
+  def show_202609
+    preserve_attribution = consume_store_lp_202609_attribution_preservation
+    persist_store_lp_202609_attribution(preserve: preserve_attribution)
+    persist_store_lp_202609_ref(preserve: preserve_attribution)
+
+    @store_lp_202609_contact_params = tracking_query_params(from: STORE_LP_202609_FROM)
+    @store_lp_202609_registration_params = @store_lp_202609_contact_params.dup
+    registration_ref = sanitized_store_lp_202609_ref || store_lp_202609_ref
+    @store_lp_202609_registration_params[:ref] = registration_ref if registration_ref.present?
+
+    return_query = sanitized_utm_params
+    return_query[:ref] = registration_ref if registration_ref.present?
+    return_path = stores_lp_202609_path(return_query)
+    @store_lp_202609_faq_path = "/stores/faq?#{ { return_to: return_path }.to_query }"
+
+    set_store_lp_202609_meta_tags
+    render layout: "store_lp_202609"
+  end
+
+  def return_202609
+    preserve_store_lp_202609_attribution_once!
+
+    query = {}
+    query[:ref] = store_lp_202609_ref if store_lp_202609_ref.present?
+
+    redirect_to stores_lp_202609_path(query)
   end
 
   private
@@ -81,6 +110,26 @@ class StoreLpsController < ApplicationController
     end
   end
 
+  def persist_store_lp_202609_attribution(preserve:)
+    attribution = store_lp_202609_attribution_payload(from: STORE_LP_202609_FROM)
+
+    if attribution.present?
+      session[STORE_LP_202609_ATTRIBUTION_SESSION_KEY] = attribution
+    elsif !preserve
+      delete_store_lp_202609_attribution
+    end
+  end
+
+  def persist_store_lp_202609_ref(preserve:)
+    ref = sanitized_store_lp_202609_ref
+
+    if ref.present?
+      session[STORE_LP_202609_REF_SESSION_KEY] = ref
+    elsif !preserve
+      delete_store_lp_202609_ref
+    end
+  end
+
   def set_store_lp_meta_tags
     brand_name = "Butterflyve（バタフライブ）"
     title = "店舗向けライブ配信LP"
@@ -121,6 +170,30 @@ class StoreLpsController < ApplicationController
         description: description,
         type: "website",
         url: stores_lp_202607_url,
+        image: view_context.image_url("store_lp_202607/logo/01.png")
+      },
+      twitter: {
+        card: "summary_large_image"
+      }
+    )
+  end
+
+  def set_store_lp_202609_meta_tags
+    brand_name = "Butterflyve（バタフライブ）"
+    title = "来店できない時間を店舗売上の機会に"
+    description = "#{brand_name}は、来店できない日にもキャストとお客様をつなぎ、消化されたギフトを店舗売上として管理できる夜のお店向けライブ配信サービスです。"
+
+    set_meta_tags(
+      title: title,
+      description: description,
+      noindex: true,
+      nofollow: false,
+      canonical: stores_lp_202609_url,
+      og: {
+        title: "#{title} | #{brand_name}",
+        description: description,
+        type: "website",
+        url: stores_lp_202609_url,
         image: view_context.image_url("store_lp_202607/logo/01.png")
       },
       twitter: {

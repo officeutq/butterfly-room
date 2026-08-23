@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta name="google-site-verification" content="47-Zv3lcB4_3vgNcVIgmzwPn8-nSo6sR6gU3W6sGdbw" />
+    <% set_meta_tags(noindex: true, nofollow: true) if staging_environment? %>
+    <%= display_meta_tags %>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="application-name" content="Butterflyve（バタフライブ）">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= render "layouts/gtm_head" if gtm_enabled? %>
+
+    <link rel="icon" href="<%= asset_path('store_lp_202607/logo/favicon.png') %>" type="image/png">
+    <%= stylesheet_link_tag "store_lp_202609", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body>
+    <%= render "layouts/gtm_body" if gtm_enabled? %>
+
+    <%= yield %>
+  </body>
+</html>
