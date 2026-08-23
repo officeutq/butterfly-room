@@ -108,6 +108,29 @@ class LpAnalytics::AnalysisQueryTest < ActiveSupport::TestCase
     assert_equal baseline_query_count, increased_query_count
   end
 
+  test "202609版のsection・CTA定義だけを表示して集計する" do
+    visit = create_visit(
+      traffic_source: "meta",
+      lp_identifier: LpAnalytics::Configuration::STORE_LP_202609
+    )
+    record_browser_event(visit, "section_reached", "existing_customer_opportunity")
+    record_browser_event(visit, "section_reached", "final_opportunity_cta")
+    record_browser_event(visit, "cta_reached", "hero_faq")
+    record_browser_event(visit, "cta_clicked", "hero_faq")
+    record_browser_event(visit, "cta_reached", "bottom_contact")
+    record_browser_event(visit, "cta_clicked", "bottom_contact")
+
+    result = query(lp_identifier: LpAnalytics::Configuration::STORE_LP_202609).call
+
+    assert_equal 1, result.visit_count
+    assert_equal LpAnalytics::Configuration::STORE_LP_202609_SECTION_LABELS.keys,
+                 result.section_metrics.map(&:key)
+    assert_equal LpAnalytics::Configuration::STORE_LP_202609_CTA_DEFINITIONS.keys,
+                 result.cta_metrics.map(&:key)
+    assert_equal :faq, result.cta_metrics.index_by(&:key).fetch("hero_faq").kind
+    assert_equal [ 1, 1, 1, 0, 0 ], result.contact_funnel.map(&:visit_count)
+  end
+
   private
 
   def query(**params)
@@ -123,9 +146,14 @@ class LpAnalytics::AnalysisQueryTest < ActiveSupport::TestCase
     LpAnalytics::AnalysisQuery.new(filter: filter)
   end
 
-  def create_visit(traffic_source:, device_type: "pc", started_at: @base_time)
+  def create_visit(
+    traffic_source:,
+    device_type: "pc",
+    started_at: @base_time,
+    lp_identifier: LpAnalytics::Configuration::STORE_LP_202607
+  )
     LpAnalytics::Visit.create!(
-      lp_identifier: LpAnalytics::Configuration::STORE_LP_202607,
+      lp_identifier: lp_identifier,
       traffic_source: traffic_source,
       utm_source: "facebook",
       utm_medium: "paid_social",

@@ -38,9 +38,16 @@ export function storedVisitId(storage) {
 }
 
 export class EventSender {
-  constructor({ eventsUrl, visitId = null, windowReference = window, documentReference = document }) {
+  constructor({
+    eventsUrl,
+    visitId = null,
+    lpIdentifier = null,
+    windowReference = window,
+    documentReference = document,
+  }) {
     this.eventsUrl = eventsUrl
     this.visitId = visitId
+    this.lpIdentifier = lpIdentifier
     this.windowReference = windowReference
     this.documentReference = documentReference
   }
@@ -58,6 +65,7 @@ export class EventSender {
       event_type: eventType,
     }
     if (this.visitId) event.visit_id = this.visitId
+    if (this.lpIdentifier) event.lp_identifier = this.lpIdentifier
     if (eventValue !== null && eventValue !== undefined) event.event_value = eventValue
     if (Object.keys(metadata).length > 0) event.metadata = metadata
 

@@ -15,7 +15,7 @@ module LpAnalytics
       browser_event_id = attributes.fetch(:event_id)
       raise ActionController::ParameterMissing, :event_id if browser_event_id.blank?
 
-      visit = find_authorized_visit(attributes[:visit_id])
+      visit = find_authorized_visit(attributes[:visit_id], attributes[:lp_identifier])
       raise Events::RecordService::InvalidEventError unless visit
 
       result = Events::RecordService.new(
@@ -40,14 +40,19 @@ module LpAnalytics
     def event_params
       params
         .require(:lp_analytics_event)
-        .permit(:visit_id, :event_id, :event_type, :event_value, metadata: {})
+        .permit(:visit_id, :lp_identifier, :event_id, :event_type, :event_value, metadata: {})
     end
 
-    def find_authorized_visit(requested_public_id)
+    def find_authorized_visit(requested_public_id, requested_lp_identifier)
       public_id = requested_public_id.to_s.strip.presence || lp_analytics_visit_public_id
       return unless lp_analytics_authorized_visit_public_ids.include?(public_id)
 
-      Visit.find_by_public_id(public_id)
+      visit = Visit.find_by_public_id(public_id)
+      expected_lp_identifier = requested_lp_identifier.to_s.strip.presence
+      return visit if expected_lp_identifier.blank?
+      return unless Configuration.supported_lp?(expected_lp_identifier)
+
+      visit if visit&.lp_identifier == expected_lp_identifier
     end
 
     def reject_oversized_request

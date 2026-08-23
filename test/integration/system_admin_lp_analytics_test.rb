@@ -114,6 +114,45 @@ class SystemAdminLpAnalyticsTest < ActionDispatch::IntegrationTest
     assert_not_includes response.body, "090-1111-2222"
   end
 
+  test "system_adminが202609版を選択して専用section・CTA定義を確認できる" do
+    visit = LpAnalytics::Visit.create!(
+      lp_identifier: LpAnalytics::Configuration::STORE_LP_202609,
+      traffic_source: "meta",
+      utm_content: "creative-202609",
+      device_type: "smartphone",
+      browser_type: "safari",
+      started_at: @started_at,
+      last_activity_at: @started_at
+    )
+    visit.events.create!(
+      event_type: "section_reached",
+      event_value: "service_introduction",
+      lp_identifier: visit.lp_identifier,
+      occurred_at: @started_at + 1.minute,
+      browser_event_id: SecureRandom.uuid,
+      dedupe_key: LpAnalytics::Event.dedupe_key_for("section_reached", "service_introduction"),
+      metadata: {}
+    )
+
+    sign_in @system_admin, scope: :user
+    get system_admin_lp_analytics_path, params: {
+      period: "custom",
+      start_date: @started_at.to_date.iso8601,
+      end_date: @started_at.to_date.iso8601,
+      lp_identifier: LpAnalytics::Configuration::STORE_LP_202609
+    }
+
+    assert_response :success
+    assert_select "select[name=lp_identifier] option[value=?]",
+                  LpAnalytics::Configuration::STORE_LP_202609,
+                  text: LpAnalytics::Configuration::STORE_LP_202609
+    assert_select "select[name=lp_identifier] option[selected][value=?]",
+                  LpAnalytics::Configuration::STORE_LP_202609
+    assert_includes response.body, "Butterflyveの紹介"
+    assert_includes response.body, "店舗向けFAQ"
+    assert_not_includes response.body, "STRENGTHS"
+  end
+
   private
 
   def create_visit

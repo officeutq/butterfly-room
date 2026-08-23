@@ -10,14 +10,27 @@ export default class extends Controller {
   static values = {
     eventsUrl: String,
     eventType: String,
+    lpIdentifier: String,
   }
 
   connect() {
-    if (!this.hasEventsUrlValue || !this.hasEventTypeValue || !isTrackableDocument()) return
+    if (
+      !this.hasEventsUrlValue ||
+      !this.hasEventTypeValue ||
+      !this.hasLpIdentifierValue ||
+      !this.lpIdentifierValue ||
+      !isTrackableDocument()
+    ) return
 
     const visitId = storedVisitId()
+    if (!visitId) return
+
     this.setVisitIdInput(visitId)
-    this.eventSender = new EventSender({ eventsUrl: this.eventsUrlValue, visitId })
+    this.eventSender = new EventSender({
+      eventsUrl: this.eventsUrlValue,
+      visitId,
+      lpIdentifier: this.lpIdentifierValue,
+    })
     this.eventSender.send(this.eventTypeValue, null, { viewport_type: viewportType() })
   }
 

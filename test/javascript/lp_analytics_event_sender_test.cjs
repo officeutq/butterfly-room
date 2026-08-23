@@ -88,6 +88,7 @@ test("許可された匿名情報だけをCSRF付きkeepalive requestで送信�
   const sender = new EventSender({
     eventsUrl: "/lp_analytics/events",
     visitId: "123e4567-e89b-42d3-a456-426614174001",
+    lpIdentifier: "stores_lp_202609",
     windowReference,
     documentReference: buildDocument(),
   })
@@ -104,6 +105,7 @@ test("許可された匿名情報だけをCSRF付きkeepalive requestで送信�
   assert.deepEqual(JSON.parse(requests[0].options.body), {
     lp_analytics_event: {
       visit_id: "123e4567-e89b-42d3-a456-426614174001",
+      lp_identifier: "stores_lp_202609",
       event_id: "123e4567-e89b-42d3-a456-426614174000",
       event_type: "cta_clicked",
       event_value: "hero_registration",

@@ -170,6 +170,27 @@ class LpAnalytics::Sheets::IdempotentWriterTest < ActiveSupport::TestCase
     assert client.values.any? { |values| values.all?(&:blank?) }
   end
 
+  test "202607版の現行headerから202609セクション列を追加して既存値を維持する" do
+    previous_row = build_row(key: "previous", aggregation_date: TARGET_DATE - 1.day, visit_count: 6)
+    client = MemoryClient.new([
+      LpAnalytics::Sheets::IdempotentWriter::PREVIOUS_HEADERS,
+      previous_sheet_values(previous_row)
+    ])
+
+    writer(client).call(
+      rows: [ build_row(key: "current") ],
+      aggregation_date: TARGET_DATE,
+      exported_at: EXPORTED_AT
+    )
+
+    migrated = client.values.find { |values| values.first == "previous" }
+    headers = LpAnalytics::Sheets::IdempotentWriter::HEADERS
+    assert_equal headers, client.values.first
+    assert_equal headers.length, migrated.length
+    assert_equal "6", migrated.fetch(headers.index("lp_visit_count"))
+    assert_equal "", migrated.fetch(headers.index("section_service_introduction_visit_count"))
+  end
+
   test "header不一致と既存duplicate keyでは書き込まない" do
     invalid_header_client = MemoryClient.new([ [ "wrong" ] ])
     assert_raises LpAnalytics::Sheets::IdempotentWriter::HeaderMismatchError do
@@ -250,6 +271,22 @@ class LpAnalytics::Sheets::IdempotentWriterTest < ActiveSupport::TestCase
       section_qa_rate: 0.0,
       section_bottom_cta_visit_count: 0,
       section_bottom_cta_rate: 0.0,
+      section_existing_customer_opportunity_visit_count: 0,
+      section_existing_customer_opportunity_rate: 0.0,
+      section_service_introduction_visit_count: 0,
+      section_service_introduction_rate: 0.0,
+      section_usage_mechanism_visit_count: 0,
+      section_usage_mechanism_rate: 0.0,
+      section_service_comparison_visit_count: 0,
+      section_service_comparison_rate: 0.0,
+      section_adoption_cost_visit_count: 0,
+      section_adoption_cost_rate: 0.0,
+      section_usage_scenes_visit_count: 0,
+      section_usage_scenes_rate: 0.0,
+      section_getting_started_visit_count: 0,
+      section_getting_started_rate: 0.0,
+      section_final_opportunity_cta_visit_count: 0,
+      section_final_opportunity_cta_rate: 0.0,
       registration_cta_click_visit_count: 0,
       registration_cta_click_count: 0,
       registration_form_visit_count: 0,
@@ -297,6 +334,22 @@ class LpAnalytics::Sheets::IdempotentWriterTest < ActiveSupport::TestCase
       row.section_qa_rate,
       row.section_bottom_cta_visit_count,
       row.section_bottom_cta_rate,
+      row.section_existing_customer_opportunity_visit_count,
+      row.section_existing_customer_opportunity_rate,
+      row.section_service_introduction_visit_count,
+      row.section_service_introduction_rate,
+      row.section_usage_mechanism_visit_count,
+      row.section_usage_mechanism_rate,
+      row.section_service_comparison_visit_count,
+      row.section_service_comparison_rate,
+      row.section_adoption_cost_visit_count,
+      row.section_adoption_cost_rate,
+      row.section_usage_scenes_visit_count,
+      row.section_usage_scenes_rate,
+      row.section_getting_started_visit_count,
+      row.section_getting_started_rate,
+      row.section_final_opportunity_cta_visit_count,
+      row.section_final_opportunity_cta_rate,
       row.registration_cta_click_visit_count,
       row.registration_cta_click_count,
       row.registration_form_visit_count,
@@ -315,6 +368,13 @@ class LpAnalytics::Sheets::IdempotentWriterTest < ActiveSupport::TestCase
   def legacy_sheet_values(row)
     current_values = LpAnalytics::Sheets::IdempotentWriter::HEADERS.zip(sheet_values(row)).to_h
     LpAnalytics::Sheets::IdempotentWriter::LEGACY_HEADERS.map do |header|
+      current_values.fetch(header)
+    end
+  end
+
+  def previous_sheet_values(row)
+    current_values = LpAnalytics::Sheets::IdempotentWriter::HEADERS.zip(sheet_values(row)).to_h
+    LpAnalytics::Sheets::IdempotentWriter::PREVIOUS_HEADERS.map do |header|
       current_values.fetch(header)
     end
   end

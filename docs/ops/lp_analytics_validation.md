@@ -2,7 +2,7 @@
 
 ## 1. 目的と安全境界
 
-`stores/lp_202607`のLP表示から店舗登録・お問い合わせ完了、system_admin分析、Googleスプレッドシート日次出力までを横断確認する。分析の正本はRails DBであり、Googleスプレッドシートは匿名の日次集計の共有先である。
+`stores/lp_202607`と`stores/lp_202609`のLP表示から店舗登録・お問い合わせ完了、system_admin分析、Googleスプレッドシート日次出力までを横断確認する。分析の正本はRails DBであり、Googleスプレッドシートは匿名の日次集計の共有先である。
 
 2026年8月9日の#1033検証はstagingだけで実施した。production containerの再起動・再作成、production Spreadsheetへの書込み、production Secret値の取得、自動出力の起動は行っていない。
 
@@ -13,6 +13,7 @@
 - 訪問は匿名の公開訪問IDで関連付ける
 - 同じLP・UTM・referral codeで最後の操作から30分以内は同じ訪問を継続する
 - 30分超過、UTM変更、referral code変更、有効な訪問IDなしは新しい訪問とする
+- 同じ公開訪問IDがあってもLP識別子を切り替えた場合は新しい訪問とする
 - reloadは同じ訪問の`lp_view`を追加する
 - browserが同じ公開訪問IDを引き継いだ複数tabは同じ訪問とする
 - LPを経由しない通常の登録・お問い合わせフォーム流入は分析対象にしない
@@ -80,6 +81,8 @@ https://staging.butterflyve.jp/stores/lp_202607?from=staging_validation&utm_sour
 
 #1043の端末・セクション列追加後は、上記に加えて`device_type`別の訪問数・完了訪問数・CV率と、8つの主要セクションの到達訪問数・到達率をRails DBと照合する。旧headerからの移行では対象期間を全件再出力し、端末軸を含まない旧aggregation keyが残っていないことを確認する。実Spreadsheetの移行はPR・自動testでは行わず、[Google Sheets連携運用手順](lp_analytics_google_sheets.md)の承認手順に従う。
 
+#1067の202609版追加後は、LP識別子、`device_type`、`utm_content`を分け、202607版と202609版それぞれの8セクション、CTA、フォーム表示、完了を照合する。202609版LP上のFAQはリンクCTAまでを対象とし、FAQページ内の質問展開はFAQページの計測として確認する。42列headerから58列headerへの実Spreadsheet移行はPR・自動testでは行わず、同じ運用手順の承認境界に従う。
+
 ### 個人情報・秘密情報
 
 | 対象 | 結果 |
@@ -100,7 +103,7 @@ https://staging.butterflyve.jp/stores/lp_202607?from=staging_validation&utm_sour
 | 分類 | 確認内容 |
 | --- | --- |
 | 日付 | 23:59台開始、翌日00:00台完了、訪問開始日への帰属、今日・7日・30日・任意期間、02:20 JSTの直近7日 |
-| event | browser event IDの再送、訪問内到達eventの重複、CTA・FAQ複数回、許可外値・metadata拒否 |
+| event | browser event IDの再送、訪問内到達eventの重複、CTA・FAQ複数回、LP別keyの混在拒否、許可外値・metadata拒否 |
 | browser | API失敗を画面へ伝播しない、Turbo preview / prerender除外、CSRF、匿名payload限定 |
 | Sheets | 初回・同日更新・消滅行、duplicate key、header不一致、部分行、429・5xx・timeout retry、401・403非retry |
 | 業務分離 | Sheets失敗時にDB transactionを保持しない、登録・お問い合わせ完了を業務保存成功後に記録 |

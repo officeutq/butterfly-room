@@ -21,9 +21,12 @@ class LpAnalytics::Sheets::ExportRangeServiceTest < ActiveSupport::TestCase
 
     result = service.call
 
-    assert_equal [ Date.new(2026, 8, 7), Date.new(2026, 8, 8), Date.new(2026, 8, 9) ], calls.map(&:first)
+    expected_calls = (Date.new(2026, 8, 7)..Date.new(2026, 8, 9)).flat_map do |date|
+      LpAnalytics::Configuration::LP_DEFINITIONS.keys.map { |lp_identifier| [ date, lp_identifier ] }
+    end
+    assert_equal expected_calls, calls
     assert_equal [ Date.new(2026, 8, 7), Date.new(2026, 8, 9) ], result.succeeded_dates
-    assert_equal [ Date.new(2026, 8, 8) ], result.failures.map(&:aggregation_date)
+    assert_equal [ Date.new(2026, 8, 8), Date.new(2026, 8, 8) ], result.failures.map(&:aggregation_date)
     refute result.success?
   end
 

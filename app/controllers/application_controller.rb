@@ -147,6 +147,15 @@ class ApplicationController < ActionController::Base
     visit if visit&.lp_identifier == lp_identifier
   end
 
+  def lp_analytics_authorized_visit_available?(lp_identifier:)
+    return false unless LpAnalytics::Configuration.supported_lp?(lp_identifier)
+
+    LpAnalytics::Visit.where(
+      public_id: lp_analytics_authorized_visit_public_ids,
+      lp_identifier: lp_identifier
+    ).exists?
+  end
+
   def store_lp_202607_attribution_payload(from: STORE_LP_202607_FROM, source: params)
     utm_params = sanitized_utm_params(source)
     return nil if utm_params.blank?

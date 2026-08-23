@@ -38,6 +38,51 @@ module LpAnalytics
         exported_at
       ].freeze
 
+      PREVIOUS_HEADERS = %w[
+        aggregation_key
+        aggregation_date
+        lp_identifier
+        traffic_source
+        utm_source
+        utm_medium
+        utm_campaign
+        utm_content
+        device_type
+        lp_visit_count
+        scroll_25_visit_count
+        scroll_50_visit_count
+        scroll_75_visit_count
+        scroll_90_visit_count
+        section_usage_visit_count
+        section_usage_rate
+        section_strengths_visit_count
+        section_strengths_rate
+        section_system_visit_count
+        section_system_rate
+        section_pricing_visit_count
+        section_pricing_rate
+        section_flow_visit_count
+        section_flow_rate
+        section_cast_visit_count
+        section_cast_rate
+        section_qa_visit_count
+        section_qa_rate
+        section_bottom_cta_visit_count
+        section_bottom_cta_rate
+        registration_cta_click_visit_count
+        registration_cta_click_count
+        registration_form_visit_count
+        registration_completion_count
+        registration_completion_visit_count
+        registration_cv_rate
+        contact_cta_click_visit_count
+        contact_form_visit_count
+        contact_completion_count
+        contact_completion_visit_count
+        contact_cv_rate
+        exported_at
+      ].freeze
+
       HEADERS = %w[
         aggregation_key
         aggregation_date
@@ -69,6 +114,22 @@ module LpAnalytics
         section_qa_rate
         section_bottom_cta_visit_count
         section_bottom_cta_rate
+        section_existing_customer_opportunity_visit_count
+        section_existing_customer_opportunity_rate
+        section_service_introduction_visit_count
+        section_service_introduction_rate
+        section_usage_mechanism_visit_count
+        section_usage_mechanism_rate
+        section_service_comparison_visit_count
+        section_service_comparison_rate
+        section_adoption_cost_visit_count
+        section_adoption_cost_rate
+        section_usage_scenes_visit_count
+        section_usage_scenes_rate
+        section_getting_started_visit_count
+        section_getting_started_rate
+        section_final_opportunity_cta_visit_count
+        section_final_opportunity_cta_rate
         registration_cta_click_visit_count
         registration_cta_click_count
         registration_form_visit_count
@@ -120,7 +181,7 @@ module LpAnalytics
         end
 
         header = Array(sheet_values.first).map(&:to_s)
-        unless [ HEADERS, LEGACY_HEADERS ].include?(header)
+        unless [ HEADERS, PREVIOUS_HEADERS, LEGACY_HEADERS ].include?(header)
           raise HeaderMismatchError, "worksheet header does not match"
         end
 
@@ -128,8 +189,8 @@ module LpAnalytics
         return [ rows, [] ] if header == HEADERS
 
         migrated_rows = rows.map do |row|
-          legacy_values = LEGACY_HEADERS.zip(row.values).to_h
-          values = HEADERS.map { |column| legacy_values.fetch(column, "") }
+          previous_values = header.zip(row.values).to_h
+          values = HEADERS.map { |column| previous_values.fetch(column, "") }
           ExistingRow.new(
             row_number: row.row_number,
             aggregation_key: row.aggregation_key,
@@ -228,6 +289,22 @@ module LpAnalytics
           row.section_qa_rate,
           row.section_bottom_cta_visit_count,
           row.section_bottom_cta_rate,
+          row.section_existing_customer_opportunity_visit_count,
+          row.section_existing_customer_opportunity_rate,
+          row.section_service_introduction_visit_count,
+          row.section_service_introduction_rate,
+          row.section_usage_mechanism_visit_count,
+          row.section_usage_mechanism_rate,
+          row.section_service_comparison_visit_count,
+          row.section_service_comparison_rate,
+          row.section_adoption_cost_visit_count,
+          row.section_adoption_cost_rate,
+          row.section_usage_scenes_visit_count,
+          row.section_usage_scenes_rate,
+          row.section_getting_started_visit_count,
+          row.section_getting_started_rate,
+          row.section_final_opportunity_cta_visit_count,
+          row.section_final_opportunity_cta_rate,
           row.registration_cta_click_visit_count,
           row.registration_cta_click_count,
           row.registration_form_visit_count,
