@@ -59,7 +59,7 @@ staging復旧またはデプロイは、[ステージング環境デプロイ手
 - [x] `/up`がHTTP 200で正常応答する
 - [x] Basic認証なしのLPアクセスをHTTP 401で拒否する
 - [x] `/up`と認証拒否応答に`X-Robots-Tag: noindex, nofollow`が付く
-- [ ] AWS上でTarget Groupがhealthyである
+- [x] AWS上でTarget Groupがhealthyである
 - [x] 認証後の画面で`noindex, nofollow`とGTM scriptなしを確認する
 - [x] 202609版をPC 1440 x 900、タブレット 768 x 1024、スマートフォン 390 x 844で表示できる
 - [x] 202609版の各画面幅で横スクロールと画像読込み失敗がない
@@ -68,11 +68,11 @@ staging復旧またはデプロイは、[ステージング環境デプロイ手
 - [x] 戻った202609版で`ref`と`from=stores_lp_202609`の導線を保持する
 - [x] staging専用の検証値で店舗登録・お問い合わせを各1件だけ完了する
 - [x] LP表示、CTA、フォーム表示、完了が`stores_lp_202609`としてRails DBへ記録される
-- [ ] stagingでスクロール・主要セクション到達をRails DBと照合する
+- [x] stagingでスクロール・主要セクション到達をRails DBと照合する
 - [x] system_adminと同じ集計経路で202607版と202609版を分けて確認できる
 - [x] staging用Googleスプレッドシートへのread接続と移行前状態を確認する
 - [x] staging用Googleスプレッドシートの日次出力をRails DBと照合できる
-- [ ] 同一流入30分以内、30分経過後、UTM変更、referral code変更、reload、複数tabを[横断検証手順](lp_analytics_validation.md)どおり確認する
+- [x] 同一流入30分以内、30分経過後、UTM変更、referral code変更、reload、複数tabを[横断検証手順](lp_analytics_validation.md)どおり確認する
 - [x] 自動出力が`false`のままで、appとworkerが同じimageで稼働している
 
 検証用店舗名、氏名、メールアドレス等へ個人の実情報を使わない。production用Spreadsheet、production Secret、production DBへstagingデータを書き込まない。
@@ -84,6 +84,10 @@ staging用`daily_raw`は旧25列headerと完全一致し、新58列への移行d
 2026年8月23日19時台の初回出力では58列への移行自体は成功したが、同じ対象日の202607版と202609版を順番に出力すると、後のLP出力が先のLP行を空欄化する不具合を検出した。原因は`IdempotentWriter`の古い行を空欄化する条件が対象日だけで、対象LPを含んでいなかったことである。空欄化対象を対象日・対象LPの両方で限定し、同日の別LP行を維持する回帰testを追加したcommit `0c8a8cf`をstagingへ反映した。
 
 修正後に2026年8月9日から22日までと23日を再出力し、15日分・2LPの出力状態30件がすべて`succeeded`となった。`daily_raw`は58列、headerを含む12行、管理行11件（202607版6件、202609版5件）で、aggregation keyと`exported_at`以外の全集計値がRails DBと一致した。重複key、部分行、メール形式の値、秘密鍵文字列は0件だった。23日を再出力しても総行数12・管理行11のままで、202607版2行と202609版5行を維持した。appとworkerは同じ修正版imageで稼働し、自動出力は`false`のままである。
+
+2026年8月23日23時台に、一意な匿名検証用UTMを付けた202609版を認証済みChromeで操作し、Rails DBと照合した。8つの主要セクションと25%・50%・75%・90%のスクロール到達は、1訪問に対しそれぞれ1件ずつ記録された。同一LP・同一UTMでのreloadと別tab表示は1訪問・`lp_view` 3件にまとまり、UTM値の変更とreferral codeの変更はそれぞれ別訪問となった。30分超過は、今回作成した匿名検証訪問1件だけをstaging DB上で31分間無操作の状態にし、同じURLのreload後に2訪問目が作成されることを確認した。検証で業務recordと個人情報は使用していない。
+
+2026年8月23日23時12分（JST）に、AWS上のstaging Target Groupが`healthy`であることも確認した。
 
 202607版は1440 x 900で23pxの横方向overflowを確認した。タブレット・スマートフォンでは横方向overflowはなかった。このPRでは202607版のView、layout、CSSを変更していないため既存挙動として記録し、202609版の公開準備とは分けて扱う。
 
