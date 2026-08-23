@@ -1,0 +1,86 @@
+<% content_for :title, "店舗向けFAQ" %>
+
+<div class="store-faq" data-controller="store-faq">
+  <div class="store-faq__background" aria-hidden="true"></div>
+
+  <div class="container store-faq__container">
+    <%= link_to @return_to, class: "store-faq__back-link" do %>
+      <span aria-hidden="true">←</span>
+      遷移前のページへ戻る
+    <% end %>
+
+    <header class="store-faq__hero">
+      <p class="store-faq__eyebrow">FOR NIGHT STORES</p>
+      <h1>店舗向けFAQ</h1>
+      <p>Butterflyveの導入や運用について、店舗の皆様からよくいただく質問をまとめています。</p>
+    </header>
+
+    <nav class="store-faq__categories" aria-label="FAQの分類">
+      <% @categories.each_with_index do |category, index| %>
+        <button
+          type="button"
+          class="store-faq__category-button"
+          data-store-faq-target="categoryButton"
+          data-category-key="<%= category.fetch(:key) %>"
+          data-action="store-faq#selectCategory"
+          aria-controls="store-faq-category-<%= category.fetch(:key) %>"
+          aria-pressed="<%= index.zero? %>">
+          <%= category.fetch(:title) %>
+        </button>
+      <% end %>
+    </nav>
+
+    <noscript>
+      <p class="store-faq__noscript">JavaScriptが無効のため、すべての分類を続けて表示しています。</p>
+    </noscript>
+
+    <div class="store-faq__content">
+      <% @categories.each do |category| %>
+        <section
+          id="store-faq-category-<%= category.fetch(:key) %>"
+          class="store-faq__category"
+          data-store-faq-target="category"
+          data-category-key="<%= category.fetch(:key) %>"
+          aria-labelledby="store-faq-title-<%= category.fetch(:key) %>">
+          <div class="store-faq__category-heading">
+            <p><%= format("%02d", @categories.index(category) + 1) %></p>
+            <h2 id="store-faq-title-<%= category.fetch(:key) %>"><%= category.fetch(:title) %></h2>
+          </div>
+
+          <div class="store-faq__questions">
+            <% category.fetch(:questions).each do |faq| %>
+              <details class="store-faq__question" id="faq-q<%= faq.fetch(:number) %>">
+                <summary>
+                  <span class="store-faq__question-number">Q<%= faq.fetch(:number) %>.</span>
+                  <span class="store-faq__question-text"><%= faq.fetch(:question) %></span>
+                  <span class="store-faq__question-toggle" aria-hidden="true"></span>
+                </summary>
+
+                <div class="store-faq__answer">
+                  <% faq.fetch(:answers).each do |answer| %>
+                    <% if answer.key?(:items) %>
+                      <ul>
+                        <% answer.fetch(:items).each do |item| %>
+                          <li><%= item %></li>
+                        <% end %>
+                      </ul>
+                    <% else %>
+                      <p><%= answer.fetch(:text) %></p>
+                    <% end %>
+                  <% end %>
+                </div>
+              </details>
+            <% end %>
+          </div>
+        </section>
+      <% end %>
+    </div>
+
+    <div class="store-faq__footer-action">
+      <%= link_to @return_to, class: "btn btn-primary btn-lg fw-bold" do %>
+        <span aria-hidden="true">←</span>
+        遷移前のページへ戻る
+      <% end %>
+    </div>
+  </div>
+</div>

@@ -169,6 +169,19 @@
       </div>
     <% end %>
 
+    <% if current_user.store_admin? %>
+      <div class="col-12 col-md-6 col-xl-4">
+        <%= link_to stores_faq_path(return_to: dashboard_path), class: "text-decoration-none" do %>
+          <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
+            <div class="card-body">
+              <h5 class="card-title mb-2">店舗向けFAQ</h5>
+              <p class="card-text mb-0">店舗での導入や運用について、よくある質問を確認できます。</p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
     <% if current_user.at_least?(:store_admin) %>
       <div class="col-12 col-md-6 col-xl-4">
         <%= link_to admin_booths_path, class: "text-decoration-none" do %>
