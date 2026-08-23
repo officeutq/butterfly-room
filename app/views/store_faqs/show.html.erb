@@ -1,12 +1,12 @@
 <% content_for :title, "店舗向けFAQ" %>
 
-<div class="store-faq" data-controller="store-faq">
+<div id="store-faq-top" class="store-faq" data-controller="store-faq">
   <div class="store-faq__background" aria-hidden="true"></div>
 
   <div class="container store-faq__container">
     <%= link_to @return_to, class: "store-faq__back-link" do %>
       <span aria-hidden="true">←</span>
-      遷移前のページへ戻る
+      戻る
     <% end %>
 
     <header class="store-faq__hero">
@@ -17,25 +17,22 @@
 
     <nav class="store-faq__categories" aria-label="FAQの分類">
       <% @categories.each_with_index do |category, index| %>
-        <button
-          type="button"
+        <a
+          href="#store-faq-category-<%= category.fetch(:key) %>"
           class="store-faq__category-button"
-          data-store-faq-target="categoryButton"
+          data-store-faq-target="categoryLink"
           data-category-key="<%= category.fetch(:key) %>"
-          data-action="store-faq#selectCategory"
+          data-action="store-faq#scrollToCategory"
           aria-controls="store-faq-category-<%= category.fetch(:key) %>"
-          aria-pressed="<%= index.zero? %>">
-          <%= category.fetch(:title) %>
-        </button>
+          <% if index.zero? %>aria-current="page"<% end %>>
+          <span class="store-faq__category-number"><%= format("%02d", index + 1) %></span>
+          <span><%= category.fetch(:title) %></span>
+        </a>
       <% end %>
     </nav>
 
-    <noscript>
-      <p class="store-faq__noscript">JavaScriptが無効のため、すべての分類を続けて表示しています。</p>
-    </noscript>
-
     <div class="store-faq__content">
-      <% @categories.each do |category| %>
+      <% @categories.each_with_index do |category, index| %>
         <section
           id="store-faq-category-<%= category.fetch(:key) %>"
           class="store-faq__category"
@@ -43,14 +40,14 @@
           data-category-key="<%= category.fetch(:key) %>"
           aria-labelledby="store-faq-title-<%= category.fetch(:key) %>">
           <div class="store-faq__category-heading">
-            <p><%= format("%02d", @categories.index(category) + 1) %></p>
+            <p><%= format("%02d", index + 1) %></p>
             <h2 id="store-faq-title-<%= category.fetch(:key) %>"><%= category.fetch(:title) %></h2>
           </div>
 
           <div class="store-faq__questions">
             <% category.fetch(:questions).each do |faq| %>
               <details class="store-faq__question" id="faq-q<%= faq.fetch(:number) %>">
-                <summary>
+                <summary data-action="click->store-faq#toggleQuestion">
                   <span class="store-faq__question-number">Q<%= faq.fetch(:number) %>.</span>
                   <span class="store-faq__question-text"><%= faq.fetch(:question) %></span>
                   <span class="store-faq__question-toggle" aria-hidden="true"></span>
@@ -72,14 +69,21 @@
               </details>
             <% end %>
           </div>
-        </section>
-      <% end %>
-    </div>
 
-    <div class="store-faq__footer-action">
-      <%= link_to @return_to, class: "btn btn-primary btn-lg fw-bold" do %>
-        <span aria-hidden="true">←</span>
-        遷移前のページへ戻る
+          <nav class="store-faq__section-actions" aria-label="<%= category.fetch(:title) %>を読み終えた後の操作">
+            <%= link_to @return_to, class: "store-faq__section-action store-faq__section-action--back" do %>
+              <span aria-hidden="true">←</span>
+              戻る
+            <% end %>
+            <a
+              href="#store-faq-top"
+              class="store-faq__section-action store-faq__section-action--top"
+              data-action="store-faq#scrollToTop">
+              ページトップ
+              <span aria-hidden="true">↑</span>
+            </a>
+          </nav>
+        </section>
       <% end %>
     </div>
   </div>

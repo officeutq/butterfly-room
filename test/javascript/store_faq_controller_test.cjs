@@ -9,7 +9,7 @@ const controllerPath = path.resolve(
   "../../app/javascript/controllers/store_faq_controller.js"
 )
 
-function loadController(hash = "") {
+function loadController({ hash = "", reducedMotion = false, document = {} } = {}) {
   let source = fs.readFileSync(controllerPath, "utf8")
   source = source.replace(
     'import { Controller } from "@hotwired/stimulus"',
@@ -20,8 +20,15 @@ function loadController(hash = "") {
     "globalThis.StoreFaqController = class extends Controller"
   )
 
-  const context = vm.createContext({ console, window: { location: { hash } } })
+  const window = {
+    location: { hash },
+    matchMedia: () => ({ matches: reducedMotion }),
+    scrollCalls: [],
+    scrollTo(options) { this.scrollCalls.push(options) },
+  }
+  const context = vm.createContext({ console, document, window })
   vm.runInContext(source, context, { filename: controllerPath })
+  context.StoreFaqController.testWindow = window
   return context.StoreFaqController
 }
 
@@ -36,76 +43,162 @@ function classList() {
   }
 }
 
-function button(key) {
-  const attributes = {}
+function categoryLink(key, categoryId) {
+  const attributes = { "aria-controls": categoryId }
   return {
     dataset: { categoryKey: key },
     classList: classList(),
     setAttribute(name, value) { attributes[name] = value },
     getAttribute(name) { return attributes[name] },
+    removeAttribute(name) { delete attributes[name] },
   }
 }
 
-function category(key, questionId = null) {
+function category(key, { id = `store-faq-category-${key}`, questionId = null } = {}) {
   return {
+    id,
     dataset: { categoryKey: key },
     hidden: false,
+    scrollCalls: [],
     querySelector(selector) {
       return selector === questionId ? {} : null
     },
+    scrollIntoView(options) { this.scrollCalls.push(options) },
   }
 }
 
-test("connect selects the first category and hides the remaining categories", () => {
+function eventFor(currentTarget) {
+  return {
+    currentTarget,
+    defaultPrevented: false,
+    preventDefault() { this.defaultPrevented = true },
+  }
+}
+
+test("connect keeps every category visible and marks the first table-of-contents link", () => {
   const Controller = loadController()
   const firstCategory = category("service")
   const secondCategory = category("sales")
-  const firstButton = button("service")
-  const secondButton = button("sales")
+  const firstLink = categoryLink("service", firstCategory.id)
+  const secondLink = categoryLink("sales", secondCategory.id)
   const controller = Object.assign(new Controller(), {
     categoryTargets: [firstCategory, secondCategory],
-    categoryButtonTargets: [firstButton, secondButton],
+    categoryLinkTargets: [firstLink, secondLink],
   })
 
   controller.connect()
 
   assert.equal(firstCategory.hidden, false)
-  assert.equal(secondCategory.hidden, true)
-  assert.equal(firstButton.getAttribute("aria-pressed"), "true")
-  assert.equal(secondButton.getAttribute("aria-pressed"), "false")
-  assert.equal(firstButton.classList.contains("is-active"), true)
+  assert.equal(secondCategory.hidden, false)
+  assert.equal(firstLink.getAttribute("aria-current"), "page")
+  assert.equal(secondLink.getAttribute("aria-current"), undefined)
+  assert.equal(firstLink.classList.contains("is-active"), true)
 })
 
-test("category button switches the visible category and selected state", () => {
+test("table-of-contents link smoothly scrolls to its category", () => {
+  const firstCategory = category("service")
+  const secondCategory = category("sales")
+  const firstLink = categoryLink("service", firstCategory.id)
+  const secondLink = categoryLink("sales", secondCategory.id)
+  const document = {
+    getElementById(id) {
+      return [firstCategory, secondCategory].find((item) => item.id === id)
+    },
+  }
+  const Controller = loadController({ document })
+  const controller = Object.assign(new Controller(), {
+    categoryTargets: [firstCategory, secondCategory],
+    categoryLinkTargets: [firstLink, secondLink],
+  })
+  const event = eventFor(secondLink)
+
+  controller.scrollToCategory(event)
+
+  assert.equal(event.defaultPrevented, true)
+  assert.equal(secondCategory.scrollCalls.length, 1)
+  assert.equal(secondCategory.scrollCalls[0].behavior, "smooth")
+  assert.equal(secondCategory.scrollCalls[0].block, "start")
+  assert.equal(firstLink.getAttribute("aria-current"), undefined)
+  assert.equal(secondLink.getAttribute("aria-current"), "page")
+})
+
+test("page-top link smoothly scrolls to the FAQ top", () => {
   const Controller = loadController()
   const firstCategory = category("service")
   const secondCategory = category("sales")
-  const firstButton = button("service")
-  const secondButton = button("sales")
+  const firstLink = categoryLink("service", firstCategory.id)
+  const secondLink = categoryLink("sales", secondCategory.id)
   const controller = Object.assign(new Controller(), {
     categoryTargets: [firstCategory, secondCategory],
-    categoryButtonTargets: [firstButton, secondButton],
+    categoryLinkTargets: [firstLink, secondLink],
   })
+  const event = eventFor({})
 
-  controller.selectCategory({ currentTarget: secondButton })
+  controller.scrollToTop(event)
 
-  assert.equal(firstCategory.hidden, true)
-  assert.equal(secondCategory.hidden, false)
-  assert.equal(firstButton.getAttribute("aria-pressed"), "false")
-  assert.equal(secondButton.getAttribute("aria-pressed"), "true")
+  assert.equal(event.defaultPrevented, true)
+  assert.equal(Controller.testWindow.scrollCalls.length, 1)
+  assert.equal(Controller.testWindow.scrollCalls[0].top, 0)
+  assert.equal(Controller.testWindow.scrollCalls[0].behavior, "smooth")
+  assert.equal(firstLink.getAttribute("aria-current"), "page")
+  assert.equal(secondLink.getAttribute("aria-current"), undefined)
 })
 
-test("question hash selects the category containing that question", () => {
-  const Controller = loadController("#faq-q15")
+test("question card animates open and closed", () => {
+  const Controller = loadController()
+  const summary = { offsetHeight: 70 }
+  const style = {
+    height: "",
+    overflow: "",
+    removeProperty(name) { this[name] = "" },
+  }
+  const animations = []
+  const details = {
+    open: false,
+    dataset: {},
+    style,
+    get offsetHeight() { return this.open ? 240 : 70 },
+    querySelector(selector) { return selector === "summary" ? summary : null },
+    animate(keyframes, options) {
+      const animation = { keyframes, options, cancel() {} }
+      animations.push(animation)
+      return animation
+    },
+  }
+  const currentTarget = { closest: () => details }
+  const controller = new Controller()
+
+  controller.toggleQuestion(eventFor(currentTarget))
+
+  assert.equal(details.open, true)
+  assert.equal(animations[0].keyframes.height[0], "70px")
+  assert.equal(animations[0].keyframes.height[1], "240px")
+  assert.equal(animations[0].options.duration, 260)
+  animations[0].onfinish()
+  assert.equal(details.style.height, "")
+
+  controller.toggleQuestion(eventFor(currentTarget))
+
+  assert.equal(animations[1].keyframes.height[0], "240px")
+  assert.equal(animations[1].keyframes.height[1], "70px")
+  animations[1].onfinish()
+  assert.equal(details.open, false)
+  assert.equal(details.dataset.animating, undefined)
+})
+
+test("question hash selects the table-of-contents link for its category", () => {
+  const Controller = loadController({ hash: "#faq-q15" })
   const firstCategory = category("service")
-  const secondCategory = category("getting-started", "#faq-q15")
+  const secondCategory = category("getting-started", { questionId: "#faq-q15" })
+  const firstLink = categoryLink("service", firstCategory.id)
+  const secondLink = categoryLink("getting-started", secondCategory.id)
   const controller = Object.assign(new Controller(), {
     categoryTargets: [firstCategory, secondCategory],
-    categoryButtonTargets: [button("service"), button("getting-started")],
+    categoryLinkTargets: [firstLink, secondLink],
   })
 
   controller.connect()
 
-  assert.equal(firstCategory.hidden, true)
-  assert.equal(secondCategory.hidden, false)
+  assert.equal(firstLink.getAttribute("aria-current"), undefined)
+  assert.equal(secondLink.getAttribute("aria-current"), "page")
 })

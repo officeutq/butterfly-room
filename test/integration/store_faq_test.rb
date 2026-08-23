@@ -10,15 +10,20 @@ class StoreFaqTest < ActionDispatch::IntegrationTest
     assert_select ".store-faq[data-controller='store-faq']", count: 1
     assert_select ".store-faq__category", count: 10
     assert_select ".store-faq__category[hidden]", count: 0
-    assert_select ".store-faq__category-button", count: 10
+    assert_select "a.store-faq__category-button[href^='#store-faq-category-']", count: 10
+    assert_select ".store-faq__category-number", count: 10
     assert_select ".store-faq__question", count: 47
-    assert_select "details.store-faq__question summary", count: 47
+    assert_select "details.store-faq__question summary[data-action='click->store-faq#toggleQuestion']", count: 47
+    assert_select ".store-faq__section-actions", count: 10
+    assert_select "a.store-faq__section-action--top[href='#store-faq-top']", count: 10, text: /ページトップ/
+    assert_select "a.store-faq__section-action--back", count: 10, text: /戻る/
 
     (1..47).each do |number|
       assert_select "#faq-q#{number}", count: 1
     end
 
-    assert_select "a[href=?]", stores_lp_path, minimum: 2
+    assert_select "a.store-faq__back-link[href=?]", stores_lp_path, count: 1, text: /戻る/
+    assert_select "a[href=?]", stores_lp_path, minimum: 11
   end
 
   test "catalog keeps the canonical categories and continuous Q numbers" do
