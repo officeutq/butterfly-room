@@ -40,11 +40,11 @@ class StoreLp202609Test < ActionDispatch::IntegrationTest
     assert_select ".lp-header__actions a", count: 2
     assert_select ".lp-mobile-cta a", count: 2
 
-    assert_select "img[src*='store_lp_202609/hero_cast_customer_connection']", count: 1
-    assert_select "img[src*='store_lp_202609/use_case_before_open']", count: 1
-    assert_select "img[src*='store_lp_202609/use_case_day_off']", count: 1
-    assert_select "img[src*='store_lp_202609/use_case_remote_customer']", count: 1
-    assert_select "img[src*='store_lp_202609/use_case_sns_connection']", count: 1
+    assert_select "img[src*='store_lp_202609/hero_cast_customer_connection'][src$='.webp']", count: 1
+    assert_select "img[src*='store_lp_202609/use_case_before_open'][src$='.webp']", count: 1
+    assert_select "img[src*='store_lp_202609/use_case_day_off'][src$='.webp']", count: 1
+    assert_select "img[src*='store_lp_202609/use_case_remote_customer'][src$='.webp']", count: 1
+    assert_select "img[src*='store_lp_202609/use_case_sns_connection'][src$='.webp']", count: 1
     assert_select "link[rel='stylesheet'][href*='store_lp_202609']", count: 1
   end
 
