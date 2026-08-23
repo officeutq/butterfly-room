@@ -1,5 +1,7 @@
 @charset "UTF-8";
 
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap");
+
 :root {
   --lp-ink: #161123;
   --lp-muted: #696176;
@@ -30,10 +32,11 @@ body {
   overflow: hidden;
   color: var(--lp-ink);
   background: var(--lp-paper);
-  font-family: "Noto Sans JP", "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-family: "Yu Gothic", YuGothic, "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif;
   font-size: 16px;
+  font-weight: 500;
   line-height: 1.9;
-  letter-spacing: 0.035em;
+  letter-spacing: 0.05em;
 
   *,
   *::before,
@@ -64,7 +67,9 @@ body {
   h1,
   h2,
   h3 {
-    letter-spacing: -0.025em;
+    font-family: "Noto Sans JP", "Yu Gothic", YuGothic, sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.045em;
   }
 
   em {
@@ -296,9 +301,9 @@ body {
   &__content h1 {
     max-width: 700px;
     margin: 18px 0 24px;
-    font-size: clamp(40px, 5vw, 68px);
-    font-weight: 900;
-    line-height: 1.25;
+    font-size: clamp(38px, 4.4vw, 60px);
+    font-weight: 700;
+    line-height: 1.38;
   }
 
   &__lead {
@@ -499,9 +504,9 @@ body {
 
   h2 {
     margin-bottom: 0;
-    font-size: clamp(32px, 4.2vw, 52px);
-    font-weight: 900;
-    line-height: 1.45;
+    font-size: clamp(30px, 3.6vw, 46px);
+    font-weight: 700;
+    line-height: 1.55;
   }
 
   &--light {
@@ -515,6 +520,12 @@ body {
       }
     }
   }
+}
+
+#system .lp-section-heading em {
+  display: inline-block;
+  font-size: 0.92em;
+  white-space: nowrap;
 }
 
 .lp-opportunity {
@@ -612,7 +623,7 @@ body {
     margin: 34px 0;
     color: var(--lp-purple-deep);
     font-size: clamp(22px, 3vw, 30px);
-    font-weight: 900;
+    font-weight: 700;
     line-height: 1.6;
   }
 }
@@ -1361,9 +1372,9 @@ body {
     h2 {
       margin: 18px 0 34px;
       color: var(--lp-white);
-      font-size: clamp(34px, 4.5vw, 54px);
-      font-weight: 900;
-      line-height: 1.5;
+      font-size: clamp(32px, 4vw, 48px);
+      font-weight: 700;
+      line-height: 1.6;
     }
 
     > p {
@@ -1434,9 +1445,9 @@ body {
   h2 {
     margin-bottom: 24px;
     color: var(--lp-white);
-    font-size: clamp(34px, 5vw, 50px);
-    font-weight: 900;
-    line-height: 1.45;
+    font-size: clamp(32px, 4.2vw, 46px);
+    font-weight: 700;
+    line-height: 1.55;
   }
 
   h3 {
@@ -1661,8 +1672,8 @@ body {
   }
 
   .store-lp-202609 {
-    font-size: 14px;
-    line-height: 1.85;
+    font-size: 15px;
+    line-height: 1.9;
   }
 
   .lp-header {
@@ -1695,8 +1706,8 @@ body {
 
     &__content h1 {
       margin-top: 12px;
-      font-size: clamp(31px, 10vw, 42px);
-      line-height: 1.4;
+      font-size: clamp(30px, 9vw, 38px);
+      line-height: 1.5;
     }
 
     &__lead {
@@ -1751,8 +1762,8 @@ body {
     margin-bottom: 38px;
 
     h2 {
-      font-size: clamp(28px, 8vw, 38px);
-      line-height: 1.5;
+      font-size: clamp(27px, 7.5vw, 34px);
+      line-height: 1.6;
     }
   }
 
@@ -1853,6 +1864,11 @@ body {
       height: 62px;
       margin: 20px 0;
     }
+
+    p {
+      font-size: 14px;
+      line-height: 1.9;
+    }
   }
 
   .lp-refund-note,
@@ -1880,6 +1896,11 @@ body {
 
   .lp-no-app {
     flex-direction: column;
+
+    p {
+      font-size: 14px;
+      line-height: 1.9;
+    }
   }
 
   .lp-scene-card {
@@ -1892,24 +1913,39 @@ body {
 
     &__body {
       padding: 26px 22px;
+
+      p {
+        font-size: 14px;
+        line-height: 1.9;
+      }
     }
   }
 
   .lp-start-card {
     padding: 30px 24px;
+
+    p {
+      font-size: 14px;
+      line-height: 1.9;
+    }
   }
 
   .lp-small-start {
     padding: 30px 24px;
     grid-template-columns: 1fr;
     gap: 20px;
+
+    p {
+      font-size: 14px;
+      line-height: 1.9;
+    }
   }
 
   .lp-final {
     padding: 92px 0;
 
     &__content h2 {
-      font-size: 31px;
+      font-size: 29px;
     }
 
     &__switch {
@@ -1927,7 +1963,7 @@ body {
     border-radius: 24px;
 
     h2 {
-      font-size: 31px;
+      font-size: 29px;
     }
 
     h3 {
