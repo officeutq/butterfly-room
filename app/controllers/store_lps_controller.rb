@@ -22,7 +22,10 @@ class StoreLpsController < ApplicationController
     preserve_attribution = consume_store_lp_202607_attribution_preservation
     persist_store_lp_202607_attribution(preserve: preserve_attribution)
     persist_store_lp_202607_ref(preserve: preserve_attribution)
-    resolve_lp_analytics_visit(preserve_existing_traffic: preserve_attribution)
+    resolve_lp_analytics_visit(
+      lp_identifier: STORE_LP_202607_FROM,
+      preserve_existing_traffic: preserve_attribution
+    )
 
     @store_lp_202607_contact_params = tracking_query_params(from: STORE_LP_202607_FROM)
     @store_lp_202607_registration_params = @store_lp_202607_contact_params.dup
@@ -45,16 +48,17 @@ class StoreLpsController < ApplicationController
     preserve_attribution = consume_store_lp_202609_attribution_preservation
     persist_store_lp_202609_attribution(preserve: preserve_attribution)
     persist_store_lp_202609_ref(preserve: preserve_attribution)
+    resolve_lp_analytics_visit(
+      lp_identifier: STORE_LP_202609_FROM,
+      preserve_existing_traffic: preserve_attribution
+    )
 
     @store_lp_202609_contact_params = tracking_query_params(from: STORE_LP_202609_FROM)
     @store_lp_202609_registration_params = @store_lp_202609_contact_params.dup
     registration_ref = sanitized_store_lp_202609_ref || store_lp_202609_ref
     @store_lp_202609_registration_params[:ref] = registration_ref if registration_ref.present?
 
-    return_query = sanitized_utm_params
-    return_query[:ref] = registration_ref if registration_ref.present?
-    return_path = stores_lp_202609_path(return_query)
-    @store_lp_202609_faq_path = stores_faq_path(return_to: return_path)
+    @store_lp_202609_faq_path = stores_faq_path(return_to: stores_lp_202609_return_path)
 
     set_store_lp_202609_meta_tags
     render layout: "store_lp_202609"
@@ -71,10 +75,10 @@ class StoreLpsController < ApplicationController
 
   private
 
-  def resolve_lp_analytics_visit(preserve_existing_traffic:)
+  def resolve_lp_analytics_visit(lp_identifier:, preserve_existing_traffic:)
     visit = LpAnalytics::Visits::ResolveService.new(
       public_id: lp_analytics_visit_public_id,
-      lp_identifier: STORE_LP_202607_FROM,
+      lp_identifier: lp_identifier,
       traffic_attributes: {
         traffic_source: params[:from],
         utm_source: params[:utm_source],

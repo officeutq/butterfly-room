@@ -42,6 +42,10 @@ module SystemAdmin::LpAnalyticsHelper
   end
 
   def lp_analytics_cta_kind_label(kind)
-    kind == :registration ? "店舗登録" : "お問い合わせ"
+    {
+      registration: "店舗登録",
+      contact: "お問い合わせ",
+      faq: "店舗向けFAQ"
+    }.fetch(kind, kind.to_s)
   end
 end

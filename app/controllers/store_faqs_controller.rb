@@ -37,6 +37,6 @@ class StoreFaqsController < ApplicationController
   end
 
   def allowed_return_paths
-    [ stores_lp_path, stores_lp_202609_path, dashboard_path ]
+    [ stores_lp_path, stores_lp_202609_path, stores_lp_202609_return_path, dashboard_path ]
   end
 end

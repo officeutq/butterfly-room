@@ -125,6 +125,33 @@ class LpAnalyticsEventsTest < ActionDispatch::IntegrationTest
     assert_equal first_visit.id, LpAnalytics::Event.order(:id).last.lp_analytics_visit_id
   end
 
+  test "form表示用のLP識別子が訪問と異なるイベントを拒否する" do
+    get stores_lp_202607_path
+    first_visit = LpAnalytics::Visit.order(:id).last
+    get stores_lp_202609_path
+
+    assert_no_difference "LpAnalytics::Event.count" do
+      post_event(
+        visit_id: first_visit.public_id,
+        lp_identifier: LpAnalytics::Configuration::STORE_LP_202609,
+        event_id: SecureRandom.uuid,
+        event_type: "store_registration_form_view"
+      )
+    end
+    assert_response :unprocessable_entity
+
+    assert_difference "LpAnalytics::Event.count", 1 do
+      post_event(
+        visit_id: first_visit.public_id,
+        lp_identifier: LpAnalytics::Configuration::STORE_LP_202607,
+        event_id: SecureRandom.uuid,
+        event_type: "store_registration_form_view"
+      )
+    end
+    assert_response :created
+    assert_equal first_visit, LpAnalytics::Event.order(:id).last.visit
+  end
+
   test "session内で許可されていない訪問IDへのイベントを拒否する" do
     get stores_lp_202607_path
 
@@ -243,6 +270,7 @@ class LpAnalyticsEventsTest < ActionDispatch::IntegrationTest
     event_id:,
     event_type:,
     visit_id: nil,
+    lp_identifier: nil,
     event_value: nil,
     metadata: {},
     origin: "http://www.example.com"
@@ -251,6 +279,7 @@ class LpAnalyticsEventsTest < ActionDispatch::IntegrationTest
       params: {
         lp_analytics_event: {
           visit_id: visit_id,
+          lp_identifier: lp_identifier,
           event_id: event_id,
           event_type: event_type,
           event_value: event_value,

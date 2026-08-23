@@ -35,6 +35,22 @@ module LpAnalytics
       :section_qa_rate,
       :section_bottom_cta_visit_count,
       :section_bottom_cta_rate,
+      :section_existing_customer_opportunity_visit_count,
+      :section_existing_customer_opportunity_rate,
+      :section_service_introduction_visit_count,
+      :section_service_introduction_rate,
+      :section_usage_mechanism_visit_count,
+      :section_usage_mechanism_rate,
+      :section_service_comparison_visit_count,
+      :section_service_comparison_rate,
+      :section_adoption_cost_visit_count,
+      :section_adoption_cost_rate,
+      :section_usage_scenes_visit_count,
+      :section_usage_scenes_rate,
+      :section_getting_started_visit_count,
+      :section_getting_started_rate,
+      :section_final_opportunity_cta_visit_count,
+      :section_final_opportunity_cta_rate,
       :registration_cta_click_visit_count,
       :registration_cta_click_count,
       :registration_form_visit_count,
@@ -79,6 +95,14 @@ module LpAnalytics
           COUNT(*) FILTER (WHERE events.event_type = 'section_reached' AND events.event_value = 'CAST') AS section_cast_count,
           COUNT(*) FILTER (WHERE events.event_type = 'section_reached' AND events.event_value = 'QA') AS section_qa_count,
           COUNT(*) FILTER (WHERE events.event_type = 'section_reached' AND events.event_value = 'bottom_cta') AS section_bottom_cta_count,
+          COUNT(*) FILTER (WHERE events.event_type = 'section_reached' AND events.event_value = 'existing_customer_opportunity') AS section_existing_customer_opportunity_count,
+          COUNT(*) FILTER (WHERE events.event_type = 'section_reached' AND events.event_value = 'service_introduction') AS section_service_introduction_count,
+          COUNT(*) FILTER (WHERE events.event_type = 'section_reached' AND events.event_value = 'usage_mechanism') AS section_usage_mechanism_count,
+          COUNT(*) FILTER (WHERE events.event_type = 'section_reached' AND events.event_value = 'service_comparison') AS section_service_comparison_count,
+          COUNT(*) FILTER (WHERE events.event_type = 'section_reached' AND events.event_value = 'adoption_cost') AS section_adoption_cost_count,
+          COUNT(*) FILTER (WHERE events.event_type = 'section_reached' AND events.event_value = 'usage_scenes') AS section_usage_scenes_count,
+          COUNT(*) FILTER (WHERE events.event_type = 'section_reached' AND events.event_value = 'getting_started') AS section_getting_started_count,
+          COUNT(*) FILTER (WHERE events.event_type = 'section_reached' AND events.event_value = 'final_opportunity_cta') AS section_final_opportunity_cta_count,
           COUNT(*) FILTER (
             WHERE events.event_type = 'cta_clicked'
               AND events.event_value IN (:registration_cta_values)
@@ -116,6 +140,14 @@ module LpAnalytics
         COUNT(*) FILTER (WHERE COALESCE(totals.section_cast_count, 0) > 0) AS section_cast_visit_count,
         COUNT(*) FILTER (WHERE COALESCE(totals.section_qa_count, 0) > 0) AS section_qa_visit_count,
         COUNT(*) FILTER (WHERE COALESCE(totals.section_bottom_cta_count, 0) > 0) AS section_bottom_cta_visit_count,
+        COUNT(*) FILTER (WHERE COALESCE(totals.section_existing_customer_opportunity_count, 0) > 0) AS section_existing_customer_opportunity_visit_count,
+        COUNT(*) FILTER (WHERE COALESCE(totals.section_service_introduction_count, 0) > 0) AS section_service_introduction_visit_count,
+        COUNT(*) FILTER (WHERE COALESCE(totals.section_usage_mechanism_count, 0) > 0) AS section_usage_mechanism_visit_count,
+        COUNT(*) FILTER (WHERE COALESCE(totals.section_service_comparison_count, 0) > 0) AS section_service_comparison_visit_count,
+        COUNT(*) FILTER (WHERE COALESCE(totals.section_adoption_cost_count, 0) > 0) AS section_adoption_cost_visit_count,
+        COUNT(*) FILTER (WHERE COALESCE(totals.section_usage_scenes_count, 0) > 0) AS section_usage_scenes_visit_count,
+        COUNT(*) FILTER (WHERE COALESCE(totals.section_getting_started_count, 0) > 0) AS section_getting_started_visit_count,
+        COUNT(*) FILTER (WHERE COALESCE(totals.section_final_opportunity_cta_count, 0) > 0) AS section_final_opportunity_cta_visit_count,
         COUNT(*) FILTER (WHERE COALESCE(totals.registration_cta_click_count, 0) > 0) AS registration_cta_click_visit_count,
         COALESCE(SUM(totals.registration_cta_click_count), 0) AS registration_cta_click_count,
         COUNT(*) FILTER (WHERE COALESCE(totals.registration_form_count, 0) > 0) AS registration_form_visit_count,
@@ -167,7 +199,7 @@ module LpAnalytics
           end_time: time_at_end_of_day,
           lp_identifier: lp_identifier,
           registration_cta_values: registration_cta_values,
-          contact_cta_values: Configuration::CONTACT_CTA_KEYS
+          contact_cta_values: contact_cta_values
         }
       ])
     end
@@ -181,7 +213,11 @@ module LpAnalytics
     end
 
     def registration_cta_values
-      Configuration::REGISTRATION_CTA_KEYS
+      Configuration.cta_keys_for(lp_identifier, kind: :registration)
+    end
+
+    def contact_cta_values
+      Configuration.cta_keys_for(lp_identifier, kind: :contact)
     end
 
     def build_row(attributes)
@@ -204,6 +240,14 @@ module LpAnalytics
       section_cast_visits = attributes.fetch("section_cast_visit_count").to_i
       section_qa_visits = attributes.fetch("section_qa_visit_count").to_i
       section_bottom_cta_visits = attributes.fetch("section_bottom_cta_visit_count").to_i
+      section_existing_customer_opportunity_visits = attributes.fetch("section_existing_customer_opportunity_visit_count").to_i
+      section_service_introduction_visits = attributes.fetch("section_service_introduction_visit_count").to_i
+      section_usage_mechanism_visits = attributes.fetch("section_usage_mechanism_visit_count").to_i
+      section_service_comparison_visits = attributes.fetch("section_service_comparison_visit_count").to_i
+      section_adoption_cost_visits = attributes.fetch("section_adoption_cost_visit_count").to_i
+      section_usage_scenes_visits = attributes.fetch("section_usage_scenes_visit_count").to_i
+      section_getting_started_visits = attributes.fetch("section_getting_started_visit_count").to_i
+      section_final_opportunity_cta_visits = attributes.fetch("section_final_opportunity_cta_visit_count").to_i
       registration_completion_visits = attributes.fetch("registration_completion_visit_count").to_i
       contact_completion_visits = attributes.fetch("contact_completion_visit_count").to_i
 
@@ -231,6 +275,22 @@ module LpAnalytics
         section_qa_rate: rate(section_qa_visits, visit_count),
         section_bottom_cta_visit_count: section_bottom_cta_visits,
         section_bottom_cta_rate: rate(section_bottom_cta_visits, visit_count),
+        section_existing_customer_opportunity_visit_count: section_existing_customer_opportunity_visits,
+        section_existing_customer_opportunity_rate: rate(section_existing_customer_opportunity_visits, visit_count),
+        section_service_introduction_visit_count: section_service_introduction_visits,
+        section_service_introduction_rate: rate(section_service_introduction_visits, visit_count),
+        section_usage_mechanism_visit_count: section_usage_mechanism_visits,
+        section_usage_mechanism_rate: rate(section_usage_mechanism_visits, visit_count),
+        section_service_comparison_visit_count: section_service_comparison_visits,
+        section_service_comparison_rate: rate(section_service_comparison_visits, visit_count),
+        section_adoption_cost_visit_count: section_adoption_cost_visits,
+        section_adoption_cost_rate: rate(section_adoption_cost_visits, visit_count),
+        section_usage_scenes_visit_count: section_usage_scenes_visits,
+        section_usage_scenes_rate: rate(section_usage_scenes_visits, visit_count),
+        section_getting_started_visit_count: section_getting_started_visits,
+        section_getting_started_rate: rate(section_getting_started_visits, visit_count),
+        section_final_opportunity_cta_visit_count: section_final_opportunity_cta_visits,
+        section_final_opportunity_cta_rate: rate(section_final_opportunity_cta_visits, visit_count),
         registration_cta_click_visit_count: attributes.fetch("registration_cta_click_visit_count").to_i,
         registration_cta_click_count: attributes.fetch("registration_cta_click_count").to_i,
         registration_form_visit_count: attributes.fetch("registration_form_visit_count").to_i,

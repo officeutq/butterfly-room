@@ -114,7 +114,7 @@ module LpAnalytics
           [
             :registration_cta,
             "店舗登録CTAクリック",
-            event_visit_ids(event_type: "cta_clicked", values: Configuration::REGISTRATION_CTA_KEYS)
+            event_visit_ids(event_type: "cta_clicked", values: cta_keys_for(:registration))
           ],
           [
             :registration_form,
@@ -138,12 +138,12 @@ module LpAnalytics
           [
             :bottom_reached,
             "最下部付近まで到達",
-            event_visit_ids(event_type: "section_reached", values: [ "bottom_cta" ])
+            event_visit_ids(event_type: "section_reached", values: [ bottom_section ])
           ],
           [
             :contact_cta,
             "お問い合わせCTAクリック",
-            event_visit_ids(event_type: "cta_clicked", values: Configuration::CONTACT_CTA_KEYS)
+            event_visit_ids(event_type: "cta_clicked", values: cta_keys_for(:contact))
           ],
           [
             :contact_form,
@@ -198,7 +198,7 @@ module LpAnalytics
         count = distinct_count("section_reached", section)
         metric = Metric.new(
           key: section,
-          label: Configuration::SECTION_LABELS.fetch(section),
+          label: section_labels.fetch(section),
           visit_count: count,
           overall_rate: percentage(count, visit_count),
           previous_rate: previous_count.nil? ? nil : percentage(count, previous_count)
@@ -210,7 +210,7 @@ module LpAnalytics
 
     def cta_metrics
       lp_definition.fetch(:ctas).map do |key|
-        definition = Configuration::CTA_DEFINITIONS.fetch(key)
+        definition = cta_definitions.fetch(key)
         reached = distinct_count("cta_reached", key)
         clicked = distinct_count("cta_clicked", key)
 
@@ -228,7 +228,23 @@ module LpAnalytics
     end
 
     def lp_definition
-      Configuration::LP_DEFINITIONS.fetch(filter.lp_identifier)
+      Configuration.definition_for(filter.lp_identifier)
+    end
+
+    def section_labels
+      Configuration.section_labels_for(filter.lp_identifier)
+    end
+
+    def cta_definitions
+      Configuration.cta_definitions_for(filter.lp_identifier)
+    end
+
+    def cta_keys_for(kind)
+      Configuration.cta_keys_for(filter.lp_identifier, kind: kind)
+    end
+
+    def bottom_section
+      Configuration.bottom_section_for(filter.lp_identifier)
     end
 
     def distinct_count(event_type, event_value = nil)

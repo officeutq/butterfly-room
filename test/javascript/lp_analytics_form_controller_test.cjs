@@ -86,6 +86,8 @@ test("LP経由formの実表示を同一tabの訪問IDへ送信する", () => {
     eventsUrlValue: "/lp_analytics/events",
     hasEventTypeValue: true,
     eventTypeValue: "store_registration_form_view",
+    hasLpIdentifierValue: true,
+    lpIdentifierValue: "stores_lp_202609",
   })
 
   controller.connect()
@@ -93,7 +95,11 @@ test("LP経由formの実表示を同一tabの訪問IDへ送信する", () => {
   assert.equal(environment.senderCount(), 1)
   assert.deepEqual(JSON.parse(JSON.stringify(environment.sends)), [
     {
-      options: { eventsUrl: "/lp_analytics/events", visitId: "visit-uuid" },
+      options: {
+        eventsUrl: "/lp_analytics/events",
+        visitId: "visit-uuid",
+        lpIdentifier: "stores_lp_202609",
+      },
       args: ["store_registration_form_view", null, { viewport_type: "smartphone" }],
     },
   ])
@@ -112,6 +118,8 @@ test("Turbo previewではform表示イベントもhidden訪問IDも追加しな�
     eventsUrlValue: "/lp_analytics/events",
     hasEventTypeValue: true,
     eventTypeValue: "store_contact_form_view",
+    hasLpIdentifierValue: true,
+    lpIdentifierValue: "stores_lp_202609",
   })
 
   controller.connect()

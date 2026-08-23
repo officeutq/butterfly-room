@@ -41,6 +41,27 @@ class LpAnalyticsCompletionsTest < ActionDispatch::IntegrationTest
     assert_equal({}, event.metadata)
   end
 
+  test "202609 LP経由の正常店舗登録を202609匿名訪問へ記録する" do
+    referral_code = create_referral_code!("LP-ANALYTICS-202609-REGISTRATION")
+    get stores_lp_202609_path, params: { utm_content: "registration_202609" }
+    visit = LpAnalytics::Visit.order(:id).last
+
+    assert_difference -> { Store.count }, 1 do
+      assert_difference -> { completion_events("store_registration_complete").count }, 1 do
+        post stores_registrations_path(from: "stores_lp_202609"), params: {
+          store_registration: registration_params(referral_code: referral_code.code)
+        }
+      end
+    end
+
+    store = Store.order(:id).last
+    event = completion_events("store_registration_complete").last
+    assert_redirected_to stores_registration_thanks_path(from: "stores_lp_202609")
+    assert_equal LpAnalytics::Configuration::STORE_LP_202609, visit.lp_identifier
+    assert_equal visit, store.lp_analytics_visit
+    assert_equal visit, event.visit
+  end
+
   test "店舗登録validation errorでは完了を記録しない" do
     get stores_lp_202607_path
 
@@ -104,6 +125,24 @@ class LpAnalyticsCompletionsTest < ActionDispatch::IntegrationTest
     assert_equal visit, event.visit
     assert_equal submission, event.completion_record
     assert_equal({}, event.metadata)
+  end
+
+  test "202609 LP経由の正常問い合わせを202609匿名訪問へ記録する" do
+    get stores_lp_202609_path, params: { utm_content: "contact_202609" }
+    visit = LpAnalytics::Visit.order(:id).last
+
+    assert_difference -> { StoreContactSubmission.count }, 1 do
+      assert_difference -> { completion_events("store_contact_complete").count }, 1 do
+        post stores_contact_path(from: "stores_lp_202609"), params: contact_params
+      end
+    end
+
+    submission = StoreContactSubmission.order(:id).last
+    event = completion_events("store_contact_complete").last
+    assert_redirected_to stores_contact_thanks_path(from: "stores_lp_202609")
+    assert_equal LpAnalytics::Configuration::STORE_LP_202609, visit.lp_identifier
+    assert_equal visit, submission.lp_analytics_visit
+    assert_equal visit, event.visit
   end
 
   test "問い合わせvalidation errorでは完了を記録しない" do

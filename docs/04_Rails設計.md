@@ -689,7 +689,8 @@ end
 
 ## 7.1 対象と正本
 
-* 初期対象は`stores/lp_202607`で、内部識別子は`stores_lp_202607`とする
+* 対象LPは`stores/lp_202607`と`stores/lp_202609`で、内部識別子はそれぞれ`stores_lp_202607`、`stores_lp_202609`とする
+* セクション・CTAの許可key、表示名、種別、最下部セクションはLP識別子ごとの設定として保持し、異なるLPのkeyを意図せず受け付けない
 * `lp_analytics_visits`が匿名訪問、`lp_analytics_events`が訪問内の行動、`lp_analytics_sheet_exports`が日次出力状態を保持する
 * 行動・登録・お問い合わせ実績の正本はRails DBとし、Googleスプレッドシートは匿名の日次集計を共有するための派生データとする
 * 分析テーブルには氏名、メールアドレス、電話番号、フォーム本文、IPアドレス、raw User-Agent、cookie値を保存しない
@@ -710,6 +711,7 @@ end
 * スクロール、セクション、CTA位置到達は訪問内の`dedupe_key`でも重複を防止する。CTAクリックとFAQ操作は複数回保存できる
 * ブラウザ送信は`keepalive`を使い、失敗を画面遷移やフォーム操作へ伝播させない
 * Turbo preview / prerenderではLP表示・フォーム表示イベントを送信しない
+* フォーム表示時は、Rails session内に遷移元LPと一致する許可済み訪問がある場合だけ計測を有効にする。ブラウザはtab単位の公開訪問IDと遷移元LP識別子を送り、イベントAPIが両者の一致を確認する
 * 店舗登録完了とお問い合わせ完了は、業務保存成功後に`LpAnalytics::Completions::RecordService`から記録し、ブラウザやGTMの成功に依存させない
 * 分析記録失敗は業務保存をrollbackせず、安全なerror classだけをlogへ残す
 

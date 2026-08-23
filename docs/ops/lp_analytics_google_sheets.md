@@ -299,13 +299,15 @@ docker compose exec -T worker bin/rails "lp_analytics:sheets:export_range[2026-0
 
 - `device_type`は`pc`、`smartphone`、`tablet`のいずれかで、日次行と`aggregation_key`のdimension（集計軸）に含める
 - 同じ日・LP・流入元・UTMでも端末が異なれば別行にする
-- 主要セクションは`USAGE`、`STRENGTHS`、`SYSTEM`、`PRICING`、`FLOW`、`CAST`、`QA`、`bottom_cta`を対象にし、それぞれ`section_<section>_visit_count`と`section_<section>_rate`を持つ
+- 202607版の主要セクションは`USAGE`、`STRENGTHS`、`SYSTEM`、`PRICING`、`FLOW`、`CAST`、`QA`、`bottom_cta`を対象にする
+- 202609版の主要セクションは`existing_customer_opportunity`、`service_introduction`、`usage_mechanism`、`service_comparison`、`adoption_cost`、`usage_scenes`、`getting_started`、`final_opportunity_cta`を対象にする
+- 各セクションは`section_<section>_visit_count`と`section_<section>_rate`を持ち、対象外LPのセクション列は0とする
 - 各セクション到達率は同じ行の`section_<section>_visit_count / lp_visit_count`で、0除算時は`0.0`とする
 - 端末別・週間等で複数行をまとめるCV率やセクション到達率は、率の平均ではなく対象行の分子合計を`lp_visit_count`合計で割る
-- `device_type`とセクション列の追加により従来の`lp_visit_count`以降の列位置が変わる。別worksheetの数式・pivot・外部連携が列番号や固定rangeを参照している場合は、新headerに合わせて更新する
+- `device_type`とLP別セクション列の追加により従来の`lp_visit_count`以降の列位置が変わる。別worksheetの数式・pivot・外部連携が列番号や固定rangeを参照している場合は、新headerに合わせて更新する
 
 - 空のworksheetだけは初回にheaderを作成する
-- 既知の旧25列headerと管理行は、最初の再出力時に共有列の値を維持したまま新42列へ展開する。新規列は対象日の再集計が完了するまで空欄とする
+- 既知の旧25列headerまたは202607版の42列headerと管理行は、最初の再出力時に共有列の値を維持したまま新58列へ展開する。新規列は対象日の再集計が完了するまで空欄とする
 - 未知のheader不一致、duplicate key、管理行の一部欠損では書込みを停止する
 - 既存keyは同じ行を更新し、新規keyは空き行または末尾へ追加する
 - 再集計で消えた対象日行は空欄化する
@@ -313,14 +315,14 @@ docker compose exec -T worker bin/rails "lp_analytics:sheets:export_range[2026-0
 
 障害時もRails DBを正本とし、Google Spreadsheetを手修正せず、原因修正後に上記Rake taskで再出力する。
 
-### 端末・セクション列追加時の移行
+### 端末・LP別セクション列追加時の移行
 
 production / stagingの実Spreadsheetはソース変更やtestでは更新しない。deploy時は次の順序で移行する。
 
 1. 対象環境とSpreadsheetを照合し、productionは自動出力を無効化してworkerへ反映する。stagingは`false`を維持する。
 2. 新しいRails codeをdeployし、app / workerが同じ新imageを使用していることを確認する。
 3. stagingで、LP行動分析の最初の保存日から前日までを`lp_analytics:sheets:export_range`で再出力する。必要な場合だけ当日を`export_date`で明示的に出力する。
-4. 旧headerが新42列へ移行し、`device_type`、主要セクションの到達訪問数・到達率、既存の訪問数・CV率がRails DBと一致することを確認する。
+4. 旧25列または42列headerが新58列へ移行し、`device_type`、LP別の主要セクション到達訪問数・到達率、既存の訪問数・CV率がRails DBと一致することを確認する。
 5. aggregation keyの空欄・重複、部分行、秘密値・個人情報の出力がないことを確認する。別worksheetの数式・pivot・外部連携が旧列位置を参照していないかも確認する。
 6. productionは別途承認を得て同じ期間を再出力する。旧集計keyは端末軸を持たないため、全対象期間の再出力が完了するまで端末別集計へ使用しない。
 7. productionの照合完了後に自動出力を有効化してworkerを再作成し、次回02:20 JSTの直近7日再出力を確認する。

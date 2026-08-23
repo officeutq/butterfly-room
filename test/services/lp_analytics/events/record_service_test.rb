@@ -121,6 +121,36 @@ class LpAnalytics::Events::RecordServiceTest < ActiveSupport::TestCase
     end
   end
 
+  test "202609版のkeyをLP別に許可して202607版へ混在させない" do
+    assert_raises(LpAnalytics::Events::RecordService::InvalidEventError) do
+      record(
+        event_type: "cta_clicked",
+        event_value: "hero_faq",
+        browser_event_id: SecureRandom.uuid
+      )
+    end
+
+    @visit = LpAnalytics::Visit.create!(
+      lp_identifier: LpAnalytics::Configuration::STORE_LP_202609,
+      device_type: "pc",
+      started_at: @started_at,
+      last_activity_at: @started_at
+    )
+
+    assert_difference "LpAnalytics::Event.count", 2 do
+      record(
+        event_type: "section_reached",
+        event_value: "service_introduction",
+        browser_event_id: SecureRandom.uuid
+      )
+      record(
+        event_type: "cta_clicked",
+        event_value: "hero_faq",
+        browser_event_id: SecureRandom.uuid
+      )
+    end
+  end
+
   test "ブラウザイベントUUIDはUUID形式のみ許可する" do
     assert_no_difference "LpAnalytics::Event.count" do
       [ "not-a-uuid", "", 123 ].each do |browser_event_id|

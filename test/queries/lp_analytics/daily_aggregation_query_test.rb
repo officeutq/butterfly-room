@@ -152,6 +152,52 @@ class LpAnalytics::DailyAggregationQueryTest < ActiveSupport::TestCase
     assert_empty next_date_rows
   end
 
+  test "202609版を別LPとして新しいsectionとCTA定義で集計する" do
+    started_at = Time.zone.parse("2026-08-09 12:00:00")
+    visit = create_visit(
+      started_at: started_at,
+      traffic_source: "meta",
+      lp_identifier: LpAnalytics::Configuration::STORE_LP_202609,
+      utm_content: "creative_202609",
+      device_type: "smartphone"
+    )
+    LpAnalytics::Configuration::STORE_LP_202609_SECTION_LABELS.each_key do |section|
+      record_event(visit, "section_reached", section)
+    end
+    record_event(visit, "cta_clicked", "hero_registration")
+    record_event(visit, "cta_clicked", "hero_contact")
+    record_event(visit, "store_registration_form_view")
+    record_registration_completion(visit)
+    record_event(visit, "store_contact_form_view")
+    record_contact_completion(visit)
+
+    row = LpAnalytics::DailyAggregationQuery.new(
+      aggregation_date: TARGET_DATE,
+      lp_identifier: LpAnalytics::Configuration::STORE_LP_202609
+    ).call.sole
+
+    assert_equal LpAnalytics::Configuration::STORE_LP_202609, row.lp_identifier
+    assert_equal "smartphone", row.device_type
+    assert_equal 0, row.section_usage_visit_count
+    %i[
+      existing_customer_opportunity
+      service_introduction
+      usage_mechanism
+      service_comparison
+      adoption_cost
+      usage_scenes
+      getting_started
+      final_opportunity_cta
+    ].each do |section|
+      assert_equal 1, row.public_send("section_#{section}_visit_count")
+      assert_in_delta 1.0, row.public_send("section_#{section}_rate")
+    end
+    assert_equal 1, row.registration_cta_click_visit_count
+    assert_equal 1, row.contact_cta_click_visit_count
+    assert_in_delta 1.0, row.registration_cv_rate
+    assert_in_delta 1.0, row.contact_cv_rate
+  end
+
   test "訪問がなければ空配列を返す" do
     rows = LpAnalytics::DailyAggregationQuery.new(aggregation_date: Date.new(2020, 1, 1)).call
 

@@ -36,7 +36,9 @@ class StoreLp202609Test < ActionDispatch::IntegrationTest
 
     assert_select "a[href=?]", stores_new_registration_path(from: "stores_lp_202609"), minimum: 4
     assert_select "a[href=?]", stores_contact_path(from: "stores_lp_202609"), minimum: 4
-    assert_select "a[href=?]", "/stores/faq?return_to=%2Fstores%2Flp_202609", minimum: 2
+    assert_select "a[href=?]",
+                  stores_faq_path(return_to: stores_lp_202609_return_path),
+                  minimum: 2
     assert_select ".lp-header__actions a", count: 2
     assert_select ".lp-mobile-cta a", count: 2
 
@@ -94,15 +96,7 @@ class StoreLp202609Test < ActionDispatch::IntegrationTest
     faq_href = faq_link["href"]
     faq_uri = URI.parse(faq_href)
     faq_query = Rack::Utils.parse_query(faq_uri.query)
-    return_uri = URI.parse(faq_query.fetch("return_to"))
-    return_query = Rack::Utils.parse_query(return_uri.query)
-
-    assert_equal "/stores/lp_202609", return_uri.path
-    assert_equal "partner-202609", return_query["ref"]
-    assert_equal "meta", return_query["utm_source"]
-    assert_equal "paid_social", return_query["utm_medium"]
-    assert_equal "store_recruit_202609", return_query["utm_campaign"]
-    assert_equal "creative_a", return_query["utm_content"]
+    assert_equal stores_lp_202609_return_path, faq_query.fetch("return_to")
   end
 
   test "202609 form pages return through the dedicated return route" do

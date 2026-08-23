@@ -9,22 +9,57 @@ const controllerPath = path.resolve(
   "../../app/javascript/controllers/store_lp_202609_controller.js"
 )
 
-function loadController({ reducedMotion = false, hasIntersectionObserver = true } = {}) {
+function loadController({ reducedMotion = false, hasIntersectionObserver = true, trackable = true } = {}) {
+  const rememberedVisits = []
+  const senderInstances = []
   let source = fs.readFileSync(controllerPath, "utf8")
   source = source.replace(
     'import { Controller } from "@hotwired/stimulus"',
     "class Controller {}"
   )
   source = source.replace(
+    /import \{[\s\S]*?\} from "lp_analytics\/event_sender"/,
+    "const { EventSender, isTrackableDocument, rememberVisitId, viewportType } = globalThis.LpAnalyticsTestDependencies"
+  )
+  source = source.replace(
     "export default class extends Controller",
     "globalThis.StoreLp202609Controller = class extends Controller"
   )
 
+  class FakeEventSender {
+    constructor(options) {
+      this.options = options
+      this.calls = []
+      senderInstances.push(this)
+    }
+
+    send(...args) {
+      this.calls.push(args)
+      return Promise.resolve(true)
+    }
+  }
+
+  const document = {
+    documentElement: { clientHeight: 1000, scrollHeight: 4000, scrollTop: 0 },
+    body: { scrollHeight: 4000, scrollTop: 0 },
+  }
+
   const window = {
     scrollY: 0,
+    innerHeight: 1000,
     addEventListener() {},
     removeEventListener() {},
     matchMedia: () => ({ matches: reducedMotion }),
+    sessionStorage: {
+      values: new Map(),
+      getItem(key) { return this.values.get(key) || null },
+      setItem(key, value) { this.values.set(key, value) },
+    },
+    requestAnimationFrame(callback) {
+      callback()
+      return 1
+    },
+    cancelAnimationFrame() {},
   }
 
   if (hasIntersectionObserver) {
@@ -42,10 +77,28 @@ function loadController({ reducedMotion = false, hasIntersectionObserver = true 
     }
   }
 
-  const context = vm.createContext({ console, window })
+  const context = vm.createContext({
+    console,
+    document,
+    window,
+    Promise,
+    Set,
+    LpAnalyticsTestDependencies: {
+      EventSender: FakeEventSender,
+      isTrackableDocument: () => trackable,
+      rememberVisitId: (visitId) => rememberedVisits.push(visitId),
+      viewportType: () => "pc",
+    },
+  })
   vm.runInContext(source, context, { filename: controllerPath })
 
-  return { Controller: context.StoreLp202609Controller, window }
+  return {
+    Controller: context.StoreLp202609Controller,
+    document,
+    window,
+    rememberedVisits,
+    senderInstances,
+  }
 }
 
 function classList() {
@@ -109,4 +162,83 @@ test("intersection observer reveals visible targets", () => {
 
   assert.equal(targetClassList.contains("is-visible"), true)
   assert.deepEqual(controller.revealObserver.unobserved, [target])
+})
+
+test("各scroll率を初回到達時だけ送信する", () => {
+  const environment = loadController()
+  const calls = []
+  const controller = Object.assign(new environment.Controller(), {
+    analyticsEnabled: true,
+    trackedOnceEvents: new Set(),
+    visitIdValue: "visit-uuid",
+    sendAnalytics: (...args) => calls.push(args),
+  })
+
+  controller.trackScrollReached()
+  controller.trackScrollReached()
+  environment.window.scrollY = 3000
+  controller.trackScrollReached()
+
+  assert.deepEqual(calls, [
+    ["scroll_reached", "25"],
+    ["scroll_reached", "50"],
+    ["scroll_reached", "75"],
+    ["scroll_reached", "90"],
+  ])
+})
+
+test("sectionとCTA位置到達は重複せずCTA clickは実回数分送信する", () => {
+  const environment = loadController()
+  const calls = []
+  const controller = Object.assign(new environment.Controller(), {
+    analyticsEnabled: true,
+    trackedOnceEvents: new Set(),
+    visitIdValue: "visit-uuid",
+    sendAnalytics: (...args) => calls.push(args),
+  })
+  const section = {
+    dataset: {
+      lpAnalyticsReachType: "section_reached",
+      lpAnalyticsEventValue: "adoption_cost",
+    },
+  }
+  const cta = {
+    dataset: {
+      lpAnalyticsReachType: "cta_reached",
+      lpAnalyticsEventValue: "bottom_registration",
+      lpAnalyticsClickValue: "bottom_registration",
+    },
+  }
+
+  controller.trackReachTarget(section)
+  controller.trackReachTarget(section)
+  controller.trackReachTarget(cta)
+  controller.trackReachTarget(cta)
+  controller.trackCtaClick({ currentTarget: cta })
+  controller.trackCtaClick({ currentTarget: cta })
+
+  assert.deepEqual(calls, [
+    ["section_reached", "adoption_cost"],
+    ["cta_reached", "bottom_registration"],
+    ["cta_clicked", "bottom_registration"],
+    ["cta_clicked", "bottom_registration"],
+  ])
+})
+
+test("Turbo previewではlp_viewやobserverを開始しない", () => {
+  const environment = loadController({ trackable: false })
+  const controller = Object.assign(new environment.Controller(), {
+    element: { querySelectorAll: () => [] },
+    hasEventsUrlValue: true,
+    eventsUrlValue: "/lp_analytics/events",
+    hasVisitIdValue: true,
+    visitIdValue: "visit-uuid",
+    onCtaClick() {},
+  })
+
+  controller.startAnalytics()
+
+  assert.equal(controller.analyticsEnabled, false)
+  assert.equal(environment.senderInstances.length, 0)
+  assert.equal(environment.rememberedVisits.length, 0)
 })

@@ -3,13 +3,14 @@
 require "uri"
 
 module ApplicationHelper
-  def lp_analytics_form_tracking_data(event_type)
-    return {} if event_type.blank?
+  def lp_analytics_form_tracking_data(event_type, lp_identifier: nil)
+    return {} if event_type.blank? || lp_identifier.blank?
 
     {
       controller: "lp-analytics-form",
       lp_analytics_form_events_url_value: lp_analytics_events_path,
-      lp_analytics_form_event_type_value: event_type
+      lp_analytics_form_event_type_value: event_type,
+      lp_analytics_form_lp_identifier_value: lp_identifier
     }
   end
 

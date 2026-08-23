@@ -24,7 +24,10 @@
             scope: :store_contact_submission,
             html: {
               class: "store-contact-submission-form",
-              data: lp_analytics_form_tracking_data(@lp_analytics_form_event_type)
+              data: lp_analytics_form_tracking_data(
+                @lp_analytics_form_event_type,
+                lp_identifier: @lp_analytics_form_lp_identifier
+              )
             } do |f| %>
         <div class="mb-3">
           <%= f.label :name, class: "form-label" do %>

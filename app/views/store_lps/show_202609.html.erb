@@ -1,7 +1,11 @@
 <% registration_path = stores_new_registration_path(@store_lp_202609_registration_params) %>
 <% contact_path = stores_contact_path(@store_lp_202609_contact_params) %>
 
-<div class="store-lp-202609" data-controller="store-lp-202609">
+<div
+  class="store-lp-202609"
+  data-controller="store-lp-202609"
+  data-store-lp-202609-events-url-value="<%= lp_analytics_events_path %>"
+  data-store-lp-202609-visit-id-value="<%= @lp_analytics_visit_public_id %>">
   <header class="lp-header" data-store-lp-202609-target="header">
     <div class="lp-container lp-header__inner">
       <a href="#top" class="lp-header__brand" aria-label="Butterflyve 店舗向けページの先頭へ">
@@ -15,7 +19,13 @@
       </nav>
       <div class="lp-header__actions">
         <%= link_to "問い合わせる", contact_path, class: "lp-button lp-button--header lp-button--header-secondary" %>
-        <%= link_to "店舗登録する", registration_path, class: "lp-button lp-button--header" %>
+        <%= link_to "店舗登録する", registration_path,
+                    class: "lp-button lp-button--header",
+                    data: {
+                      lp_analytics_reach_type: "cta_reached",
+                      lp_analytics_event_value: "header_registration",
+                      lp_analytics_click_value: "header_registration"
+                    } %>
       </div>
     </div>
   </header>
@@ -43,14 +53,32 @@
           </ul>
 
           <div class="lp-cta-group">
-            <%= link_to registration_path, class: "lp-button lp-button--primary" do %>
+            <%= link_to registration_path,
+                        class: "lp-button lp-button--primary",
+                        data: {
+                          lp_analytics_reach_type: "cta_reached",
+                          lp_analytics_event_value: "hero_registration",
+                          lp_analytics_click_value: "hero_registration"
+                        } do %>
               <span>初期費用・月額0円で</span>
               店舗登録する
               <span class="lp-button__arrow" aria-hidden="true">→</span>
             <% end %>
-            <%= link_to "Butterflyveについて問い合わせる", contact_path, class: "lp-button lp-button--secondary" %>
+            <%= link_to "Butterflyveについて問い合わせる", contact_path,
+                        class: "lp-button lp-button--secondary",
+                        data: {
+                          lp_analytics_reach_type: "cta_reached",
+                          lp_analytics_event_value: "hero_contact",
+                          lp_analytics_click_value: "hero_contact"
+                        } %>
           </div>
-          <%= link_to "店舗向けFAQを見る", @store_lp_202609_faq_path, class: "lp-text-link" %>
+          <%= link_to "店舗向けFAQを見る", @store_lp_202609_faq_path,
+                      class: "lp-text-link",
+                      data: {
+                        lp_analytics_reach_type: "cta_reached",
+                        lp_analytics_event_value: "hero_faq",
+                        lp_analytics_click_value: "hero_faq"
+                      } %>
         </div>
 
         <div class="lp-hero__visual lp-reveal" data-store-lp-202609-target="reveal">
@@ -74,7 +102,11 @@
       </a>
     </section>
 
-    <section id="opportunity" class="lp-section lp-opportunity">
+    <section
+      id="opportunity"
+      class="lp-section lp-opportunity"
+      data-lp-analytics-reach-type="section_reached"
+      data-lp-analytics-event-value="existing_customer_opportunity">
       <div class="lp-container lp-container--narrow">
         <div class="lp-section-heading lp-reveal" data-store-lp-202609-target="reveal">
           <p class="lp-section-number">01 <span>来店できない時間</span></p>
@@ -134,7 +166,11 @@
       </div>
     </section>
 
-    <section id="service" class="lp-section lp-service">
+    <section
+      id="service"
+      class="lp-section lp-service"
+      data-lp-analytics-reach-type="section_reached"
+      data-lp-analytics-event-value="service_introduction">
       <div class="lp-container">
         <div class="lp-section-heading lp-section-heading--light lp-reveal" data-store-lp-202609-target="reveal">
           <p class="lp-section-number">02 <span>Butterflyveとは</span></p>
@@ -188,7 +224,11 @@
       </div>
     </section>
 
-    <section id="system" class="lp-section lp-system">
+    <section
+      id="system"
+      class="lp-section lp-system"
+      data-lp-analytics-reach-type="section_reached"
+      data-lp-analytics-event-value="usage_mechanism">
       <div class="lp-container">
         <div class="lp-section-heading lp-reveal" data-store-lp-202609-target="reveal">
           <p class="lp-section-number">03 <span>仕組み</span></p>
@@ -241,7 +281,10 @@
       </div>
     </section>
 
-    <section class="lp-section lp-difference">
+    <section
+      class="lp-section lp-difference"
+      data-lp-analytics-reach-type="section_reached"
+      data-lp-analytics-event-value="service_comparison">
       <div class="lp-container">
         <div class="lp-section-heading lp-reveal" data-store-lp-202609-target="reveal">
           <p class="lp-section-number">04 <span>サービスの目的</span></p>
@@ -291,7 +334,10 @@
       </div>
     </section>
 
-    <section class="lp-section lp-easy">
+    <section
+      class="lp-section lp-easy"
+      data-lp-analytics-reach-type="section_reached"
+      data-lp-analytics-event-value="adoption_cost">
       <div class="lp-container">
         <div class="lp-section-heading lp-section-heading--light lp-reveal" data-store-lp-202609-target="reveal">
           <p class="lp-section-number">05 <span>始めやすさ</span></p>
@@ -342,7 +388,11 @@
       </div>
     </section>
 
-    <section id="scenes" class="lp-section lp-scenes">
+    <section
+      id="scenes"
+      class="lp-section lp-scenes"
+      data-lp-analytics-reach-type="section_reached"
+      data-lp-analytics-event-value="usage_scenes">
       <div class="lp-container">
         <div class="lp-section-heading lp-reveal" data-store-lp-202609-target="reveal">
           <p class="lp-section-number">06 <span>活用シーン</span></p>
@@ -424,7 +474,11 @@
       </div>
     </section>
 
-    <section id="start" class="lp-section lp-start">
+    <section
+      id="start"
+      class="lp-section lp-start"
+      data-lp-analytics-reach-type="section_reached"
+      data-lp-analytics-event-value="getting_started">
       <div class="lp-container">
         <div class="lp-section-heading lp-reveal" data-store-lp-202609-target="reveal">
           <p class="lp-section-number">07 <span>始め方</span></p>
@@ -482,7 +536,10 @@
       </div>
     </section>
 
-    <section class="lp-final">
+    <section
+      class="lp-final"
+      data-lp-analytics-reach-type="section_reached"
+      data-lp-analytics-event-value="final_opportunity_cta">
       <div class="lp-final__glow" aria-hidden="true"></div>
       <div class="lp-container lp-container--narrow">
         <div class="lp-final__content lp-reveal" data-store-lp-202609-target="reveal">
@@ -522,14 +579,32 @@
           </p>
           <h3 class="lp-mobile-centered-lines"><span class="lp-mobile-centered-line">お店の売上をつくれる時間を、</span><br class="lp-desktop-center-break"><span class="lp-mobile-centered-line">もう少し増やしてみませんか？</span></h3>
           <div class="lp-cta-group lp-cta-group--center">
-            <%= link_to registration_path, class: "lp-button lp-button--primary" do %>
+            <%= link_to registration_path,
+                        class: "lp-button lp-button--primary",
+                        data: {
+                          lp_analytics_reach_type: "cta_reached",
+                          lp_analytics_event_value: "bottom_registration",
+                          lp_analytics_click_value: "bottom_registration"
+                        } do %>
               <span>初期費用・月額0円で</span>
               店舗登録する
               <span class="lp-button__arrow" aria-hidden="true">→</span>
             <% end %>
-            <%= link_to "Butterflyveについて問い合わせる", contact_path, class: "lp-button lp-button--secondary" %>
+            <%= link_to "Butterflyveについて問い合わせる", contact_path,
+                        class: "lp-button lp-button--secondary",
+                        data: {
+                          lp_analytics_reach_type: "cta_reached",
+                          lp_analytics_event_value: "bottom_contact",
+                          lp_analytics_click_value: "bottom_contact"
+                        } %>
           </div>
-          <%= link_to "店舗向けFAQを見る", @store_lp_202609_faq_path, class: "lp-text-link lp-text-link--light" %>
+          <%= link_to "店舗向けFAQを見る", @store_lp_202609_faq_path,
+                      class: "lp-text-link lp-text-link--light",
+                      data: {
+                        lp_analytics_reach_type: "cta_reached",
+                        lp_analytics_event_value: "bottom_faq",
+                        lp_analytics_click_value: "bottom_faq"
+                      } %>
         </div>
       </div>
     </section>
@@ -550,7 +625,13 @@
   </footer>
 
   <div class="lp-mobile-cta">
-    <%= link_to "店舗登録する", registration_path, class: "lp-button lp-button--primary" %>
+    <%= link_to "店舗登録する", registration_path,
+                class: "lp-button lp-button--primary",
+                data: {
+                  lp_analytics_reach_type: "cta_reached",
+                  lp_analytics_event_value: "mobile_registration",
+                  lp_analytics_click_value: "mobile_registration"
+                } %>
     <%= link_to "問い合わせる", contact_path, class: "lp-button lp-button--secondary" %>
   </div>
 </div>

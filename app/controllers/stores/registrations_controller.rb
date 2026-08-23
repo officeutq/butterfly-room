@@ -88,20 +88,29 @@ module Stores
       @store_registration_form_path = store_registration_form_path(
         @store_registration_from
       )
-      @lp_analytics_form_event_type = "store_registration_form_view" if lp_analytics_form_tracking?
-    end
-
-    def lp_analytics_form_tracking?
-      @store_registration_from == STORE_REGISTRATION_FROM_STORES_LP_202607 &&
-        lp_analytics_visit_public_id.present?
+      lp_identifier = store_registration_lp_analytics_identifier
+      if lp_identifier && lp_analytics_authorized_visit_available?(lp_identifier: lp_identifier)
+        @lp_analytics_form_event_type = "store_registration_form_view"
+        @lp_analytics_form_lp_identifier = lp_identifier
+      end
     end
 
     def store_registration_lp_analytics_visit
-      return unless @store_registration_from == STORE_REGISTRATION_FROM_STORES_LP_202607
+      lp_identifier = store_registration_lp_analytics_identifier
+      return unless lp_identifier
 
       authorized_lp_analytics_completion_visit(
-        lp_identifier: LpAnalytics::Configuration::STORE_LP_202607
+        lp_identifier: lp_identifier
       )
+    end
+
+    def store_registration_lp_analytics_identifier
+      case @store_registration_from
+      when STORE_REGISTRATION_FROM_STORES_LP_202607
+        LpAnalytics::Configuration::STORE_LP_202607
+      when STORE_REGISTRATION_FROM_STORES_LP_202609
+        LpAnalytics::Configuration::STORE_LP_202609
+      end
     end
 
     def permitted_store_registration_from(source = params)
