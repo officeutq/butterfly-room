@@ -56,7 +56,7 @@
           <%= link_to "戻る",
                 @store_registration_back_path,
                 class: "btn btn-outline-secondary",
-                data: (@store_registration_back_path == stores_lp_202607_return_path ? { turbo_prefetch: false, turbo: false } : {}) %>
+                data: ([ stores_lp_202607_return_path, stores_lp_202609_return_path ].include?(@store_registration_back_path) ? { turbo_prefetch: false, turbo: false } : {}) %>
         </div>
       <% end %>
     </div>

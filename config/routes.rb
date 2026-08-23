@@ -15,6 +15,8 @@ Rails.application.routes.draw do
   get "/stores/lp", to: "store_lps#show", as: :stores_lp
   get "/stores/lp_202607", to: "store_lps#show_202607", as: :stores_lp_202607
   get "/stores/lp_202607/return", to: "store_lps#return_202607", as: :stores_lp_202607_return
+  get "/stores/lp_202609", to: "store_lps#show_202609", as: :stores_lp_202609
+  get "/stores/lp_202609/return", to: "store_lps#return_202609", as: :stores_lp_202609_return
   get "/stores/contact", to: "store_contact_submissions#new", as: :stores_contact
   post "/stores/contact", to: "store_contact_submissions#create"
   get "/stores/contact/thanks", to: "store_contact_submissions#thanks", as: :stores_contact_thanks

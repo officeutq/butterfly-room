@@ -4,6 +4,10 @@ class ApplicationController < ActionController::Base
   STORE_LP_202607_REF_SESSION_KEY = :store_lp_202607_ref
   PRESERVE_STORE_LP_202607_ATTRIBUTION_ONCE_SESSION_KEY = :preserve_store_lp_202607_attribution_once
   STORE_LP_202607_FROM = "stores_lp_202607"
+  STORE_LP_202609_ATTRIBUTION_SESSION_KEY = :store_lp_202609_attribution
+  STORE_LP_202609_REF_SESSION_KEY = :store_lp_202609_ref
+  PRESERVE_STORE_LP_202609_ATTRIBUTION_ONCE_SESSION_KEY = :preserve_store_lp_202609_attribution_once
+  STORE_LP_202609_FROM = "stores_lp_202609"
   LP_ANALYTICS_VISIT_PUBLIC_ID_SESSION_KEY = :lp_analytics_visit_public_id
   LP_ANALYTICS_VISIT_PUBLIC_IDS_SESSION_KEY = :lp_analytics_visit_public_ids
   LP_ANALYTICS_MAX_SESSION_VISITS = 10
@@ -73,6 +77,10 @@ class ApplicationController < ActionController::Base
     value[0, STORE_LP_202607_REF_MAX_LENGTH]
   end
 
+  def sanitized_store_lp_202609_ref(source = params)
+    sanitized_store_lp_202607_ref(source)
+  end
+
   def tracking_query_params(from: nil, utm_params: {})
     query = {}
     query[:from] = from if from.present?
@@ -90,6 +98,14 @@ class ApplicationController < ActionController::Base
 
   def store_lp_202607_ref
     session[STORE_LP_202607_REF_SESSION_KEY]
+  end
+
+  def store_lp_202609_attribution
+    session[STORE_LP_202609_ATTRIBUTION_SESSION_KEY]
+  end
+
+  def store_lp_202609_ref
+    session[STORE_LP_202609_REF_SESSION_KEY]
   end
 
   def lp_analytics_visit_public_id
@@ -138,13 +154,26 @@ class ApplicationController < ActionController::Base
     tracking_session_payload(from:, utm_params:)
   end
 
+  def store_lp_202609_attribution_payload(from: STORE_LP_202609_FROM, source: params)
+    utm_params = sanitized_utm_params(source)
+    return nil if utm_params.blank?
+
+    tracking_session_payload(from:, utm_params:)
+  end
+
   def completion_tracking_payload(from:)
     payload = tracking_session_payload(from:)
-    attribution = store_lp_202607_attribution
+    attribution =
+      case payload["from"]
+      when STORE_LP_202607_FROM
+        store_lp_202607_attribution
+      when STORE_LP_202609_FROM
+        store_lp_202609_attribution
+      end
     attribution_from = attribution_from(attribution)
     source_from = payload["from"].presence || attribution_from
 
-    if source_from == STORE_LP_202607_FROM
+    if [ STORE_LP_202607_FROM, STORE_LP_202609_FROM ].include?(source_from)
       utm_params = sanitized_utm_params(attribution)
       payload["utm"] = utm_params.transform_keys(&:to_s) if utm_params.present?
     end
@@ -172,6 +201,14 @@ class ApplicationController < ActionController::Base
     session.delete(STORE_LP_202607_REF_SESSION_KEY)
   end
 
+  def delete_store_lp_202609_attribution
+    session.delete(STORE_LP_202609_ATTRIBUTION_SESSION_KEY)
+  end
+
+  def delete_store_lp_202609_ref
+    session.delete(STORE_LP_202609_REF_SESSION_KEY)
+  end
+
   def preserve_store_lp_202607_attribution_once!
     session[PRESERVE_STORE_LP_202607_ATTRIBUTION_ONCE_SESSION_KEY] = true
   end
@@ -181,6 +218,17 @@ class ApplicationController < ActionController::Base
     return true if session[PRESERVE_STORE_LP_202607_ATTRIBUTION_ONCE_SESSION_KEY] == true && turbo_drive_request?
 
     session.delete(PRESERVE_STORE_LP_202607_ATTRIBUTION_ONCE_SESSION_KEY) == true
+  end
+
+  def preserve_store_lp_202609_attribution_once!
+    session[PRESERVE_STORE_LP_202609_ATTRIBUTION_ONCE_SESSION_KEY] = true
+  end
+
+  def consume_store_lp_202609_attribution_preservation
+    # Turbo may fetch the LP before a tracked-asset full reload; keep the flag for the document request.
+    return true if session[PRESERVE_STORE_LP_202609_ATTRIBUTION_ONCE_SESSION_KEY] == true && turbo_drive_request?
+
+    session.delete(PRESERVE_STORE_LP_202609_ATTRIBUTION_ONCE_SESSION_KEY) == true
   end
 
   def turbo_drive_request?

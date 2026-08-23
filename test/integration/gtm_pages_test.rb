@@ -25,6 +25,10 @@ class GtmPagesTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_gtm_once
 
+    get stores_lp_202609_path
+    assert_response :success
+    assert_gtm_once
+
     get stores_contact_path
     assert_response :success
     assert_gtm_once

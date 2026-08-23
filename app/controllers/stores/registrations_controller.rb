@@ -4,9 +4,11 @@ module Stores
   class RegistrationsController < ApplicationController
     STORE_REGISTRATION_FROM_STORES_LP = "stores_lp"
     STORE_REGISTRATION_FROM_STORES_LP_202607 = "stores_lp_202607"
+    STORE_REGISTRATION_FROM_STORES_LP_202609 = "stores_lp_202609"
     STORE_REGISTRATION_FROM_SOURCES = [
       STORE_REGISTRATION_FROM_STORES_LP,
-      STORE_REGISTRATION_FROM_STORES_LP_202607
+      STORE_REGISTRATION_FROM_STORES_LP_202607,
+      STORE_REGISTRATION_FROM_STORES_LP_202609
     ].freeze
 
     skip_before_action :authenticate_user!, only: %i[new create], raise: false
@@ -54,6 +56,8 @@ module Stores
 
       delete_store_lp_202607_attribution
       delete_store_lp_202607_ref
+      delete_store_lp_202609_attribution
+      delete_store_lp_202609_ref
 
       set_store_registration_thanks_meta_tags
     end
@@ -76,6 +80,8 @@ module Stores
         case @store_registration_from
         when STORE_REGISTRATION_FROM_STORES_LP_202607
           stores_lp_202607_return_path
+        when STORE_REGISTRATION_FROM_STORES_LP_202609
+          stores_lp_202609_return_path
         else
           stores_lp_path
         end

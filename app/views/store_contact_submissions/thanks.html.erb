@@ -16,7 +16,7 @@
       <%= link_to "店舗向けページへ戻る",
             @store_contact_back_path,
             class: "btn btn-primary",
-            data: (@store_contact_back_path == stores_lp_202607_return_path ? { turbo_prefetch: false, turbo: false } : {}) %>
+            data: ([ stores_lp_202607_return_path, stores_lp_202609_return_path ].include?(@store_contact_back_path) ? { turbo_prefetch: false, turbo: false } : {}) %>
     </div>
   </div>
 </div>

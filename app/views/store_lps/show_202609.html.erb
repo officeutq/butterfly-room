@@ -1,0 +1,563 @@
+<% registration_path = stores_new_registration_path(@store_lp_202609_registration_params) %>
+<% contact_path = stores_contact_path(@store_lp_202609_contact_params) %>
+
+<div class="store-lp-202609" data-controller="store-lp-202609">
+  <header class="lp-header" data-store-lp-202609-target="header">
+    <div class="lp-container lp-header__inner">
+      <a href="#top" class="lp-header__brand" aria-label="Butterflyve 店舗向けページの先頭へ">
+        <%= image_tag "store_lp_202607/logo/01.png", alt: "Butterflyve", class: "lp-header__logo" %>
+      </a>
+      <nav class="lp-header__nav" aria-label="ページ内メニュー">
+        <a href="#service">サービス</a>
+        <a href="#system">仕組み</a>
+        <a href="#scenes">活用シーン</a>
+        <a href="#start">始め方</a>
+      </nav>
+      <%= link_to "店舗登録する", registration_path, class: "lp-button lp-button--header" %>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="lp-hero">
+      <div class="lp-hero__glow lp-hero__glow--one" aria-hidden="true"></div>
+      <div class="lp-hero__glow lp-hero__glow--two" aria-hidden="true"></div>
+      <div class="lp-container lp-hero__grid">
+        <div class="lp-hero__content">
+          <p class="lp-eyebrow"><span>FOR NIGHT STORES</span> 夜のお店のためのライブ配信サービス</p>
+          <h1>営業時間外に売上が止まるのは、<br><em>本当に当たり前でしょうか？</em></h1>
+          <p class="lp-hero__lead">
+            来店できない日も、<br>
+            指名のお客様との時間を、<br>
+            <strong>お店の売上の機会に。</strong>
+          </p>
+          <%= image_tag "store_lp_202607/logo/01.png", alt: "Butterflyve", class: "lp-hero__logo" %>
+
+          <ul class="lp-hero__facts" aria-label="主な特徴">
+            <li><strong>0<small>円</small></strong><span>初期費用</span></li>
+            <li><strong>0<small>円</small></strong><span>月額利用料</span></li>
+            <li><strong>スマホ</strong><span>から配信</span></li>
+            <li><strong>アプリ</strong><span>不要</span></li>
+          </ul>
+
+          <div class="lp-cta-group">
+            <%= link_to registration_path, class: "lp-button lp-button--primary" do %>
+              <span>初期費用・月額0円で</span>
+              店舗登録する
+              <span class="lp-button__arrow" aria-hidden="true">→</span>
+            <% end %>
+            <%= link_to "Butterflyveについて問い合わせる", contact_path, class: "lp-button lp-button--secondary" %>
+          </div>
+          <%= link_to "店舗向けFAQを見る", @store_lp_202609_faq_path, class: "lp-text-link" %>
+        </div>
+
+        <div class="lp-hero__visual lp-reveal" data-store-lp-202609-target="reveal">
+          <div class="lp-hero__image-frame">
+            <%= image_tag "store_lp_202609/hero_cast_customer_connection.svg",
+                          alt: "店舗で働くキャストがスマートフォンで配信し、来店できないお客様とつながるイメージ",
+                          class: "lp-hero__image" %>
+            <span class="lp-hero__image-label">来店できない日は、オンラインで。</span>
+          </div>
+          <div class="lp-hero__float lp-hero__float--top">
+            <span class="lp-live-dot" aria-hidden="true"></span>
+            LIVE
+          </div>
+          <div class="lp-hero__float lp-hero__float--bottom">
+            <span>お店</span><i aria-hidden="true">×</i><span>キャスト</span><i aria-hidden="true">×</i><span>お客様</span>
+          </div>
+        </div>
+      </div>
+      <a href="#opportunity" class="lp-scroll-cue" aria-label="次のセクションへ">
+        <span>SCROLL</span><i aria-hidden="true"></i>
+      </a>
+    </section>
+
+    <section id="opportunity" class="lp-section lp-opportunity">
+      <div class="lp-container lp-container--narrow">
+        <div class="lp-section-heading lp-reveal" data-store-lp-202609-target="reveal">
+          <p class="lp-section-number">01 <span>来店できない時間</span></p>
+          <h2>「来店できない」を、<br><em>「売上にならない」で終わらせない。</em></h2>
+        </div>
+
+        <div class="lp-reason-list lp-reveal" data-store-lp-202609-target="reveal" aria-label="来店できない理由">
+          <span>仕事が忙しい</span>
+          <span>遠方に住んでいる</span>
+          <span>予定が合わない</span>
+          <span>今日は外に飲みに出られない</span>
+        </div>
+
+        <div class="lp-story lp-reveal" data-store-lp-202609-target="reveal">
+          <p>
+            指名のお客様がいても、<br class="lp-mobile-break">
+            お店に来られなければ、その日の売上にはならない。
+          </p>
+          <blockquote>「会いたいけれど、今日はお店には行けない」</blockquote>
+          <p>
+            そんなお客様は、決して珍しくありません。<br>
+            でも、そのお客様との関係までなくなったわけではありません。
+          </p>
+          <p>
+            すでにあなたのお店には、<br>
+            キャストに会いたいと思ってくれるお客様がいます。
+          </p>
+        </div>
+
+        <div class="lp-opportunity__statement lp-reveal" data-store-lp-202609-target="reveal">
+          <p>
+            もし、その気持ちに応えられる場所を<br>
+            お店の外にもつくることができたら。
+          </p>
+          <ul>
+            <li>営業時間外でも。</li>
+            <li>店休日でも。</li>
+            <li>遠方にいるお客様でも。</li>
+          </ul>
+          <p>
+            キャストとお客様がつながり、その時間を<br>
+            <strong>店舗の新しい売上の機会</strong>につなげることができます。
+          </p>
+          <div class="lp-switch-message">
+            <span>来店してもらえる日は、<strong>お店で。</strong></span>
+            <i aria-hidden="true">+</i>
+            <span>来店できない日は、<strong>オンラインで。</strong></span>
+          </div>
+          <p class="lp-opportunity__closing">
+            お客様とキャストがつながれる時間を増やせば、<br>
+            お店が売上をつくれる時間も、もっと増やせる。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="service" class="lp-section lp-service">
+      <div class="lp-container">
+        <div class="lp-section-heading lp-section-heading--light lp-reveal" data-store-lp-202609-target="reveal">
+          <p class="lp-section-number">02 <span>Butterflyveとは</span></p>
+          <h2>いつものキャストが、<br><em>オンラインでもお客様とつながる。</em></h2>
+        </div>
+
+        <div class="lp-service__grid">
+          <div class="lp-service__copy lp-reveal" data-store-lp-202609-target="reveal">
+            <%= image_tag "store_lp_202607/logo/01.png", alt: "Butterflyve", class: "lp-service__logo" %>
+            <p>
+              Butterflyveは、<br>
+              <strong>夜のお店のためにつくられたライブ配信サービス</strong>です。
+            </p>
+            <p>
+              キャバクラ、スナック、ガールズバー、コンカフェなど、
+              最初から夜のお店での利用を想定しています。
+            </p>
+            <p>
+              目指しているのは、キャストを「配信者」に転職させることではありません。
+            </p>
+            <p>
+              お店で働くキャストと、そのキャストに会いに来てくれるお客様。
+            </p>
+            <p class="lp-service__emphasis">
+              すでにあるその関係を、<br>
+              オンラインにも広げるためのサービスです。
+            </p>
+            <p>
+              リアルの営業を置き換えるのではなく、
+              リアルの営業に「オンライン」という新しい選択肢を足します。
+            </p>
+          </div>
+
+          <div class="lp-relationship lp-reveal" data-store-lp-202609-target="reveal" aria-label="お店、キャスト、お客様の関係">
+            <div class="lp-relationship__orbit" aria-hidden="true"></div>
+            <div class="lp-relationship__center">
+              <%= image_tag "store_lp_202607/logo/favicon.png", alt: "", class: "lp-relationship__icon" %>
+              <span>Butterflyve</span>
+            </div>
+            <div class="lp-relationship__node lp-relationship__node--store">
+              <small>管理する</small><strong>お店</strong>
+            </div>
+            <div class="lp-relationship__node lp-relationship__node--cast">
+              <small>配信する</small><strong>キャスト</strong>
+            </div>
+            <div class="lp-relationship__node lp-relationship__node--customer">
+              <small>会いに来る</small><strong>お客様</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="system" class="lp-section lp-system">
+      <div class="lp-container">
+        <div class="lp-section-heading lp-reveal" data-store-lp-202609-target="reveal">
+          <p class="lp-section-number">03 <span>仕組み</span></p>
+          <h2>仕組みは、<em>とてもシンプルです。</em></h2>
+        </div>
+
+        <ol class="lp-step-grid">
+          <li class="lp-step-card lp-reveal" data-store-lp-202609-target="reveal">
+            <span class="lp-step-card__number">01</span>
+            <div class="lp-step-card__icon" aria-hidden="true">●</div>
+            <h3>キャストが配信する</h3>
+            <p>
+              スマートフォンから、いつものお客様に向けてライブ配信。
+              特別な撮影機材は必要ありません。
+            </p>
+          </li>
+          <li class="lp-step-card lp-reveal" data-store-lp-202609-target="reveal">
+            <span class="lp-step-card__number">02</span>
+            <div class="lp-step-card__icon" aria-hidden="true">↗</div>
+            <h3>お客様がオンラインで会いに来る</h3>
+            <p>
+              お店に足を運べない日でも、配信を通じてキャストとリアルタイムにつながれます。
+              お客様は専用アプリをインストールせず、URLからアクセスできます。
+            </p>
+            <small>視聴やギフトの利用には、アカウント作成・ログインが必要です。</small>
+          </li>
+          <li class="lp-step-card lp-reveal" data-store-lp-202609-target="reveal">
+            <span class="lp-step-card__number">03</span>
+            <div class="lp-step-card__icon" aria-hidden="true">Gift</div>
+            <h3>お客様がギフトを贈る</h3>
+            <p>
+              お客様は配信中にポイントを使って、
+              ドリンクなどのギフトを贈ることができます。
+            </p>
+          </li>
+          <li class="lp-step-card lp-step-card--accent lp-reveal" data-store-lp-202609-target="reveal">
+            <span class="lp-step-card__number">04</span>
+            <div class="lp-step-card__icon" aria-hidden="true">✓</div>
+            <h3>キャストが消化すると店舗の売上になる</h3>
+            <p>
+              キャストが配信中にギフトを消化すると、
+              その時点で店舗の売上として確定します。
+            </p>
+          </li>
+        </ol>
+
+        <div class="lp-refund-note lp-reveal" data-store-lp-202609-target="reveal">
+          <span class="lp-refund-note__icon" aria-hidden="true">↩</span>
+          <p>
+            <strong>未消化分は、お客様へ返却。</strong>
+            配信終了時に未消化だったギフトはお客様へ返却され、店舗の売上には含まれません。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="lp-section lp-difference">
+      <div class="lp-container">
+        <div class="lp-section-heading lp-reveal" data-store-lp-202609-target="reveal">
+          <p class="lp-section-number">04 <span>サービスの目的</span></p>
+          <h2>一般的なライブ配信とは、<br><em>目的が違います。</em></h2>
+        </div>
+
+        <div class="lp-compare lp-reveal" data-store-lp-202609-target="reveal">
+          <div class="lp-compare__card lp-compare__card--general">
+            <p class="lp-compare__label">一般的なライブ配信</p>
+            <h3>配信者個人が、<br>たくさんの視聴者を集める</h3>
+            <div class="lp-compare__people" aria-hidden="true">
+              <span>配信者</span><i>→</i><span>不特定多数</span>
+            </div>
+          </div>
+          <div class="lp-compare__versus" aria-hidden="true">VS</div>
+          <div class="lp-compare__card lp-compare__card--butterflyve">
+            <p class="lp-compare__label">Butterflyve</p>
+            <h3>すでにある3者の関係を、<br>オンラインにも広げる</h3>
+            <div class="lp-compare__people" aria-hidden="true">
+              <span>お店</span><i>×</i><span>キャスト</span><i>×</i><span>お客様</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="lp-difference__copy lp-reveal" data-store-lp-202609-target="reveal">
+          <p>
+            世の中には、たくさんのライブ配信サービスがあります。
+            でも、その多くは<strong>「配信者個人が、たくさんの視聴者を集めて収益を得る」</strong>ためにつくられています。
+          </p>
+          <p>
+            Butterflyveは違います。主役は、配信者個人だけではありません。
+            <strong>お店と、キャストと、お客様。</strong>
+          </p>
+          <p>
+            誰が配信しているのか。どのブースで配信するのか。どれだけ売上が上がったのか。
+            店舗側で管理できる仕組みになっています。
+          </p>
+          <p>
+            ギフトをキャストが配信中に消化して確定した売上は、
+            キャスト個人ではなく、<strong>店舗の売上として管理されます。</strong>
+          </p>
+          <p class="lp-difference__closing">
+            お店として、新しい売上の入口をひとつ増やす。<br>
+            <strong>それがButterflyveです。</strong>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="lp-section lp-easy">
+      <div class="lp-container">
+        <div class="lp-section-heading lp-section-heading--light lp-reveal" data-store-lp-202609-target="reveal">
+          <p class="lp-section-number">05 <span>始めやすさ</span></p>
+          <h2>始めるために、<br><em>大きな投資は必要ありません。</em></h2>
+        </div>
+
+        <div class="lp-worries lp-reveal" data-store-lp-202609-target="reveal">
+          <span>新しい機材が必要なのでは？</span>
+          <span>毎月の利用料がかかるのでは？</span>
+          <span>毎日配信が必要なのでは？</span>
+        </div>
+        <p class="lp-easy__intro lp-reveal" data-store-lp-202609-target="reveal">
+          Butterflyveなら、<strong>まず試してみるところから始められます。</strong>
+        </p>
+
+        <div class="lp-easy__grid">
+          <article class="lp-easy-card lp-reveal" data-store-lp-202609-target="reveal">
+            <span class="lp-easy-card__mark">¥</span>
+            <p>初期費用</p>
+            <strong>0<small>円</small></strong>
+            <span>導入時の初期費用はかかりません。</span>
+          </article>
+          <article class="lp-easy-card lp-reveal" data-store-lp-202609-target="reveal">
+            <span class="lp-easy-card__mark">月</span>
+            <p>月額利用料</p>
+            <strong>0<small>円</small></strong>
+            <span>使わない月に固定費だけが発生することもありません。</span>
+          </article>
+          <article class="lp-easy-card lp-reveal" data-store-lp-202609-target="reveal">
+            <span class="lp-easy-card__mark">▣</span>
+            <p>特別な配信機材</p>
+            <strong>不要</strong>
+            <span>キャストはスマートフォンから配信できます。</span>
+          </article>
+          <article class="lp-easy-card lp-reveal" data-store-lp-202609-target="reveal">
+            <span class="lp-easy-card__mark">∞</span>
+            <p>配信ノルマ</p>
+            <strong>なし</strong>
+            <span>お店に合った使い方で始められます。</span>
+          </article>
+        </div>
+
+        <div class="lp-no-app lp-reveal" data-store-lp-202609-target="reveal">
+          <div class="lp-no-app__phone" aria-hidden="true"><span>URL</span></div>
+          <div>
+            <h3>お客様も専用アプリ不要</h3>
+            <p>
+              お客様はURLからアクセスできます。専用アプリをインストールしてもらう必要はありません。
+            </p>
+            <small>視聴やギフトの利用には、お客様のアカウント作成・ログインが必要です。</small>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="scenes" class="lp-section lp-scenes">
+      <div class="lp-container">
+        <div class="lp-section-heading lp-reveal" data-store-lp-202609-target="reveal">
+          <p class="lp-section-number">06 <span>活用シーン</span></p>
+          <h2>こんな時間が、<br><em>新しい売上のきっかけになります。</em></h2>
+        </div>
+
+        <div class="lp-scene-grid">
+          <article class="lp-scene-card lp-reveal" data-store-lp-202609-target="reveal">
+            <%= image_tag "store_lp_202609/use_case_before_open.svg",
+                          alt: "営業前に店舗内でスマートフォンから短時間配信するキャストのイメージ" %>
+            <div class="lp-scene-card__body">
+              <span>SCENE 01</span>
+              <h3>営業前のちょっとした時間に</h3>
+              <p>
+                出勤してから営業が始まるまでの時間に、短時間だけライブ配信。
+                「今日出勤してるよ」「あとでお店で待ってるね」
+              </p>
+              <p>そんな会話が、その日の来店につながるきっかけにもなります。</p>
+            </div>
+          </article>
+
+          <article class="lp-scene-card lp-reveal" data-store-lp-202609-target="reveal">
+            <%= image_tag "store_lp_202609/use_case_day_off.svg",
+                          alt: "店休日に落ち着いた場所からお客様へ配信するキャストのイメージ" %>
+            <div class="lp-scene-card__body">
+              <span>SCENE 02</span>
+              <h3>店休日に</h3>
+              <p>
+                お店がお休みの日でも、キャストが配信すればオンラインで会うことができます。
+              </p>
+              <p><strong>お店を開けていない日にも、お客様とつながれる時間をつくれます。</strong></p>
+            </div>
+          </article>
+
+          <article class="lp-scene-card lp-reveal" data-store-lp-202609-target="reveal">
+            <%= image_tag "store_lp_202609/use_case_remote_customer.svg",
+                          alt: "遠方や仕事の都合で来店できないお客様がスマートフォンで配信を見るイメージ" %>
+            <div class="lp-scene-card__body">
+              <span>SCENE 03</span>
+              <h3>来店が難しいお客様に</h3>
+              <p>
+                遠方にいる。仕事が忙しい。家庭の事情がある。最近、飲みに出る機会が減った。
+              </p>
+              <p>
+                来店が難しくなっても、関係まで終わらせる必要はありません。
+                Butterflyveなら、<strong>「お店に来る」よりも気軽な接点</strong>をつくることができます。
+              </p>
+            </div>
+          </article>
+
+          <article class="lp-scene-card lp-reveal" data-store-lp-202609-target="reveal">
+            <%= image_tag "store_lp_202609/use_case_sns_connection.svg",
+                          alt: "SNSからライブ配信へ案内し、オンラインと来店をつなぐイメージ" %>
+            <div class="lp-scene-card__body">
+              <span>SCENE 04</span>
+              <h3>SNSでつながっているお客様に</h3>
+              <p>
+                SNSで投稿を見てもらうだけで終わらせず、その先に「実際に話せる場所」を用意する。
+              </p>
+              <p>
+                SNSからライブ配信へ。ライブ配信から来店へ。
+                オンラインとリアルを行き来できる接点が、お客様との関係を深めるきっかけになります。
+              </p>
+            </div>
+          </article>
+        </div>
+
+        <div class="lp-scenes__closing lp-reveal" data-store-lp-202609-target="reveal">
+          <p>
+            大切なのは、長時間配信することでも、<br>
+            有名なライバーになることでもありません。
+          </p>
+          <strong>お客様と会える機会を、今より少し増やすこと。</strong>
+          <p>
+            それぞれのお店、それぞれのキャストに合った使い方で、
+            Butterflyveを活用できます。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="start" class="lp-section lp-start">
+      <div class="lp-container">
+        <div class="lp-section-heading lp-reveal" data-store-lp-202609-target="reveal">
+          <p class="lp-section-number">07 <span>始め方</span></p>
+          <h2>始め方も、<em>シンプルです。</em></h2>
+        </div>
+
+        <ol class="lp-start__steps">
+          <li class="lp-start-card lp-reveal" data-store-lp-202609-target="reveal">
+            <span>STEP 1</span>
+            <div class="lp-start-card__icon" aria-hidden="true">店</div>
+            <h3>お店を登録</h3>
+            <p>
+              まずはButterflyveに店舗を登録します。
+              初期費用・月額利用料は0円。
+            </p>
+            <strong>「まず使ってみる」から始められます。</strong>
+          </li>
+          <li class="lp-start-card lp-reveal" data-store-lp-202609-target="reveal">
+            <span>STEP 2</span>
+            <div class="lp-start-card__icon" aria-hidden="true">招</div>
+            <h3>キャストを招待</h3>
+            <p>
+              店舗から、Butterflyveを利用するキャストを招待します。
+            </p>
+            <strong>
+              キャスト本人が招待を承認すると店舗への所属が成立し、
+              そのキャスト専用のブースが自動で作成されます。
+            </strong>
+          </li>
+          <li class="lp-start-card lp-reveal" data-store-lp-202609-target="reveal">
+            <span>STEP 3</span>
+            <div class="lp-start-card__icon" aria-hidden="true">配</div>
+            <h3>URLを案内して、配信スタート</h3>
+            <p>
+              あとはキャストがスマートフォンから配信。
+              お客様には配信ページのURLを案内します。
+            </p>
+            <strong>専用アプリをインストールしてもらう必要はありません。</strong>
+          </li>
+        </ol>
+
+        <div class="lp-small-start lp-reveal" data-store-lp-202609-target="reveal">
+          <div class="lp-small-start__label">SMALL START</div>
+          <div>
+            <h3>まずは、一人のキャストからでも。</h3>
+            <p>
+              最初からお店全体で大きく始める必要はありません。
+              まずは一人のキャストで試してみる。いつもの指名のお客様に案内してみる。
+              営業前や店休日に、短時間だけ配信してみる。
+            </p>
+            <p>
+              そこでお客様の反応を見ながら、お店に合った使い方を考えていくことができます。
+            </p>
+            <strong>新しいことだからこそ、小さく始めて、確かめてみる。</strong>
+            <p>Butterflyveなら、その始め方ができます。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="lp-final">
+      <div class="lp-final__glow" aria-hidden="true"></div>
+      <div class="lp-container lp-container--narrow">
+        <div class="lp-final__content lp-reveal" data-store-lp-202609-target="reveal">
+          <p class="lp-section-number">08 <span>新しい売上の機会</span></p>
+          <h2>あなたのお店には、<br><em>まだ売上になっていない時間があります。</em></h2>
+          <p>
+            指名のお客様がいても、毎日お店に来てもらえるわけではありません。
+            キャストに会いたいと思っていても、仕事や距離、予定の都合で来店できない日があります。
+          </p>
+          <p>
+            お店で会えない日にも、キャストとお客様がつながれる場所をつくることができます。
+          </p>
+          <div class="lp-final__switch">
+            <span>お店で会える日は、<strong>お店で。</strong></span>
+            <span>来店できない日は、<strong>オンラインで。</strong></span>
+          </div>
+          <p class="lp-final__message">
+            今まで売上にならなかった時間を、<br>
+            <strong>新しい売上のチャンスに変える。</strong>
+          </p>
+          <p>それがButterflyveです。</p>
+        </div>
+
+        <div class="lp-final-cta lp-reveal" data-store-lp-202609-target="reveal">
+          <p class="lp-final-cta__eyebrow">初期費用 0円・月額利用料 0円</p>
+          <h2>まずは、あなたのお店で<br>試してみませんか？</h2>
+          <p>
+            新しいサービスを始めるために、大きな決断をする必要はありません。
+          </p>
+          <p>
+            まず一人のキャストから。まず一度の配信から。
+            いつもの指名のお客様に案内して、どんな反応があるのか確かめてみてください。
+          </p>
+          <p>
+            今のお店にあるキャストとお客様とのつながりが、
+            <strong>新しい売上につながるかもしれません。</strong>
+          </p>
+          <h3>お店の売上をつくれる時間を、<br>もう少し増やしてみませんか？</h3>
+          <div class="lp-cta-group lp-cta-group--center">
+            <%= link_to registration_path, class: "lp-button lp-button--primary" do %>
+              <span>初期費用・月額0円で</span>
+              店舗登録する
+              <span class="lp-button__arrow" aria-hidden="true">→</span>
+            <% end %>
+            <%= link_to "Butterflyveについて問い合わせる", contact_path, class: "lp-button lp-button--secondary" %>
+          </div>
+          <%= link_to "店舗向けFAQを見る", @store_lp_202609_faq_path, class: "lp-text-link lp-text-link--light" %>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="lp-footer">
+    <div class="lp-container lp-footer__inner">
+      <%= image_tag "store_lp_202607/logo/01.png", alt: "Butterflyve", class: "lp-footer__logo" %>
+      <nav aria-label="法的情報">
+        <a href="https://officeutq.co.jp/" target="_blank" rel="noopener">運営会社</a>
+        <%= link_to "特定商取引法に基づく表記", legal_path %>
+        <%= link_to "資金決済法に基づく表示", payment_services_act_path %>
+        <%= link_to "利用規約", terms_path %>
+        <%= link_to "プライバシーポリシー", privacy_policy_path %>
+      </nav>
+      <small>&copy; Butterflyve</small>
+    </div>
+  </footer>
+
+  <div class="lp-mobile-cta">
+    <%= link_to registration_path, class: "lp-button lp-button--primary" do %>
+      <span>初期費用・月額0円で</span>店舗登録する
+    <% end %>
+  </div>
+</div>
