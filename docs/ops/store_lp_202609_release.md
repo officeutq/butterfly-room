@@ -71,7 +71,7 @@ staging復旧またはデプロイは、[ステージング環境デプロイ手
 - [ ] stagingでスクロール・主要セクション到達をRails DBと照合する
 - [x] system_adminと同じ集計経路で202607版と202609版を分けて確認できる
 - [x] staging用Googleスプレッドシートへのread接続と移行前状態を確認する
-- [ ] staging用Googleスプレッドシートの日次出力をRails DBと照合できる
+- [x] staging用Googleスプレッドシートの日次出力をRails DBと照合できる
 - [ ] 同一流入30分以内、30分経過後、UTM変更、referral code変更、reload、複数tabを[横断検証手順](lp_analytics_validation.md)どおり確認する
 - [x] 自動出力が`false`のままで、appとworkerが同じimageで稼働している
 
@@ -79,7 +79,11 @@ staging復旧またはデプロイは、[ステージング環境デプロイ手
 
 2026年8月23日19時台に、`form_submission_20260823_1910`で店舗登録1件、`contact_submission_20260823_1910`でお問い合わせ1件を完了した。`butterfly_room_staging` DBで、それぞれCTAクリック訪問、フォーム表示訪問、完了1件と業務recordへの紐づけ1件を確認した。system_adminで使用する`AnalysisFilter`と`AnalysisQuery`でも、LPを`stores_lp_202609`、同日、各`utm_content`で絞った完了件数が一致した。検証用入力値、業務record ID、匿名訪問IDは記録しない。
 
-staging用`daily_raw`は旧25列headerと完全一致し、新58列への移行dry runは成功した。管理対象はheaderを含む5行で、最初の実出力時に5行を58列へ展開する予定である。最初の訪問日は2026年8月9日、自動出力は`false`である。実出力はSpreadsheetへの書込みを伴うため、承認後に2026年8月9日から22日までを再出力し、続けて23日を出力する。
+staging用`daily_raw`は旧25列headerと完全一致し、新58列への移行dry runが成功した状態から実出力した。最初の訪問日は2026年8月9日、自動出力は`false`である。
+
+2026年8月23日19時台の初回出力では58列への移行自体は成功したが、同じ対象日の202607版と202609版を順番に出力すると、後のLP出力が先のLP行を空欄化する不具合を検出した。原因は`IdempotentWriter`の古い行を空欄化する条件が対象日だけで、対象LPを含んでいなかったことである。空欄化対象を対象日・対象LPの両方で限定し、同日の別LP行を維持する回帰testを追加したcommit `0c8a8cf`をstagingへ反映した。
+
+修正後に2026年8月9日から22日までと23日を再出力し、15日分・2LPの出力状態30件がすべて`succeeded`となった。`daily_raw`は58列、headerを含む12行、管理行11件（202607版6件、202609版5件）で、aggregation keyと`exported_at`以外の全集計値がRails DBと一致した。重複key、部分行、メール形式の値、秘密鍵文字列は0件だった。23日を再出力しても総行数12・管理行11のままで、202607版2行と202609版5行を維持した。appとworkerは同じ修正版imageで稼働し、自動出力は`false`のままである。
 
 202607版は1440 x 900で23pxの横方向overflowを確認した。タブレット・スマートフォンでは横方向overflowはなかった。このPRでは202607版のView、layout、CSSを変更していないため既存挙動として記録し、202609版の公開準備とは分けて扱う。
 
