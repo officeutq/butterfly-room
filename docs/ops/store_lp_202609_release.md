@@ -50,14 +50,17 @@ Rails全体testには、202609版のroute・View・attribution引き継ぎ、FAQ
 
 ## 3. staging確認
 
-2026年8月23日18時台（JST）の確認では、`https://staging.butterflyve.jp/stores/lp_202609`と`https://staging.butterflyve.jp/up`がともにHTTP 503だった。そのため、次の実環境確認は未完了である。503の原因はこの記録では断定しない。
+2026年8月23日18時57分（JST）の再確認では、`https://staging.butterflyve.jp/up`がHTTP 200へ復旧した。Basic認証なしで`https://staging.butterflyve.jp/stores/lp_202609`へアクセスするとHTTP 401と`WWW-Authenticate: Basic realm="Butterfly Room Staging"`が返り、認証境界も有効だった。認証後の実画面確認は未完了である。
 
 staging復旧またはデプロイは、[ステージング環境デプロイ手順](../staging/deployment.md)と[ステージング構築後チェックリスト](../staging/post_apply_checklist.md)に従い、権限を持つ担当者が実施する。
 
-復旧後は次を確認する。
+次を確認する。
 
-- [ ] `/up`が正常応答し、Target Groupがhealthyである
-- [ ] Basic認証、`noindex`、GTM無効等のstaging安全設定が有効である
+- [x] `/up`がHTTP 200で正常応答する
+- [x] Basic認証なしのLPアクセスをHTTP 401で拒否する
+- [x] `/up`と認証拒否応答に`X-Robots-Tag: noindex, nofollow`が付く
+- [ ] AWS上でTarget Groupがhealthyである
+- [ ] 認証後の画面でGTM無効等のstaging安全設定が有効である
 - [ ] PC、タブレット、スマートフォンで202609版と202607版を表示できる
 - [ ] 202609版から店舗登録、お問い合わせ、FAQへ遷移し、LPへ戻れる
 - [ ] staging専用の検証値で店舗登録・お問い合わせを各1件だけ完了する
