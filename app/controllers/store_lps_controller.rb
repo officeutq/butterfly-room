@@ -8,7 +8,6 @@ class StoreLpsController < ApplicationController
   before_action :enable_gtm, only: %i[show show_202607 show_202609]
 
   layout "store_lp_202607", only: %i[show_202607]
-  layout "store_lp_202609", only: %i[show_202609]
 
   def show
     set_store_lp_meta_tags
@@ -53,6 +52,7 @@ class StoreLpsController < ApplicationController
     @store_lp_202609_faq_path = "/stores/faq?#{ { return_to: return_path }.to_query }"
 
     set_store_lp_202609_meta_tags
+    render layout: "store_lp_202609"
   end
 
   def return_202609

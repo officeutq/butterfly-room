@@ -3,6 +3,14 @@
 require "test_helper"
 
 class StoreLp202609Test < ActionDispatch::IntegrationTest
+  test "adding the 202609 layout leaves the existing 202607 layout unchanged" do
+    get stores_lp_202607_path
+
+    assert_response :success
+    assert_select "link[rel='stylesheet'][href*='store_lp_202607']", count: 1
+    assert_select "link[rel='stylesheet'][href*='application']", count: 0
+  end
+
   test "guest can view the 202609 store LP with finalized copy and CTA links" do
     get stores_lp_202609_path
 
