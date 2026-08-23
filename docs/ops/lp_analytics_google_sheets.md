@@ -310,7 +310,7 @@ docker compose exec -T worker bin/rails "lp_analytics:sheets:export_range[2026-0
 - 既知の旧25列headerまたは202607版の42列headerと管理行は、最初の再出力時に共有列の値を維持したまま新58列へ展開する。新規列は対象日の再集計が完了するまで空欄とする
 - 未知のheader不一致、duplicate key、管理行の一部欠損では書込みを停止する
 - 既存keyは同じ行を更新し、新規keyは空き行または末尾へ追加する
-- 再集計で消えた対象日行は空欄化する
+- 再集計で消えた対象日・対象LPの行だけを空欄化し、同日の別LP行は維持する
 - 書込みは`spreadsheets.values.batchUpdate`へまとめ、応答行数・セル数を検証する
 
 障害時もRails DBを正本とし、Google Spreadsheetを手修正せず、原因修正後に上記Rake taskで再出力する。

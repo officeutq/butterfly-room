@@ -37,8 +37,8 @@ class LpAnalytics::Sheets::IdempotentWriterTest < ActiveSupport::TestCase
     writer = writer(client)
     rows = [ build_row(key: "a"), build_row(key: "b", traffic_source: "meta") ]
 
-    first = writer.call(rows: rows, aggregation_date: TARGET_DATE, exported_at: EXPORTED_AT)
-    second = writer.call(rows: rows, aggregation_date: TARGET_DATE, exported_at: EXPORTED_AT + 1.hour)
+    first = writer.call(rows: rows, aggregation_date: TARGET_DATE, lp_identifier: lp_identifier, exported_at: EXPORTED_AT)
+    second = writer.call(rows: rows, aggregation_date: TARGET_DATE, lp_identifier: lp_identifier, exported_at: EXPORTED_AT + 1.hour)
 
     assert_equal 2, first.row_count
     assert_equal 3, client.values.length
@@ -51,10 +51,10 @@ class LpAnalytics::Sheets::IdempotentWriterTest < ActiveSupport::TestCase
   test "既存keyは同じ行で更新する" do
     client = MemoryClient.new
     writer = writer(client)
-    writer.call(rows: [ build_row(key: "same", visit_count: 1) ], aggregation_date: TARGET_DATE, exported_at: EXPORTED_AT)
+    writer.call(rows: [ build_row(key: "same", visit_count: 1) ], aggregation_date: TARGET_DATE, lp_identifier: lp_identifier, exported_at: EXPORTED_AT)
     original_length = client.values.length
 
-    writer.call(rows: [ build_row(key: "same", visit_count: 9) ], aggregation_date: TARGET_DATE, exported_at: EXPORTED_AT)
+    writer.call(rows: [ build_row(key: "same", visit_count: 9) ], aggregation_date: TARGET_DATE, lp_identifier: lp_identifier, exported_at: EXPORTED_AT)
 
     assert_equal original_length, client.values.length
     visit_count_column = LpAnalytics::Sheets::IdempotentWriter::HEADERS.index("lp_visit_count")
@@ -88,7 +88,7 @@ class LpAnalytics::Sheets::IdempotentWriterTest < ActiveSupport::TestCase
       **section_metrics
     )
 
-    writer(client).call(rows: [ row ], aggregation_date: TARGET_DATE, exported_at: EXPORTED_AT)
+    writer(client).call(rows: [ row ], aggregation_date: TARGET_DATE, lp_identifier: lp_identifier, exported_at: EXPORTED_AT)
 
     headers = LpAnalytics::Sheets::IdempotentWriter::HEADERS
     values = client.values.second
@@ -104,12 +104,13 @@ class LpAnalytics::Sheets::IdempotentWriterTest < ActiveSupport::TestCase
     writer.call(
       rows: [ build_row(key: "keep"), build_row(key: "remove") ],
       aggregation_date: TARGET_DATE,
+      lp_identifier: lp_identifier,
       exported_at: EXPORTED_AT
     )
     other_date_row = build_row(key: "other-date", aggregation_date: TARGET_DATE - 1.day)
     client.values << sheet_values(other_date_row)
 
-    writer.call(rows: [ build_row(key: "keep") ], aggregation_date: TARGET_DATE, exported_at: EXPORTED_AT)
+    writer.call(rows: [ build_row(key: "keep") ], aggregation_date: TARGET_DATE, lp_identifier: lp_identifier, exported_at: EXPORTED_AT)
 
     assert client.values.find { |values| values.first == "remove" }.nil?
     assert client.values.any? { |values| values.first == "other-date" }
@@ -119,12 +120,32 @@ class LpAnalytics::Sheets::IdempotentWriterTest < ActiveSupport::TestCase
   test "対象日が0行になった場合も既存対象日行を空欄化する" do
     client = MemoryClient.new
     writer = writer(client)
-    writer.call(rows: [ build_row(key: "remove") ], aggregation_date: TARGET_DATE, exported_at: EXPORTED_AT)
+    writer.call(rows: [ build_row(key: "remove") ], aggregation_date: TARGET_DATE, lp_identifier: lp_identifier, exported_at: EXPORTED_AT)
 
-    result = writer.call(rows: [], aggregation_date: TARGET_DATE, exported_at: EXPORTED_AT)
+    result = writer.call(rows: [], aggregation_date: TARGET_DATE, lp_identifier: lp_identifier, exported_at: EXPORTED_AT)
 
     assert_equal 0, result.row_count
     assert client.values.second.all?(&:blank?)
+  end
+
+  test "同じ対象日の別LP行を空欄化しない" do
+    client = MemoryClient.new
+    writer = writer(client)
+    writer.call(
+      rows: [ build_row(key: "202607") ],
+      aggregation_date: TARGET_DATE,
+      lp_identifier: lp_identifier,
+      exported_at: EXPORTED_AT
+    )
+
+    writer.call(
+      rows: [ build_row(key: "202609", lp_identifier: LpAnalytics::Configuration::STORE_LP_202609) ],
+      aggregation_date: TARGET_DATE,
+      lp_identifier: LpAnalytics::Configuration::STORE_LP_202609,
+      exported_at: EXPORTED_AT
+    )
+
+    assert_equal %w[202607 202609], client.values.drop(1).map(&:first).sort
   end
 
   test "既知の旧headerと既存行を新schemaへ移行して共有列の値を維持する" do
@@ -137,6 +158,7 @@ class LpAnalytics::Sheets::IdempotentWriterTest < ActiveSupport::TestCase
     writer(client).call(
       rows: [ build_row(key: "current") ],
       aggregation_date: TARGET_DATE,
+      lp_identifier: lp_identifier,
       exported_at: EXPORTED_AT
     )
 
@@ -159,6 +181,7 @@ class LpAnalytics::Sheets::IdempotentWriterTest < ActiveSupport::TestCase
     writer(client).call(
       rows: [ build_row(key: "current") ],
       aggregation_date: TARGET_DATE,
+      lp_identifier: lp_identifier,
       exported_at: EXPORTED_AT
     )
 
@@ -180,6 +203,7 @@ class LpAnalytics::Sheets::IdempotentWriterTest < ActiveSupport::TestCase
     writer(client).call(
       rows: [ build_row(key: "current") ],
       aggregation_date: TARGET_DATE,
+      lp_identifier: lp_identifier,
       exported_at: EXPORTED_AT
     )
 
@@ -194,7 +218,7 @@ class LpAnalytics::Sheets::IdempotentWriterTest < ActiveSupport::TestCase
   test "header不一致と既存duplicate keyでは書き込まない" do
     invalid_header_client = MemoryClient.new([ [ "wrong" ] ])
     assert_raises LpAnalytics::Sheets::IdempotentWriter::HeaderMismatchError do
-      writer(invalid_header_client).call(rows: [], aggregation_date: TARGET_DATE, exported_at: EXPORTED_AT)
+      writer(invalid_header_client).call(rows: [], aggregation_date: TARGET_DATE, lp_identifier: lp_identifier, exported_at: EXPORTED_AT)
     end
     assert_empty invalid_header_client.batch_calls
 
@@ -205,7 +229,7 @@ class LpAnalytics::Sheets::IdempotentWriterTest < ActiveSupport::TestCase
     ]
     duplicate_client = MemoryClient.new(duplicate_values)
     assert_raises LpAnalytics::Sheets::IdempotentWriter::DuplicateAggregationKeyError do
-      writer(duplicate_client).call(rows: [], aggregation_date: TARGET_DATE, exported_at: EXPORTED_AT)
+      writer(duplicate_client).call(rows: [], aggregation_date: TARGET_DATE, lp_identifier: lp_identifier, exported_at: EXPORTED_AT)
     end
     assert_empty duplicate_client.batch_calls
   end
@@ -217,7 +241,7 @@ class LpAnalytics::Sheets::IdempotentWriterTest < ActiveSupport::TestCase
     ])
 
     assert_raises LpAnalytics::Sheets::IdempotentWriter::SheetStructureError do
-      writer(partial_client).call(rows: [], aggregation_date: TARGET_DATE, exported_at: EXPORTED_AT)
+      writer(partial_client).call(rows: [], aggregation_date: TARGET_DATE, lp_identifier: lp_identifier, exported_at: EXPORTED_AT)
     end
     assert_empty partial_client.batch_calls
   end
@@ -229,7 +253,7 @@ class LpAnalytics::Sheets::IdempotentWriterTest < ActiveSupport::TestCase
     end
 
     assert_raises LpAnalytics::Sheets::IdempotentWriter::UpdateCountMismatchError do
-      writer(client).call(rows: [ build_row(key: "a") ], aggregation_date: TARGET_DATE, exported_at: EXPORTED_AT)
+      writer(client).call(rows: [ build_row(key: "a") ], aggregation_date: TARGET_DATE, lp_identifier: lp_identifier, exported_at: EXPORTED_AT)
     end
   end
 
@@ -237,6 +261,10 @@ class LpAnalytics::Sheets::IdempotentWriterTest < ActiveSupport::TestCase
 
   def writer(client)
     LpAnalytics::Sheets::IdempotentWriter.new(client: client, worksheet_name: "daily_raw")
+  end
+
+  def lp_identifier
+    LpAnalytics::Configuration::STORE_LP_202607
   end
 
   def build_row(key:, aggregation_date: TARGET_DATE, traffic_source: "", visit_count: 1, **overrides)

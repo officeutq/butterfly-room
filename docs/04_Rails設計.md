@@ -730,6 +730,7 @@ end
 * `LpAnalytics::Sheets::ExportRecentDaysJob`を毎日02:20 JSTに起動し、前日を終端とする直近7日を再集計する
 * 自動出力は`LP_ANALYTICS_SHEETS_EXPORT_ENABLED`でGoogle Sheets部分だけを無効化できる
 * 書込みは`spreadsheets.values.batchUpdate`へまとめ、`aggregation_key`で既存行を更新して重複行を作らない
+* 再集計で消えた行を空欄化する場合は対象日とLP識別子の両方を一致させ、同日の別LP行を維持する
 * Rails管理header変更時は、完全一致する既知の旧headerだけを新schemaへ移行する。未知のheader不一致、重複key、不完全な管理行は書込みを停止する
 * Google API通信中にDB transactionを保持せず、429・5xx・timeoutだけを有限回retryする
 * Secret値はAWS Secrets Managerからworker実行時に取得し、Git、環境変数、通常log、Googleスプレッドシートへ出さない

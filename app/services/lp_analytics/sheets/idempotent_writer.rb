@@ -143,6 +143,7 @@ module LpAnalytics
         contact_cv_rate
         exported_at
       ].freeze
+      LP_IDENTIFIER_INDEX = HEADERS.index("lp_identifier")
 
       Result = Data.define(:row_count, :updated_sheet_row_count, :updated_cell_count)
       ExistingRow = Data.define(:row_number, :aggregation_key, :aggregation_date, :values)
@@ -152,13 +153,14 @@ module LpAnalytics
         @worksheet_name = worksheet_name
       end
 
-      def call(rows:, aggregation_date:, exported_at: Time.zone.now)
+      def call(rows:, aggregation_date:, lp_identifier:, exported_at: Time.zone.now)
         date = strict_date(aggregation_date)
-        validate_rows!(rows, date)
+        identifier = lp_identifier.to_s
+        validate_rows!(rows, date, identifier)
         sheet_values = client.read_values(full_range)
         existing_rows, updates = inspect_sheet(sheet_values)
-        updates.concat(build_row_updates(rows, existing_rows, sheet_values.length, date, exported_at))
-        updates.concat(build_stale_row_updates(rows, existing_rows, date))
+        updates.concat(build_row_updates(rows, existing_rows, sheet_values.length, date, identifier, exported_at))
+        updates.concat(build_stale_row_updates(rows, existing_rows, date, identifier))
         updates = collapse_updates(updates)
 
         response = updates.empty? ? nil : client.batch_update(updates)
@@ -227,7 +229,7 @@ module LpAnalytics
         end
       end
 
-      def build_row_updates(rows, existing_rows, existing_sheet_length, date, exported_at)
+      def build_row_updates(rows, existing_rows, existing_sheet_length, date, lp_identifier, exported_at)
         by_key = existing_rows.index_by(&:aggregation_key)
         empty_row_numbers = empty_row_numbers(existing_rows, existing_sheet_length)
         next_row_number = [ existing_sheet_length + 1, 2 ].max
@@ -237,15 +239,19 @@ module LpAnalytics
           if existing && existing.aggregation_date != date.iso8601
             raise SheetStructureError, "aggregation key is associated with a different date"
           end
+          if existing && existing.values.fetch(LP_IDENTIFIER_INDEX, "") != lp_identifier
+            raise SheetStructureError, "aggregation key is associated with a different LP identifier"
+          end
           row_number = existing&.row_number || empty_row_numbers.shift || next_row_number.tap { next_row_number += 1 }
           update_for(row_number: row_number, values: sheet_row_values(row, date, exported_at))
         end
       end
 
-      def build_stale_row_updates(rows, existing_rows, date)
+      def build_stale_row_updates(rows, existing_rows, date, lp_identifier)
         current_keys = rows.to_set(&:aggregation_key)
         existing_rows.filter_map do |existing|
           next unless existing.aggregation_date == date.iso8601
+          next unless existing.values.fetch(LP_IDENTIFIER_INDEX, "") == lp_identifier
           next if current_keys.include?(existing.aggregation_key)
 
           update_for(row_number: existing.row_number, values: Array.new(HEADERS.length, ""))
@@ -352,10 +358,13 @@ module LpAnalytics
         result
       end
 
-      def validate_rows!(rows, date)
+      def validate_rows!(rows, date, lp_identifier)
+        raise ArgumentError, "lp_identifier is required" if lp_identifier.blank?
+
         keys = rows.map(&:aggregation_key)
         raise DuplicateAggregationKeyError, "payload contains duplicate aggregation keys" unless keys.uniq.length == keys.length
         raise ArgumentError, "payload contains a different aggregation date" unless rows.all? { |row| row.aggregation_date == date }
+        raise ArgumentError, "payload contains a different LP identifier" unless rows.all? { |row| row.lp_identifier == lp_identifier }
       end
 
       def validate_response!(response, updates)
