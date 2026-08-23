@@ -41,6 +41,7 @@ module LpAnalytics
         result = writer_class.new(client: client, worksheet_name: settings.worksheet_name).call(
           rows: rows,
           aggregation_date: aggregation_date,
+          lp_identifier: lp_identifier,
           exported_at: now.call
         )
         completed_at = now.call

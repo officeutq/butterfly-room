@@ -17,10 +17,12 @@ class LpAnalytics::Sheets::ExportDayServiceTest < ActiveSupport::TestCase
 
   test "API通信中にtransactionを保持せず成功状態・行数・checksumを記録する" do
     transaction_states = []
+    writer_arguments = []
     initial_open_transactions = ApplicationRecord.connection.open_transactions
     service = build_service(
       rows: [ build_row ],
-      writer_action: ->(**) {
+      writer_action: ->(**arguments) {
+        writer_arguments << arguments
         transaction_states << ApplicationRecord.connection.open_transactions
         writer_result(row_count: 1)
       }
@@ -30,6 +32,7 @@ class LpAnalytics::Sheets::ExportDayServiceTest < ActiveSupport::TestCase
     export = result.export.reload
 
     assert_equal [ initial_open_transactions ], transaction_states
+    assert_equal LpAnalytics::Configuration::STORE_LP_202607, writer_arguments.sole.fetch(:lp_identifier)
     assert export.succeeded?
     assert_equal 1, export.attempt_count
     assert_equal 1, export.row_count
