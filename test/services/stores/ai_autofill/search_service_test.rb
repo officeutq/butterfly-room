@@ -149,7 +149,9 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
       call_service(data, logger:)
     end
 
-    assert_equal [ "missing_identity_evidence" ], logger.info_entries.sole.fetch(:ambiguity_reasons)
+    entry = logger.info_entries.sole
+    assert_equal [ "missing_identity_evidence" ], entry.fetch(:ambiguity_reasons)
+    assert_equal({ model: 0, web_search_sources: 1, verified: 0 }, entry.fetch(:identity_evidence_counts))
   end
 
   test "does not log ambiguity reasons outside development" do
@@ -343,6 +345,43 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
     assert_equal "渋谷区", result.fields["area"]
   end
 
+  test "accepts a store name as the value of official website evidence" do
+    data = base_data
+    data["identity_evidence"] = [
+      {
+        "kind" => "official_website",
+        "value" => "めいどりーみん 天神西通り店",
+        "source_url" => @source_url
+      }
+    ]
+    data["fields"]["area"] = candidate("福岡市中央区")
+
+    result = call_service(data, store_name: "めいどりーみん（天神西通り）")
+
+    assert_equal "partial", result.status
+    assert_equal "福岡市中央区", result.fields["area"]
+  end
+
+  test "matches sources after removing tracking query parameters and sorting the remainder" do
+    data = base_data
+    evidence_url = "https://example.com/store?id=21&lang=ja"
+    source_url = "https://example.com/store?utm_source=chatgpt.com&lang=ja&id=21"
+    data["identity_evidence"] = [
+      {
+        "kind" => "official_website",
+        "value" => "めいどりーみん 天神西通り店",
+        "source_url" => evidence_url
+      }
+    ]
+    data["fields"]["area"] = candidate("福岡市中央区", evidence_url)
+
+    result = call_service(data, sources: [ { "title" => "店舗公式", "url" => source_url } ])
+
+    assert_equal "partial", result.status
+    assert_equal "福岡市中央区", result.fields["area"]
+    assert_equal [ { "title" => "店舗公式", "url" => source_url } ], result.sources
+  end
+
   test "returns success only when all eleven fields are valid" do
     data = base_data
     data["identity_evidence"] = [ official_website_evidence ]
@@ -389,10 +428,16 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
 
   private
 
-  def call_service(data, calls: [], store_name: @store.name, logger: Logger.new(IO::NULL))
+  def call_service(
+    data,
+    calls: [],
+    store_name: @store.name,
+    logger: Logger.new(IO::NULL),
+    sources: [ { "title" => "店舗公式", "url" => @source_url } ]
+  )
     api_result = Stores::AiAutofill::ResponsesClient::Result.new(
       data:,
-      sources: [ { "title" => "店舗公式", "url" => @source_url } ],
+      sources:,
       request_id: "request-123",
       model: "gpt-5.6-terra"
     )

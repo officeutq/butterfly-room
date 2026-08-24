@@ -350,7 +350,7 @@ system promptには少なくとも次を含める。
 - ひらがな・カタカナ、全角・半角、ローマ字・英字、略称、括弧や区切り、支店表記等を考慮し、公開情報から入力された店舗または支店と同一だと判断できる
 - 入力された店舗または支店を一意に特定できず複数の有力候補が残っていない。チェーン内に別支店が存在するだけでは競合としない
 - 公式サイト、公式SNS、住所、電話番号、店舗管理ページ、または単なる一覧・検索結果ではない第三者の店舗詳細ページ等から、同一性の根拠を1件以上確認できる
-- 判断に使用した根拠を`identity_evidence`へkind、確認値、source URLとともに返す
+- 判断に使用した根拠を`identity_evidence`へkind、ページ上で確認した店舗名・住所・電話番号等の根拠内容を表すvalue、source URLとともに返す。`official_website`または`official_sns`でもvalue自体をURLに限定しない
 
 `name_match_kind`はAIが判断過程を分類するための情報であり、アプリケーションの文字列一致条件には使用しない。公式情報を優先するが、公式情報が見つからない場合は信頼できる第三者の店舗詳細情報も含めてAIが総合判断する。競合候補を排除できない場合や同一性根拠が不足する場合は`ambiguous`、該当候補自体が見つからない場合は`not_found`とする。
 
@@ -364,7 +364,7 @@ system promptには少なくとも次を含める。
 - 同一性根拠のURLがResponses APIの`web_search_call.action.sources`に含まれる
 - 候補値のsource URLが同じsources一覧に含まれる
 
-アプリケーションは`matched_name`とフォーム店舗名を文字列比較せず、`name_match_kind`や`identity_evidence.kind`を同一性の許可条件にしない。現在の電話番号、住所、公式サイトURL、公式SNS URL等との一致も確認しない。意味的な店舗同一性はAI、URL・Schema・候補値の安全性はアプリケーションが担当する。
+アプリケーションは`matched_name`とフォーム店舗名を文字列比較せず、`name_match_kind`や`identity_evidence.kind`を同一性の許可条件にしない。`identity_evidence.value`は空でない文字列であることだけを確認し、kindごとの意味や書式は再判定しない。現在の電話番号、住所、公式サイトURL、公式SNS URL等との一致も確認しない。意味的な店舗同一性はAI、URL・Schema・候補値の安全性はアプリケーションが担当する。
 
 ## 12. 情報源の扱い
 
@@ -381,7 +381,7 @@ Structured Output内の`source_urls`はモデル生成値であるため、そ�
 
 1. Responses APIの`include: ["web_search_call.action.sources"]`から実際に参照したURL一覧を取得する
 2. `http`または`https` URLだけを許可する
-3. Structured OutputのURLと参照URLを正規化して突合する
+3. Structured OutputのURLと参照URLを正規化して突合する。末尾スラッシュ、query parameter（URLの`?`以降）の順序、`utm_*`・`gclid`等の追跡用parameterだけの差は同じ参照元として扱う
 4. 一致しないURLを候補の根拠から除外する
 5. 有効な根拠URLが0件になった候補値を破棄する
 
@@ -738,6 +738,8 @@ OpenAI SDKの例外classを`ResponsesClient`で機能内の例外へ正規化し
 - error classとHTTP status
 
 development（開発環境）のアプリケーションログに限り、OpenAI SDK例外の`code`と`type`も記録する。また、結果が`ambiguous`の場合は、モデルまたはアプリケーションのどの判定で候補を拒否したかを`ambiguity_reasons`として固定コードだけで記録する。development以外では`ambiguity_reasons`をログへ含めない。
+
+`missing_identity_evidence`の切り分け用として、developmentの曖昧判定ログに限り、モデルが返した根拠数、Web Search参照元数、検証後の根拠数を`identity_evidence_counts`へ記録する。値やURL自体は記録しない。
 
 | `ambiguity_reasons` | 意味 |
 | --- | --- |
