@@ -383,19 +383,23 @@ module Stores
       end
 
       def log_error(error, started_at)
-        @logger.warn(
-          {
-            feature: "store_ai_autofill",
-            store_id: @store.id,
-            user_id: @actor.id,
-            model: ENV["OPENAI_STORE_AUTOFILL_MODEL"].to_s.strip.presence || Settings::DEFAULT_MODEL,
-            status: "error",
-            duration_ms: elapsed_ms(started_at),
-            openai_request_id: error.respond_to?(:request_id) ? error.request_id : nil,
-            error_class: error.class.name,
-            openai_status: error.respond_to?(:openai_status) ? error.openai_status : nil
-          }.compact
-        )
+        details = {
+          feature: "store_ai_autofill",
+          store_id: @store.id,
+          user_id: @actor.id,
+          model: ENV["OPENAI_STORE_AUTOFILL_MODEL"].to_s.strip.presence || Settings::DEFAULT_MODEL,
+          status: "error",
+          duration_ms: elapsed_ms(started_at),
+          openai_request_id: error.respond_to?(:request_id) ? error.request_id : nil,
+          error_class: error.class.name,
+          openai_status: error.respond_to?(:openai_status) ? error.openai_status : nil
+        }
+        if Rails.env.development?
+          details[:openai_error_code] = error.openai_code if error.respond_to?(:openai_code)
+          details[:openai_error_type] = error.openai_type if error.respond_to?(:openai_type)
+        end
+
+        @logger.warn(details.compact)
       end
 
       def elapsed_ms(started_at)

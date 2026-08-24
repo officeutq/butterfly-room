@@ -9,11 +9,19 @@ module Stores
       Result = Data.define(:data, :sources, :request_id, :model)
 
       class Error < StandardError
-        attr_reader :request_id, :openai_status
+        attr_reader :request_id, :openai_status, :openai_code, :openai_type
 
-        def initialize(message = nil, request_id: nil, openai_status: nil)
+        def initialize(
+          message = nil,
+          request_id: nil,
+          openai_status: nil,
+          openai_code: nil,
+          openai_type: nil
+        )
           @request_id = request_id
           @openai_status = openai_status
+          @openai_code = openai_code
+          @openai_type = openai_type
           super(message)
         end
       end
@@ -59,7 +67,9 @@ module Stores
         raise RateLimitedError.new(
           "OpenAI rate limit exceeded",
           request_id: error.request_id,
-          openai_status: error.status
+          openai_status: error.status,
+          openai_code: error.code,
+          openai_type: error.type
         )
       rescue OpenAI::Errors::APITimeoutError => error
         raise TimeoutError.new("OpenAI request timed out", request_id: error.request_id)
@@ -69,7 +79,9 @@ module Stores
         raise UnavailableError.new(
           "OpenAI request failed",
           request_id: error.request_id,
-          openai_status: error.status
+          openai_status: error.status,
+          openai_code: error.code,
+          openai_type: error.type
         )
       rescue JSON::ParserError, TypeError, KeyError => error
         raise InvalidResponseError, error.class.name

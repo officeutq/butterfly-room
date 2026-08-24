@@ -672,6 +672,8 @@ response受信時にモーダルを閉じたり、新しいモーダルへ差し
 
 画面へ表示する`error_code`は本機能で定義した固定値だけを許可し、取得できない値や未知の値は`unknown_error`とする。内部例外、`error_code`以外のAPI response body、prompt、API keyは画面へ出さない。
 
+development（開発環境）に限り、原因調査用としてOpenAI SDK例外の`type`、`code`、HTTP status、request IDを`development_diagnostics`で返し、エラーモーダル内へ表示する。値は200文字までとし、例外message、header全体、request / response bodyは含めない。development以外では`development_diagnostics`自体をresponseへ含めない。
+
 `success`と`partial`では、項目ごとの情報源リンクを繰り返し表示せず、重複を除いた「参照元 N件」をモーダル下部の折りたたみに集約する。反映ボタンには選択中の件数を表示し、選択が0件の場合は無効化する。
 
 モーダルは画面中央に配置し、最大幅を640px、内容全体の最大高さをおおむね画面の76%とする。候補が多い場合はheader（見出し）とfooter（操作部）を固定したままbody（候補一覧）だけをスクロールさせる。
@@ -726,6 +728,8 @@ OpenAI SDKの例外classを`ResponsesClient`で機能内の例外へ正規化し
 - 処理時間
 - OpenAI request ID
 - error classとHTTP status
+
+development（開発環境）のアプリケーションログに限り、OpenAI SDK例外の`code`と`type`も記録する。
 
 ### 20.2 記録しない情報
 

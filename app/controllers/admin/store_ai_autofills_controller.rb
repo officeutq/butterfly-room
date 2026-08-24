@@ -25,14 +25,14 @@ module Admin
       render json: result.as_json, status: :ok
     rescue Stores::AiAutofill::Settings::ConfigurationError
       render_feature_error(:service_unavailable, "configuration_error")
-    rescue Stores::AiAutofill::ResponsesClient::RateLimitedError
-      render_feature_error(:service_unavailable, "openai_rate_limited")
-    rescue Stores::AiAutofill::ResponsesClient::TimeoutError
-      render_feature_error(:gateway_timeout, "timeout")
-    rescue Stores::AiAutofill::ResponsesClient::UnavailableError
-      render_feature_error(:bad_gateway, "openai_unavailable")
-    rescue Stores::AiAutofill::ResponsesClient::InvalidResponseError
-      render_feature_error(:bad_gateway, "invalid_response")
+    rescue Stores::AiAutofill::ResponsesClient::RateLimitedError => error
+      render_feature_error(:service_unavailable, "openai_rate_limited", error:)
+    rescue Stores::AiAutofill::ResponsesClient::TimeoutError => error
+      render_feature_error(:gateway_timeout, "timeout", error:)
+    rescue Stores::AiAutofill::ResponsesClient::UnavailableError => error
+      render_feature_error(:bad_gateway, "openai_unavailable", error:)
+    rescue Stores::AiAutofill::ResponsesClient::InvalidResponseError => error
+      render_feature_error(:bad_gateway, "invalid_response", error:)
     end
 
     private
@@ -48,12 +48,33 @@ module Admin
       head :forbidden
     end
 
-    def render_feature_error(status, error_code)
-      render json: { status: "error", error_code: }, status:
+    def render_feature_error(status, error_code, error: nil)
+      body = { status: "error", error_code: }
+      diagnostics = development_diagnostics(error)
+      body[:development_diagnostics] = diagnostics if diagnostics.present?
+
+      render json: body, status:
     end
 
     def render_rate_limited
       render_feature_error(:too_many_requests, "rate_limited")
+    end
+
+    def development_diagnostics(error)
+      return unless Rails.env.development? && error
+
+      {
+        openai_type: diagnostic_value(error, :openai_type),
+        openai_code: diagnostic_value(error, :openai_code),
+        openai_status: diagnostic_value(error, :openai_status),
+        request_id: diagnostic_value(error, :request_id)
+      }.compact.presence
+    end
+
+    def diagnostic_value(error, attribute)
+      return unless error.respond_to?(attribute)
+
+      error.public_send(attribute).to_s.presence&.slice(0, 200)
     end
   end
 end

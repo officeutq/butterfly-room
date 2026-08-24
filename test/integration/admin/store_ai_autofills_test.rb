@@ -112,6 +112,62 @@ class Admin::StoreAiAutofillsTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "returns safe OpenAI diagnostics only in development" do
+    sign_in @store_admin, scope: :user
+    error = Stores::AiAutofill::ResponsesClient::RateLimitedError.new(
+      "test",
+      request_id: "request-429",
+      openai_status: 429,
+      openai_code: "rate_limit_exceeded",
+      openai_type: "tokens"
+    )
+    service = Object.new
+    service.define_singleton_method(:call) { raise error }
+    with_rails_environment("development") do
+      with_search_service(service) do
+        post admin_store_ai_autofill_path(@store), as: :json
+      end
+    end
+
+    assert_response :service_unavailable
+    assert_equal(
+      {
+        "status" => "error",
+        "error_code" => "openai_rate_limited",
+        "development_diagnostics" => {
+          "openai_type" => "tokens",
+          "openai_code" => "rate_limit_exceeded",
+          "openai_status" => "429",
+          "request_id" => "request-429"
+        }
+      },
+      response.parsed_body
+    )
+  end
+
+  test "does not return OpenAI diagnostics outside development" do
+    sign_in @store_admin, scope: :user
+    error = Stores::AiAutofill::ResponsesClient::RateLimitedError.new(
+      "test",
+      request_id: "request-429",
+      openai_status: 429,
+      openai_code: "rate_limit_exceeded",
+      openai_type: "tokens"
+    )
+    service = Object.new
+    service.define_singleton_method(:call) { raise error }
+
+    with_search_service(service) do
+      post admin_store_ai_autofill_path(@store), as: :json
+    end
+
+    assert_response :service_unavailable
+    assert_equal(
+      { "status" => "error", "error_code" => "openai_rate_limited" },
+      response.parsed_body
+    )
+  end
+
   private
 
   def with_search_result(result)
@@ -129,6 +185,16 @@ class Admin::StoreAiAutofillsTest < ActionDispatch::IntegrationTest
     yield
   ensure
     search_service_class.define_singleton_method(:new, original_constructor)
+  end
+
+  def with_rails_environment(name)
+    original_environment = Rails.method(:env)
+    environment = ActiveSupport::EnvironmentInquirer.new(name)
+    Rails.define_singleton_method(:env) { environment }
+
+    yield
+  ensure
+    Rails.define_singleton_method(:env, original_environment)
   end
 
   def partial_result

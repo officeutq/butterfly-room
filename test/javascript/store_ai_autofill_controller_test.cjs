@@ -139,6 +139,7 @@ function buildController(Controller, overrides = {}) {
       loadingTarget: new FakeNode(),
       messageTarget: new FakeNode(),
       errorCodeTarget: new FakeNode(),
+      diagnosticsTarget: new FakeNode(),
       headerCloseButtonTarget: new FakeNode("button"),
       closeButtonTarget: new FakeNode("button"),
       applyButtonTarget: new FakeNode("button"),
@@ -392,6 +393,49 @@ test("shows a safe server error code with the generic error message", async () =
   assert.equal(controller.messageTarget.textContent, "時間をおいて、もう一度お試しください。")
   assert.equal(controller.errorCodeTarget.hidden, false)
   assert.equal(controller.errorCodeTarget.textContent, "エラーコード：openai_rate_limited")
+  assert.equal(controller.diagnosticsTarget.hidden, true)
+})
+
+test("shows development diagnostics returned by the server", async () => {
+  const environment = loadController()
+  environment.setFetchImplementation(async () => ({
+    ok: false,
+    payload: {
+      status: "error",
+      error_code: "openai_rate_limited",
+      development_diagnostics: {
+        openai_type: "tokens",
+        openai_code: "rate_limit_exceeded",
+        openai_status: "429",
+        request_id: "request-429"
+      }
+    }
+  }))
+  const controller = buildController(environment.Controller, {
+    requestInFlight: false,
+    isConnected: true,
+    abortController: null,
+    timeoutId: null
+  })
+  controller.captureSnapshot = () => ({})
+  controller.renderLoading = () => {}
+  controller.modalInstance = () => ({ show() {} })
+  controller.requestHeaders = () => ({ Accept: "application/json" })
+  controller.readJson = async (response) => response.payload
+
+  await controller.search()
+
+  assert.equal(controller.diagnosticsTarget.hidden, false)
+  assert.equal(
+    controller.diagnosticsTarget.textContent,
+    [
+      "開発用診断情報",
+      "OpenAI type: tokens",
+      "OpenAI code: rate_limit_exceeded",
+      "HTTP status: 429",
+      "Request ID: request-429"
+    ].join("\n")
+  )
 })
 
 test("uses unknown_error when an error code is missing or unsupported", () => {

@@ -59,6 +59,7 @@ export default class extends Controller {
     "loading",
     "message",
     "errorCode",
+    "diagnostics",
     "candidates",
     "sourcesSection",
     "sources",
@@ -120,7 +121,7 @@ export default class extends Controller {
       const data = await this.readJson(response)
       if (!this.isConnected || this.abortController !== controller) return
       if (!response.ok || data.status === "error") {
-        this.renderState("error", data.error_code)
+        this.renderState("error", data.error_code, data.development_diagnostics)
         return
       }
 
@@ -353,6 +354,8 @@ export default class extends Controller {
     this.messageTarget.textContent = ""
     this.errorCodeTarget.hidden = true
     this.errorCodeTarget.textContent = ""
+    this.diagnosticsTarget.hidden = true
+    this.diagnosticsTarget.textContent = ""
     this.candidatesTarget.hidden = true
     this.candidatesTarget.replaceChildren()
     this.sourcesTarget.replaceChildren()
@@ -366,7 +369,7 @@ export default class extends Controller {
     this.applyButtonTarget.textContent = "フォームに反映する"
   }
 
-  renderState(state, errorCode = null) {
+  renderState(state, errorCode = null, diagnostics = null) {
     const content = {
       success: ["店舗情報の候補が見つかりました", "反映する項目を選択してください。未入力の項目は選択済みです。"],
       partial: ["店舗情報の候補が一部見つかりました", "確認できた項目だけを表示しています。反映する項目を選択してください。"],
@@ -383,12 +386,27 @@ export default class extends Controller {
     this.messageTarget.textContent = content[1]
     this.errorCodeTarget.hidden = state !== "error"
     this.errorCodeTarget.textContent = state === "error" ? `エラーコード：${this.displayErrorCode(errorCode)}` : ""
+    this.renderDiagnostics(state === "error" ? diagnostics : null)
     this.candidatesTarget.hidden = !["success", "partial"].includes(state)
     this.headerCloseButtonTarget.hidden = false
     this.closeButtonTarget.hidden = false
     this.applyButtonTarget.hidden = !["success", "partial"].includes(state)
     this.closeButtonTarget.textContent = ["success", "partial"].includes(state) ? "キャンセル" : "閉じる"
     if (["success", "partial"].includes(state)) this.updateApplyButton()
+  }
+
+  renderDiagnostics(value) {
+    const items = [
+      ["OpenAI type", value?.openai_type],
+      ["OpenAI code", value?.openai_code],
+      ["HTTP status", value?.openai_status],
+      ["Request ID", value?.request_id]
+    ].filter(([, itemValue]) => typeof itemValue === "string" && itemValue !== "")
+
+    this.diagnosticsTarget.hidden = items.length === 0
+    this.diagnosticsTarget.textContent = items.length === 0
+      ? ""
+      : `開発用診断情報\n${items.map(([label, itemValue]) => `${label}: ${itemValue}`).join("\n")}`
   }
 
   updateApplyButton() {

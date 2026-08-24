@@ -95,6 +95,33 @@ class Stores::AiAutofill::ResponsesClientTest < ActiveSupport::TestCase
     end
   end
 
+  test "preserves safe OpenAI rate limit diagnostics" do
+    error = OpenAI::Errors::RateLimitError.new(
+      url: URI("https://api.openai.com/v1/responses"),
+      status: 429,
+      headers: { "x-request-id" => "request-429" },
+      body: {
+        code: "rate_limit_exceeded",
+        type: "tokens"
+      },
+      request: nil,
+      response: nil
+    )
+
+    raised = assert_raises(Stores::AiAutofill::ResponsesClient::RateLimitedError) do
+      build_client(error).call(
+        store_search_input: {},
+        system_prompt: "system",
+        response_schema: {}
+      )
+    end
+
+    assert_equal "request-429", raised.request_id
+    assert_equal 429, raised.openai_status
+    assert_equal "rate_limit_exceeded", raised.openai_code
+    assert_equal "tokens", raised.openai_type
+  end
+
   private
 
   def build_client(response, calls: [])
