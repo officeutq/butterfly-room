@@ -1,0 +1,80 @@
+<div
+  class="modal fade store-ai-autofill-modal"
+  tabindex="-1"
+  aria-labelledby="store-ai-autofill-title"
+  aria-hidden="true"
+  data-bs-backdrop="static"
+  data-bs-keyboard="false"
+  data-store-ai-autofill-target="modal">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2
+          id="store-ai-autofill-title"
+          class="modal-title fs-5"
+          data-store-ai-autofill-target="title">
+          AI店舗情報検索
+        </h2>
+        <button
+          type="button"
+          class="btn-close"
+          aria-label="閉じる"
+          data-store-ai-autofill-target="headerCloseButton"
+          data-action="store-ai-autofill#close"></button>
+      </div>
+
+      <div class="modal-body" aria-live="polite" aria-busy="false" data-store-ai-autofill-target="body">
+        <div class="text-center py-4" data-store-ai-autofill-target="loading">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">検索中</span>
+          </div>
+          <p class="mt-3 mb-0">AIで店舗情報を検索しています</p>
+        </div>
+
+        <p class="mb-3 text-body-secondary" data-store-ai-autofill-target="message"></p>
+        <p
+          class="small text-body-secondary mb-3"
+          hidden
+          data-store-ai-autofill-target="errorCode"></p>
+        <pre
+          class="small text-body-secondary bg-body-tertiary border rounded p-3 mb-3"
+          hidden
+          data-store-ai-autofill-target="diagnostics"></pre>
+        <div
+          class="store-ai-autofill-candidates"
+          data-store-ai-autofill-target="candidates"></div>
+
+        <details
+          class="store-ai-autofill-sources"
+          hidden
+          data-store-ai-autofill-target="sourcesSection">
+          <summary>
+            参照元
+            <span data-store-ai-autofill-target="sourcesCount"></span>
+          </summary>
+          <ul
+            class="store-ai-autofill-sources__list"
+            data-store-ai-autofill-target="sources"></ul>
+        </details>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          data-store-ai-autofill-target="closeButton"
+          data-action="store-ai-autofill#close">
+          閉じる
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          hidden
+          data-store-ai-autofill-target="applyButton"
+          data-action="store-ai-autofill#apply">
+          フォームに反映する
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
