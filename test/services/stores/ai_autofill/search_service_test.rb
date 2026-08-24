@@ -24,7 +24,7 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
 
   test "returns verified candidates and sends only the allowed store input" do
     data = base_data
-    data["identity_evidence"] = [ phone_evidence ]
+    data["identity_evidence"] = [ official_website_evidence ]
     data["fields"]["area"] = candidate("渋谷区")
     calls = []
 
@@ -39,15 +39,15 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
 
     input = calls.first.fetch(:store_search_input)
     assert_equal "店舗A", input.fetch(:store_name)
-    assert_equal Stores::AiAutofill::SearchService::INPUT_FIELD_NAMES.sort, input.fetch(:existing).keys.sort
+    assert_equal [ :business_type_options, :store_name ], input.keys.sort
+    assert_equal Store::BUSINESS_TYPE_LABELS.transform_keys(&:to_s), input.fetch(:business_type_options)
     assert_not input.key?(:id)
-    assert_not input.fetch(:existing).key?("description")
-    assert_not input.fetch(:existing).key?("business_hours")
+    assert_not input.key?(:existing)
   end
 
   test "drops candidates with unverified sources and invalid social hosts" do
     data = base_data
-    data["identity_evidence"] = [ phone_evidence ]
+    data["identity_evidence"] = [ official_website_evidence ]
     data["fields"]["area"] = candidate("渋谷区")
     data["fields"]["description"] = candidate("概要", "https://invented.example/store")
     data["fields"]["x_url"] = candidate("https://malicious.example/account")
@@ -63,7 +63,7 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
   test "downgrades a conflicting match to ambiguous" do
     data = base_data
     data["conflicting_candidates_found"] = true
-    data["identity_evidence"] = [ phone_evidence ]
+    data["identity_evidence"] = [ official_website_evidence ]
     data["fields"]["area"] = candidate("渋谷区")
 
     result = call_service(data)
@@ -73,31 +73,28 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
     assert_empty result.field_sources
   end
 
-  test "downgrades a match when evidence does not match existing identity data" do
+  test "does not use saved identity data as search input or matching evidence" do
+    @store.update!(
+      phone_number: "03-9999-9999",
+      address: "誤った住所",
+      website_url: "https://wrong.example/store",
+      x_url: "https://x.com/wrong_store"
+    )
     data = base_data
-    data["identity_evidence"] = [
-      {
-        "kind" => "phone_number",
-        "value" => "03-9999-9999",
-        "source_url" => @source_url
-      }
-    ]
+    data["identity_evidence"] = [ official_website_evidence ]
+    data["fields"]["phone_number"] = candidate("03-1234-5678")
+    calls = []
 
-    result = call_service(data)
+    result = call_service(data, calls:)
 
-    assert_equal "ambiguous", result.status
+    assert_equal "partial", result.status
+    assert_equal "03-1234-5678", result.fields["phone_number"]
+    assert_not calls.first.fetch(:store_search_input).key?(:existing)
   end
 
-  test "accepts official evidence when the store has no identity helper data" do
-    @store.update!(phone_number: nil, address: nil)
+  test "accepts independently verified official evidence for the same store name" do
     data = base_data
-    data["identity_evidence"] = [
-      {
-        "kind" => "official_website",
-        "value" => "https://example.com/store",
-        "source_url" => @source_url
-      }
-    ]
+    data["identity_evidence"] = [ official_website_evidence ]
     data["fields"]["website_url"] = candidate("https://example.com/store")
 
     result = call_service(data)
@@ -106,8 +103,30 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
     assert_equal "https://example.com/store", result.fields["website_url"]
   end
 
-  test "accepts exact store name evidence from a third-party detail page when the store has no identity helper data" do
-    @store.update!(phone_number: nil, address: nil)
+  test "rejects phone evidence without independent official or store-name detail evidence" do
+    data = base_data
+    data["identity_evidence"] = [ phone_evidence ]
+    data["fields"]["phone_number"] = candidate("03-1234-5678")
+
+    result = call_service(data)
+
+    assert_equal "ambiguous", result.status
+    assert result.fields.values.all?(&:nil?)
+  end
+
+  test "rejects official evidence for a different matched store name" do
+    data = base_data
+    data["matched_name"] = "店舗B"
+    data["identity_evidence"] = [ official_website_evidence ]
+    data["fields"]["website_url"] = candidate("https://example.com/store")
+
+    result = call_service(data)
+
+    assert_equal "ambiguous", result.status
+    assert result.fields.values.all?(&:nil?)
+  end
+
+  test "accepts exact store name evidence from a third-party detail page" do
     data = base_data
     data["matched_name"] = "店 舗Ａ"
     data["identity_evidence"] = [
@@ -125,8 +144,7 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
     assert_equal "東京都渋谷区道玄坂1-2-3", result.fields["address"]
   end
 
-  test "rejects third-party evidence for a different store name when the store has no identity helper data" do
-    @store.update!(phone_number: nil, address: nil)
+  test "rejects third-party evidence for a different store name" do
     data = base_data
     data["matched_name"] = "店舗B"
     data["identity_evidence"] = [
@@ -144,8 +162,7 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
     assert result.fields.values.all?(&:nil?)
   end
 
-  test "rejects unrelated third-party evidence when the store has no identity helper data" do
-    @store.update!(phone_number: nil, address: nil)
+  test "rejects unrelated third-party evidence" do
     data = base_data
     data["identity_evidence"] = [
       {
@@ -162,7 +179,7 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
 
   test "returns success only when all eleven fields are valid" do
     data = base_data
-    data["identity_evidence"] = [ phone_evidence ]
+    data["identity_evidence"] = [ official_website_evidence ]
     values = {
       "description" => "確認できた店舗概要",
       "area" => "渋谷区",
@@ -239,6 +256,14 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
     {
       "kind" => "phone_number",
       "value" => "0312345678",
+      "source_url" => @source_url
+    }
+  end
+
+  def official_website_evidence
+    {
+      "kind" => "official_website",
+      "value" => "https://example.com/store",
       "source_url" => @source_url
     }
   end
