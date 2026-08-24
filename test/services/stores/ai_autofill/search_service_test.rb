@@ -57,7 +57,7 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
                  calls.first.dig(:response_schema, :properties, :name_match_kind, :enum)
   end
 
-  test "uses the current form store name for search input and identity matching" do
+  test "uses the current form store name for the AI search input" do
     data = base_data
     data["matched_name"] = "フォーム入力店舗"
     data["identity_evidence"] = [ official_website_evidence ]
@@ -141,17 +141,15 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
     assert_not_includes entry.to_s, @source_url
   end
 
-  test "logs the application identity rejection reason in development" do
+  test "logs a missing verified identity source in development" do
     data = base_data
-    data["matched_name"] = "店舗B"
-    data["identity_evidence"] = [ official_website_evidence ]
     logger = recording_logger
 
     with_rails_environment("development") do
       call_service(data, logger:)
     end
 
-    assert_equal [ "normalized_name_mismatch" ], logger.info_entries.sole.fetch(:ambiguity_reasons)
+    assert_equal [ "missing_identity_evidence" ], logger.info_entries.sole.fetch(:ambiguity_reasons)
   end
 
   test "does not log ambiguity reasons outside development" do
@@ -195,18 +193,18 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
     assert_equal "https://example.com/store", result.fields["website_url"]
   end
 
-  test "rejects phone evidence without independent official or store-name detail evidence" do
+  test "accepts source-linked phone evidence without rechecking its semantic meaning" do
     data = base_data
     data["identity_evidence"] = [ phone_evidence ]
     data["fields"]["phone_number"] = candidate("03-1234-5678")
 
     result = call_service(data)
 
-    assert_equal "ambiguous", result.status
-    assert result.fields.values.all?(&:nil?)
+    assert_equal "partial", result.status
+    assert_equal "03-1234-5678", result.fields["phone_number"]
   end
 
-  test "rejects official evidence for a different matched store name" do
+  test "accepts the model identity decision without comparing matched names" do
     data = base_data
     data["matched_name"] = "店舗B"
     data["identity_evidence"] = [ official_website_evidence ]
@@ -214,8 +212,8 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
 
     result = call_service(data)
 
-    assert_equal "ambiguous", result.status
-    assert result.fields.values.all?(&:nil?)
+    assert_equal "partial", result.status
+    assert_equal "https://example.com/store", result.fields["website_url"]
   end
 
   test "accepts exact store name evidence from a third-party detail page" do
@@ -236,7 +234,7 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
     assert_equal "東京都渋谷区道玄坂1-2-3", result.fields["address"]
   end
 
-  test "accepts kana brackets and terminal store suffix as a normalized store name" do
+  test "accepts kana brackets and terminal store suffix after the model matches them" do
     data = base_data
     data["matched_name"] = "メイドリーミン 天神西通り店"
     data["identity_evidence"] = [
@@ -254,7 +252,7 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
     assert_equal "福岡県福岡市中央区天神2-7-22", result.fields["address"]
   end
 
-  test "accepts an official cross-script alias only with official evidence" do
+  test "accepts an official cross-script alias with source-linked evidence" do
     data = base_data
     data["matched_name"] = "maidreamin Tenjin Nishi-dori"
     data["name_match_kind"] = "official_alias"
@@ -267,7 +265,7 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
     assert_equal "福岡県福岡市中央区天神2-7-22", result.fields["address"]
   end
 
-  test "rejects a cross-script alias supported only by third-party evidence" do
+  test "accepts a cross-script alias supported by source-linked third-party evidence" do
     data = base_data
     data["matched_name"] = "maidreamin Tenjin Nishi-dori"
     data["name_match_kind"] = "official_alias"
@@ -282,11 +280,11 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
 
     result = call_service(data, store_name: "めいどりーみん 天神西通り店")
 
-    assert_equal "ambiguous", result.status
-    assert result.fields.values.all?(&:nil?)
+    assert_equal "partial", result.status
+    assert_equal "福岡県福岡市中央区天神2-7-22", result.fields["address"]
   end
 
-  test "rejects an unconfirmed name match kind" do
+  test "does not use name match kind as an application acceptance guard" do
     data = base_data
     data["name_match_kind"] = "none"
     data["identity_evidence"] = [ official_website_evidence ]
@@ -294,7 +292,8 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
 
     result = call_service(data)
 
-    assert_equal "ambiguous", result.status
+    assert_equal "partial", result.status
+    assert_equal "渋谷区", result.fields["area"]
   end
 
   test "instructs the model to distinguish another branch from an unresolved candidate" do
@@ -306,10 +305,10 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
 
     prompt = calls.sole.fetch(:system_prompt)
     assert_includes prompt, "チェーン内の別支店が存在するだけでは競合候補にしません"
-    assert_includes prompt, "official_aliasには対象支店を直接特定できるofficial_websiteまたはofficial_snsの根拠が必須"
+    assert_includes prompt, "公開情報から同じ店舗または支店と判断できる場合はofficial_alias"
   end
 
-  test "rejects third-party evidence for a different store name" do
+  test "accepts source-linked third-party evidence without comparing its store name" do
     data = base_data
     data["matched_name"] = "店舗B"
     data["identity_evidence"] = [
@@ -323,11 +322,11 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
 
     result = call_service(data)
 
-    assert_equal "ambiguous", result.status
-    assert result.fields.values.all?(&:nil?)
+    assert_equal "partial", result.status
+    assert_equal "東京都渋谷区道玄坂1-2-3", result.fields["address"]
   end
 
-  test "rejects unrelated third-party evidence" do
+  test "accepts any source-linked identity evidence after the model matches the store" do
     data = base_data
     data["identity_evidence"] = [
       {
@@ -336,10 +335,12 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
         "source_url" => @source_url
       }
     ]
+    data["fields"]["area"] = candidate("渋谷区")
 
     result = call_service(data)
 
-    assert_equal "ambiguous", result.status
+    assert_equal "partial", result.status
+    assert_equal "渋谷区", result.fields["area"]
   end
 
   test "returns success only when all eleven fields are valid" do
