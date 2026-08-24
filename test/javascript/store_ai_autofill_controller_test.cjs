@@ -16,6 +16,7 @@ class FakeNode {
     this.hidden = false
     this.textContent = ""
     this.attributes = {}
+    this.listeners = new Map()
   }
 
   append(...children) {
@@ -28,6 +29,14 @@ class FakeNode {
 
   setAttribute(name, value) {
     this.attributes[name] = value
+  }
+
+  addEventListener(name, callback) {
+    this.listeners.set(name, callback)
+  }
+
+  dispatchEvent(event) {
+    this.listeners.get(event.type)?.(event)
   }
 }
 
@@ -124,6 +133,7 @@ function buildController(Controller, overrides = {}) {
       candidatesTarget: new FakeNode(),
       sourcesTarget: new FakeNode(),
       sourcesSectionTarget: new FakeNode(),
+      sourcesCountTarget: new FakeNode(),
       titleTarget: new FakeNode(),
       bodyTarget: new FakeNode(),
       loadingTarget: new FakeNode(),
@@ -183,6 +193,68 @@ test("checks new values by default and leaves replacements unchecked", () => {
 
   controller.snapshot = { area: "新宿区" }
   assert.equal(controller.buildCandidateRow("area", "渋谷区", []).checkbox.checked, false)
+})
+
+test("groups additions and replacements separately", () => {
+  const { Controller } = loadController()
+  const controller = buildController(Controller, {
+    snapshot: { area: "", phone_number: "03-0000-0000" }
+  })
+  controller.renderSources = () => {}
+  controller.renderState = () => {}
+
+  controller.renderResponse({
+    status: "partial",
+    fields: {
+      ...emptyFields(),
+      area: "福岡市博多区",
+      phone_number: "092-000-0000"
+    },
+    sources: []
+  })
+
+  assert.equal(controller.candidatesTarget.children.length, 2)
+  assert.equal(controller.candidatesTarget.children[0].children[0].children[0].textContent, "新しく追加される情報")
+  assert.equal(controller.candidatesTarget.children[1].children[0].children[0].textContent, "既存情報の変更候補")
+})
+
+test("updates the apply button with the selected candidate count", () => {
+  const { Controller } = loadController()
+  const controller = buildController(Controller)
+  controller.visibleCandidates = new Map([
+    ["area", { checkbox: { checked: true } }],
+    ["address", { checkbox: { checked: true } }],
+    ["phone_number", { checkbox: { checked: false } }]
+  ])
+
+  controller.updateApplyButton()
+
+  assert.equal(controller.applyButtonTarget.disabled, false)
+  assert.equal(controller.applyButtonTarget.textContent, "2項目を反映")
+
+  controller.visibleCandidates.forEach((candidate) => { candidate.checkbox.checked = false })
+  controller.updateApplyButton()
+
+  assert.equal(controller.applyButtonTarget.disabled, true)
+  assert.equal(controller.applyButtonTarget.textContent, "項目を選択してください")
+})
+
+test("shows unique sources in one collapsed section", () => {
+  const { Controller } = loadController()
+  const controller = buildController(Controller)
+  controller.sourcesSectionTarget.open = true
+
+  controller.renderSources([
+    { title: "店舗公式", url: "https://example.com/store" },
+    { title: "重複", url: "https://example.com/store" },
+    { title: "公式SNS", url: "https://x.com/example" },
+    { title: "不正", url: "javascript:alert(1)" }
+  ])
+
+  assert.equal(controller.sourcesTarget.children.length, 2)
+  assert.equal(controller.sourcesCountTarget.textContent, "2件")
+  assert.equal(controller.sourcesSectionTarget.hidden, false)
+  assert.equal(controller.sourcesSectionTarget.open, false)
 })
 
 test("shows only changed allowlisted candidates and uses no_changes when none remain", () => {

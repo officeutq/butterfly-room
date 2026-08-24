@@ -39,6 +39,7 @@ const BUSINESS_TYPE_LABELS = {
 }
 
 const URL_FIELDS = ["website_url", "x_url", "instagram_url", "tiktok_url", "youtube_url"]
+const DISCLOSURE_FIELDS = new Set(["description", ...URL_FIELDS])
 const ERROR_CODES = new Set([
   "rate_limited",
   "openai_rate_limited",
@@ -61,6 +62,7 @@ export default class extends Controller {
     "candidates",
     "sourcesSection",
     "sources",
+    "sourcesCount",
     "headerCloseButton",
     "closeButton",
     "applyButton"
@@ -186,19 +188,27 @@ export default class extends Controller {
     this.visibleCandidates = new Map()
     this.candidatesTarget.replaceChildren()
 
+    const additions = []
+    const replacements = []
+
     FIELD_NAMES.forEach((field) => {
       const value = data.fields?.[field]
       if (typeof value !== "string" || value.trim() === "") return
       if (this.valuesEqual(field, this.snapshot[field] || "", value)) return
 
-      const row = this.buildCandidateRow(
-        field,
-        value,
-        Array.isArray(data.field_sources?.[field]) ? data.field_sources[field] : []
-      )
-      this.candidatesTarget.append(row.element)
+      const row = this.buildCandidateRow(field, value)
+      const isReplacement = this.normalizedCommon(this.snapshot[field] || "") !== ""
+      const group = isReplacement ? replacements : additions
+      group.push(row.element)
       this.visibleCandidates.set(field, { value, checkbox: row.checkbox })
     })
+
+    if (additions.length > 0) {
+      this.candidatesTarget.append(this.buildCandidateGroup("新しく追加される情報", additions))
+    }
+    if (replacements.length > 0) {
+      this.candidatesTarget.append(this.buildCandidateGroup("既存情報の変更候補", replacements))
+    }
 
     this.renderSources(data.sources)
 
@@ -210,72 +220,119 @@ export default class extends Controller {
     this.renderState(data.status)
   }
 
-  buildCandidateRow(field, value, sourceUrls) {
-    const element = document.createElement("section")
-    element.className = "border rounded p-3 mb-3"
+  buildCandidateGroup(title, rows) {
+    const section = document.createElement("section")
+    section.className = "store-ai-autofill-group"
 
-    const checkWrapper = document.createElement("div")
-    checkWrapper.className = "form-check mb-2"
+    const heading = document.createElement("h3")
+    heading.className = "store-ai-autofill-group__heading"
+    heading.append(document.createTextNode(title))
+
+    const count = document.createElement("span")
+    count.className = "store-ai-autofill-group__count"
+    count.textContent = `${rows.length}件`
+    heading.append(count)
+
+    const list = document.createElement("div")
+    list.className = "store-ai-autofill-list"
+    list.append(...rows)
+    section.append(heading, list)
+    return section
+  }
+
+  buildCandidateRow(field, value) {
+    const currentValue = this.snapshot[field] || ""
+    const isReplacement = this.normalizedCommon(currentValue) !== ""
+    const element = document.createElement("section")
+    element.className = "store-ai-autofill-candidate"
 
     const checkbox = document.createElement("input")
     checkbox.type = "checkbox"
-    checkbox.className = "form-check-input"
+    checkbox.className = "form-check-input store-ai-autofill-candidate__checkbox"
     checkbox.id = `store-ai-autofill-${field}`
-    checkbox.checked = this.normalizedCommon(this.snapshot[field] || "") === ""
+    checkbox.checked = !isReplacement
+    checkbox.addEventListener("change", () => this.updateApplyButton())
+
+    const content = document.createElement("div")
+
+    const header = document.createElement("div")
+    header.className = "store-ai-autofill-candidate__header"
 
     const label = document.createElement("label")
-    label.className = "form-check-label fw-semibold"
+    label.className = "store-ai-autofill-candidate__label"
     label.htmlFor = checkbox.id
     label.textContent = FIELD_LABELS[field]
-    checkWrapper.append(checkbox, label)
+    header.append(label)
 
-    const current = document.createElement("div")
-    current.className = "small text-body-secondary mb-1"
-    current.textContent = `現在値: ${this.displayValue(field, this.snapshot[field]) || "（未入力）"}`
+    const badge = document.createElement("span")
+    badge.className = "store-ai-autofill-candidate__badge"
+    badge.textContent = isReplacement ? "変更" : "追加"
+    header.append(badge)
+    content.append(header)
 
-    const candidate = document.createElement("div")
-    candidate.className = "text-break"
-    candidate.textContent = `AI候補: ${this.displayValue(field, value)}`
+    if (isReplacement || DISCLOSURE_FIELDS.has(field)) {
+      content.append(this.buildCandidateDetails(field, currentValue, value, isReplacement))
+    } else {
+      const candidate = document.createElement("div")
+      candidate.className = "store-ai-autofill-candidate__value"
+      candidate.textContent = this.displayValue(field, value)
+      content.append(candidate)
+    }
 
-    element.append(checkWrapper, current, candidate)
-
-    const links = this.buildSourceLinks(sourceUrls)
-    if (links) element.append(links)
+    element.append(checkbox, content)
 
     return { element, checkbox }
   }
 
-  buildSourceLinks(urls) {
-    const safeUrls = urls.filter((url) => this.safeHttpUrl(url))
-    if (safeUrls.length === 0) return null
+  buildCandidateDetails(field, currentValue, candidateValue, isReplacement) {
+    const details = document.createElement("details")
+    details.className = "store-ai-autofill-candidate__details"
 
+    const summary = document.createElement("summary")
+    summary.textContent = isReplacement ? "変更内容を見る" : "候補内容を見る"
+    details.append(summary)
+
+    const comparison = document.createElement("div")
+    comparison.className = "store-ai-autofill-candidate__comparison"
+    if (isReplacement) {
+      comparison.append(this.buildComparisonValue("現在", this.displayValue(field, currentValue)))
+    }
+    comparison.append(this.buildComparisonValue("AI候補", this.displayValue(field, candidateValue)))
+    details.append(comparison)
+    return details
+  }
+
+  buildComparisonValue(label, value) {
     const wrapper = document.createElement("div")
-    wrapper.className = "small mt-2"
-    const prefix = document.createElement("span")
-    prefix.textContent = "情報源: "
-    wrapper.append(prefix)
-
-    safeUrls.forEach((url, index) => {
-      if (index > 0) wrapper.append(document.createTextNode(" / "))
-      wrapper.append(this.sourceLink(url, `情報源${index + 1}`))
-    })
+    const heading = document.createElement("span")
+    heading.className = "store-ai-autofill-candidate__comparison-label"
+    heading.textContent = label
+    const content = document.createElement("div")
+    content.className = "store-ai-autofill-candidate__comparison-value"
+    content.textContent = value
+    wrapper.append(heading, content)
     return wrapper
   }
 
   renderSources(rawSources) {
     this.sourcesTarget.replaceChildren()
     const sources = Array.isArray(rawSources) ? rawSources : []
+    const renderedUrls = new Set()
 
     sources.forEach((source) => {
       const url = source?.url
-      if (!this.safeHttpUrl(url)) return
+      if (!this.safeHttpUrl(url) || renderedUrls.has(url)) return
+      renderedUrls.add(url)
 
       const item = document.createElement("li")
       item.append(this.sourceLink(url, source?.title || url))
       this.sourcesTarget.append(item)
     })
 
-    this.sourcesSectionTarget.hidden = this.sourcesTarget.children.length === 0
+    const sourceCount = this.sourcesTarget.children.length
+    this.sourcesCountTarget.textContent = `${sourceCount}件`
+    this.sourcesSectionTarget.hidden = sourceCount === 0
+    this.sourcesSectionTarget.open = false
   }
 
   sourceLink(url, label) {
@@ -299,10 +356,14 @@ export default class extends Controller {
     this.candidatesTarget.hidden = true
     this.candidatesTarget.replaceChildren()
     this.sourcesTarget.replaceChildren()
+    this.sourcesCountTarget.textContent = ""
     this.sourcesSectionTarget.hidden = true
+    this.sourcesSectionTarget.open = false
     this.headerCloseButtonTarget.hidden = true
     this.closeButtonTarget.hidden = true
     this.applyButtonTarget.hidden = true
+    this.applyButtonTarget.disabled = false
+    this.applyButtonTarget.textContent = "フォームに反映する"
   }
 
   renderState(state, errorCode = null) {
@@ -327,6 +388,14 @@ export default class extends Controller {
     this.closeButtonTarget.hidden = false
     this.applyButtonTarget.hidden = !["success", "partial"].includes(state)
     this.closeButtonTarget.textContent = ["success", "partial"].includes(state) ? "キャンセル" : "閉じる"
+    if (["success", "partial"].includes(state)) this.updateApplyButton()
+  }
+
+  updateApplyButton() {
+    const selectedCount = Array.from(this.visibleCandidates.values())
+      .filter((candidate) => candidate.checkbox.checked).length
+    this.applyButtonTarget.disabled = selectedCount === 0
+    this.applyButtonTarget.textContent = selectedCount === 0 ? "項目を選択してください" : `${selectedCount}項目を反映`
   }
 
   valuesEqual(field, current, candidate) {
