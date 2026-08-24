@@ -10,6 +10,16 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
     end
   end
 
+  RecordingLogger = Struct.new(:info_entries, :warning_entries) do
+    def info(payload)
+      info_entries << payload
+    end
+
+    def warn(payload)
+      warning_entries << payload
+    end
+  end
+
   Actor = Data.define(:id)
 
   setup do
@@ -111,6 +121,48 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
     assert_equal "ambiguous", result.status
     assert result.fields.values.all?(&:nil?)
     assert_empty result.field_sources
+  end
+
+  test "logs model and guard ambiguity reasons only in development" do
+    data = base_data
+    data["match_status"] = "ambiguous"
+    data["conflicting_candidates_found"] = true
+    data["identity_evidence"] = [ official_website_evidence ]
+    logger = recording_logger
+
+    with_rails_environment("development") do
+      call_service(data, logger:)
+    end
+
+    entry = logger.info_entries.sole
+    assert_equal %w[model_ambiguous conflicting_candidates], entry.fetch(:ambiguity_reasons)
+    assert_equal "request-123", entry.fetch(:openai_request_id)
+    assert_not_includes entry.to_s, @store.name
+    assert_not_includes entry.to_s, @source_url
+  end
+
+  test "logs the application identity rejection reason in development" do
+    data = base_data
+    data["matched_name"] = "店舗B"
+    data["identity_evidence"] = [ official_website_evidence ]
+    logger = recording_logger
+
+    with_rails_environment("development") do
+      call_service(data, logger:)
+    end
+
+    assert_equal [ "normalized_name_mismatch" ], logger.info_entries.sole.fetch(:ambiguity_reasons)
+  end
+
+  test "does not log ambiguity reasons outside development" do
+    data = base_data
+    data["conflicting_candidates_found"] = true
+    data["identity_evidence"] = [ official_website_evidence ]
+    logger = recording_logger
+
+    call_service(data, logger:)
+
+    assert_not logger.info_entries.sole.key?(:ambiguity_reasons)
   end
 
   test "does not use saved identity data as search input or matching evidence" do
@@ -336,7 +388,7 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
 
   private
 
-  def call_service(data, calls: [], store_name: @store.name)
+  def call_service(data, calls: [], store_name: @store.name, logger: Logger.new(IO::NULL))
     api_result = Stores::AiAutofill::ResponsesClient::Result.new(
       data:,
       sources: [ { "title" => "店舗公式", "url" => @source_url } ],
@@ -350,8 +402,22 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
       actor: @actor,
       store_name:,
       responses_client: fake_client,
-      logger: Logger.new(IO::NULL)
+      logger:
     ).call
+  end
+
+  def recording_logger
+    RecordingLogger.new([], [])
+  end
+
+  def with_rails_environment(name)
+    original_environment = Rails.method(:env)
+    environment = ActiveSupport::EnvironmentInquirer.new(name)
+    Rails.define_singleton_method(:env) { environment }
+
+    yield
+  ensure
+    Rails.define_singleton_method(:env, original_environment)
   end
 
   def base_data

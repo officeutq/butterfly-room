@@ -744,7 +744,20 @@ OpenAI SDKの例外classを`ResponsesClient`で機能内の例外へ正規化し
 - OpenAI request ID
 - error classとHTTP status
 
-development（開発環境）のアプリケーションログに限り、OpenAI SDK例外の`code`と`type`も記録する。
+development（開発環境）のアプリケーションログに限り、OpenAI SDK例外の`code`と`type`も記録する。また、結果が`ambiguous`の場合は、モデルまたはアプリケーションのどの判定で候補を拒否したかを`ambiguity_reasons`として固定コードだけで記録する。development以外では`ambiguity_reasons`をログへ含めない。
+
+| `ambiguity_reasons` | 意味 |
+| --- | --- |
+| `model_ambiguous` | モデル自身が`match_status: ambiguous`を返した |
+| `conflicting_candidates` | 解消できない競合候補ありと返された |
+| `missing_identity_evidence` | source一覧との検証後に同一性根拠が残らなかった |
+| `normalized_name_mismatch` | `normalized`指定だがアプリケーションの店舗名正規化後に一致しなかった |
+| `official_alias_matches_normalized_name` | `official_alias`指定だが正規化だけで一致し、分類が矛盾した |
+| `official_alias_missing_official_evidence` | `official_alias`に公式サイトまたは公式SNSの検証済み根拠がなかった |
+| `name_match_unconfirmed` | `name_match_kind: none`で同一店舗名を確認できなかった |
+| `unsupported_identity_evidence` | 公式根拠または店舗名が一致する第三者詳細ページの根拠がなかった |
+
+`ambiguity_reasons`に店舗名、候補値、source URL、AI response bodyは含めない。OpenAI request IDと組み合わせてリクエスト単位で確認する。
 
 ### 20.2 記録しない情報
 
@@ -800,6 +813,8 @@ OpenAI公式Ruby SDKへ`Rails.logger`と`log_level: :info`を設定してよい�
 - 正規化では一致しない別名を第三者情報だけでは確定しない
 - チェーン内に別支店が存在するだけでは競合扱いせず、対象支店を一意に特定できない場合は`ambiguous`にするようpromptで指示する
 - 競合候補あり、店舗名不一致、または検証済み店舗名根拠がない`matched`を`ambiguous`にする
+- developmentでは`ambiguous`の内部判定理由コードをログへ記録し、development以外では記録しない
+- 内部判定理由ログに店舗名、候補値、source URL、AI response bodyを含めない
 - 概要1000文字、地域50文字、business type enum、SNS hostを検証する
 - incomplete、refusal、不正JSON、SDK例外を正規化する
 - promptとログに秘密情報やユーザー情報を含めない

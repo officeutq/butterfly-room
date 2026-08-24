@@ -164,7 +164,12 @@ module Stores
         if match_status == "not_found"
           return empty_result("not_found", source_map, evidence_sources)
         end
-        if match_status == "ambiguous" || !identity_confirmed?(data, evidence)
+        rejection_reason = identity_rejection_reason(data, evidence)
+        if match_status == "ambiguous" || rejection_reason
+          @ambiguity_reasons = [
+            ("model_ambiguous" if match_status == "ambiguous"),
+            rejection_reason
+          ].compact.uniq
           return empty_result("ambiguous", source_map, evidence_sources)
         end
 
@@ -262,22 +267,28 @@ module Stores
         end
       end
 
-      def identity_confirmed?(data, evidence)
-        return false if data.fetch("conflicting_candidates_found")
-        return false if evidence.empty?
-        return false unless name_match_confirmed?(data, evidence)
+      def identity_rejection_reason(data, evidence)
+        return "conflicting_candidates" if data.fetch("conflicting_candidates_found")
+        return "missing_identity_evidence" if evidence.empty?
 
-        official_identity_evidence?(evidence) || third_party_name_evidence?(data, evidence)
+        name_rejection_reason = name_match_rejection_reason(data, evidence)
+        return name_rejection_reason if name_rejection_reason
+
+        return if official_identity_evidence?(evidence) || third_party_name_evidence?(data, evidence)
+
+        "unsupported_identity_evidence"
       end
 
-      def name_match_confirmed?(data, evidence)
+      def name_match_rejection_reason(data, evidence)
         case data.fetch("name_match_kind")
         when "normalized"
-          same_store_name?(data.fetch("matched_name"))
+          "normalized_name_mismatch" unless same_store_name?(data.fetch("matched_name"))
         when "official_alias"
-          !same_store_name?(data.fetch("matched_name")) && official_identity_evidence?(evidence)
+          return "official_alias_matches_normalized_name" if same_store_name?(data.fetch("matched_name"))
+
+          "official_alias_missing_official_evidence" unless official_identity_evidence?(evidence)
         else
-          false
+          "name_match_unconfirmed"
         end
       end
 
@@ -401,17 +412,20 @@ module Stores
       end
 
       def log_result(status, started_at, model:, request_id:)
-        @logger.info(
-          {
-            feature: "store_ai_autofill",
-            store_id: @store.id,
-            user_id: @actor.id,
-            model:,
-            status:,
-            duration_ms: elapsed_ms(started_at),
-            openai_request_id: request_id
-          }.compact
-        )
+        details = {
+          feature: "store_ai_autofill",
+          store_id: @store.id,
+          user_id: @actor.id,
+          model:,
+          status:,
+          duration_ms: elapsed_ms(started_at),
+          openai_request_id: request_id
+        }
+        if Rails.env.development? && status == "ambiguous" && @ambiguity_reasons.present?
+          details[:ambiguity_reasons] = @ambiguity_reasons
+        end
+
+        @logger.info(details.compact)
       end
 
       def log_error(error, started_at)
