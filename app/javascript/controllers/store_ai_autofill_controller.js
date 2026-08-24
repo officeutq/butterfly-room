@@ -39,6 +39,15 @@ const BUSINESS_TYPE_LABELS = {
 }
 
 const URL_FIELDS = ["website_url", "x_url", "instagram_url", "tiktok_url", "youtube_url"]
+const ERROR_CODES = new Set([
+  "rate_limited",
+  "openai_rate_limited",
+  "timeout",
+  "openai_unavailable",
+  "invalid_response",
+  "configuration_error",
+  "unknown_error"
+])
 
 export default class extends Controller {
   static targets = [
@@ -48,6 +57,7 @@ export default class extends Controller {
     "body",
     "loading",
     "message",
+    "errorCode",
     "candidates",
     "sourcesSection",
     "sources",
@@ -106,15 +116,18 @@ export default class extends Controller {
         signal: controller.signal
       })
       const data = await this.readJson(response)
-      if (!response.ok || data.status === "error") throw new Error("store_ai_autofill_failed")
       if (!this.isConnected || this.abortController !== controller) return
+      if (!response.ok || data.status === "error") {
+        this.renderState("error", data.error_code)
+        return
+      }
 
       this.renderResponse(data)
     } catch (error) {
       if (!this.isConnected || this.abortController !== controller) return
       if (error?.name === "AbortError" && !timedOut) return
 
-      this.renderState("error")
+      this.renderState("error", error?.name === "AbortError" && timedOut ? "timeout" : "unknown_error")
     } finally {
       if (this.timeoutId) window.clearTimeout(this.timeoutId)
       this.timeoutId = null
@@ -166,7 +179,7 @@ export default class extends Controller {
     }
 
     if (!["success", "partial"].includes(data.status)) {
-      this.renderState("error")
+      this.renderState("error", "unknown_error")
       return
     }
 
@@ -281,6 +294,8 @@ export default class extends Controller {
     this.loadingTarget.hidden = false
     this.messageTarget.hidden = true
     this.messageTarget.textContent = ""
+    this.errorCodeTarget.hidden = true
+    this.errorCodeTarget.textContent = ""
     this.candidatesTarget.hidden = true
     this.candidatesTarget.replaceChildren()
     this.sourcesTarget.replaceChildren()
@@ -290,7 +305,7 @@ export default class extends Controller {
     this.applyButtonTarget.hidden = true
   }
 
-  renderState(state) {
+  renderState(state, errorCode = null) {
     const content = {
       success: ["店舗情報の候補が見つかりました", "反映する項目を選択してください。未入力の項目は選択済みです。"],
       partial: ["店舗情報の候補が一部見つかりました", "確認できた項目だけを表示しています。反映する項目を選択してください。"],
@@ -305,6 +320,8 @@ export default class extends Controller {
     this.loadingTarget.hidden = true
     this.messageTarget.hidden = false
     this.messageTarget.textContent = content[1]
+    this.errorCodeTarget.hidden = state !== "error"
+    this.errorCodeTarget.textContent = state === "error" ? `エラーコード：${this.displayErrorCode(errorCode)}` : ""
     this.candidatesTarget.hidden = !["success", "partial"].includes(state)
     this.headerCloseButtonTarget.hidden = false
     this.closeButtonTarget.hidden = false
@@ -361,6 +378,11 @@ export default class extends Controller {
   displayValue(field, value) {
     if (field === "business_type") return BUSINESS_TYPE_LABELS[value] || value || ""
     return value || ""
+  }
+
+  displayErrorCode(value) {
+    const code = String(value || "")
+    return ERROR_CODES.has(code) ? code : "unknown_error"
   }
 
   formField(field) {

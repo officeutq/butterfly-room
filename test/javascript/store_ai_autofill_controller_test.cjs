@@ -128,6 +128,7 @@ function buildController(Controller, overrides = {}) {
       bodyTarget: new FakeNode(),
       loadingTarget: new FakeNode(),
       messageTarget: new FakeNode(),
+      errorCodeTarget: new FakeNode(),
       headerCloseButtonTarget: new FakeNode("button"),
       closeButtonTarget: new FakeNode("button"),
       applyButtonTarget: new FakeNode("button"),
@@ -293,6 +294,41 @@ test("opens immediately and blocks a second request while a search is in flight"
   assert.equal(responseCount, 1)
   assert.equal(controller.requestInFlight, false)
   assert.equal(controller.searchButtonTarget.disabled, false)
+})
+
+test("shows a safe server error code with the generic error message", async () => {
+  const environment = loadController()
+  environment.setFetchImplementation(async () => ({
+    ok: false,
+    payload: { status: "error", error_code: "openai_rate_limited" }
+  }))
+  const controller = buildController(environment.Controller, {
+    requestInFlight: false,
+    isConnected: true,
+    abortController: null,
+    timeoutId: null
+  })
+  controller.captureSnapshot = () => ({})
+  controller.renderLoading = () => {}
+  controller.modalInstance = () => ({ show() {} })
+  controller.requestHeaders = () => ({ Accept: "application/json" })
+  controller.readJson = async (response) => response.payload
+
+  await controller.search()
+
+  assert.equal(controller.titleTarget.textContent, "検索を完了できませんでした")
+  assert.equal(controller.messageTarget.textContent, "時間をおいて、もう一度お試しください。")
+  assert.equal(controller.errorCodeTarget.hidden, false)
+  assert.equal(controller.errorCodeTarget.textContent, "エラーコード：openai_rate_limited")
+})
+
+test("uses unknown_error when an error code is missing or unsupported", () => {
+  const { Controller } = loadController()
+  const controller = buildController(Controller)
+
+  controller.renderState("error", "unexpected error details")
+
+  assert.equal(controller.errorCodeTarget.textContent, "エラーコード：unknown_error")
 })
 
 test("cleanup aborts the request and disposes the modal", () => {

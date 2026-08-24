@@ -690,9 +690,9 @@ response受信時にモーダルを閉じたり、新しいモーダルへ差し
 | `not_found` | 店舗情報を確認できなかった説明 | 閉じる |
 | `ambiguous` | 同名・類似店舗等により特定できなかった説明 | 閉じる |
 | `no_changes` | 現在値との差分がなかった説明、主要情報源 | 閉じる |
-| `error` | 検索を完了できなかった説明 | 閉じる |
+| `error` | 検索を完了できなかった汎用説明と`error_code` | 閉じる |
 
-内部例外、API response body、prompt、API keyは画面へ出さない。
+画面へ表示する`error_code`は本機能で定義した固定値だけを許可し、取得できない値や未知の値は`unknown_error`とする。内部例外、`error_code`以外のAPI response body、prompt、API keyは画面へ出さない。
 
 ### 18.3 フォーム反映
 
