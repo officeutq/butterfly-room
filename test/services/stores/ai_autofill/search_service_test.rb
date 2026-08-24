@@ -106,6 +106,60 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
     assert_equal "https://example.com/store", result.fields["website_url"]
   end
 
+  test "accepts exact store name evidence from a third-party detail page when the store has no identity helper data" do
+    @store.update!(phone_number: nil, address: nil)
+    data = base_data
+    data["matched_name"] = "店 舗Ａ"
+    data["identity_evidence"] = [
+      {
+        "kind" => "other",
+        "value" => "店 舗Ａ",
+        "source_url" => @source_url
+      }
+    ]
+    data["fields"]["address"] = candidate("東京都渋谷区道玄坂1-2-3")
+
+    result = call_service(data)
+
+    assert_equal "partial", result.status
+    assert_equal "東京都渋谷区道玄坂1-2-3", result.fields["address"]
+  end
+
+  test "rejects third-party evidence for a different store name when the store has no identity helper data" do
+    @store.update!(phone_number: nil, address: nil)
+    data = base_data
+    data["matched_name"] = "店舗B"
+    data["identity_evidence"] = [
+      {
+        "kind" => "other",
+        "value" => "店舗B",
+        "source_url" => @source_url
+      }
+    ]
+    data["fields"]["address"] = candidate("東京都渋谷区道玄坂1-2-3")
+
+    result = call_service(data)
+
+    assert_equal "ambiguous", result.status
+    assert result.fields.values.all?(&:nil?)
+  end
+
+  test "rejects unrelated third-party evidence when the store has no identity helper data" do
+    @store.update!(phone_number: nil, address: nil)
+    data = base_data
+    data["identity_evidence"] = [
+      {
+        "kind" => "other",
+        "value" => "店舗紹介ページ",
+        "source_url" => @source_url
+      }
+    ]
+
+    result = call_service(data)
+
+    assert_equal "ambiguous", result.status
+  end
+
   test "returns success only when all eleven fields are valid" do
     data = base_data
     data["identity_evidence"] = [ phone_evidence ]
