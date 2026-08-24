@@ -13,7 +13,7 @@
 
 ## 2. 目的と重要な境界
 
-登録済みの店舗名だけを検索キーとしてWeb上の公開情報を検索し、店舗情報編集フォームへ反映できる候補を提示する。既存の住所、電話番号、業態、Webサイト、SNS等は誤っている可能性がある修正対象とみなし、検索条件や店舗同一性の根拠には使用しない。
+店舗情報編集フォームへ現在入力されている店舗名だけを検索キーとしてWeb上の公開情報を検索し、同じフォームへ反映できる候補を提示する。既存の住所、電話番号、業態、Webサイト、SNS等は誤っている可能性がある修正対象とみなし、検索条件や店舗同一性の根拠には使用しない。
 
 処理の境界は次のとおりとする。
 
@@ -165,7 +165,7 @@ end
 | Helper | `admin_store_ai_autofill_path(@store)` |
 | Response | JSON |
 
-検索キーの店舗名はサーバーが`Store`から読み取る。クライアントから店舗名や候補対象値を送信せず、他店舗情報への差し替えや不要なrequest payloadを防ぐ。
+検索キーの店舗名は、AI検索ボタン押下時の`store[name]`をクライアントから送信する。サーバーは対象店舗の編集認可をrouteの`store_id`とDB上の`Store`で確認したうえで、`store[name]`だけを許可する。候補対象値や公開状態等のほかのフォーム値はrequest payloadへ含めない。
 
 ### 6.2 Controller
 
@@ -174,7 +174,7 @@ end
 1. `params[:store_id]`から`Store`を取得する
 2. system_admin、または対象店舗のadmin membershipを持つstore_adminだけを許可する
 3. Rails標準の`rate_limit`を適用する
-4. `Stores::AiAutofill::SearchService`を呼ぶ
+4. `store[name]`だけを許可し、`Stores::AiAutofill::SearchService`を呼ぶ
 5. 結果をJSONへ変換する
 6. 既知のService例外をHTTP statusへ変換する
 
@@ -274,11 +274,11 @@ client.responses.create(
 
 ### 9.1 入力項目
 
-サーバーがDBから次だけを読み取り、JSONとしてuser inputへ渡す。
+クライアントが送信した現在のフォーム店舗名と、サーバー側で定義した業態選択肢だけをJSONとしてuser inputへ渡す。
 
 ```json
 {
-  "store_name": "登録済み店舗名",
+  "store_name": "フォームへ現在入力されている店舗名",
   "business_type_options": {
     "cabaret": "キャバクラ",
     "girls_bar": "ガールズバー",
@@ -290,7 +290,9 @@ client.responses.create(
 }
 ```
 
-`business_type_options`は候補値を既存enumへ限定するための選択肢であり、現在の店舗業態ではない。店舗名以外の現在値は、過去のAI候補や誤入力を含む可能性があるためOpenAIへ送らない。これにより、誤った候補を保存した後の再検索で、その誤りが検索条件や店舗同一性判定へ再利用される自己強化を防ぐ。
+`business_type_options`は候補値を既存enumへ限定するための選択肢であり、現在の店舗業態ではない。`store_name`は前後の空白を除去し、1文字以上255文字以下だけを受け付ける。空欄または上限超過時はOpenAIへ送信せず、`422 Unprocessable Entity`と`error_code: "invalid_store_name"`を返す。
+
+店舗名以外の現在値は、過去のAI候補や誤入力を含む可能性があるためOpenAIへ送らない。これにより、誤った候補を保存した後の再検索で、その誤りが検索条件や店舗同一性判定へ再利用される自己強化を防ぐ。
 
 次はOpenAIへ送らない。
 
@@ -305,7 +307,7 @@ client.responses.create(
 
 ### 9.2 入力の扱い
 
-DB内の店舗名とWebページ本文は、プロンプトへの命令ではなく未信頼のデータとして扱う。system promptで、入力値やWebページ内に書かれた命令を無視し、店舗特定と公開情報抽出だけを行うよう指示する。
+フォームから受け取った店舗名とWebページ本文は、プロンプトへの命令ではなく未信頼のデータとして扱う。system promptで、入力値やWebページ内に書かれた命令を無視し、店舗特定と公開情報抽出だけを行うよう指示する。
 
 ## 10. プロンプト方針
 
@@ -336,13 +338,13 @@ system promptには少なくとも次を含める。
 
 現在の登録値は店舗同一性判定に使用しない。AIが過去に提示した誤った候補を保存した場合も、その値が次回検索の前提や正解として再利用されないようにする。
 
-店舗同一性は、登録店舗名と今回のWeb検索で独立して取得した公開情報だけで判定する。
+店舗同一性は、AI検索ボタン押下時のフォーム店舗名と今回のWeb検索で独立して取得した公開情報だけで判定する。
 
 ### 11.2 判定ルール
 
 次のすべてを満たすときだけ`matched`候補にできる。
 
-- `matched_name`と登録店舗名がUnicode NFKC、英字の大文字小文字、空白除去後に一致する
+- `matched_name`とフォーム店舗名がUnicode NFKC、英字の大文字小文字、空白除去後に一致する
 - 検索結果に競合する同名・類似店舗がない
 - 公式サイト、公式SNS、店舗管理ページ、または単なる一覧・検索結果ではない第三者の店舗詳細ページで店舗名を確認できる
 - 店舗名を確認したページがResponses APIの`web_search_call.action.sources`に含まれる
@@ -356,11 +358,11 @@ system promptには少なくとも次を含める。
 AIの判定だけを信頼しない。`SearchService`は次を満たさなければ結果を`ambiguous`へdowngrade（安全側の状態へ変更）する。
 
 - `matched`に1件以上の同一性根拠がある
-- `matched_name`と登録店舗名が正規化後に一致する
+- `matched_name`とフォーム店舗名が正規化後に一致する
 - 同一性根拠のURLがResponses APIの`web_search_call.action.sources`に含まれる
 - 候補値のsource URLが同じsources一覧に含まれる
 - Responseの`conflicting_candidates_found`が`false`である
-- 同一性根拠に`official_website`または`official_sns`がある、または`other`の値が登録店舗名と正規化後に一致する
+- 同一性根拠に`official_website`または`official_sns`がある、または`other`の値がフォーム店舗名と正規化後に一致する
 
 現在の電話番号、住所、公式サイトURL、公式SNS URL等との一致は確認しない。店舗名と一致しない一般的な`other`、電話番号だけ、住所だけでは同一店舗を確定しない。
 
@@ -704,6 +706,7 @@ client timeoutで接続を切っても、server側処理が即時停止すると
 
 | 原因 | HTTP status | `error_code` | 画面 |
 | --- | --- | --- | --- |
+| フォーム店舗名が空欄または255文字超過 | `422` | `invalid_store_name` | `error` |
 | Rails側rate limit | `429` | `rate_limited` | `error` |
 | `OPENAI_API_KEY`未設定等 | `503` | `configuration_error` | `error` |
 | OpenAI `RateLimitError` | `503` | `openai_rate_limited` | `error` |
@@ -747,8 +750,8 @@ OpenAI公式Ruby SDKへ`Rails.logger`と`log_level: :info`を設定してよい�
 ## 21. セキュリティと安全性
 
 - API keyはserverだけで使用し、View、JavaScript、HTML、JSONへ渡さない
-- clientから検索対象店舗を指定させず、routeの`store_id`と認可済み`Store`を使用する
-- DB値とWeb本文を未信頼データとしてpromptへ区切って渡す
+- clientからは検索対象店舗のIDを指定させず、routeの`store_id`と認可済み`Store`を使用する。フォーム店舗名は検索文字列としてだけ使用し、DBの対象店舗や認可判定には使用しない
+- フォーム値とWeb本文を未信頼データとしてpromptへ区切って渡す
 - 候補値はallowlist、型、長さ、URL host、source一致で検証する
 - candidateとsource titleは`textContent`で描画し、HTMLとして解釈しない
 - source URLは`http` / `https`だけを許可する

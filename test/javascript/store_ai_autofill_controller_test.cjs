@@ -146,7 +146,12 @@ function buildController(Controller, overrides = {}) {
       searchButtonTarget: new FakeNode("button"),
       hasSearchButtonTarget: true,
       timeoutValue: 50000,
-      urlValue: "/admin/stores/1/ai_autofill"
+      urlValue: "/admin/stores/1/ai_autofill",
+      element: {
+        querySelector(selector) {
+          return selector === '[name="store[name]"]' ? { value: "店舗A" } : null
+        }
+      }
     },
     overrides
   )
@@ -359,6 +364,10 @@ test("opens immediately and blocks a second request while a search is in flight"
   assert.equal(showCount, 1)
   assert.equal(loadingCount, 1)
   assert.equal(environment.fetchCalls.length, 1)
+  assert.deepEqual(
+    JSON.parse(environment.fetchCalls[0][1].body),
+    { store: { name: "店舗A" } }
+  )
   assert.equal(controller.searchButtonTarget.disabled, true)
 
   resolveFetch({ ok: true, payload: { status: "partial" } })
@@ -367,6 +376,32 @@ test("opens immediately and blocks a second request while a search is in flight"
   assert.equal(responseCount, 1)
   assert.equal(controller.requestInFlight, false)
   assert.equal(controller.searchButtonTarget.disabled, false)
+})
+
+test("does not request AI search when the current form store name is blank", async () => {
+  const environment = loadController()
+  let showCount = 0
+  const controller = buildController(environment.Controller, {
+    requestInFlight: false,
+    isConnected: true,
+    abortController: null,
+    timeoutId: null,
+    element: {
+      querySelector(selector) {
+        return selector === '[name="store[name]"]' ? { value: "  " } : null
+      }
+    }
+  })
+  controller.captureSnapshot = () => ({})
+  controller.modalInstance = () => ({ show() { showCount += 1 } })
+
+  await controller.search()
+
+  assert.equal(showCount, 1)
+  assert.equal(environment.fetchCalls.length, 0)
+  assert.equal(controller.titleTarget.textContent, "店舗名を確認してください")
+  assert.equal(controller.messageTarget.textContent, "店舗名を1〜255文字で入力してから、もう一度お試しください。")
+  assert.equal(controller.errorCodeTarget.textContent, "エラーコード：invalid_store_name")
 })
 
 test("shows a safe server error code with the generic error message", async () => {

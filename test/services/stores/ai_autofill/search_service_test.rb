@@ -45,6 +45,44 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
     assert_not input.key?(:existing)
   end
 
+  test "uses the current form store name for search input and identity matching" do
+    data = base_data
+    data["matched_name"] = "フォーム入力店舗"
+    data["identity_evidence"] = [ official_website_evidence ]
+    data["fields"]["area"] = candidate("渋谷区")
+    calls = []
+
+    result = call_service(data, calls:, store_name: "  フォーム入力店舗  ")
+
+    assert_equal "partial", result.status
+    assert_equal "フォーム入力店舗", calls.sole.fetch(:store_search_input).fetch(:store_name)
+    assert_equal "店舗A", @store.name
+  end
+
+  test "rejects a blank form store name before calling OpenAI" do
+    calls = []
+
+    assert_raises(Stores::AiAutofill::SearchService::InvalidStoreNameError) do
+      call_service(base_data, calls:, store_name: "  ")
+    end
+
+    assert_empty calls
+  end
+
+  test "rejects an oversized form store name before calling OpenAI" do
+    calls = []
+
+    assert_raises(Stores::AiAutofill::SearchService::InvalidStoreNameError) do
+      call_service(
+        base_data,
+        calls:,
+        store_name: "店" * (Stores::AiAutofill::SearchService::MAX_STORE_NAME_LENGTH + 1)
+      )
+    end
+
+    assert_empty calls
+  end
+
   test "drops candidates with unverified sources and invalid social hosts" do
     data = base_data
     data["identity_evidence"] = [ official_website_evidence ]
@@ -223,7 +261,7 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
 
   private
 
-  def call_service(data, calls: [])
+  def call_service(data, calls: [], store_name: @store.name)
     api_result = Stores::AiAutofill::ResponsesClient::Result.new(
       data:,
       sources: [ { "title" => "店舗公式", "url" => @source_url } ],
@@ -235,6 +273,7 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
     Stores::AiAutofill::SearchService.new(
       store: @store,
       actor: @actor,
+      store_name:,
       responses_client: fake_client,
       logger: Logger.new(IO::NULL)
     ).call

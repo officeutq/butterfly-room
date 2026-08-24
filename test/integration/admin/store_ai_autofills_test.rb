@@ -23,10 +23,11 @@ class Admin::StoreAiAutofillsTest < ActionDispatch::IntegrationTest
   test "store admin can search its store without changing the database" do
     sign_in @store_admin, scope: :user
     original_attributes = @store.attributes
+    initialization_calls = []
 
-    with_search_result(partial_result) do
+    with_search_result(partial_result, initialization_calls:) do
       post admin_store_ai_autofill_path(@store),
-           params: { store: { name: "改ざん名", published: true } },
+           params: { store: { name: "フォーム入力店舗", published: true } },
            as: :json
     end
 
@@ -34,6 +35,10 @@ class Admin::StoreAiAutofillsTest < ActionDispatch::IntegrationTest
     body = response.parsed_body
     assert_equal "partial", body.fetch("status")
     assert_equal "渋谷区", body.dig("fields", "area")
+    assert_equal "フォーム入力店舗", initialization_calls.sole.fetch(:store_name)
+    assert_equal @store, initialization_calls.sole.fetch(:store)
+    assert_equal @store_admin, initialization_calls.sole.fetch(:actor)
+    assert_not initialization_calls.sole.key?(:published)
     assert_equal original_attributes, @store.reload.attributes
   end
 
@@ -91,6 +96,7 @@ class Admin::StoreAiAutofillsTest < ActionDispatch::IntegrationTest
   end
 
   {
+    Stores::AiAutofill::SearchService::InvalidStoreNameError => [ :unprocessable_entity, "invalid_store_name" ],
     Stores::AiAutofill::Settings::ConfigurationError => [ :service_unavailable, "configuration_error" ],
     Stores::AiAutofill::ResponsesClient::RateLimitedError => [ :service_unavailable, "openai_rate_limited" ],
     Stores::AiAutofill::ResponsesClient::TimeoutError => [ :gateway_timeout, "timeout" ],
@@ -170,17 +176,20 @@ class Admin::StoreAiAutofillsTest < ActionDispatch::IntegrationTest
 
   private
 
-  def with_search_result(result)
+  def with_search_result(result, initialization_calls: nil)
     service = Object.new
     service.define_singleton_method(:call) { result }
 
-    with_search_service(service) { yield }
+    with_search_service(service, initialization_calls:) { yield }
   end
 
-  def with_search_service(service)
+  def with_search_service(service, initialization_calls: nil)
     search_service_class = Stores::AiAutofill::SearchService
     original_constructor = search_service_class.method(:new)
-    search_service_class.define_singleton_method(:new) { |**| service }
+    search_service_class.define_singleton_method(:new) do |**arguments|
+      initialization_calls << arguments if initialization_calls
+      service
+    end
 
     yield
   ensure

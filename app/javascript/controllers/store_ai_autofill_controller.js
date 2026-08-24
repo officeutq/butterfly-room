@@ -40,8 +40,10 @@ const BUSINESS_TYPE_LABELS = {
 
 const URL_FIELDS = ["website_url", "x_url", "instagram_url", "tiktok_url", "youtube_url"]
 const DISCLOSURE_FIELDS = new Set(["description", ...URL_FIELDS])
+const MAX_STORE_NAME_LENGTH = 255
 const ERROR_CODES = new Set([
   "rate_limited",
+  "invalid_store_name",
   "openai_rate_limited",
   "timeout",
   "openai_unavailable",
@@ -96,6 +98,15 @@ export default class extends Controller {
     event?.preventDefault()
     if (this.requestInFlight) return
 
+    const storeName = this.storeNameValue()
+    if (storeName === "" || [...storeName].length > MAX_STORE_NAME_LENGTH) {
+      this.snapshot = this.captureSnapshot()
+      this.renderLoading()
+      this.modalInstance().show()
+      this.renderState("error", "invalid_store_name")
+      return
+    }
+
     this.requestInFlight = true
     this.searchButtonTarget.disabled = true
     this.snapshot = this.captureSnapshot()
@@ -115,7 +126,7 @@ export default class extends Controller {
         method: "POST",
         headers: this.requestHeaders(),
         credentials: "same-origin",
-        body: "{}",
+        body: JSON.stringify({ store: { name: storeName } }),
         signal: controller.signal
       })
       const data = await this.readJson(response)
@@ -370,14 +381,17 @@ export default class extends Controller {
   }
 
   renderState(state, errorCode = null, diagnostics = null) {
+    const errorContent = errorCode === "invalid_store_name"
+      ? ["店舗名を確認してください", "店舗名を1〜255文字で入力してから、もう一度お試しください。"]
+      : ["検索を完了できませんでした", "時間をおいて、もう一度お試しください。"]
     const content = {
       success: ["店舗情報の候補が見つかりました", "反映する項目を選択してください。未入力の項目は選択済みです。"],
       partial: ["店舗情報の候補が一部見つかりました", "確認できた項目だけを表示しています。反映する項目を選択してください。"],
       not_found: ["店舗情報を確認できませんでした", "公開情報から対象店舗を確認できませんでした。店舗名や現在の登録情報をご確認ください。"],
       ambiguous: ["店舗を特定できませんでした", "同名・類似店舗などがあり、対象店舗を安全に特定できませんでした。"],
       no_changes: ["変更候補はありません", "現在のフォーム値と異なる候補はありませんでした。"],
-      error: ["検索を完了できませんでした", "時間をおいて、もう一度お試しください。"],
-    }[state] || ["検索を完了できませんでした", "時間をおいて、もう一度お試しください。"]
+      error: errorContent,
+    }[state] || errorContent
 
     this.titleTarget.textContent = content[0]
     this.bodyTarget.setAttribute("aria-busy", "false")
@@ -470,6 +484,10 @@ export default class extends Controller {
   displayErrorCode(value) {
     const code = String(value || "")
     return ERROR_CODES.has(code) ? code : "unknown_error"
+  }
+
+  storeNameValue() {
+    return this.element.querySelector('[name="store[name]"]')?.value?.trim() || ""
   }
 
   formField(field) {

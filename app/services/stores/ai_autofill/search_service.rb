@@ -5,6 +5,7 @@ require "uri"
 module Stores
   module AiAutofill
     class SearchService
+      MAX_STORE_NAME_LENGTH = 255
       FIELD_NAMES = %w[
         description
         area
@@ -18,6 +19,8 @@ module Stores
         tiktok_url
         youtube_url
       ].freeze
+      class InvalidStoreNameError < StandardError; end
+
       IDENTITY_KINDS = %w[official_website official_sns address phone_number other].freeze
       URL_FIELDS = %w[website_url x_url instagram_url tiktok_url youtube_url].freeze
       SOCIAL_HOSTS = {
@@ -38,15 +41,17 @@ module Stores
         end
       end
 
-      def initialize(store:, actor:, responses_client: nil, logger: Rails.logger)
+      def initialize(store:, actor:, store_name:, responses_client: nil, logger: Rails.logger)
         @store = store
         @actor = actor
+        @store_name = store_name.to_s.strip
         @responses_client = responses_client
         @logger = logger
       end
 
       def call
         started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        validate_store_name!
         api_result = responses_client.call(
           store_search_input:,
           system_prompt:,
@@ -66,9 +71,15 @@ module Stores
         @responses_client ||= ResponsesClient.new
       end
 
+      def validate_store_name!
+        return if @store_name.present? && @store_name.length <= MAX_STORE_NAME_LENGTH
+
+        raise InvalidStoreNameError, "Store name is required and must be at most #{MAX_STORE_NAME_LENGTH} characters"
+      end
+
       def store_search_input
         {
-          store_name: @store.name,
+          store_name: @store_name,
           business_type_options: Store::BUSINESS_TYPE_LABELS.transform_keys(&:to_s)
         }
       end
@@ -267,7 +278,7 @@ module Stores
       end
 
       def same_store_name?(value)
-        normalized_store_name(value).present? && normalized_store_name(value) == normalized_store_name(@store.name)
+        normalized_store_name(value).present? && normalized_store_name(value) == normalized_store_name(@store_name)
       end
 
       def validated_fields(raw_fields, source_map)

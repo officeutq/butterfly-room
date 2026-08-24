@@ -19,10 +19,13 @@ module Admin
     def create
       result = Stores::AiAutofill::SearchService.new(
         store: @store,
-        actor: current_user
+        actor: current_user,
+        store_name: ai_autofill_params[:name]
       ).call
 
       render json: result.as_json, status: :ok
+    rescue Stores::AiAutofill::SearchService::InvalidStoreNameError
+      render_feature_error(:unprocessable_entity, "invalid_store_name")
     rescue Stores::AiAutofill::Settings::ConfigurationError
       render_feature_error(:service_unavailable, "configuration_error")
     rescue Stores::AiAutofill::ResponsesClient::RateLimitedError => error
@@ -46,6 +49,13 @@ module Admin
       return if admin_membership_exists_for_store?(@store.id)
 
       head :forbidden
+    end
+
+    def ai_autofill_params
+      store_params = params[:store]
+      return ActionController::Parameters.new unless store_params.respond_to?(:permit)
+
+      store_params.permit(:name)
     end
 
     def render_feature_error(status, error_code, error: nil)
