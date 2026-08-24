@@ -27,7 +27,7 @@ class Admin::StoreAiAutofillsTest < ActionDispatch::IntegrationTest
 
     with_search_result(partial_result, initialization_calls:) do
       post admin_store_ai_autofill_path(@store),
-           params: { store: { name: "フォーム入力店舗", published: true } },
+           params: { store_ai_autofill: { store_name: "フォーム入力店舗", published: true } },
            as: :json
     end
 
@@ -40,6 +40,16 @@ class Admin::StoreAiAutofillsTest < ActionDispatch::IntegrationTest
     assert_equal @store_admin, initialization_calls.sole.fetch(:actor)
     assert_not initialization_calls.sole.key?(:published)
     assert_equal original_attributes, @store.reload.attributes
+  end
+
+  test "filters the AI search payload from request logs" do
+    filter = ActiveSupport::ParameterFilter.new(Rails.application.config.filter_parameters)
+
+    filtered = filter.filter(
+      "store_ai_autofill" => { "store_name" => "ログへ出してはいけない店舗名" }
+    )
+
+    assert_equal "[FILTERED]", filtered.fetch("store_ai_autofill")
   end
 
   test "store admin cannot search another store" do

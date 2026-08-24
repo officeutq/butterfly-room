@@ -126,7 +126,7 @@ export default class extends Controller {
         method: "POST",
         headers: this.requestHeaders(),
         credentials: "same-origin",
-        body: JSON.stringify({ store: { name: storeName } }),
+        body: JSON.stringify({ store_ai_autofill: { store_name: storeName } }),
         signal: controller.signal
       })
       const data = await this.readJson(response)

@@ -43,6 +43,8 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
     assert_equal Store::BUSINESS_TYPE_LABELS.transform_keys(&:to_s), input.fetch(:business_type_options)
     assert_not input.key?(:id)
     assert_not input.key?(:existing)
+    assert_equal %w[normalized official_alias none],
+                 calls.first.dig(:response_schema, :properties, :name_match_kind, :enum)
   end
 
   test "uses the current form store name for search input and identity matching" do
@@ -182,6 +184,79 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
     assert_equal "東京都渋谷区道玄坂1-2-3", result.fields["address"]
   end
 
+  test "accepts kana brackets and terminal store suffix as a normalized store name" do
+    data = base_data
+    data["matched_name"] = "メイドリーミン 天神西通り店"
+    data["identity_evidence"] = [
+      {
+        "kind" => "other",
+        "value" => "メイドリーミン 天神西通り店",
+        "source_url" => @source_url
+      }
+    ]
+    data["fields"]["address"] = candidate("福岡県福岡市中央区天神2-7-22")
+
+    result = call_service(data, store_name: "めいどりーみん（天神西通り）")
+
+    assert_equal "partial", result.status
+    assert_equal "福岡県福岡市中央区天神2-7-22", result.fields["address"]
+  end
+
+  test "accepts an official cross-script alias only with official evidence" do
+    data = base_data
+    data["matched_name"] = "maidreamin Tenjin Nishi-dori"
+    data["name_match_kind"] = "official_alias"
+    data["identity_evidence"] = [ official_website_evidence ]
+    data["fields"]["address"] = candidate("福岡県福岡市中央区天神2-7-22")
+
+    result = call_service(data, store_name: "めいどりーみん 天神西通り店")
+
+    assert_equal "partial", result.status
+    assert_equal "福岡県福岡市中央区天神2-7-22", result.fields["address"]
+  end
+
+  test "rejects a cross-script alias supported only by third-party evidence" do
+    data = base_data
+    data["matched_name"] = "maidreamin Tenjin Nishi-dori"
+    data["name_match_kind"] = "official_alias"
+    data["identity_evidence"] = [
+      {
+        "kind" => "other",
+        "value" => "maidreamin Tenjin Nishi-dori",
+        "source_url" => @source_url
+      }
+    ]
+    data["fields"]["address"] = candidate("福岡県福岡市中央区天神2-7-22")
+
+    result = call_service(data, store_name: "めいどりーみん 天神西通り店")
+
+    assert_equal "ambiguous", result.status
+    assert result.fields.values.all?(&:nil?)
+  end
+
+  test "rejects an unconfirmed name match kind" do
+    data = base_data
+    data["name_match_kind"] = "none"
+    data["identity_evidence"] = [ official_website_evidence ]
+    data["fields"]["area"] = candidate("渋谷区")
+
+    result = call_service(data)
+
+    assert_equal "ambiguous", result.status
+  end
+
+  test "instructs the model to distinguish another branch from an unresolved candidate" do
+    calls = []
+    data = base_data
+    data["identity_evidence"] = [ official_website_evidence ]
+
+    call_service(data, calls:)
+
+    prompt = calls.sole.fetch(:system_prompt)
+    assert_includes prompt, "チェーン内の別支店が存在するだけでは競合候補にしません"
+    assert_includes prompt, "official_aliasには対象支店を直接特定できるofficial_websiteまたはofficial_snsの根拠が必須"
+  end
+
   test "rejects third-party evidence for a different store name" do
     data = base_data
     data["matched_name"] = "店舗B"
@@ -283,6 +358,7 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
     {
       "match_status" => "matched",
       "matched_name" => "店舗A",
+      "name_match_kind" => "normalized",
       "conflicting_candidates_found" => false,
       "identity_evidence" => [],
       "fields" => Stores::AiAutofill::SearchService::FIELD_NAMES.index_with do

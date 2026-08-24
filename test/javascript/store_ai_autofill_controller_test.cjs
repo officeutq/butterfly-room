@@ -366,7 +366,7 @@ test("opens immediately and blocks a second request while a search is in flight"
   assert.equal(environment.fetchCalls.length, 1)
   assert.deepEqual(
     JSON.parse(environment.fetchCalls[0][1].body),
-    { store: { name: "店舗A" } }
+    { store_ai_autofill: { store_name: "店舗A" } }
   )
   assert.equal(controller.searchButtonTarget.disabled, true)
 

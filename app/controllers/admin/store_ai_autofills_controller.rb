@@ -20,7 +20,7 @@ module Admin
       result = Stores::AiAutofill::SearchService.new(
         store: @store,
         actor: current_user,
-        store_name: ai_autofill_params[:name]
+        store_name: ai_autofill_params[:store_name]
       ).call
 
       render json: result.as_json, status: :ok
@@ -52,10 +52,10 @@ module Admin
     end
 
     def ai_autofill_params
-      store_params = params[:store]
-      return ActionController::Parameters.new unless store_params.respond_to?(:permit)
+      search_params = params[:store_ai_autofill]
+      return ActionController::Parameters.new unless search_params.respond_to?(:permit)
 
-      store_params.permit(:name)
+      search_params.permit(:store_name)
     end
 
     def render_feature_error(status, error_code, error: nil)
