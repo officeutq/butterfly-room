@@ -12,5 +12,6 @@ Rails.application.config.filter_parameters += [
   :lp_analytics_event,
   :lp_analytics_visit_id,
   :store_registration,
-  :store_contact_submission
+  :store_contact_submission,
+  :store_ai_autofill
 ]
