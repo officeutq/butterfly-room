@@ -10,6 +10,16 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
     clear_performed_jobs
   end
 
+  test "new registration identifies the email as the store administrator email" do
+    get stores_new_registration_path(ref: "1001")
+
+    assert_response :success
+    assert_select "label[for='store_registration_email']",
+      text: "店舗管理者のメールアドレス",
+      count: 1
+    assert_select "input#store_registration_email[name='store_registration[email]'][type='email']", count: 1
+  end
+
   test "new registration falls back to current store LP when from is missing" do
     get stores_new_registration_path(ref: "1001")
 
