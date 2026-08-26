@@ -8,6 +8,10 @@ class PasswordResetEditTest < ActionDispatch::IntegrationTest
     @other_user = User.create!(email: "password-other@example.com", password: "other-password", role: :customer)
   end
 
+  test "password setup and reset URLs are valid for 48 hours" do
+    assert_equal 48.hours, User.reset_password_within
+  end
+
   test "guest can open a valid password setup URL" do
     token = @target.send(:set_reset_password_token)
 
@@ -69,7 +73,7 @@ class PasswordResetEditTest < ActionDispatch::IntegrationTest
     token = @target.send(:set_reset_password_token)
     sign_in @other_user, scope: :user
 
-    travel 7.hours do
+    travel 49.hours do
       get new_user_password_path(reset_password_token: token)
     end
 
@@ -117,6 +121,23 @@ class PasswordResetEditTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "target user can set a new password within 48 hours" do
+    token = @target.send(:set_reset_password_token)
+
+    travel 47.hours do
+      patch user_password_path, params: {
+        user: {
+          reset_password_token: token,
+          password: "new-password-within-48-hours",
+          password_confirmation: "new-password-within-48-hours"
+        }
+      }
+    end
+
+    assert_response :redirect
+    assert @target.reload.valid_password?("new-password-within-48-hours")
+  end
+
   test "invalid and expired tokens cannot change the password" do
     patch user_password_path, params: {
       user: {
@@ -130,7 +151,7 @@ class PasswordResetEditTest < ActionDispatch::IntegrationTest
     assert @target.reload.valid_password?("old-password")
 
     token = @target.send(:set_reset_password_token)
-    travel 7.hours do
+    travel 49.hours do
       patch user_password_path, params: {
         user: {
           reset_password_token: token,

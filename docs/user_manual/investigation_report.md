@@ -133,7 +133,7 @@
 
 ### 招待フロー
 
-- cast 招待と store_admin 招待は、24時間・ワンタイムです。
+- cast 招待と store_admin 招待は、1週間・ワンタイムです。
 - cast 招待承認では、`StoreMembership`、`Booth`、IVS Stage、`BoothCast` が作成されます。
 - store_admin 招待承認では、`StoreMembership` が作成され、`current_store` が招待対象店舗になります。
 - role が違うユーザーでは招待承認できません。

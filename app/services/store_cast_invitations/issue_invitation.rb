@@ -25,7 +25,7 @@ module StoreCastInvitations
           store: @store,
           invited_by_user: @invited_by_user,
           token_digest: digest,
-          expires_at: 24.hours.from_now,
+          expires_at: 1.week.from_now,
           note: @note.presence
         )
       end

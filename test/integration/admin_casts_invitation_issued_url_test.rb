@@ -49,7 +49,7 @@ class AdminCastsInvitationIssuedUrlTest < ActionDispatch::IntegrationTest
       store: @store,
       invited_by_user: @store_admin,
       token_digest: StoreCastInvitation.digest_for(StoreCastInvitation.generate_token),
-      expires_at: 24.hours.from_now,
+      expires_at: 1.week.from_now,
       note: nil,
       issued_url: nil
     )
@@ -65,7 +65,7 @@ class AdminCastsInvitationIssuedUrlTest < ActionDispatch::IntegrationTest
       store: @store,
       invited_by_user: @store_admin,
       token_digest: StoreAdminInvitation.digest_for(StoreAdminInvitation.generate_token),
-      expires_at: 24.hours.from_now,
+      expires_at: 1.week.from_now,
       issued_url: nil
     )
 

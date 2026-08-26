@@ -8,7 +8,11 @@ class StoreAdminInvitationFlowTest < ActionDispatch::IntegrationTest
     inviter = User.create!(email: "inviter_admin@example.com", password: "password", role: :store_admin)
     StoreMembership.create!(store: store, user: inviter, membership_role: :admin)
 
-    result = StoreAdminInvitations::IssueInvitation.call!(store: store, invited_by_user: inviter)
+    result = nil
+    freeze_time do
+      result = StoreAdminInvitations::IssueInvitation.call!(store: store, invited_by_user: inviter)
+      assert_equal 1.week.from_now, result.invitation.expires_at
+    end
     token = result.token
 
     get store_admin_invitation_path(token)
