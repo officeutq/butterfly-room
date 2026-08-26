@@ -37,7 +37,7 @@ class StoreAdminRegistrationMailerTest < ActionMailer::TestCase
       assert_includes body, "#{@actor.display_name}によって"
       assert_not_includes body, "営業支援会社によって"
       assert_includes body, "/users/password/edit?reset_password_token="
-      assert_includes body, "有効期限は、発行から6時間"
+      assert_includes body, "有効期限は、発行から48時間"
       assert_includes body, "/users/password/new?reset_password_token="
       assert_includes body, "新しいパスワード設定メールを再送"
       assert_includes body, "本メールは送信専用です"
@@ -80,7 +80,7 @@ class StoreAdminRegistrationMailerTest < ActionMailer::TestCase
       assert_includes body, @store.name
       assert_includes body, "/users/sign_in"
       assert_includes body, "/users/password/edit?reset_password_token="
-      assert_includes body, "有効期限は発行から6時間"
+      assert_includes body, "有効期限は発行から48時間"
       assert_includes body, "/users/password/new?reset_password_token="
       assert_includes body, "新しいパスワード設定メールを再送"
       assert_includes body, "振込先口座"

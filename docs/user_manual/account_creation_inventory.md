@@ -42,7 +42,7 @@
   - `app/views/devise/passwords/edit.html.erb`
   - `app/views/devise/mailer/reset_password_instructions.*.erb`
 - 有効期限:
-  - `config/initializers/devise.rb` の `config.reset_password_within = 6.hours`
+  - `config/initializers/devise.rb` の `config.reset_password_within = 48.hours`
 
 ### メール確認の有無
 
@@ -53,7 +53,7 @@
 ### 招待制の有無
 
 - `cast` と追加の `store_admin` は招待経由の登録・承認フローがあります。
-- 招待は 24 時間・ワンタイムです。
+- 招待は 1 週間・ワンタイムです。
 - 対象:
   - `StoreCastInvitation`
   - `StoreAdminInvitation`

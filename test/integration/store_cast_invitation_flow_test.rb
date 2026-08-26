@@ -21,7 +21,11 @@ class StoreCastInvitationFlowTest < ActionDispatch::IntegrationTest
     inviter = User.create!(email: "inviter@example.com", password: "password", role: :store_admin)
     StoreMembership.create!(store: store, user: inviter, membership_role: :admin)
 
-    result = StoreCastInvitations::IssueInvitation.call!(store: store, invited_by_user: inviter, note: "note")
+    result = nil
+    freeze_time do
+      result = StoreCastInvitations::IssueInvitation.call!(store: store, invited_by_user: inviter, note: "note")
+      assert_equal 1.week.from_now, result.invitation.expires_at
+    end
     token = result.token
 
     # 👇 ここが変更ポイント
