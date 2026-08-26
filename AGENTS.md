@@ -91,6 +91,18 @@ chore/内容
 
 ただし、ユーザーが「調査のみ」「コミットしない」「push しない」「PR を作らない」と明示した場合は、その指示を優先する。
 
+## Issue作成ルール
+
+親Epic+子Issueで作成する
+
+* Projects：Butterfly Room Board
+* Milestone：フェーズ2
+* Epicのラベル：epic
+* 子Issueのラベル：適宜選んで
+* 子IssueのParent issue：親Epicを指定
+
+既存Issueの書式と親子関係の付け方を確認してから作成する
+
 ## Pull Request 作成ルール
 
 Pull Request 作成時は、まずローカルの `gh` CLI（GitHub 操作用コマンド）の認証を利用すること。
