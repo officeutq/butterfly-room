@@ -237,7 +237,9 @@ Rails.application.routes.draw do
     resources :users, only: %i[index new create edit update destroy]
     resources :effects, only: %i[index new create edit update]
     resources :notifications, only: %i[index new create edit update]
-    resources :store_contact_submissions, only: %i[index show]
+    resources :store_contact_submissions, only: %i[index show] do
+      post :resend_admin_notification, on: :member
+    end
     get "lp_analytics", to: "lp_analytics#index", as: :lp_analytics
     get "lp_analytics/visits/:public_id", to: "lp_analytics#show", as: :lp_analytics_visit
     resources :support_inquiries, only: %i[index show update] do

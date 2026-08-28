@@ -2,6 +2,17 @@
 
 <h1>店舗LPお問い合わせ管理</h1>
 
+<% if @admin_notification_email.present? %>
+  <div class="alert alert-info">
+    管理者宛メールの現在の送信先:
+    <strong class="text-break"><%= @admin_notification_email %></strong>
+  </div>
+<% else %>
+  <div class="alert alert-warning">
+    <code><%= StoreContactSubmissionMailer::ADMIN_EMAIL_ENV_KEY %></code> が未設定のため、管理者宛メールを再送できません。
+  </div>
+<% end %>
+
 <% if @store_contact_submissions.blank? %>
   <div class="alert alert-secondary">
     表示できる店舗LPお問い合わせはありません。
@@ -19,6 +30,21 @@
               <%= link_to "詳細",
                     system_admin_store_contact_submission_path(store_contact_submission),
                     class: "btn btn-outline-secondary btn-sm" %>
+              <% if @admin_notification_email.present? %>
+                <%= button_to "管理者宛メールを再送",
+                      resend_admin_notification_system_admin_store_contact_submission_path(store_contact_submission),
+                      method: :post,
+                      class: "btn btn-outline-primary btn-sm",
+                      data: {
+                        turbo_confirm: "#{store_contact_submission.store_name}（#{store_contact_submission.name}）のお問い合わせを #{@admin_notification_email} へ再送します。よろしいですか？",
+                        turbo_submits_with: "再送受付中…"
+                      } %>
+              <% else %>
+                <%= button_tag "管理者宛メールを再送",
+                      type: "button",
+                      class: "btn btn-outline-primary btn-sm",
+                      disabled: true %>
+              <% end %>
             </div>
           </div>
 
