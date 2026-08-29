@@ -1,0 +1,9 @@
+<turbo-frame id="comment_form">
+  <%= link_to guest_auth_prompt_path,
+        class: "viewer-guest-comment-prompt text-decoration-none",
+        data: { turbo_frame: "modal" },
+        aria: { label: "ログインしてコメントする" } do %>
+    <span class="form-control form-control-sm viewer-guest-comment-placeholder">コメント…</span>
+    <span class="btn btn-primary btn-sm">送信</span>
+  <% end %>
+</turbo-frame>

@@ -32,10 +32,11 @@
 - 映像・音声を publish する責務を持つ
 - 配信開始 / 終了の主体
 
-### customer / admin（視聴者・管理者）
+### 未ログイン / customer / admin（視聴者・管理者）
 - **viewer**
 - 映像・音声を subscribe する責務を持つ
 - 配信開始 / 終了を制御しない
+- 未ログインは公開店舗のlive / awayだけを購読でき、在室・視聴者数には含めない
 
 ※ Phase1 では viewer → publisher の昇格は行わない  
 ※ viewer は複数を許容する（本番はIVSによりスケールさせる）
@@ -169,6 +170,9 @@ IVS SDK のイベントとして、最低限以下の概念を扱う。
   * `booth.status` が `live` または `away` のときのみ join 可能
   * `standby` は **join 不可**
   * `stream_session.ivs_stage_arn` が空の場合は **409 stage_not_bound**
+  * 未ログインは公開店舗のactive boothに紐づくstream_sessionに限り、`SUBSCRIBE` capabilityだけを持つtokenを取得可能
+  * 未ログインtokenのattributesには `user_id` を含めず、発行APIにはsession単位のrate limit（発行頻度制限）を適用する
+  * BAN対象customerは従来どおり **403 forbidden** とする
 
     * viewer 側のトリガで Stage を生成させない（事故防止）
     * viewer role では Stage ensure（作成）を **行わない**
@@ -196,6 +200,7 @@ IVS SDK のイベントとして、最低限以下の概念を扱う。
   * 409 `not_joinable`：join 条件を満たさない（current_session 不一致、viewer が standby など）
   * 409 `stage_not_bound`：viewer で Stage 未準備（ivs_stage_arn 空）
   * 403 `forbidden`：権限不足（サービス側の認可）
+  * 429 `rate_limited`：未ログインviewerの発行頻度超過
 
 ### Stage 作成（EnsureIvsStageService）の責務分離
 

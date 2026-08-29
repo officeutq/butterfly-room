@@ -4,6 +4,8 @@ class IvsParticipantTokensTest < ActionDispatch::IntegrationTest
   include Devise::Test::IntegrationHelpers
 
   setup do
+    StreamSessions::IvsParticipantTokensController::GUEST_VIEWER_RATE_LIMIT_STORE.clear
+
     # --- users ---
     @cast     = User.create!(email: "cast@example.com",     password: "password", role: :cast)
     @customer = User.create!(email: "cust@example.com",     password: "password", role: :customer)
@@ -57,6 +59,100 @@ class IvsParticipantTokensTest < ActionDispatch::IntegrationTest
     body = JSON.parse(response.body)
     assert_equal "viewer", body["role"]
     assert_equal "VIEW_TOKEN", body["participant_token"]
+  end
+
+  test "viewer: guest can get subscribe-only token without user_id attribute" do
+    stub_ivs_token("GUEST_VIEW_TOKEN") do |requests|
+      post stream_session_ivs_participant_tokens_path(@session),
+           params: { role: "viewer" }.to_json,
+           headers: json_headers
+
+      assert_response :success
+      body = JSON.parse(response.body)
+      assert_equal "viewer", body["role"]
+      assert_equal "GUEST_VIEW_TOKEN", body["participant_token"]
+
+      request = requests.fetch(0)
+      assert_equal [ "SUBSCRIBE" ], request[:capabilities]
+      assert_equal "viewer", request[:attributes]["role"]
+      assert_equal @session.id.to_s, request[:attributes]["stream_session_id"]
+      assert_not request[:attributes].key?("user_id")
+    end
+  end
+
+  test "viewer: guest cannot get token for an unpublished or archived booth" do
+    @store.update!(published: false)
+
+    post stream_session_ivs_participant_tokens_path(@session),
+         params: { role: "viewer" }.to_json,
+         headers: json_headers
+
+    assert_response :not_found
+
+    @store.update!(published: true)
+    @booth.update!(archived_at: Time.current)
+
+    post stream_session_ivs_participant_tokens_path(@session),
+         params: { role: "viewer" }.to_json,
+         headers: json_headers
+
+    assert_response :not_found
+  end
+
+  test "viewer: guest remains subject to joinable and stage-bound checks" do
+    @booth.update!(status: :standby)
+
+    post stream_session_ivs_participant_tokens_path(@session),
+         params: { role: "viewer" }.to_json,
+         headers: json_headers
+
+    assert_response :conflict
+    assert_equal "not_joinable", JSON.parse(response.body)["error"]
+
+    @booth.update!(status: :live, current_stream_session: nil)
+
+    post stream_session_ivs_participant_tokens_path(@session),
+         params: { role: "viewer" }.to_json,
+         headers: json_headers
+
+    assert_response :conflict
+    assert_equal "not_joinable", JSON.parse(response.body)["error"]
+
+    @booth.update!(current_stream_session: @session)
+    @session.update!(ivs_stage_arn: nil)
+
+    post stream_session_ivs_participant_tokens_path(@session),
+         params: { role: "viewer" }.to_json,
+         headers: json_headers
+
+    assert_response :conflict
+    assert_equal "stage_not_bound", JSON.parse(response.body)["error"]
+  end
+
+  test "publisher: guest remains unauthenticated" do
+    post stream_session_ivs_participant_tokens_path(@session),
+         params: { role: "publisher" }.to_json,
+         headers: json_headers
+
+    assert_response :unauthorized
+  end
+
+  test "viewer: guest token requests are rate limited per session" do
+    stub_ivs_token("RATE_LIMITED_GUEST_VIEW_TOKEN") do
+      30.times do
+        post stream_session_ivs_participant_tokens_path(@session),
+             params: { role: "viewer" }.to_json,
+             headers: json_headers
+        assert_response :success
+      end
+
+      post stream_session_ivs_participant_tokens_path(@session),
+           params: { role: "viewer" }.to_json,
+           headers: json_headers
+
+      assert_response :too_many_requests
+      assert_equal "rate_limited", JSON.parse(response.body)["error"]
+    end
   end
 
   test "viewer: cast can get token" do
@@ -247,6 +343,7 @@ class IvsParticipantTokensTest < ActionDispatch::IntegrationTest
 
   # AWS IVS RealTime クライアントをスタブして token を返す
   def stub_ivs_token(token)
+    requests = []
     participant_token = Struct.new(:token, :expiration_time).new(token, Time.current + 15.minutes)
     resp = Struct.new(:participant_token).new(participant_token)
 
@@ -254,13 +351,16 @@ class IvsParticipantTokensTest < ActionDispatch::IntegrationTest
 
     fake_client_class = Class.new do
       define_method(:initialize) { |*| }
-      define_method(:create_participant_token) { |**_kwargs| resp }
+      define_method(:create_participant_token) do |**kwargs|
+        requests << kwargs
+        resp
+      end
     end
 
     Aws::IVSRealTime.send(:remove_const, :Client)
     Aws::IVSRealTime.const_set(:Client, fake_client_class)
 
-    yield
+    yield requests
   ensure
     Aws::IVSRealTime.send(:remove_const, :Client) rescue nil
     Aws::IVSRealTime.const_set(:Client, original) if defined?(original) && original

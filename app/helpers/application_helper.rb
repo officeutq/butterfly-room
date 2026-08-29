@@ -250,7 +250,8 @@ module ApplicationHelper
     return false if user_signed_in?
 
     (controller_path == "home" && %w[show welcome].include?(action_name)) ||
-      (controller_path == "stores" && action_name == "show")
+      (controller_path == "stores" && action_name == "show") ||
+      (controller_path == "users" && action_name == "show")
   end
 
   def lp_ref_code

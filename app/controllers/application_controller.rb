@@ -280,6 +280,13 @@ class ApplicationController < ActionController::Base
     head :forbidden
   end
 
+  def clear_guest_unauthenticated_alert
+    return if user_signed_in?
+    return unless flash[:alert] == I18n.t("devise.failure.unauthenticated")
+
+    flash.delete(:alert)
+  end
+
   def authorize!(policy_class, record, action)
     policy = policy_class.new(current_user, record)
     head(:forbidden) unless policy.public_send("#{action}?")

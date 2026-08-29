@@ -25,6 +25,25 @@ class User < ApplicationRecord
             if: -> { deleted_at.nil? }
 
   scope :active, -> { where(deleted_at: nil) }
+  scope :public_profiles, lambda {
+    public_active_booth_admin_user_ids =
+      StoreMembership
+        .admin_only
+        .joins(store: :booths)
+        .where(stores: { published: true }, booths: { archived_at: nil })
+        .select(:user_id)
+
+    sales_support_company_admin_user_ids =
+      StoreMembership
+        .admin_only
+        .joins(:store)
+        .where(stores: { sales_support_company: true })
+        .select(:user_id)
+
+    active.where(role: :cast)
+      .or(active.where(role: :store_admin, id: public_active_booth_admin_user_ids))
+      .where.not(role: :store_admin, id: sales_support_company_admin_user_ids)
+  }
 
   ROLE_LEVELS = {
     customer: 0,

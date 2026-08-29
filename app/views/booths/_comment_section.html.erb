@@ -1,11 +1,18 @@
 <div id="viewer_comment_section">
   <div class="viewer-comment-panel" data-controller="comment-panel">
     <div id="comments" class="viewer-comment-list" data-comment-panel-target="list">
-      <%= render partial: "comments/comment", collection: (comments || []), as: :comment %>
+      <%= render partial: "comments/comment",
+            collection: (comments || []),
+            as: :comment,
+            locals: { guest_viewer: !authenticated_viewer } %>
     </div>
 
     <div class="viewer-comment-form">
-      <%= render "stream_sessions/comments/form", stream_session: stream_session %>
+      <% if authenticated_viewer %>
+        <%= render "stream_sessions/comments/form", stream_session: stream_session %>
+      <% else %>
+        <%= render "stream_sessions/comments/guest_form" %>
+      <% end %>
     </div>
   </div>
 </div>

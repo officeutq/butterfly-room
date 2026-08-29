@@ -2,7 +2,20 @@
 
 module StreamSessions
   class IvsParticipantTokensController < ApplicationController
-    before_action :authenticate_user!
+    GUEST_VIEWER_RATE_LIMIT_STORE =
+      Rails.env.test? ? ActiveSupport::Cache::MemoryStore.new : Rails.cache
+
+    skip_before_action :authenticate_user!
+    before_action :authenticate_non_viewer!
+    rate_limit(
+      to: 30,
+      within: 1.minute,
+      by: :guest_viewer_rate_limit_identity,
+      with: :render_guest_viewer_rate_limited,
+      store: GUEST_VIEWER_RATE_LIMIT_STORE,
+      only: :create,
+      if: :guest_viewer_request?
+    )
 
     def create
       role = params.require(:role)
@@ -74,10 +87,32 @@ module StreamSessions
 
     private
 
+    def authenticate_non_viewer!
+      role = params[:role].to_s
+      return if role.blank? || role == Ivs::CreateParticipantTokenService::ROLE_VIEWER
+
+      authenticate_user!
+    end
+
+    def guest_viewer_request?
+      !user_signed_in? && params[:role].to_s == Ivs::CreateParticipantTokenService::ROLE_VIEWER
+    end
+
+    def guest_viewer_rate_limit_identity
+      request.session.id.to_s.presence || request.remote_ip
+    end
+
+    def render_guest_viewer_rate_limited
+      render json: { error: "rate_limited" }, status: :too_many_requests
+    end
+
     def find_stream_session_for(role)
       case role
       when "viewer"
-        StreamSession.in_published_stores.find(params[:stream_session_id])
+        StreamSession.in_published_stores
+                     .joins(:booth)
+                     .merge(Booth.active)
+                     .find(params[:stream_session_id])
       when "publisher"
         StreamSession.find(params[:stream_session_id])
       else

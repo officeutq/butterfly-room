@@ -97,6 +97,19 @@
   align-items: center;
 }
 
+.viewer-guest-comment-prompt {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.viewer-guest-comment-placeholder {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: rgba(0, 0, 0, 0.2);
+  color: rgba(255, 255, 255, 0.64);
+}
+
 .live-comment-panel #comment_form input[type="text"],
 .viewer-comment-panel #comment_form input[type="text"] {
   min-width: 0;

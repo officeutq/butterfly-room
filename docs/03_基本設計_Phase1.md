@@ -1333,9 +1333,15 @@ Phase1の認可・売上・配信状態の不変条件を維持したまま、�
 - mode未指定時は、未ログインでは店舗、ログイン済みでは従来どおりブースを初期表示する
 - 配信者タブは有効なcastを対象とする。store_adminは、管理者所属する同一店舗について `stores.published = true` かつ `booths.archived_at IS NULL` を満たすブースが1件以上ある場合だけ対象とし、`sales_support_company = true` の店舗へ管理者所属するstore_adminは除外する。ブースの現在のstatusと`booth_casts`の有無は判定に使用しない
 - `StoresController#show` は `Store.published` の店舗だけを公開し、表示ブースは `Booth.active` に限定する
-- ブース詳細・ユーザー詳細は公開せず、未ログインアクセスを `/welcome` へリダイレクトする
+- `BoothsController#show` は `Booth.active.in_published_stores` のブースを未ログインにも公開し、live / away中はviewer tokenを購読専用で発行する。standby、Stage未紐づけ、current stream_session不一致では視聴させない
+- `UsersController#show` は配信者タブと同じ公開条件を満たすcast・store_adminのプロフィールを未ログインにも公開し、関連する店舗・ブースは既存の公開条件を満たすものだけ表示する
+- 未ログインのコメントは初期表示と署名付きTurbo Streamによる更新を読み取り専用で表示する。共有broadcast用パーシャルではリクエスト利用者固有の認可判定を行わない
+- 未ログインでは在室ping・視聴者数summaryを呼び出さず、Presenceを作成せず、視聴者数へ加算・表示しない
 - 未ログインのお気に入り表示は状態を作成・更新せず、共通ログイン要求モーダルを開くGETリンクとして扱う
-- 画面内のブース・ユーザー・保護対象ナビゲーションも同じモーダルを開き、続行時だけ `/welcome` へ遷移する
+- コメント投稿・通報、ドリンク、お気に入り、保護対象ナビゲーションは共通ログイン要求モーダルを開き、続行時だけ `/welcome` へ遷移する
+- 未ログインで表示するホーム、Store、booth、公開プロフィールでは共通フッターを表示する。booth専用viewerレイアウトを含め、お気に入り・お知らせ・ダッシュボードは認証必須URLへ直接遷移せず、共通ログイン要求モーダルを開く
+- 認証必須URLへの中断済みリクエスト等でDeviseの未認証alertが残っていても、未ログインで閲覧可能な公開画面には表示しない
 - モーダル取得を通常GETした場合は `/welcome` へリダイレクトし、JavaScript無効時のフォールバックとする
 - `/welcome` で認証済みユーザーを `/` へ戻し、公式トップを未ログイン専用とする
+- BAN対象customerの店舗・ブース・viewer token・コメント・ドリンク・在室等の既存制限は変更しない
 - 公開ページはページ単位の title、description、canonical、OGPを設定する。`/` の既存の非表示H1は公式タグラインを示し、サイトを表す `WebSite` 構造化データはドメインルートの `/` だけに配置する。店舗詳細のdescriptionとOGP descriptionは、登録済みの店舗名・エリア・業態の日本語表示名・営業時間・空白を正規化した店舗説明から同じ文章を160文字以内で生成し、住所全文は含めない。業態の「その他」はdescriptionでは未入力として扱う。画面表示と既存導線は変更せず、sitemapには公開店舗だけを含める

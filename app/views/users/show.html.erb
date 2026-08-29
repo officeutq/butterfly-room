@@ -27,7 +27,7 @@
       <div class="user-show-favorite">
         <%= render "favorites/users/button_user_show",
               user: @user,
-              favorited: current_user.favorite_users.exists?(target_user: @user) %>
+              favorited: @user_favorited %>
       </div>
     </div>
 

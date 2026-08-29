@@ -5,20 +5,18 @@
 <% initial_live_ui = @stream_session.present? && (@booth.live? || @booth.away?) %>
 
 <div class="viewer-page <%= "is-live" if initial_live_ui %>" data-controller="viewer-page">
-  <%= turbo_stream_from [@booth, :stream_state] %>
+  <%= turbo_stream_from [@booth, :stream_state, (@authenticated_viewer ? :authenticated : :guest)] %>
 
-  <% if user_signed_in? %>
-    <div class="viewer-favorites-depot" data-viewer-page-target="favoritesDepot" hidden>
-      <%= render "favorites/booths/button_booth_show", booth: @booth, favorited: @booth_favorited %>
-      <%= render "favorites/stores/button_store_show", store: @booth.store, favorited: @store_favorited %>
+  <div class="viewer-favorites-depot" data-viewer-page-target="favoritesDepot" hidden>
+    <%= render "favorites/booths/button_booth_show", booth: @booth, favorited: @booth_favorited %>
+    <%= render "favorites/stores/button_store_show", store: @booth.store, favorited: @store_favorited %>
 
-      <% if @booth.primary_cast_user.present? %>
-        <%= render "favorites/users/button_user_show",
-              user: @booth.primary_cast_user,
-              favorited: @user_favorited %>
-      <% end %>
-    </div>
-  <% end %>
+    <% if @booth.primary_cast_user.present? %>
+      <%= render "favorites/users/button_user_show",
+            user: @booth.primary_cast_user,
+            favorited: @user_favorited %>
+    <% end %>
+  </div>
 
   <div id="viewer_flash_layer">
     <div id="flash_inner">
@@ -43,7 +41,8 @@
             stream_session: @stream_session,
             comments: @comments,
             drink_items: @drink_items,
-            can_create_drink_order: @can_create_drink_order %>
+            can_create_drink_order: @can_create_drink_order,
+            authenticated_viewer: @authenticated_viewer %>
     </div>
   </div>
 

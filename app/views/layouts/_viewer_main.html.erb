@@ -1,3 +1,5 @@
+<% guest_footer = !user_signed_in? %>
+
 <main class="flex-grow-1 viewer-main" data-controller="live-stage">
   <%= yield %>
 </main>
@@ -12,17 +14,30 @@
           <span class="app-footer-nav-label">ホーム</span>
         <% end %>
 
-        <%= link_to favorites_booths_path, class: footer_nav_item_classes(active: footer_favorites_active?) do %>
+        <%= link_to (guest_footer ? guest_auth_prompt_path : favorites_booths_path),
+              class: footer_nav_item_classes(active: !guest_footer && footer_favorites_active?),
+              data: (guest_footer ? { turbo_frame: "modal" } : {}) do %>
           <i class="bi bi-star-fill app-footer-nav-icon" aria-hidden="true"></i>
           <span class="app-footer-nav-label">お気に入り</span>
         <% end %>
 
-        <div class="<%= footer_nav_item_classes(extra: 'app-footer-nav-item--placeholder') %>" aria-disabled="true">
-          <i class="bi bi-bell-fill app-footer-nav-icon" aria-hidden="true"></i>
-          <span class="app-footer-nav-label">お知らせ</span>
-        </div>
+        <% if guest_footer %>
+          <%= link_to guest_auth_prompt_path,
+                class: footer_nav_item_classes,
+                data: { turbo_frame: "modal" } do %>
+            <i class="bi bi-bell-fill app-footer-nav-icon" aria-hidden="true"></i>
+            <span class="app-footer-nav-label">お知らせ</span>
+          <% end %>
+        <% else %>
+          <div class="<%= footer_nav_item_classes(extra: 'app-footer-nav-item--placeholder') %>" aria-disabled="true">
+            <i class="bi bi-bell-fill app-footer-nav-icon" aria-hidden="true"></i>
+            <span class="app-footer-nav-label">お知らせ</span>
+          </div>
+        <% end %>
 
-        <%= link_to dashboard_path_for(current_user), class: footer_nav_item_classes(active: footer_dashboard_active?) do %>
+        <%= link_to (guest_footer ? guest_auth_prompt_path : dashboard_path_for(current_user)),
+              class: footer_nav_item_classes(active: !guest_footer && footer_dashboard_active?),
+              data: (guest_footer ? { turbo_frame: "modal" } : {}) do %>
           <i class="bi bi-list app-footer-nav-icon" aria-hidden="true"></i>
           <span class="app-footer-nav-label">ダッシュボード</span>
         <% end %>

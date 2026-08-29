@@ -74,7 +74,7 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     refute_select "#app_footer", text: /配信/
   end
 
-  test "未ログイン: ブース・配信者・お気に入りの導線は公式トップへ遷移する" do
+  test "未ログイン: ブース・配信者は詳細へ遷移し、お気に入りはログイン要求モーダルを開く" do
     store = create_store!(name: "Guest Navigation Store")
     booth = create_booth!(store: store, name: "Guest Navigation Booth", status: :offline)
     cast = create_user!(email: "guest-navigation-cast@example.com", role: :cast)
@@ -84,17 +84,18 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     get root_path, params: { mode: "booths" }
     assert_response :success
 
-    assert_select "form[action=?][data-turbo-frame='modal']", guest_auth_prompt_path, minimum: 2
-    assert_select "a[href=?][data-turbo-frame='modal']", guest_auth_prompt_path, text: cast.display_name
+    assert_select "form[action=?]", booth_path(booth), minimum: 2
+    assert_select "form[action=?][data-turbo-frame='modal']", guest_auth_prompt_path, count: 0
+    assert_select "a[href=?]", user_path(cast), text: cast.display_name
     assert_select "a.viewer-favorite-btn[href=?][data-turbo-frame='modal']", guest_auth_prompt_path, minimum: 3
     assert_select "a[href=?]", store_path(store), text: store.name
 
     get root_path, params: { mode: "users" }
     assert_response :success
 
-    assert_select "a[href=?][data-turbo-frame='modal']", guest_auth_prompt_path, text: cast.display_name
+    assert_select "a[href=?]", user_path(cast), text: cast.display_name
     assert_select "a.viewer-favorite-btn[href=?][data-turbo-frame='modal']", guest_auth_prompt_path, minimum: 1
-    assert_select "a.users-card-thumbnail-link[href=?][data-turbo-frame='modal']", guest_auth_prompt_path
+    assert_select "a.users-card-thumbnail-link[href=?]", user_path(cast)
   end
 
   test "qなし + mode未指定: booths がデフォルトで表示され、archived は出ない" do
