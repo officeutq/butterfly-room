@@ -394,7 +394,9 @@ end
 * `booths#show` は `Booth.active.in_published_stores.find`、未ログインの `users#show` はホームの配信者タブと共通の `User.public_profiles` に限定する。`booths#enter` は引き続き未ログインを `/welcome` へリダイレクトする
 * お気に入りの作成・解除Controllerは従来どおり認証必須とし、未ログイン表示ではPOST/DELETE formを生成しない
 * コメント・通報・ドリンク・お気に入り等の未ログイン保護操作は `guest_auth_prompt_path` を `modal` Turbo Frameへ読み込み、状態変更APIを呼ばず共通モーダルから `/welcome` へ進ませる
+* `default_main` とbooth専用の `viewer_main` は、未ログイン時のフッター保護項目を認証必須pathへ直リンクせず、いずれも `guest_auth_prompt_path` へ統一する。公開プロフィールでも未ログイン用フッターを表示する
 * `guest_auth_prompts#show` の通常GETは `/welcome` へリダイレクトし、Turbo Frameリクエストだけモーダル本文を返す
+* ホーム、公開Store、公開booth、公開プロフィールを未ログインで表示する前に、残留しているDeviseの `unauthenticated` alertだけを削除し、アクセス可能な画面で誤ったログイン要求flashを表示しない
 * IVS参加者トークンは未ログインのviewer要求だけを認証対象外とし、`Store.published`かつ`Booth.active`のcurrent stream_sessionへ`SUBSCRIBE` capabilityだけを発行する。publisher要求、コメント・ドリンク・presence endpointは引き続き認証必須とする
 * 未ログインとログイン済みでboothの配信状態・コメントのTurbo Streamを分け、未ログイン用パーシャルにはpresence poll、視聴者数、状態変更formを含めない。各broadcastはログイン状態の区分だけで描画し、`current_user`等のリクエスト利用者固有情報を参照しない
 * 未ログインでは在室ping・視聴者数summaryを呼び出さず、Presenceレコードを作成しない。BAN対象customerの既存guardは変更しない

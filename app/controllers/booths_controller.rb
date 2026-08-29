@@ -4,6 +4,7 @@ class BoothsController < ApplicationController
   include StoreBanGuard
 
   skip_before_action :authenticate_user!, only: %i[show enter]
+  before_action :clear_guest_unauthenticated_alert, only: %i[show]
   before_action :redirect_guest_to_welcome, only: %i[enter]
   before_action :set_public_booth, only: %i[show viewer_drink_menu]
   before_action :set_entry_booth, only: %i[enter enter_as_cast]

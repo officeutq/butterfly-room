@@ -75,6 +75,12 @@ class GuestReadOnlyViewingTest < ActionDispatch::IntegrationTest
                   count: 1
     assert_select "[data-action='ivs-viewer#toggleMute']", count: 1
     assert_select "turbo-frame#viewer_drink_menu", count: 0
+
+    assert_select "#app_footer a[href=?][data-turbo-frame='modal']",
+                  guest_auth_prompt_path,
+                  count: 3
+    assert_select "#app_footer a[href=?]", favorites_booths_path, count: 0
+    assert_select "#app_footer a[href=?]", dashboard_path, count: 0
   end
 
   test "guest write and presence endpoints remain authenticated" do
@@ -99,6 +105,10 @@ class GuestReadOnlyViewingTest < ActionDispatch::IntegrationTest
     get user_path(@cast)
     assert_response :success
     assert_select "h1", text: @cast.display_name
+    assert_select "#app_footer", count: 1
+    assert_select "#app_footer a[href=?][data-turbo-frame='modal']",
+                  guest_auth_prompt_path,
+                  count: 3
     assert_select "a.viewer-favorite-btn[href=?][data-turbo-frame='modal']",
                   guest_auth_prompt_path,
                   minimum: 1
@@ -152,6 +162,21 @@ class GuestReadOnlyViewingTest < ActionDispatch::IntegrationTest
 
     get user_path(sales_support_admin)
     assert_response :not_found
+  end
+
+  test "public guest pages do not show a stale unauthenticated alert" do
+    public_paths = [ root_path, store_path(@store), booth_path(@booth), user_path(@cast) ]
+    unauthenticated_message = I18n.t("devise.failure.unauthenticated")
+
+    public_paths.each do |path|
+      get dashboard_path
+      assert_redirected_to new_user_session_path
+      assert_equal unauthenticated_message, flash[:alert]
+
+      get path
+      assert_response :success
+      refute_includes response.body, unauthenticated_message
+    end
   end
 
   test "authenticated profile keeps the existing favorite state" do

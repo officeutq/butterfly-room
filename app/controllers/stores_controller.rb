@@ -4,6 +4,7 @@ class StoresController < ApplicationController
   include StoreBanGuard
 
   skip_before_action :authenticate_user!, only: %i[show]
+  before_action :clear_guest_unauthenticated_alert, only: %i[show]
   before_action :set_store, only: %i[show]
   before_action :reject_banned_customer_for_store!, only: %i[show]
 

@@ -2,6 +2,7 @@
 
 class UsersController < ApplicationController
   skip_before_action :authenticate_user!, only: %i[show]
+  before_action :clear_guest_unauthenticated_alert, only: %i[show]
 
   def show
     @user = visible_users.find(params[:id])

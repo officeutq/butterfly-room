@@ -2,6 +2,7 @@
 
 class HomeController < ApplicationController
   skip_before_action :authenticate_user!, only: %i[show welcome]
+  before_action :clear_guest_unauthenticated_alert, only: %i[show welcome]
 
   def show
     set_browse_page_meta_tags unless user_signed_in?
