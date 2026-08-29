@@ -1,4 +1,4 @@
-<%# locals: stream_session:, booth:, comments:, drink_items:, can_create_drink_order: %>
+<%# locals: stream_session:, booth:, comments:, drink_items:, can_create_drink_order:, authenticated_viewer: %>
 
 <% live_like = booth.live? || booth.away? %>
 <% drink_menu_button_visible = live_like && Array(drink_items).any? %>
@@ -18,21 +18,26 @@
   <div id="viewer_overlay">
     <div
       class="viewer-overlay-ui"
-      data-controller="viewer-drink-panel"
-      data-viewer-drink-panel-menu-url-value="<%= viewer_drink_menu_booth_path(booth) %>"
+      <% if authenticated_viewer %>
+        data-controller="viewer-drink-panel"
+        data-viewer-drink-panel-menu-url-value="<%= viewer_drink_menu_booth_path(booth) %>"
+      <% end %>
       data-viewer-grid-debug="<%= Rails.env.development? ? "1" : "0" %>">
       <div class="viewer-overlay-meta-slot">
         <div
           class="viewer-meta-panel"
-          data-controller="presence-poll"
-          data-presence-poll-ping-url-value="<%= ping_stream_session_presence_path(stream_session) %>"
-          data-presence-poll-summary-url-value="<%= presence_summary_stream_session_path(stream_session) %>"
-          data-presence-poll-interval-ms-value="20000"
+          <% if authenticated_viewer %>
+            data-controller="presence-poll"
+            data-presence-poll-ping-url-value="<%= ping_stream_session_presence_path(stream_session) %>"
+            data-presence-poll-summary-url-value="<%= presence_summary_stream_session_path(stream_session) %>"
+            data-presence-poll-interval-ms-value="20000"
+          <% end %>
         >
           <div class="viewer-meta-layout">
             <div class="viewer-meta-main">
               <%= render "stream_sessions/stream_meta_display",
-                        stream_session: stream_session %>
+                        stream_session: stream_session,
+                        show_viewer_count: authenticated_viewer %>
             </div>
           </div>
         </div>
@@ -59,24 +64,35 @@
           <%= render "booths/comment_section",
                 booth: booth,
                 stream_session: stream_session,
-                comments: comments %>
+                comments: comments,
+                authenticated_viewer: authenticated_viewer %>
         </div>
 
         <div class="viewer-overlay-ops-slot">
           <div class="viewer-ops-panel">
             <div class="viewer-ops-buttons">
               <% if drink_menu_button_visible %>
-                <button
-                  type="button"
-                  class="viewer-ops-btn"
-                  data-action="viewer-drink-panel#toggle"
-                  data-viewer-drink-panel-target="openButton"
-                  aria-label="ドリンクメニューを開く"
-                  aria-expanded="false"
-                  aria-controls="viewer_drink_menu_panel"
-                  title="ドリンクメニュー">
-                  <i class="bi bi-cup-straw" aria-hidden="true"></i>
-                </button>
+                <% if authenticated_viewer %>
+                  <button
+                    type="button"
+                    class="viewer-ops-btn"
+                    data-action="viewer-drink-panel#toggle"
+                    data-viewer-drink-panel-target="openButton"
+                    aria-label="ドリンクメニューを開く"
+                    aria-expanded="false"
+                    aria-controls="viewer_drink_menu_panel"
+                    title="ドリンクメニュー">
+                    <i class="bi bi-cup-straw" aria-hidden="true"></i>
+                  </button>
+                <% else %>
+                  <%= link_to guest_auth_prompt_path,
+                        class: "viewer-ops-btn",
+                        data: { turbo_frame: "modal" },
+                        aria: { label: "ログインしてドリンクメニューを開く" },
+                        title: "ログインしてドリンク" do %>
+                    <i class="bi bi-cup-straw" aria-hidden="true"></i>
+                  <% end %>
+                <% end %>
               <% end %>
 
               <button
@@ -108,7 +124,7 @@
         </div>
       </div>
 
-      <% if drink_menu_button_visible %>
+      <% if authenticated_viewer && drink_menu_button_visible %>
         <%= render "booths/drink_menu_panel" %>
       <% end %>
     </div>

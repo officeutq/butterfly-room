@@ -1,4 +1,4 @@
-<%# locals: booth:, stream_session:, comments:, drink_items:, can_create_drink_order: %>
+<%# locals: booth:, stream_session:, comments:, drink_items:, can_create_drink_order:, authenticated_viewer: %>
 
 <% live_like = booth.live? || booth.away? %>
 <% live_ui = stream_session.present? && live_like %>
@@ -6,7 +6,7 @@
 <div class="viewer-stream-state" data-live-like="<%= live_ui ? "true" : "false" %>">
   <% if live_ui %>
     <%= turbo_stream_from [stream_session, :pending_drink_orders] %>
-    <%= turbo_stream_from [stream_session, :comments] %>
+    <%= turbo_stream_from(authenticated_viewer ? [stream_session, :comments] : [stream_session, :comments, :guest]) %>
     <%= turbo_stream_from [stream_session, :viewer_stage] %>
 
     <div class="viewer-stage-shell">
@@ -16,7 +16,8 @@
               booth: booth,
               comments: comments,
               drink_items: drink_items,
-              can_create_drink_order: can_create_drink_order %>
+              can_create_drink_order: can_create_drink_order,
+              authenticated_viewer: authenticated_viewer %>
       </div>
     </div>
   <% end %>

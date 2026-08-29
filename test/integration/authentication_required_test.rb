@@ -121,57 +121,35 @@ class AuthenticationRequiredTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_user_session_path
   end
 
-  test "未ログインでブース詳細へアクセスすると公式トップを経由し、ログイン後は通常のトップへ進む" do
-    store = Store.create!(name: "store-return-to-login")
-    booth = Booth.create!(store: store, name: "booth-return-to-login", status: :offline)
-    user = User.create!(
-      email: "customer-return-to@example.com",
+  test "未ログインで公開ブース詳細へアクセスできる" do
+    store = Store.create!(name: "guest-public-store", published: true)
+    booth = Booth.create!(store: store, name: "guest-public-booth", status: :offline)
+
+    get booth_path(booth)
+
+    assert_response :success
+    assert_select "h1", text: booth.name
+  end
+
+  test "未ログインでcastプロフィールへアクセスできる" do
+    cast = User.create!(
+      email: "guest-user-detail@example.com",
       password: "password",
-      role: :customer
+      role: :cast,
+      display_name: "Guest Public Cast"
     )
-
-    get booth_path(booth)
-
-    assert_redirected_to welcome_path
-    follow_redirect!
-    assert_response :success
-
-    post user_session_path, params: {
-      user: {
-        email: user.email,
-        password: "password"
-      }
-    }
-
-    assert_redirected_to root_path
-  end
-
-  test "未ログインでブース詳細へアクセスすると公式トップを経由し、新規登録後は通常の初期画面へ進む" do
-    store = Store.create!(name: "store-return-to-sign-up")
-    booth = Booth.create!(store: store, name: "booth-return-to-sign-up", status: :offline)
-
-    get booth_path(booth)
-
-    assert_redirected_to welcome_path
-    follow_redirect!
-    assert_response :success
-
-    post sign_up_path, params: {
-      customer_registration: {
-        email: "new-customer-return-to@example.com",
-        password: "password",
-        password_confirmation: "password"
-      }
-    }
-
-    assert_redirected_to edit_profile_path
-  end
-
-  test "未ログインでユーザー詳細へアクセスすると公式トップへ遷移する" do
-    cast = User.create!(email: "guest-user-detail@example.com", password: "password", role: :cast)
 
     get user_path(cast)
 
-    assert_redirected_to welcome_path
+    assert_response :success
+    assert_select "h1", text: cast.display_name
+  end
+
+  test "未ログインでcustomerプロフィールへアクセスできない" do
+    customer = User.create!(email: "guest-customer-detail@example.com", password: "password", role: :customer)
+
+    get user_path(customer)
+
+    assert_response :not_found
   end
 end

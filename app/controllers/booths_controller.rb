@@ -4,13 +4,15 @@ class BoothsController < ApplicationController
   include StoreBanGuard
 
   skip_before_action :authenticate_user!, only: %i[show enter]
-  before_action :redirect_guest_to_welcome, only: %i[show enter]
+  before_action :redirect_guest_to_welcome, only: %i[enter]
   before_action :set_public_booth, only: %i[show viewer_drink_menu]
   before_action :set_entry_booth, only: %i[enter enter_as_cast]
   before_action :reject_banned_customer_for_booth!, only: %i[show viewer_drink_menu]
   before_action :set_viewer_stream_context, only: %i[show viewer_drink_menu]
 
   def show
+    @authenticated_viewer = user_signed_in?
+
     @wallet =
       if user_signed_in?
         Wallet.find_or_create_by!(customer_user_id: current_user.id) do |w|

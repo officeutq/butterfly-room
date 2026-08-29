@@ -1,5 +1,6 @@
 <% user = stream_session.started_by_cast_user %>
 <% title_display = stream_session.title.presence || stream_session.booth.name %>
+<% show_viewer_count = local_assigns.fetch(:show_viewer_count, true) %>
 
 <div class="live-meta-row viewer-meta-row">
   <% if stream_session.booth.live? || stream_session.booth.away? %>
@@ -25,9 +26,11 @@
     <%= title_display %>
   </div>
 
-  <!-- viewer count -->
-  <div class="meta-count">
-    <i class="bi bi-people-fill" aria-hidden="true"></i>
-    <span data-presence-poll-target="count">-</span>
-  </div>
+  <% if show_viewer_count %>
+    <!-- viewer count -->
+    <div class="meta-count">
+      <i class="bi bi-people-fill" aria-hidden="true"></i>
+      <span data-presence-poll-target="count">-</span>
+    </div>
+  <% end %>
 </div>

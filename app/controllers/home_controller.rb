@@ -23,24 +23,8 @@ class HomeController < ApplicationController
     @users = User.none
 
     if @mode == "users"
-      sales_support_company_admin_user_ids =
-        StoreMembership
-          .admin_only
-          .joins(:store)
-          .where(stores: { sales_support_company: true })
-          .select(:user_id)
-
-      public_active_booth_admin_user_ids =
-        StoreMembership
-          .admin_only
-          .joins(store: :booths)
-          .where(stores: { published: true }, booths: { archived_at: nil })
-          .select(:user_id)
-
       users =
-        User.active.where(role: :cast)
-          .or(User.active.where(role: :store_admin, id: public_active_booth_admin_user_ids))
-          .where.not(role: :store_admin, id: sales_support_company_admin_user_ids)
+        User.public_profiles
           .left_joins(:avatar_attachment)
 
       keywords.each do |keyword|

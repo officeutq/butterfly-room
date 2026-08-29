@@ -87,11 +87,13 @@ module Ivs
 
     def attributes_for(role)
       # attributes は参加者に見える可能性があるので最小限
-      {
-        "user_id" => @actor.id.to_s,
+      attributes = {
         "role" => role,
         "stream_session_id" => @stream_session.id.to_s
       }
+
+      attributes["user_id"] = @actor.id.to_s if @actor.present?
+      attributes
     end
   end
 end

@@ -3,7 +3,7 @@
 require "test_helper"
 
 class StoreShowTest < ActionDispatch::IntegrationTest
-  test "guest can view a published store and protected card actions lead to welcome" do
+  test "guest can view a published store and open booth and cast details" do
     store = Store.create!(name: "Guest Store", published: true)
     booth = Booth.create!(store: store, name: "Guest Booth", status: :offline)
     cast = User.create!(
@@ -19,8 +19,8 @@ class StoreShowTest < ActionDispatch::IntegrationTest
 
     assert_select "h1", text: store.name
     assert_includes @response.body, booth.name
-    assert_select "form[action=?][data-turbo-frame='modal']", guest_auth_prompt_path, minimum: 2
-    assert_select "a[href=?][data-turbo-frame='modal']", guest_auth_prompt_path, text: cast.display_name
+    assert_select "form[action=?]", booth_path(booth), minimum: 2
+    assert_select "a[href=?]", user_path(cast), text: cast.display_name
     assert_select "a.viewer-favorite-btn[href=?][data-turbo-frame='modal']", guest_auth_prompt_path, minimum: 4
     assert_select "#app_footer a[href=?][data-turbo-frame='modal']", guest_auth_prompt_path, count: 3
   end

@@ -1,3 +1,8 @@
+<% guest_viewer = local_assigns.fetch(:guest_viewer, false) %>
+<% author_profile_visible =
+     !guest_viewer ||
+       (!comment.user.deleted? && (comment.user.cast? || comment.user.store_admin?)) %>
+
 <div
   id="comment_<%= comment.id %>"
   class="comment comment-item
@@ -27,7 +32,8 @@
       <div class="comment-main"> 
         <div class="comment-text">
             <span class="comment-author">
-              <%= link_to display_name_or_anonymous(comment.user),
+              <%= link_to_if author_profile_visible,
+                    display_name_or_anonymous(comment.user),
                     user_path(comment.user),
                     class: "text-decoration-none text-reset" %>
             </span>
@@ -47,29 +53,38 @@
 
       <template data-comment-actions-target="content">
         <div class="comment-actions-popover-body <%= "is-hidden-comment" if comment.hidden? %>">
-          <div class="comment-menu-item comment-menu-item-cast-normal">
-            <%= button_to "このコメントを非表示",
-                          hide_stream_session_comment_path(comment.stream_session, comment),
-                          method: :patch,
-                          class: "btn btn-sm btn-link comment-action-button",
-                          form: { data: { turbo: true } } %>
-          </div>
-
-          <div class="comment-menu-item comment-menu-item-cast-hidden">
-            <%= button_to "非表示を解除",
-                          unhide_stream_session_comment_path(comment.stream_session, comment),
-                          method: :patch,
-                          class: "btn btn-sm btn-link comment-action-button",
-                          form: { data: { turbo: true } } %>
-          </div>
-
-          <div class="comment-menu-item comment-menu-item-viewer-normal comment-menu-item-cast-report">
-            <%= button_to "このコメントを通報",
-                          report_stream_session_comment_path(comment.stream_session, comment),
-                          method: :post,
+          <% if guest_viewer %>
+            <div class="comment-menu-item comment-menu-item-viewer-normal">
+              <%= link_to "このコメントを通報",
+                          guest_auth_prompt_path,
                           class: "btn btn-sm btn-link comment-action-button text-danger",
-                          form: { data: { turbo: true } } %>
-          </div>
+                          data: { turbo_frame: "modal" } %>
+            </div>
+          <% else %>
+            <div class="comment-menu-item comment-menu-item-cast-normal">
+              <%= button_to "このコメントを非表示",
+                            hide_stream_session_comment_path(comment.stream_session, comment),
+                            method: :patch,
+                            class: "btn btn-sm btn-link comment-action-button",
+                            form: { data: { turbo: true } } %>
+            </div>
+
+            <div class="comment-menu-item comment-menu-item-cast-hidden">
+              <%= button_to "非表示を解除",
+                            unhide_stream_session_comment_path(comment.stream_session, comment),
+                            method: :patch,
+                            class: "btn btn-sm btn-link comment-action-button",
+                            form: { data: { turbo: true } } %>
+            </div>
+
+            <div class="comment-menu-item comment-menu-item-viewer-normal comment-menu-item-cast-report">
+              <%= button_to "このコメントを通報",
+                            report_stream_session_comment_path(comment.stream_session, comment),
+                            method: :post,
+                            class: "btn btn-sm btn-link comment-action-button text-danger",
+                            form: { data: { turbo: true } } %>
+            </div>
+          <% end %>
         </div>
       </template>
     </div>
@@ -88,7 +103,8 @@
       <div class="comment-text">
         <div class="comment-line">
           <span class="comment-author">
-            <%= link_to display_name_or_anonymous(comment.user),
+            <%= link_to_if author_profile_visible,
+                  display_name_or_anonymous(comment.user),
                   user_path(comment.user),
                   class: "text-decoration-none text-reset" %>
           </span>
@@ -118,7 +134,8 @@
       <div class="comment-text">
         <div class="comment-line">
           <span class="comment-author">
-            <%= link_to display_name_or_anonymous(comment.user),
+            <%= link_to_if author_profile_visible,
+                  display_name_or_anonymous(comment.user),
                   user_path(comment.user),
                   class: "text-decoration-none text-reset" %>
           </span>
@@ -143,7 +160,8 @@
     <div class="comment-main">
       <div class="comment-text">
         <span class="comment-author">
-          <%= link_to display_name_or_anonymous(comment.user),
+          <%= link_to_if author_profile_visible,
+                display_name_or_anonymous(comment.user),
                 user_path(comment.user),
                 class: "text-decoration-none text-reset" %>
         </span>

@@ -6,8 +6,8 @@
      ) %>
 <% primary_cast = booth.primary_cast_user %>
 <% stream_title = booth.current_stream_session&.title.to_s.strip %>
-<% booth_entry_path = user_signed_in? ? enter_booth_path(booth) : guest_auth_prompt_path %>
-<% booth_entry_frame_data = (open_in_modal || !user_signed_in?) ? { turbo_frame: "modal" } : {} %>
+<% booth_entry_path = user_signed_in? ? enter_booth_path(booth) : booth_path(booth) %>
+<% booth_entry_frame_data = open_in_modal ? { turbo_frame: "modal" } : {} %>
 
 <div class="card h-100 shadow-sm booths-card" data-bs-theme="light">
   <div class="booths-card-thumbnail-wrap">
@@ -73,8 +73,7 @@
       <div class="booths-card-value">
         <% if primary_cast.present? %>
           <%= link_to display_name_or_anonymous(primary_cast),
-                (user_signed_in? ? user_path(primary_cast) : guest_auth_prompt_path),
-                data: (user_signed_in? ? {} : { turbo_frame: "modal" }),
+                user_path(primary_cast),
                 class: "text-decoration-none text-reset" %>
         <% else %>
           <span class="text-muted">（未設定）</span>
