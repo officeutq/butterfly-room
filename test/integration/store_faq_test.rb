@@ -51,6 +51,11 @@ class StoreFaqTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "そのキャスト専用のブースが自動で作成されます。"
     assert_includes response.body, "配信を終了したうえでアーカイブされます。"
     assert_includes response.body, "「非公開」に設定した店舗と所属ブースは、一般ユーザー向け画面に表示されません。"
+    assert_includes response.body, "未ログインで視聴しているお客様は視聴者数に含まれません。"
+    assert_includes response.body, "アカウントを作成せずに公開中の配信を視聴できます。"
+    assert_includes response.body, "コメントもリアルタイムで閲覧できます。"
+    assert_includes response.body, "すべての機能を利用するには、お客様のアカウント作成とログインが必要です。"
+    assert_not_includes response.body, "初回利用時にはお客様のアカウント作成が必要です。"
   end
 
   test "FAQ is accessible while signed in with every role" do

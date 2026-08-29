@@ -20,7 +20,9 @@ class StoreLp202609Test < ActionDispatch::IntegrationTest
     assert_select "h1", count: 1, text: /来店がなければ、.*売上もない。.*それ、当たり前ですか？/
     assert_includes response.body, "夜のお店のためにつくられたライブ配信サービス"
     assert_includes response.body, "配信終了時に未消化だったギフトはお客様へ返却され"
-    assert_includes response.body, "アカウント作成・ログインが必要です"
+    assert_includes response.body, "公開中の配信はアカウントなしで視聴できます。"
+    assert_includes response.body, "すべての機能を利用するには、お客様のアカウント作成・ログインが必要です。"
+    assert_not_includes response.body, "視聴やギフトの利用には"
     assert_includes response.body, "そのキャスト専用のブースが自動で作成されます"
     assert_includes response.body, "飲みに出られない"
     assert_includes response.body, "会いたいけれどお店には行けない"
