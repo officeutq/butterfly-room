@@ -12,13 +12,13 @@ class StoreFaqTest < ActionDispatch::IntegrationTest
     assert_select ".store-faq__category[hidden]", count: 0
     assert_select "a.store-faq__category-button[href^='#store-faq-category-']", count: 10
     assert_select ".store-faq__category-number", count: 10
-    assert_select ".store-faq__question", count: 47
-    assert_select "details.store-faq__question summary[data-action='click->store-faq#toggleQuestion']", count: 47
+    assert_select ".store-faq__question", count: 49
+    assert_select "details.store-faq__question summary[data-action='click->store-faq#toggleQuestion']", count: 49
     assert_select ".store-faq__section-actions", count: 10
     assert_select "a.store-faq__section-action--top[href='#store-faq-top']", count: 10, text: /ページトップ/
     assert_select "a.store-faq__section-action--back", count: 10, text: /戻る/
 
-    (1..47).each do |number|
+    (1..49).each do |number|
       assert_select "#faq-q#{number}", count: 1
     end
 
@@ -28,10 +28,10 @@ class StoreFaqTest < ActionDispatch::IntegrationTest
 
   test "catalog keeps the canonical categories and continuous Q numbers" do
     assert_equal 10, StoreFaqCatalog.categories.size
-    assert_equal (1..47).to_a, StoreFaqCatalog.questions.map { |faq| faq.fetch(:number) }
+    assert_equal (1..49).to_a, StoreFaqCatalog.questions.map { |faq| faq.fetch(:number) }
     assert_equal [
       "サービスについて",
-      "料金・売上について",
+      "料金・ポイント・売上について",
       "利用開始について",
       "配信について",
       "ブースについて",
@@ -56,6 +56,29 @@ class StoreFaqTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "コメントもリアルタイムで閲覧できます。"
     assert_includes response.body, "すべての機能を利用するには、お客様のアカウント作成とログインが必要です。"
     assert_not_includes response.body, "初回利用時にはお客様のアカウント作成が必要です。"
+  end
+
+  test "point purchase plans and store settlement rate are rendered separately" do
+    get stores_faq_path
+
+    assert_response :success
+    assert_includes response.body, "お客様が購入できるポイントのプランと価格を教えてください"
+    assert_includes response.body, "ポイントは、次の5つの購入プランから選べます。表示金額は税込です。"
+    [
+      "1,000pt／1,100円",
+      "5,000pt／5,500円",
+      "10,000pt／11,000円",
+      "50,000pt／55,000円",
+      "100,000pt／110,000円"
+    ].each do |plan|
+      assert_includes response.body, plan
+    end
+    assert_includes response.body, "いずれのプランも、実質1ptあたり1.1円（税込）です。"
+
+    assert_includes response.body, "ポイントは店舗への精算時にいくらで換算されますか？"
+    assert_includes response.body, "未消化・返却済みのポイントは含まれません。"
+    assert_includes response.body, "消化確定したポイントを1pt＝1円で売上換算し、その70％が店舗取り分となります。1ptあたり0.7円相当です。"
+    assert_includes response.body, "対象期間の消化確定ポイント合計に70％を掛け、1円未満を切り捨てて計算します。"
   end
 
   test "FAQ is accessible while signed in with every role" do
