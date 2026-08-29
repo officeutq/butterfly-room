@@ -52,7 +52,7 @@ class StoreFaqCatalog
     },
     {
       key: "sales",
-      title: "料金・売上について",
+      title: "料金・ポイント・売上について",
       questions: [
         {
           number: 6,
@@ -64,6 +64,24 @@ class StoreFaqCatalog
         },
         {
           number: 7,
+          question: "お客様が購入できるポイントのプランと価格を教えてください",
+          answers: [
+            { text: "ポイントは、次の5つの購入プランから選べます。表示金額は税込です。" },
+            { items: [ "1,000pt／1,100円", "5,000pt／5,500円", "10,000pt／11,000円", "50,000pt／55,000円", "100,000pt／110,000円" ] },
+            { text: "いずれのプランも、実質1ptあたり1.1円（税込）です。" }
+          ]
+        },
+        {
+          number: 8,
+          question: "ポイントは店舗への精算時にいくらで換算されますか？",
+          answers: [
+            { text: "店舗売上の対象になるのは、キャストが配信中に消化したギフトのポイントだけです。未消化・返却済みのポイントは含まれません。" },
+            { text: "消化確定したポイントを1pt＝1円で売上換算し、その70％が店舗取り分となります。1ptあたり0.7円相当です。" },
+            { text: "店舗取り分は、対象期間の消化確定ポイント合計に70％を掛け、1円未満を切り捨てて計算します。" }
+          ]
+        },
+        {
+          number: 9,
           question: "売上はいつ支払われますか？",
           answers: [
             { text: "売上は月末締め、翌月10日払いです。" },
@@ -71,7 +89,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 8,
+          number: 10,
           question: "ギフトには、どのようなものを設定できますか？",
           answers: [
             { text: "ギフトの内容は店舗側で設定できます。" },
@@ -79,7 +97,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 9,
+          number: 11,
           question: "ギフトの売上は、いつ店舗に反映されますか？",
           answers: [
             { text: "お客様から送られたギフトを、キャストが配信中に「消化する」と、ギフトのポイントが店舗の売上に反映されます。" },
@@ -87,7 +105,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 10,
+          number: 12,
           question: "ギフトを「消化する」とは何ですか？",
           answers: [
             { text: "お客様からギフトが送られると、配信画面に「消化する」ボタンが表示されます。" },
@@ -95,7 +113,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 11,
+          number: 13,
           question: "配信中に消化されなかったギフトはどうなりますか？",
           answers: [
             { text: "配信中にギフトが消化されなかった場合、そのギフトに使用されたポイントはお客様へ返却されます。" },
@@ -109,7 +127,7 @@ class StoreFaqCatalog
       title: "利用開始について",
       questions: [
         {
-          number: 12,
+          number: 14,
           question: "利用開始に必要なものは何ですか？",
           answers: [
             { text: "インターネット環境と、カメラを利用できるスマートフォンまたはパソコンが必要です。" },
@@ -117,7 +135,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 13,
+          number: 15,
           question: "店舗審査はありますか？",
           answers: [
             { text: "店舗審査はありません。" },
@@ -125,7 +143,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 14,
+          number: 16,
           question: "登録した当日から利用できますか？",
           answers: [
             { text: "はい。当日から利用できます。" },
@@ -133,7 +151,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 15,
+          number: 17,
           question: "売上を受け取るために必要な手続きはありますか？",
           answers: [
             { text: "売上の振り込みを受けるために、店舗の銀行口座を登録する必要があります。" },
@@ -141,7 +159,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 16,
+          number: 18,
           question: "店舗登録時には、どのような情報が必要ですか？",
           answers: [
             { text: "店舗登録時に必要な主な情報は、次のとおりです。" },
@@ -156,7 +174,7 @@ class StoreFaqCatalog
       title: "配信について",
       questions: [
         {
-          number: 17,
+          number: 19,
           question: "配信経験がないキャストでも利用できますか？",
           answers: [
             { text: "はい。特別な配信経験がなくても利用できます。" },
@@ -164,7 +182,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 18,
+          number: 20,
           question: "毎日配信する必要はありますか？",
           answers: [
             { text: "毎日配信する必要はありません。" },
@@ -172,7 +190,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 19,
+          number: 21,
           question: "店舗以外の場所からも配信できますか？",
           answers: [
             { text: "配信場所について、運営側では特別な制限を設けていません。" },
@@ -180,7 +198,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 20,
+          number: 22,
           question: "顔加工やエフェクト機能はありますか？",
           answers: [
             { text: "基本的な顔加工やエフェクト機能があります。" },
@@ -188,7 +206,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 21,
+          number: 23,
           question: "配信内容は録画・保存されますか？",
           answers: [
             { text: "配信内容は録画・保存されません。" },
@@ -196,7 +214,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 22,
+          number: 24,
           question: "配信サマリーでは、何を確認できますか？",
           answers: [
             { text: "配信名、配信時間、視聴者数、コメント数、ギフト数、売上などを確認できます。" },
@@ -205,14 +223,14 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 23,
+          number: 25,
           question: "同時に複数のキャストが配信できますか？",
           answers: [
             { text: "はい。1つの店舗に複数のキャストを登録でき、それぞれのブースから同じ時間帯に配信できます。" }
           ]
         },
         {
-          number: 24,
+          number: 26,
           question: "1つのブースを視聴できる人数に上限はありますか？",
           answers: [
             { text: "視聴人数に上限はありません。" }
@@ -225,7 +243,7 @@ class StoreFaqCatalog
       title: "ブースについて",
       questions: [
         {
-          number: 25,
+          number: 27,
           question: "「ブース」とは何ですか？",
           answers: [
             { text: "ブースは、店舗の中に設ける配信スペースのようなものです。" },
@@ -233,7 +251,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 26,
+          number: 28,
           question: "ブースはどのように作成しますか？",
           answers: [
             { text: "キャストが店舗の招待を承認して所属すると、そのキャスト専用のブースが自動で作成されます。" },
@@ -241,14 +259,14 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 27,
+          number: 29,
           question: "1人のキャストが複数のブースに所属できますか？",
           answers: [
             { text: "はい。1人のキャストが複数のブースに所属することができます。" }
           ]
         },
         {
-          number: 28,
+          number: 30,
           question: "1つのブースに複数のキャストを設定できますか？",
           answers: [
             { text: "現在、1つのブースに設定できるキャストは1人です。" },
@@ -256,7 +274,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 29,
+          number: 31,
           question: "キャストが退店した場合、そのブースはどうなりますか？",
           answers: [
             { text: "店舗管理者がキャストの所属を解除すると、そのキャストに紐づくブースは、配信を終了したうえでアーカイブされます。" },
@@ -264,14 +282,14 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 30,
+          number: 32,
           question: "店舗管理者も配信できますか？",
           answers: [
             { text: "はい。店舗管理者は、店舗内にあるすべてのブースから配信できます。" }
           ]
         },
         {
-          number: 31,
+          number: 33,
           question: "ブースを非公開にしたり、限定配信を行ったりできますか？",
           answers: [
             { text: "現在、ブースの公開・非公開を切り替える機能はありません。" },
@@ -285,7 +303,7 @@ class StoreFaqCatalog
       title: "お客様の利用方法について",
       questions: [
         {
-          number: 32,
+          number: 34,
           question: "お客様はどのように配信を視聴しますか？",
           answers: [
             { text: "キャストは、自分のブース管理画面にある「ブースを共有」ボタンから、専用URLを取得できます。" },
@@ -293,7 +311,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 33,
+          number: 35,
           question: "専用アプリのインストールは必要ですか？",
           answers: [
             { text: "専用アプリのインストールは不要です。" },
@@ -301,14 +319,14 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 34,
+          number: 36,
           question: "共有URLがなくても配信を探せますか？",
           answers: [
             { text: "はい。キャストから共有されたURLから入室できるほか、アカウントを作成せずにButterflyve内で公開されているブースを探して入室することもできます。" }
           ]
         },
         {
-          number: 35,
+          number: 37,
           question: "お客様はどのようにギフトを購入しますか？",
           answers: [
             { text: "お客様は、まず画面上部のポイント欄から、Butterflyve内で使用できるポイントを購入します。" },
@@ -316,7 +334,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 36,
+          number: 38,
           question: "ポイントの支払い方法には何がありますか？",
           answers: [
             { text: "次の決済方法を利用できます。" },
@@ -330,7 +348,7 @@ class StoreFaqCatalog
       title: "店舗管理について",
       questions: [
         {
-          number: 37,
+          number: 39,
           question: "店舗管理者は、どのような管理ができますか？",
           answers: [
             { text: "店舗管理者は、主に次の管理を行えます。" },
@@ -352,7 +370,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 38,
+          number: 40,
           question: "店舗管理者を複数人登録できますか？",
           answers: [
             { text: "はい。店舗管理者は複数人登録できます。" },
@@ -360,7 +378,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 39,
+          number: 41,
           question: "1人のキャストが複数の店舗に所属できますか？",
           answers: [
             { text: "はい。1人のキャストが複数の店舗に所属できます。" },
@@ -368,7 +386,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 40,
+          number: 42,
           question: "キャストが退店した場合、所属を解除できますか？",
           answers: [
             { text: "店舗管理者は、キャストの店舗への所属を解除できます。" },
@@ -382,7 +400,7 @@ class StoreFaqCatalog
       title: "店舗情報の公開について",
       questions: [
         {
-          number: 41,
+          number: 43,
           question: "店舗設定に入力した情報は、お客様にも公開されますか？",
           answers: [
             { text: "店舗管理者は、ダッシュボードの「店舗設定編集」で、店舗の公開・非公開を切り替えられます。" },
@@ -405,7 +423,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 42,
+          number: 44,
           question: "店舗の詳細情報はすべて入力する必要がありますか？",
           answers: [
             { text: "店舗設定の詳細項目は任意です。" },
@@ -419,7 +437,7 @@ class StoreFaqCatalog
       title: "安全管理・サポートについて",
       questions: [
         {
-          number: 43,
+          number: 45,
           question: "迷惑なコメントがあった場合、どのように対応できますか？",
           answers: [
             { text: "キャストは、コメントの非表示や通報を行えます。" },
@@ -427,7 +445,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 44,
+          number: 46,
           question: "操作方法が分からない場合や、不具合が発生した場合はどうすればよいですか？",
           answers: [
             { text: "ダッシュボードの「お問い合わせ」から運営へ連絡できます。" },
@@ -435,7 +453,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 45,
+          number: 47,
           question: "利用できる年齢に条件はありますか？",
           answers: [
             { text: "店舗登録を行う管理者は、18歳以上であり、店舗を代表して利用規約に同意する権限を持っている必要があります。" },
@@ -449,7 +467,7 @@ class StoreFaqCatalog
       title: "退会について",
       questions: [
         {
-          number: 46,
+          number: 48,
           question: "店舗はいつでも退会できますか？",
           answers: [
             { text: "店舗管理画面から、いつでも退会手続きを行えます。" },
@@ -457,7 +475,7 @@ class StoreFaqCatalog
           ]
         },
         {
-          number: 47,
+          number: 49,
           question: "退会時に売上残高がある場合はどうなりますか？",
           answers: [
             { text: "次回の精算日に、残高をすべてお支払いします。" },
