@@ -5,7 +5,12 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
 
   setup do
     @store = Store.create!(name: "Test Store", published: true)
-    @cast  = User.create!(email: "cast@example.com", password: "password", role: :cast)
+    @cast = User.create!(
+      email: "cast@example.com",
+      password: "password",
+      role: :cast,
+      display_name: "Test Cast"
+    )
     @customer = User.create!(email: "customer@example.com", password: "password", role: :customer)
 
     @booth = Booth.create!(
@@ -68,6 +73,75 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
     get live_cast_booth_path(@booth)
     assert_response :success
     assert_cast_booth_share_button_rendered
+  end
+
+  test "away: live screen renders the same stream sharing URL" do
+    StreamSessions::StartService.new(booth: @booth, actor: @cast).call
+    @booth.update!(status: :away)
+
+    get live_cast_booth_path(@booth)
+
+    assert_response :success
+    assert_cast_booth_share_button_rendered
+  end
+
+  test "sharing URL keeps the current stream ID across standby live and away" do
+    stream_session = StreamSessions::StartService.new(booth: @booth, actor: @cast).call
+
+    %i[standby live away live].each do |status|
+      @booth.update!(status: status)
+
+      get live_cast_booth_path(@booth)
+
+      assert_response :success
+      assert_equal stream_session.id, @booth.reload.current_stream_session_id
+      assert_stream_share_url stream_session
+    end
+  end
+
+  test "live sharing text uses the actual stream starter instead of the primary cast" do
+    store_admin = User.create!(
+      email: "stream-sharing-admin@example.com",
+      password: "password",
+      role: :store_admin,
+      display_name: "配信開始管理者"
+    )
+    StoreMembership.create!(store: @store, user: store_admin, membership_role: :admin)
+    stream_session = StreamSessions::StartService.new(booth: @booth, actor: store_admin).call
+
+    get live_cast_booth_path(@booth)
+
+    assert_response :success
+    button = Nokogiri::HTML(response.body).at_css("button.live-share-button")
+    assert_equal "配信開始管理者の配信はここから！遊びに来てね🦋", button["data-share-text"]
+    refute_includes button["data-share-text"], @cast.display_name
+    assert_equal share_booth_url(@booth, stream: stream_session.id), button["data-share-url"]
+  end
+
+  test "live sharing text falls back for blank or deleted stream starter" do
+    stream_session = StreamSessions::StartService.new(booth: @booth, actor: @cast).call
+    @cast.update!(display_name: " ")
+
+    get live_cast_booth_path(@booth)
+
+    assert_response :success
+    assert_stream_share_text "配信はここから！遊びに来てね🦋"
+
+    @cast.update!(display_name: "削除済み配信者", deleted_at: Time.current)
+    store_admin = User.create!(
+      email: "deleted-starter-sharing-admin@example.com",
+      password: "password",
+      role: :store_admin
+    )
+    StoreMembership.create!(store: @store, user: store_admin, membership_role: :admin)
+    sign_in store_admin, scope: :user
+
+    get live_cast_booth_path(@booth)
+
+    assert_response :success
+    assert_stream_share_text "配信はここから！遊びに来てね🦋"
+    refute_includes response.body, @cast.email
+    assert_equal stream_session.id, @booth.reload.current_stream_session_id
   end
 
   test "viewer live screen does not render cast booth share button" do
@@ -150,14 +224,29 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
   private
 
   def assert_cast_booth_share_button_rendered
-    assert_includes response.body, 'aria-label="ブースを共有"'
+    stream_session = @booth.reload.current_stream_session
+
+    assert_includes response.body, 'aria-label="配信を共有"'
+    assert_includes response.body, 'title="配信を共有"'
     assert_includes response.body, 'data-controller="share"'
     assert_includes response.body, "share#share"
-    assert_includes response.body, 'data-share-text="Butterflyveのブースはこちら"'
+    assert_includes response.body, 'data-share-title="Butterflyve"'
+    assert_includes response.body, 'data-share-text="Test Castの配信はここから！遊びに来てね🦋"'
     assert_includes response.body, "live-overlay-ops-slot"
     assert_includes response.body, "live-ops-btn live-share-button"
     assert_includes response.body, "live-share-button"
-    assert_includes response.body, '<span class="visually-hidden">ブースを共有</span>'
-    assert_includes response.body, booth_url(@booth)
+    assert_includes response.body, '<span class="visually-hidden">配信を共有</span>'
+    assert_stream_share_url stream_session
+  end
+
+  def assert_stream_share_url(stream_session)
+    button = Nokogiri::HTML(response.body).at_css("button.live-share-button")
+    assert_equal share_booth_url(@booth, stream: stream_session.id), button["data-share-url"]
+    refute_match(/(?:timestamp|cache|_)=/, button["data-share-url"])
+  end
+
+  def assert_stream_share_text(expected)
+    button = Nokogiri::HTML(response.body).at_css("button.live-share-button")
+    assert_equal expected, button["data-share-text"]
   end
 end
