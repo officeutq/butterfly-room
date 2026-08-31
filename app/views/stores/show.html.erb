@@ -4,7 +4,7 @@
       <%= image_tag @store.thumbnail, class: "store-show-hero-image", alt: @store.name %>
     <% else %>
       <div class="store-show-hero-placeholder">
-        <span class="text-muted">no thumbnail</span>
+        <%= image_tag "no_image_logo.png", class: "no-image-logo", alt: "画像なし" %>
       </div>
     <% end %>
   </div>

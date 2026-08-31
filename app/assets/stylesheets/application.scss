@@ -19,6 +19,13 @@ html.is-standalone {
   --safe-area-standalone: 32px;
 }
 
+.no-image-logo {
+  display: block;
+  width: 8rem;
+  max-width: 45%;
+  height: auto;
+}
+
 @import "components/layout";
 @import "components/header";
 @import "components/broadcast_layout";

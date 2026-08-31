@@ -24,7 +24,7 @@
         <%= image_tag booth.thumbnail_image, class: "card-img-top booths-card-thumbnail" %>
       <% else %>
         <div class="booths-card-thumbnail booths-card-thumbnail-placeholder">
-          <span class="text-muted small">no thumbnail</span>
+          <%= image_tag "no_image_logo.png", class: "no-image-logo", alt: "画像なし" %>
         </div>
       <% end %>
     <% end %>

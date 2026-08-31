@@ -9,7 +9,7 @@
         <%= image_tag user.avatar, class: "card-img-top users-card-thumbnail" %>
       <% else %>
         <div class="users-card-thumbnail users-card-thumbnail-placeholder">
-          <span class="text-muted small">no image</span>
+          <%= image_tag "no_image_logo.png", class: "no-image-logo", alt: "画像なし" %>
         </div>
       <% end %>
     <% end %>
