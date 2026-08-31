@@ -8,7 +8,7 @@
         <%= image_tag booth.thumbnail_image, class: "booth-show-hero-image", alt: booth.name %>
       <% else %>
         <div class="booth-show-hero-placeholder">
-          <span class="text-muted">no thumbnail</span>
+          <%= image_tag "no_image_logo.png", class: "no-image-logo", alt: "画像なし" %>
         </div>
       <% end %>
     </div>

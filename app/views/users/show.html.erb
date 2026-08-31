@@ -6,7 +6,7 @@
             alt: display_name_or_anonymous(@user) %>
     <% else %>
       <div class="user-show-hero-placeholder">
-        <span class="text-muted">no image</span>
+        <%= image_tag "no_image_logo.png", class: "no-image-logo", alt: "画像なし" %>
       </div>
     <% end %>
   </div>
