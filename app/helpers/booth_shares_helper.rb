@@ -14,8 +14,8 @@ module BoothSharesHelper
     "#{display_name}のライブ配信をButterflyveで楽しもう"
   end
 
-  def booth_web_share_text(booth)
-    display_name = public_share_display_name(booth.primary_cast_user)
+  def booth_web_share_text(primary_cast_user)
+    display_name = public_share_display_name(primary_cast_user)
     return "Butterflyveのブースはこちら🦋" if display_name.blank?
 
     "#{display_name}のブースはこちら🦋"
