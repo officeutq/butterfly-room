@@ -79,10 +79,11 @@ StreamSession は配信セッションを表す。
 - broadcast_started_at
 - ended_at
 - status
+- title
 - ivs_stage_arn
 - started_by_cast_user_id
 
-現行実装では、配信開始時に StreamSession.status は live として作成されるが、視聴可否や参加可否は Booth.status と current_stream_session_id を主に参照する。
+現行実装では、standby開始時にStreamSession.statusはliveとして作成される。standby / live / awayの区別と視聴可否・参加可否は、Booth.statusとcurrent_stream_session_idを主に参照する。standby開始から終了まで同じStreamSessionを利用し、終了時にendedへ変更する。
 
 ---
 

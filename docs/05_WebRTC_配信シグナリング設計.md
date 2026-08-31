@@ -228,7 +228,7 @@ IVS SDK のイベントとして、最低限以下の概念を扱う。
 
 * #### スタンバイ中の配信メタ情報入力
 
-  * スタンバイ開始時に `stream_sessions` を作成し、`booth.current_stream_session_id` に紐付ける。これにより、スタンバイ中に配信タイトル/説明（`stream_sessions.title / stream_sessions.description`）を編集可能とする。
+  * スタンバイ開始時に `stream_sessions` を `status=live` で作成し、`booth.current_stream_session_id` に紐付ける。これにより、スタンバイ中に配信タイトル（`stream_sessions.title`）を編集可能とする。standbyは `Booth.status` だけが保持する。
   * 編集は **current_session**一致かつ **booth.status=standby** の場合に限定し、配信中（live/away）は原則 read-only とする（事故防止）。
   * 視聴側の表示は `stream_session.title` を優先し、未入力の場合は `booth.name` をフォールバック表示する。
 

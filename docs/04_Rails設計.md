@@ -389,9 +389,11 @@ end
 
 ### 公開閲覧と認証境界（Phase2）
 
-* `home#show`、`home#welcome`、`stores#show`、`booths#show`、`users#show`、`guest_auth_prompts#show` は `authenticate_user!` の対象外とする
+* `home#show`、`home#welcome`、`stores#show`、`booths#show`、`booths#share`、`users#show`、`guest_auth_prompts#show` は `authenticate_user!` の対象外とする
 * `stores#show` は `Store.published.find` で公開状態を必ず検証し、配下のブースは `active` のみ取得する
 * `booths#show` は `Booth.active.in_published_stores.find`、未ログインの `users#show` はホームの配信者タブと共通の `User.public_profiles` に限定する。`booths#enter` は引き続き未ログインを `/welcome` へリダイレクトする
+* `booths#share` も `Booth.active.in_published_stores.find` を再利用し、streamは対象ブースの関連から解決する。不正値・不存在・別ブースのstreamはブース共有へフォールバックし、ended済みでも対象ブースに属するstreamは配信共有に使用する
+* 共有ページは公開情報だけの専用layoutを使用し、動的OGPと通常ブースへのJavaScript遷移を提供する。表示名は論理削除されておらず空欄でない `display_name` だけを利用し、メールアドレス等で代用しない。詳細は `docs/design/booth_sharing.md` を正とする
 * お気に入りの作成・解除Controllerは従来どおり認証必須とし、未ログイン表示ではPOST/DELETE formを生成しない
 * コメント・通報・ドリンク・お気に入り等の未ログイン保護操作は `guest_auth_prompt_path` を `modal` Turbo Frameへ読み込み、状態変更APIを呼ばず共通モーダルから `/welcome` へ進ませる
 * `default_main` とbooth専用の `viewer_main` は、未ログイン時のフッター保護項目を認証必須pathへ直リンクせず、いずれも `guest_auth_prompt_path` へ統一する。公開プロフィールでも未ログイン用フッターを表示する
@@ -403,7 +405,7 @@ end
 * `home#show` のtitle、description、canonical、OGP、非表示H1はサービス公開トップとして設定し、ドメインルートを示す `WebSite` 構造化データを出力する。既存の表示要素と配置は変更しない
 * `home#welcome` のtitle、description、canonical、OGPはログイン・視聴者アカウント新規作成の案内ページとして設定し、`WebSite` 構造化データは出力しない
 * `stores#show` のdescriptionとOGP descriptionは `Stores::MetaDescriptionBuilder` で同一内容を生成する。登録済みの店舗名・エリア・業態の日本語表示名・営業時間・店舗説明だけを使用し、店舗説明の空白を正規化して最終結果を160文字以内とする。業態の「その他」は未入力として扱い、住所全文は使用しない
-* sitemapは `/`、`/welcome`、`Store.published` の店舗詳細URLを列挙する
+* sitemapは `/`、`/welcome`、`Store.published` の店舗詳細URLを列挙する。`noindex` の共有専用URLは追加しない
 
 ---
 
