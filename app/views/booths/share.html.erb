@@ -1,0 +1,8 @@
+<main
+  data-controller="auto-redirect"
+  data-auto-redirect-url-value="<%= booth_url(@booth) %>"
+  data-auto-redirect-delay-value="0">
+  <p>
+    <%= link_to "#{@booth.name}のページへ移動する", booth_url(@booth) %>
+  </p>
+</main>

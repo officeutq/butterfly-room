@@ -192,6 +192,9 @@ share_controller は Web Share API を使う。
 - Web Share API が利用可能な場合はOS共有を起動
 - 利用不可の場合は警告フラッシュを表示
 - 店舗向けオンボーディング中は共有完了後にstep更新を通知する
+- ブース情報画面はstreamなしの共有専用URL、キャスト配信画面はcurrent `StreamSession` ID付き共有専用URLをdata属性へ設定する
+- 共有専用ページから通常ブースへの遷移は `auto_redirect_controller` をdelay `0` で利用する
+- URL、OGP、公開情報、表示名フォールバックの正本は `docs/design/booth_sharing.md` とする
 
 ---
 

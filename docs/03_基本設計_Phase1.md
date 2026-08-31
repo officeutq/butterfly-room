@@ -720,20 +720,22 @@ Booth は「配信可能なルームの状態」を表す。
 #### 状態（例）
 
 - offline（待機）
+- standby（配信準備中）
 - live（配信中）
 - away（席外し）
 
 #### 状態遷移
 
-offline → live  
-live → away  
-away → live  
-live → offline  
+offline → standby
+standby → live
+live → away
+away → live
+standby / live / away → offline
 
 #### 補足
 
-- archived_at が NOT NULL の Booth は、いかなる場合も live へ遷移不可
-- 配信開始時に StreamSession を生成し、current_stream_session_id を設定する
+- archived_at が NOT NULL の Booth は、いかなる場合も standby / live へ遷移不可
+- standby開始時に StreamSession を生成し、current_stream_session_id を設定する
 - 配信終了時に current_stream_session_id を NULL に戻す
 
 Booth の status は「UI上の表示状態」であり、売上計算には直接関与しない。
@@ -742,19 +744,19 @@ Booth の status は「UI上の表示状態」であり、売上計算には直�
 
 StreamSession は配信期間を表す。
 
-#### 状態（例）
+#### 状態
 
-- standby（準備）
 - live（配信中）
 - ended（終了）
 
 #### 状態遷移
 
-standby → live  
 live → ended  
 
 Phase1では再開（ended → live）は行わない。
 再開が必要な場合は新しい StreamSession を生成する。
+
+StreamSessionはBoothがstandbyへ遷移する時点で `live` として作成する。配信準備中・配信中・席外し中の区別は `Booth.status` が持ち、standby → liveおよびlive ↔ awayで同じStreamSessionを利用する。
 
 #### 終了時処理（重要）
 
@@ -893,14 +895,15 @@ StreamSession 終了時に：
 キャストがブースで配信を行い、顧客が視聴できる状態を成立させる。
 
 #### 仕様（Phase1）
-- 配信開始時に StreamSession を生成する
+- 配信準備開始時に StreamSession を生成する
   - stream_sessions.started_at を設定
-  - stream_sessions.status を live（相当）へ遷移
+  - stream_sessions.status を live に設定
   - booths.current_stream_session_id を設定
-  - booths.status を live（相当）へ遷移
-- 席外し／復帰は booths.status を away/live（相当）へ遷移させる
-- 配信終了時に stream_sessions.ended_at を設定し、status を ended（相当）へ遷移させる
-- 終了処理で booths.current_stream_session_id を NULL に戻し、booths.status を offline（相当）へ遷移させる
+  - booths.status を standby へ遷移
+- 配信開始は同じStreamSessionを維持したまま booths.status を live へ遷移させる
+- 席外し／復帰は同じStreamSessionを維持したまま booths.status を away / live へ遷移させる
+- 配信終了時に stream_sessions.ended_at を設定し、status を ended へ遷移させる
+- 終了処理で booths.current_stream_session_id を NULL に戻し、booths.status を offline へ遷移させる
 - アーカイブ済みブースは配信開始不可
 
 ### 6.5 視聴：入室／在室（Presence）／退室
@@ -1230,12 +1233,12 @@ Phase1では以下を採用する。
 
 #### 9.1.1 配信開始〜終了
 
-1. キャストがブースで配信開始できる
-2. StreamSession が生成される
-3. Booth.status が live になる
-4. 配信終了時に StreamSession が ended になる
-5. Booth.status が offline に戻る
-6. Booth.current_stream_session_id が NULL になる
+1. キャストがブースで配信準備を開始できる
+2. StreamSession がliveとして生成され、Booth.status がstandbyになる
+3. 同じStreamSessionのままBooth.status がliveになる
+4. 配信終了時にStreamSessionがendedになる
+5. Booth.statusがofflineに戻る
+6. Booth.current_stream_session_idがNULLになる
 
 #### 9.1.2 ドリンク送信〜消化〜売上確定
 
@@ -1345,3 +1348,4 @@ Phase1の認可・売上・配信状態の不変条件を維持したまま、�
 - `/welcome` で認証済みユーザーを `/` へ戻し、公式トップを未ログイン専用とする
 - BAN対象customerの店舗・ブース・viewer token・コメント・ドリンク・在室等の既存制限は変更しない
 - 公開ページはページ単位の title、description、canonical、OGPを設定する。`/` の既存の非表示H1は公式タグラインを示し、サイトを表す `WebSite` 構造化データはドメインルートの `/` だけに配置する。店舗詳細のdescriptionとOGP descriptionは、登録済みの店舗名・エリア・業態の日本語表示名・営業時間・空白を正規化した店舗説明から同じ文章を160文字以内で生成し、住所全文は含めない。業態の「その他」はdescriptionでは未入力として扱う。画面表示と既存導線は変更せず、sitemapには公開店舗だけを含める
+- ブース共有と配信共有は `docs/design/booth_sharing.md` を正とする共有専用URLを使用する。共有ページは通常ブースと同じ公開条件を適用し、公開情報だけの専用layout、動的OGP、通常ブースへのJavaScript遷移を提供する。`noindex` とし、sitemapへ追加しない

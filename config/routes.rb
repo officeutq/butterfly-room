@@ -121,6 +121,7 @@ Rails.application.routes.draw do
   resources :booths, only: %i[show] do
     member do
       get :enter
+      get :share
       post :enter_as_cast
       get :viewer_drink_menu
     end
