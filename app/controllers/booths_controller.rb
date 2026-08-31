@@ -3,10 +3,12 @@
 class BoothsController < ApplicationController
   include StoreBanGuard
 
-  skip_before_action :authenticate_user!, only: %i[show enter]
+  layout "share", only: %i[share]
+
+  skip_before_action :authenticate_user!, only: %i[show enter share]
   before_action :clear_guest_unauthenticated_alert, only: %i[show]
   before_action :redirect_guest_to_welcome, only: %i[enter]
-  before_action :set_public_booth, only: %i[show viewer_drink_menu]
+  before_action :set_public_booth, only: %i[show share viewer_drink_menu]
   before_action :set_entry_booth, only: %i[enter enter_as_cast]
   before_action :reject_banned_customer_for_booth!, only: %i[show viewer_drink_menu]
   before_action :set_viewer_stream_context, only: %i[show viewer_drink_menu]
@@ -36,6 +38,13 @@ class BoothsController < ApplicationController
       user_signed_in? &&
       primary_cast.present? &&
       current_user.favorite_users.exists?(target_user: primary_cast)
+  end
+
+  def share
+    @stream_session = resolve_share_stream_session
+    @share_url = share_booth_url(@booth, **share_url_options)
+
+    set_share_meta_tags
   end
 
   def viewer_drink_menu
@@ -145,6 +154,66 @@ class BoothsController < ApplicationController
 
   def set_public_booth
     @booth = Booth.active.in_published_stores.find(params[:id])
+  end
+
+  def resolve_share_stream_session
+    stream_id = normalized_share_stream_id
+    return if stream_id.blank?
+
+    @booth.stream_sessions.find_by(id: stream_id)
+  end
+
+  def normalized_share_stream_id
+    value = params[:stream].to_s
+    return unless value.match?(/\A\d+\z/)
+
+    stream_id = value.to_i
+    return if stream_id.zero? || stream_id > 9_223_372_036_854_775_807
+
+    stream_id
+  end
+
+  def share_url_options
+    return {} if @stream_session.blank?
+
+    { stream: @stream_session.id }
+  end
+
+  def set_share_meta_tags
+    brand_name = "Butterflyve（バタフライブ）"
+    title = @stream_session&.title.presence || @booth.name
+    share_user =
+      if @stream_session.present?
+        @stream_session.started_by_cast_user
+      else
+        @booth.primary_cast_user
+      end
+    description = view_context.booth_share_og_description(share_user)
+    image =
+      if @booth.thumbnail_image.attached?
+        url_for(@booth.thumbnail_image)
+      else
+        view_context.image_url("logo.png")
+      end
+
+    set_meta_tags(
+      title: title,
+      description: description,
+      noindex: true,
+      nofollow: false,
+      canonical: @share_url,
+      og: {
+        site_name: brand_name,
+        title: title,
+        description: description,
+        type: "website",
+        url: @share_url,
+        image: image
+      },
+      twitter: {
+        card: "summary_large_image"
+      }
+    )
   end
 
   def set_entry_booth
