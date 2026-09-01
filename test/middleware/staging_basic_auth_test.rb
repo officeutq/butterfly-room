@@ -48,6 +48,17 @@ class StagingBasicAuthTest < ActiveSupport::TestCase
     assert_equal 200, production_middleware.call(Rack::MockRequest.env_for("/")).first
   end
 
+  test "does not require credentials when disabled in staging" do
+    env = STAGING_ENV.merge(
+      "BASIC_AUTH_ENABLED" => "false",
+      "BASIC_AUTH_USERNAME" => "",
+      "BASIC_AUTH_PASSWORD" => ""
+    )
+    public_middleware = Staging::BasicAuth.new(APP, env: env)
+
+    assert_equal 200, public_middleware.call(Rack::MockRequest.env_for("/")).first
+  end
+
   private
 
   def middleware

@@ -112,6 +112,7 @@ class BoothSharingTest < ActionDispatch::IntegrationTest
   test "crawler and browser user agents receive the same public OGP" do
     user_agents = [
       "Mozilla/5.0 AppleWebKit/537.36 Chrome/120.0 Safari/537.36",
+      "Twitterbot/1.0",
       "facebookexternalhit/1.1",
       "Slackbot-LinkExpanding 1.0"
     ]
@@ -129,6 +130,38 @@ class BoothSharingTest < ActionDispatch::IntegrationTest
     end
 
     assert_equal 1, results.uniq.size
+  end
+
+  test "share page bypasses the browser version guard without weakening other pages" do
+    outdated_browser =
+      "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 " \
+      "(KHTML, like Gecko) Chrome/109.0.0.0 Mobile Safari/537.36"
+
+    get share_booth_path(@booth, stream: @stream_session.id),
+        headers: { "User-Agent" => outdated_browser }
+
+    assert_response :success
+    assert_equal @stream_session.title,
+                 Nokogiri::HTML(response.body).at_css("meta[property='og:title']")["content"]
+
+    get root_path, headers: { "User-Agent" => outdated_browser }
+
+    assert_response :not_acceptable
+  end
+
+  test "staging lets a crawler fetch OGP while returning noindex directives" do
+    with_env("APP_ENV" => "staging", "BASIC_AUTH_ENABLED" => "false") do
+      get share_booth_path(@booth, stream: @stream_session.id),
+          headers: { "User-Agent" => "Twitterbot/1.0" }
+    end
+
+    assert_response :success
+    assert_equal "noindex, nofollow", response.headers["X-Robots-Tag"]
+
+    doc = Nokogiri::HTML(response.body)
+    assert_equal @stream_session.title, doc.at_css("meta[property='og:title']")["content"]
+    assert_equal "summary_large_image", doc.at_css("meta[name='twitter:card']")["content"]
+    assert_includes doc.at_css("meta[name='robots']")["content"], "noindex"
   end
 
   test "dedicated layout does not expose authenticated user or application chrome" do

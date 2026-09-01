@@ -48,9 +48,10 @@
 
 ## 外部送信事故防止
 
-- [ ] Basic認証なしで401、正しい認証で200
-- [ ] `/robots.txt`が全crawlを拒否
-- [ ] HTMLとresponse headerに`noindex, nofollow`
+- [ ] Basic認証なしで通常ページと共有専用URLが200
+- [ ] `/robots.txt`がcrawlを許可し、sitemapを案内していない
+- [ ] `Twitterbot/1.0`等でも共有専用URLが200となり、OGPを取得できる
+- [ ] HTMLに`noindex`、response headerに`noindex, nofollow`
 - [ ] GTM script、noscript、conversion eventが出力されない
 - [ ] mailのTo/Cc/Bccが承認済みredirect先へ置換され、subjectに`[STAGING]`
 - [ ] SMSはmockでAWS SNSへ送信されない
