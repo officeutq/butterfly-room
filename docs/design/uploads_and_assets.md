@@ -126,7 +126,7 @@ native file inputの`accept`には各形式の拡張子とMIME typeを併記し�
 - 元画像は変更せず、添付後に非同期で事前生成する
 - 事前生成前に要求された場合は初回アクセス時に生成し、生成済みvariantを以後再利用する
 - 共有操作ごとの再変換、SNS別variant、cache bust parameterは設けない
-- サムネイル未設定時は、既存ロゴを中央配置した1200x630pxの `booth-share-ogp.jpg` を使用する
+- サムネイル未設定時は、既存ロゴを中央配置した1200x630pxの `booth-share-ogp.jpg` を、ブース単位・配信セッション単位の共有コンテキスト固有URLから無変換で配信する
 
 ### 4.4 実行環境
 
