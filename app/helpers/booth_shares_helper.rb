@@ -3,7 +3,7 @@
 require "uri"
 
 module BoothSharesHelper
-  X_SHARE_HASHTAGS = %w[Butterflyve バタフライブ].freeze
+  X_SHARE_HASHTAG_TEXT = "#Butterflyve #バタフライブ"
 
   def public_share_display_name(user)
     return if user.blank? || user.deleted?
@@ -34,9 +34,8 @@ module BoothSharesHelper
 
   def x_share_intent_url(text:, url:)
     query = URI.encode_www_form(
-      text: text,
-      url: url,
-      hashtags: X_SHARE_HASHTAGS.join(",")
+      text: "#{text}\n\n#{X_SHARE_HASHTAG_TEXT}",
+      url: url
     )
 
     "https://x.com/intent/tweet?#{query}"

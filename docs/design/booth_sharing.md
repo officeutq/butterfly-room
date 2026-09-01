@@ -99,7 +99,7 @@ JavaScript無効時のため、通常ブースへのリンクを本文に表示�
 3. その他のアプリで共有（`bi-share`）
 4. リンクをコピー（`bi-clipboard`）
 
-Xは `https://x.com/intent/tweet` を別タブで開き、共有文を `text`、共有専用URLを `url`、`Butterflyve,バタフライブ` を `hashtags` としてURLエンコードして渡す。これによりXの投稿画面へ `#Butterflyve #バタフライブ` を追加する。
+Xは `https://x.com/intent/tweet` を別タブで開く。`text` は既存の共有文、空行、`#Butterflyve #バタフライブ` の順で組み立て、共有専用URLは別の `url` として最後に渡す。各query parameter（クエリパラメーター）は値単位でURLエンコードする。Xの投稿表示で共有URLが本文とハッシュタグの間に残ることを避け、URLを共有カードへ展開できる末尾位置に保つため、`hashtags` parameterは使用しない。
 
 LINEは `https://social-plugins.line.me/lineit/share` を別タブで開き、共有文を `text`、共有専用URLを `url` としてURLエンコードして渡す。LINE、共通の `share_controller.js` からWeb Share API（OSの共有画面を開くAPI）を使用する「その他のアプリで共有」、共通の `clipboard_controller.js` を使用する「リンクをコピー」にはハッシュタグを追加しない。
 
