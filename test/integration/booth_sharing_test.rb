@@ -132,6 +132,23 @@ class BoothSharingTest < ActionDispatch::IntegrationTest
     assert_equal 1, results.uniq.size
   end
 
+  test "share page bypasses the browser version guard without weakening other pages" do
+    outdated_browser =
+      "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 " \
+      "(KHTML, like Gecko) Chrome/109.0.0.0 Mobile Safari/537.36"
+
+    get share_booth_path(@booth, stream: @stream_session.id),
+        headers: { "User-Agent" => outdated_browser }
+
+    assert_response :success
+    assert_equal @stream_session.title,
+                 Nokogiri::HTML(response.body).at_css("meta[property='og:title']")["content"]
+
+    get root_path, headers: { "User-Agent" => outdated_browser }
+
+    assert_response :not_acceptable
+  end
+
   test "staging lets a crawler fetch OGP while returning noindex directives" do
     with_env("APP_ENV" => "staging", "BASIC_AUTH_ENABLED" => "false") do
       get share_booth_path(@booth, stream: @stream_session.id),
