@@ -138,7 +138,7 @@ class Cast::BoothInfoSharingTest < ActionDispatch::IntegrationTest
       path: "/intent/tweet",
       icon: ".bi-twitter-x",
       label: "Xで共有",
-      expected_text: expected_text,
+      expected_text: "#{expected_text}\n\n#Butterflyve #バタフライブ",
       expected_url: expected_url
     )
     assert_external_share_action(
@@ -162,6 +162,7 @@ class Cast::BoothInfoSharingTest < ActionDispatch::IntegrationTest
     assert_equal path, uri.path
     assert_equal expected_text, params["text"]
     assert_equal expected_url, params["url"]
+    refute params.key?("hashtags")
     assert_equal "_blank", action["target"]
     assert_equal "noopener noreferrer", action["rel"]
     assert_equal label, action.text.strip

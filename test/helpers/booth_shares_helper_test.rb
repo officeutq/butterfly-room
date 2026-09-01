@@ -14,8 +14,9 @@ class BoothSharesHelperTest < ActionView::TestCase
     assert_equal "https", uri.scheme
     assert_equal "x.com", uri.host
     assert_equal "/intent/tweet", uri.path
-    assert_equal share_text, params["text"]
+    assert_equal "#{share_text}\n\n#Butterflyve #バタフライブ", params["text"]
     assert_equal share_url, params["url"]
+    refute params.key?("hashtags")
   end
 
   test "line_share_url encodes the text and nested share URL" do
@@ -30,5 +31,6 @@ class BoothSharesHelperTest < ActionView::TestCase
     assert_equal "/lineit/share", uri.path
     assert_equal share_text, params["text"]
     assert_equal share_url, params["url"]
+    refute params.key?("hashtags")
   end
 end

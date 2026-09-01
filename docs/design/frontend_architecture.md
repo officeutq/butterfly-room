@@ -190,7 +190,7 @@ data-favorite-sync-key-value
 ブース情報画面とキャスト配信画面は、既存位置の共有ボタンから共通の共有先選択モーダルを開く。
 
 - Xは `x.com/intent/tweet`、LINEは `social-plugins.line.me/lineit/share` を別タブで開く
-- X・LINEの共有文とURLは `BoothSharesHelper` でURLエンコードする
+- X・LINEの共有文とURLは `BoothSharesHelper` でURLエンコードする。Xは共有文の後に空行と `#Butterflyve #バタフライブ` を入れ、URLを別parameterで最後に渡す
 - その他のアプリは `share_controller` からWeb Share APIを起動し、利用不可の場合は警告フラッシュを表示する
 - リンクコピーは `clipboard_controller` を利用する
 - Instagram専用ボタンは設けず、OSやブラウザーが共有先として提示する場合だけ「その他のアプリで共有」から利用する

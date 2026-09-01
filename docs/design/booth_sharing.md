@@ -101,7 +101,9 @@ JavaScript無効時のため、通常ブースへのリンクを本文に表示�
 3. その他のアプリで共有（`bi-share`）
 4. リンクをコピー（`bi-clipboard`）
 
-Xは `https://x.com/intent/tweet`、LINEは `https://social-plugins.line.me/lineit/share` を別タブで開き、共有文を `text`、共有専用URLを `url` としてURLエンコードして渡す。「その他のアプリで共有」は共通の `share_controller.js` からWeb Share API（OSの共有画面を開くAPI）を使用し、「リンクをコピー」は共通の `clipboard_controller.js` へ共有専用URLだけを渡す。
+Xは `https://x.com/intent/tweet` を別タブで開く。`text` は既存の共有文、空行、`#Butterflyve #バタフライブ` の順で組み立て、共有専用URLは別の `url` として最後に渡す。各query parameter（クエリパラメーター）は値単位でURLエンコードする。Xの投稿表示で共有URLが本文とハッシュタグの間に残ることを避け、URLを共有カードへ展開できる末尾位置に保つため、`hashtags` parameterは使用しない。
+
+LINEは `https://social-plugins.line.me/lineit/share` を別タブで開き、共有文を `text`、共有専用URLを `url` としてURLエンコードして渡す。LINE、共通の `share_controller.js` からWeb Share API（OSの共有画面を開くAPI）を使用する「その他のアプリで共有」、共通の `clipboard_controller.js` を使用する「リンクをコピー」にはハッシュタグを追加しない。
 
 Instagram専用ボタンは設けない。OSやブラウザーの共有先にInstagramが表示される環境では「その他のアプリで共有」から利用できるものとし、表示されない環境での利用は保証しない。
 
@@ -157,7 +159,7 @@ DB schema、`Booth` / `StreamSession` の状態遷移、視聴・コメント・
 - JavaScript遷移先とJavaScript無効時リンク
 - 共有ページにメールアドレス等の非公開情報が含まれない
 - ブース情報画面と配信画面の共有ボタンが共通モーダルを開くこと
-- X・LINEの遷移先、共有文、共有専用URLと、マルチバイト文字・入れ子のquery parameterを含むURLのエンコード
+- X・LINEの遷移先、共有文、共有専用URL、Xだけに設定するハッシュタグと、マルチバイト文字・入れ子のquery parameterを含むURLのエンコード
 - その他のアプリへ渡すWeb Share APIのdata属性と、リンクコピーへ渡すURL
 - キャスト配信画面の共有モーダルが配信映像overlayの外側へ描画されること
 - 通常ブースの未ログイン読み取り専用表示と、未ログインの`booths#enter`転送の回帰
