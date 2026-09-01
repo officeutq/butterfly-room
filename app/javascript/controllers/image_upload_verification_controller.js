@@ -1,0 +1,624 @@
+import { Controller } from "@hotwired/stimulus"
+import Cropper from "cropperjs"
+
+const STATE_SCHEMA_VERSION = 1
+const JPEG_QUALITY = 0.9
+const RATIO_CONFIG = Object.freeze({
+  square: Object.freeze({ ratio: 1, width: 1024, height: 1024 }),
+  social: Object.freeze({ ratio: 40 / 21, width: 1200, height: 630 }),
+})
+
+function round(value, precision = 4) {
+  const multiplier = 10 ** precision
+  return Math.round(value * multiplier) / multiplier
+}
+
+function inverseTransformPoint(x, y, matrix, sourceWidth, sourceHeight) {
+  const [a, b, c, d, e, f] = matrix
+  const determinant = (a * d) - (b * c)
+
+  if (!Number.isFinite(determinant) || Math.abs(determinant) < Number.EPSILON) {
+    throw new Error("画像の変換行列を座標へ変換できません。")
+  }
+
+  const centerX = sourceWidth / 2
+  const centerY = sourceHeight / 2
+  const translatedX = x - centerX - e
+  const translatedY = y - centerY - f
+
+  return {
+    x: centerX + ((d * translatedX) - (c * translatedY)) / determinant,
+    y: centerY + ((a * translatedY) - (b * translatedX)) / determinant,
+  }
+}
+
+export function cropStateFromTransform({ selection, matrix, sourceWidth, sourceHeight, ratioKey }) {
+  const topLeft = inverseTransformPoint(
+    selection.x,
+    selection.y,
+    matrix,
+    sourceWidth,
+    sourceHeight
+  )
+  const bottomRight = inverseTransformPoint(
+    selection.x + selection.width,
+    selection.y + selection.height,
+    matrix,
+    sourceWidth,
+    sourceHeight
+  )
+  const x = Math.min(topLeft.x, bottomRight.x)
+  const y = Math.min(topLeft.y, bottomRight.y)
+  const width = Math.abs(bottomRight.x - topLeft.x)
+  const height = Math.abs(bottomRight.y - topLeft.y)
+  const output = RATIO_CONFIG[ratioKey]
+
+  if (!output || width <= 0 || height <= 0) {
+    throw new Error("クロップ範囲を取得できません。")
+  }
+
+  return {
+    schemaVersion: STATE_SCHEMA_VERSION,
+    ratioKey,
+    source: {
+      width: sourceWidth,
+      height: sourceHeight,
+    },
+    crop: {
+      x: round(x),
+      y: round(y),
+      width: round(width),
+      height: round(height),
+    },
+    zoom: round(sourceWidth / width),
+    output: {
+      width: output.width,
+      height: output.height,
+      mimeType: "image/jpeg",
+      quality: JPEG_QUALITY,
+    },
+  }
+}
+
+export function transformFromCropState({ crop, selection, sourceWidth, sourceHeight }) {
+  const scaleX = selection.width / crop.width
+  const scaleY = selection.height / crop.height
+  const scale = (scaleX + scaleY) / 2
+  const centerX = sourceWidth / 2
+  const centerY = sourceHeight / 2
+  const translateX = selection.x - centerX - (scale * (crop.x - centerX))
+  const translateY = selection.y - centerY - (scale * (crop.y - centerY))
+
+  return [scale, 0, 0, scale, translateX, translateY]
+}
+
+export function selectionBoxForRatio({ canvasWidth, canvasHeight, ratio, coverage = 0.82 }) {
+  const availableWidth = canvasWidth * coverage
+  const availableHeight = canvasHeight * coverage
+  let width = availableWidth
+  let height = width / ratio
+
+  if (height > availableHeight) {
+    height = availableHeight
+    width = height * ratio
+  }
+
+  return {
+    x: (canvasWidth - width) / 2,
+    y: (canvasHeight - height) / 2,
+    width,
+    height,
+  }
+}
+
+export function transformedImageBounds({ matrix, sourceWidth, sourceHeight }) {
+  const [a, b, c, d, e, f] = matrix
+  const centerX = sourceWidth / 2
+  const centerY = sourceHeight / 2
+  const points = [
+    [0, 0],
+    [sourceWidth, 0],
+    [0, sourceHeight],
+    [sourceWidth, sourceHeight],
+  ].map(([x, y]) => ({
+    x: centerX + (a * (x - centerX)) + (c * (y - centerY)) + e,
+    y: centerY + (b * (x - centerX)) + (d * (y - centerY)) + f,
+  }))
+  const xValues = points.map((point) => point.x)
+  const yValues = points.map((point) => point.y)
+
+  return {
+    left: Math.min(...xValues),
+    top: Math.min(...yValues),
+    right: Math.max(...xValues),
+    bottom: Math.max(...yValues),
+  }
+}
+
+export function transformCoversSelection({ matrix, selection, sourceWidth, sourceHeight, tolerance = 0.5 }) {
+  const bounds = transformedImageBounds({ matrix, sourceWidth, sourceHeight })
+
+  return bounds.left <= selection.x + tolerance &&
+    bounds.top <= selection.y + tolerance &&
+    bounds.right >= selection.x + selection.width - tolerance &&
+    bounds.bottom >= selection.y + selection.height - tolerance
+}
+
+export default class extends Controller {
+  static targets = [
+    "control",
+    "download",
+    "editor",
+    "empty",
+    "file",
+    "preview",
+    "previewEmpty",
+    "previewMetadata",
+    "ratio",
+    "source",
+    "sourceMetadata",
+    "state",
+    "status",
+    "workspace",
+  ]
+
+  connect() {
+    this.cropper = null
+    this.cropperCanvas = null
+    this.cropperImage = null
+    this.cropperSelection = null
+    this.sourceObjectUrl = null
+    this.previewObjectUrl = null
+    this.loadGeneration = 0
+    this.previewGeneration = 0
+    this.isDisconnected = false
+    this.sourceLoadCleanup = null
+    this.boundTransformGuard = this.constrainTransform.bind(this)
+    this.boundStateUpdate = this.updateStateAfterOperation.bind(this)
+    this.setControlsDisabled(true)
+  }
+
+  disconnect() {
+    this.isDisconnected = true
+    this.cleanup()
+  }
+
+  beforeCache() {
+    this.cleanup({ resetUi: true })
+  }
+
+  async loadFile(event) {
+    const file = event.currentTarget.files?.[0]
+    if (!file) return
+
+    if (!this.supportedFile(file)) {
+      this.setStatus("JPEG / PNG / WebPを選択してください。", true)
+      event.currentTarget.value = ""
+      return
+    }
+
+    const generation = this.loadGeneration + 1
+    this.loadGeneration = generation
+    this.clearPendingSourceLoad()
+    this.destroyCropper()
+    this.revokeSourceObjectUrl()
+    this.clearPreview()
+    this.setControlsDisabled(true)
+    this.setStatus("画像を読み込んでいます…")
+
+    this.sourceObjectUrl = URL.createObjectURL(file)
+    this.sourceTarget.src = this.sourceObjectUrl
+    this.emptyTarget.hidden = true
+    this.workspaceTarget.hidden = false
+
+    try {
+      await this.waitForSourceImage()
+      if (this.isDisconnected || generation !== this.loadGeneration) return
+
+      this.cropper = new Cropper(this.sourceTarget, {
+        container: this.editorTarget,
+        template: this.cropperTemplate(this.currentConfig().ratio),
+      })
+      this.cropperCanvas = this.cropper.getCropperCanvas()
+      this.cropperImage = this.cropper.getCropperImage()
+      this.cropperSelection = this.cropper.getCropperSelection()
+
+      if (!this.cropperCanvas || !this.cropperImage || !this.cropperSelection) {
+        throw new Error("Cropper.jsの編集要素を初期化できません。")
+      }
+
+      await this.cropperImage.$ready()
+      if (this.isDisconnected || generation !== this.loadGeneration) return
+
+      this.layoutSelection()
+      this.cropperImage.addEventListener("transform", this.boundTransformGuard)
+      this.cropperCanvas.addEventListener("actionend", this.boundStateUpdate)
+      this.observeEditorResize()
+      this.sourceMetadataTarget.textContent = `${file.name} / ${this.sourceTarget.naturalWidth}×${this.sourceTarget.naturalHeight}`
+      this.setControlsDisabled(false)
+      this.captureState()
+      await this.generatePreview()
+      this.setStatus("操作できます")
+    } catch (error) {
+      if (generation !== this.loadGeneration) return
+
+      this.destroyCropper()
+      this.setControlsDisabled(true)
+      this.setStatus(error.message || "画像を読み込めませんでした。", true)
+    }
+  }
+
+  async changeRatio() {
+    if (!this.cropperSelection || !this.cropperImage) return
+
+    this.cropperSelection.aspectRatio = this.currentConfig().ratio
+    await this.nextFrame()
+    if (!this.cropperSelection || this.isDisconnected) return
+
+    this.layoutSelection()
+    this.resetImageTransform()
+    this.captureState()
+    await this.generatePreview()
+    this.setStatus("用途と固定アスペクト比を変更しました")
+  }
+
+  zoomIn() {
+    this.cropperImage?.$zoom(0.1)
+    this.captureState()
+  }
+
+  zoomOut() {
+    this.cropperImage?.$zoom(-0.1)
+    this.captureState()
+  }
+
+  async reset() {
+    if (!this.cropperImage) return
+
+    this.resetImageTransform()
+    this.captureState()
+    await this.generatePreview()
+    this.setStatus("初期状態へ戻しました")
+  }
+
+  captureState() {
+    if (!this.cropperImage || !this.cropperSelection) return null
+
+    try {
+      const state = this.buildState()
+      this.stateTarget.value = JSON.stringify(state, null, 2)
+      return state
+    } catch (error) {
+      this.setStatus(error.message, true)
+      return null
+    }
+  }
+
+  async restoreState() {
+    if (!this.cropperImage || !this.cropperSelection) return
+
+    try {
+      const state = JSON.parse(this.stateTarget.value)
+      this.validateState(state)
+      this.ratioTarget.value = state.ratioKey
+      this.cropperSelection.aspectRatio = this.currentConfig().ratio
+      await this.nextFrame()
+      if (!this.cropperSelection || this.isDisconnected) return
+
+      this.layoutSelection()
+      this.applyStateToImage(state)
+      this.captureState()
+      await this.generatePreview()
+      this.setStatus("JSONのクロップ状態を復元しました")
+    } catch (error) {
+      this.setStatus(error.message || "クロップ状態を復元できませんでした。", true)
+    }
+  }
+
+  async generatePreview() {
+    if (!this.cropperSelection) return
+
+    const config = this.currentConfig()
+    const generation = this.previewGeneration + 1
+    this.previewGeneration = generation
+
+    try {
+      const canvas = await this.cropperSelection.$toCanvas({
+        width: config.width,
+        height: config.height,
+        beforeDraw(context, outputCanvas) {
+          context.fillStyle = "#ffffff"
+          context.fillRect(0, 0, outputCanvas.width, outputCanvas.height)
+        },
+      })
+      const blob = await this.canvasToJpeg(canvas)
+      if (this.isDisconnected || generation !== this.previewGeneration) return
+
+      this.revokePreviewObjectUrl()
+      this.previewObjectUrl = URL.createObjectURL(blob)
+      this.previewTarget.src = this.previewObjectUrl
+      this.previewTarget.hidden = false
+      this.previewEmptyTarget.hidden = true
+      this.previewMetadataTarget.textContent = `JPEG / ${config.width}×${config.height} / ${this.formatBytes(blob.size)} / quality ${JPEG_QUALITY}`
+      this.downloadTarget.href = this.previewObjectUrl
+      this.downloadTarget.download = `crop-${this.ratioTarget.value}-${config.width}x${config.height}.jpg`
+      this.downloadTarget.classList.remove("disabled")
+      this.downloadTarget.removeAttribute("aria-disabled")
+    } catch (error) {
+      if (generation !== this.previewGeneration) return
+      this.setStatus(error.message || "表示用JPEGを生成できませんでした。", true)
+    }
+  }
+
+  buildState() {
+    return cropStateFromTransform({
+      selection: {
+        x: this.cropperSelection.x,
+        y: this.cropperSelection.y,
+        width: this.cropperSelection.width,
+        height: this.cropperSelection.height,
+      },
+      matrix: this.cropperImage.$getTransform(),
+      sourceWidth: this.sourceTarget.naturalWidth,
+      sourceHeight: this.sourceTarget.naturalHeight,
+      ratioKey: this.ratioTarget.value,
+    })
+  }
+
+  validateState(state) {
+    const numbers = [
+      state?.source?.width,
+      state?.source?.height,
+      state?.crop?.x,
+      state?.crop?.y,
+      state?.crop?.width,
+      state?.crop?.height,
+    ]
+
+    if (state?.schemaVersion !== STATE_SCHEMA_VERSION || !RATIO_CONFIG[state?.ratioKey]) {
+      throw new Error("対応していないクロップ状態です。")
+    }
+    if (!numbers.every(Number.isFinite) || state.crop.width <= 0 || state.crop.height <= 0) {
+      throw new Error("クロップ座標が不正です。")
+    }
+    if (
+      state.source.width !== this.sourceTarget.naturalWidth ||
+      state.source.height !== this.sourceTarget.naturalHeight
+    ) {
+      throw new Error("編集元画像のサイズがJSONと一致しません。")
+    }
+
+    const tolerance = 0.5
+    if (
+      state.crop.x < -tolerance ||
+      state.crop.y < -tolerance ||
+      state.crop.x + state.crop.width > state.source.width + tolerance ||
+      state.crop.y + state.crop.height > state.source.height + tolerance
+    ) {
+      throw new Error("クロップ範囲が編集元画像の外側です。")
+    }
+  }
+
+  applyStateToImage(state) {
+    const matrix = transformFromCropState({
+      crop: state.crop,
+      selection: {
+        x: this.cropperSelection.x,
+        y: this.cropperSelection.y,
+        width: this.cropperSelection.width,
+        height: this.cropperSelection.height,
+      },
+      sourceWidth: state.source.width,
+      sourceHeight: state.source.height,
+    })
+    this.cropperImage.$setTransform(matrix)
+  }
+
+  layoutSelection() {
+    if (!this.cropperCanvas || !this.cropperSelection) return
+
+    const box = selectionBoxForRatio({
+      canvasWidth: this.cropperCanvas.clientWidth,
+      canvasHeight: this.cropperCanvas.clientHeight,
+      ratio: this.currentConfig().ratio,
+    })
+    this.cropperSelection.$change(
+      box.x,
+      box.y,
+      box.width,
+      box.height,
+      this.currentConfig().ratio,
+      true
+    )
+  }
+
+  resetImageTransform() {
+    this.cropperImage.$resetTransform()
+    this.cropperImage.$center("cover")
+  }
+
+  observeEditorResize() {
+    if (typeof ResizeObserver === "undefined") return
+
+    this.resizeObserver?.disconnect()
+    this.resizeObserver = new ResizeObserver(() => {
+      if (!this.cropperSelection || !this.cropperImage) return
+
+      const state = this.buildState()
+      this.layoutSelection()
+      this.applyStateToImage(state)
+      this.captureState()
+    })
+    this.resizeObserver.observe(this.editorTarget)
+  }
+
+  updateStateAfterOperation() {
+    this.captureState()
+  }
+
+  constrainTransform(event) {
+    const matrix = event.detail?.matrix
+    if (!matrix || !this.cropperSelection) return
+
+    const covered = transformCoversSelection({
+      matrix,
+      selection: {
+        x: this.cropperSelection.x,
+        y: this.cropperSelection.y,
+        width: this.cropperSelection.width,
+        height: this.cropperSelection.height,
+      },
+      sourceWidth: this.sourceTarget.naturalWidth,
+      sourceHeight: this.sourceTarget.naturalHeight,
+    })
+
+    if (!covered) event.preventDefault()
+  }
+
+  cropperTemplate(ratio) {
+    return `
+      <cropper-canvas background scale-step="0.1">
+        <cropper-image initial-fit="cover" min-fit="cover" scalable translatable></cropper-image>
+        <cropper-shade></cropper-shade>
+        <cropper-handle action="move" plain></cropper-handle>
+        <cropper-selection initial-coverage="0.82" aspect-ratio="${ratio}" outlined precise>
+          <cropper-grid role="grid" bordered covered></cropper-grid>
+          <cropper-crosshair centered></cropper-crosshair>
+          <cropper-handle action="move" plain></cropper-handle>
+        </cropper-selection>
+      </cropper-canvas>
+    `
+  }
+
+  supportedFile(file) {
+    if (["image/jpeg", "image/png", "image/webp"].includes(file.type)) return true
+
+    return /\.(?:jpe?g|png|webp)$/i.test(file.name)
+  }
+
+  waitForSourceImage() {
+    if (this.sourceTarget.complete && this.sourceTarget.naturalWidth > 0) {
+      return Promise.resolve()
+    }
+
+    return new Promise((resolve, reject) => {
+      const onLoad = () => {
+        this.clearPendingSourceLoad()
+        resolve()
+      }
+      const onError = () => {
+        this.clearPendingSourceLoad()
+        reject(new Error("ブラウザで画像を読み込めませんでした。"))
+      }
+
+      this.sourceLoadCleanup = () => {
+        this.sourceTarget.removeEventListener("load", onLoad)
+        this.sourceTarget.removeEventListener("error", onError)
+      }
+      this.sourceTarget.addEventListener("load", onLoad)
+      this.sourceTarget.addEventListener("error", onError)
+    })
+  }
+
+  clearPendingSourceLoad() {
+    this.sourceLoadCleanup?.()
+    this.sourceLoadCleanup = null
+  }
+
+  canvasToJpeg(canvas) {
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob)
+        } else {
+          reject(new Error("JPEGへの変換に失敗しました。"))
+        }
+      }, "image/jpeg", JPEG_QUALITY)
+    })
+  }
+
+  nextFrame() {
+    return new Promise((resolve) => requestAnimationFrame(resolve))
+  }
+
+  currentConfig() {
+    return RATIO_CONFIG[this.ratioTarget.value] || RATIO_CONFIG.square
+  }
+
+  setControlsDisabled(disabled) {
+    this.controlTargets.forEach((control) => {
+      control.disabled = disabled
+    })
+  }
+
+  setStatus(message, error = false) {
+    this.statusTarget.textContent = message
+    this.statusTarget.classList.toggle("text-danger", error)
+  }
+
+  clearPreview() {
+    this.previewGeneration += 1
+    this.revokePreviewObjectUrl()
+    this.previewTarget.removeAttribute("src")
+    this.previewTarget.hidden = true
+    this.previewEmptyTarget.hidden = false
+    this.previewMetadataTarget.textContent = "-"
+    this.downloadTarget.removeAttribute("href")
+    this.downloadTarget.removeAttribute("download")
+    this.downloadTarget.classList.add("disabled")
+    this.downloadTarget.setAttribute("aria-disabled", "true")
+  }
+
+  destroyCropper() {
+    this.resizeObserver?.disconnect()
+    this.resizeObserver = null
+    this.cropperImage?.removeEventListener("transform", this.boundTransformGuard)
+    this.cropperCanvas?.removeEventListener("actionend", this.boundStateUpdate)
+    this.cropper?.destroy()
+    this.cropper = null
+    this.cropperCanvas = null
+    this.cropperImage = null
+    this.cropperSelection = null
+  }
+
+  cleanup({ resetUi = false } = {}) {
+    this.loadGeneration += 1
+    this.previewGeneration += 1
+    this.clearPendingSourceLoad()
+    this.destroyCropper()
+    this.revokeSourceObjectUrl()
+    this.clearPreview()
+    this.setControlsDisabled(true)
+
+    if (resetUi) {
+      this.fileTarget.value = ""
+      this.sourceTarget.removeAttribute("src")
+      this.sourceMetadataTarget.textContent = "-"
+      this.stateTarget.value = ""
+      this.workspaceTarget.hidden = true
+      this.emptyTarget.hidden = false
+      this.setStatus("画像未選択")
+    }
+  }
+
+  revokeSourceObjectUrl() {
+    if (!this.sourceObjectUrl) return
+
+    URL.revokeObjectURL(this.sourceObjectUrl)
+    this.sourceObjectUrl = null
+  }
+
+  revokePreviewObjectUrl() {
+    if (!this.previewObjectUrl) return
+
+    URL.revokeObjectURL(this.previewObjectUrl)
+    this.previewObjectUrl = null
+  }
+
+  formatBytes(bytes) {
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 ** 2) return `${round(bytes / 1024, 1)} KB`
+
+    return `${round(bytes / (1024 ** 2), 1)} MB`
+  }
+}

@@ -235,6 +235,7 @@ Rails.application.routes.draw do
 
   # --- System Admin ---
   namespace :system_admin do
+    resource :image_upload_verification, only: :show
     resources :referral_codes, only: %i[index new create edit update]
     resources :users, only: %i[index new create edit update destroy]
     resources :effects, only: %i[index new create edit update]
