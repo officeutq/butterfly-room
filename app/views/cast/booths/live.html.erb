@@ -6,6 +6,8 @@
     </script>
   <% end %>
 <% end %>
+<% share_text = stream_session_web_share_text(@stream_session) %>
+<% share_url = share_booth_url(@booth, stream: @stream_session.id) %>
 <div
   class="cast-live-screen"
   data-controller="ivs-publisher live-stage"
@@ -201,11 +203,10 @@
 
                 <button type="button"
                         class="live-ops-btn live-share-button"
-                        data-controller="share"
-                        data-action="click->share#share"
-                        data-share-title="Butterflyve"
-                        data-share-text="<%= stream_session_web_share_text(@stream_session) %>"
-                        data-share-url="<%= share_booth_url(@booth, stream: @stream_session.id) %>"
+                        data-bs-toggle="modal"
+                        data-bs-target="#stream-share-modal"
+                        aria-haspopup="dialog"
+                        aria-controls="stream-share-modal"
                         aria-label="配信を共有"
                         title="配信を共有">
                   <i class="bi bi-share" aria-hidden="true"></i>
@@ -273,3 +274,8 @@
     </div>
   </footer>
 </div>
+
+<%= render "cast/booths/share_modal",
+      modal_id: "stream-share-modal",
+      share_text: share_text,
+      share_url: share_url %>
