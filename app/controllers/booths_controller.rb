@@ -191,9 +191,9 @@ class BoothsController < ApplicationController
     description = view_context.booth_share_og_description(share_user)
     image =
       if @booth.thumbnail_image.attached?
-        url_for(@booth.thumbnail_image)
+        url_for(@booth.thumbnail_image.variant(:ogp))
       else
-        view_context.image_url("logo.png")
+        view_context.image_url("booth-share-ogp.jpg")
       end
 
     set_meta_tags(

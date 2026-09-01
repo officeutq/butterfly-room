@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "mini_magick"
 
 class BoothSharingTest < ActionDispatch::IntegrationTest
   setup do
@@ -37,7 +38,9 @@ class BoothSharingTest < ActionDispatch::IntegrationTest
     assert_equal "website", doc.at_css("meta[property='og:type']")["content"]
     assert_equal "Butterflyve（バタフライブ）", doc.at_css("meta[property='og:site_name']")["content"]
     assert_equal "summary_large_image", doc.at_css("meta[name='twitter:card']")["content"]
-    assert_match %r{\Ahttps?://}, doc.at_css("meta[property='og:image']")["content"]
+    image_url = doc.at_css("meta[property='og:image']")["content"]
+    assert_match %r{\Ahttps?://}, image_url
+    assert_match %r{/assets/booth-share-ogp(?:-[0-9a-f]+)?\.jpg\z}, image_url
     assert_includes doc.at_css("meta[name='robots']")["content"], "noindex"
     refute_includes doc.at_css("meta[name='robots']")["content"], "nofollow"
 
@@ -205,11 +208,11 @@ class BoothSharingTest < ActionDispatch::IntegrationTest
     refute_includes response.body, @cast.display_name
   end
 
-  test "attached booth thumbnail is emitted as an absolute OGP image URL" do
+  test "attached booth thumbnail OGP variant is emitted as an absolute URL" do
     @booth.thumbnail_image.attach(
-      io: File.open(file_fixture("thumb.png")),
-      filename: "thumb.png",
-      content_type: "image/png"
+      io: File.open(file_fixture("sample.jpg")),
+      filename: "sample.jpg",
+      content_type: "image/jpeg"
     )
 
     get share_booth_path(@booth)
@@ -217,7 +220,36 @@ class BoothSharingTest < ActionDispatch::IntegrationTest
     assert_response :success
     image_url = Nokogiri::HTML(response.body).at_css("meta[property='og:image']")["content"]
     assert_match %r{\Ahttps?://}, image_url
-    assert_includes image_url, "/rails/active_storage/"
+    assert_includes image_url, "/rails/active_storage/representations/"
+  end
+
+  test "attached booth thumbnail OGP variant is a 1200x630 JPEG under 1 MB" do
+    @booth.thumbnail_image.attach(
+      io: File.open(file_fixture("thumb.png")),
+      filename: "thumb.png",
+      content_type: "image/png"
+    )
+
+    variant_data = @booth.thumbnail_image.variant(:ogp).processed.download
+    image = MiniMagick::Image.read(variant_data)
+
+    assert_equal 1200, image.width
+    assert_equal 630, image.height
+    assert_equal "JPEG", image.type
+    assert_operator variant_data.bytesize, :<, 1.megabyte
+  ensure
+    image&.destroy!
+  end
+
+  test "fallback OGP image is a 1200x630 JPEG under 1 MB" do
+    image = MiniMagick::Image.open(Rails.root.join("app/assets/images/booth-share-ogp.jpg"))
+
+    assert_equal 1200, image.width
+    assert_equal 630, image.height
+    assert_equal "JPEG", image.type
+    assert_operator image.size, :<, 1.megabyte
+  ensure
+    image&.destroy!
   end
 
   test "sitemap does not include booth sharing URLs" do

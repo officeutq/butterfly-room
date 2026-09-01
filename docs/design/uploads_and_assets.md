@@ -118,9 +118,19 @@ native file inputの`accept`には各形式の拡張子とMIME typeを併記し�
 
 削除用hidden parameterは各Controllerのstrong parameters（受け付けるパラメータの制限）へ明示し、Controllerからraw `params` を読む共通処理には渡さない。`AttachmentPersistenceChecker` と `RemovableImageAttachment` は上記4経路から外し、現時点ではドリンクアイコン処理だけが利用する。
 
-### 4.3 実行環境
+### 4.3 OGP用画像variant
 
-実行環境には HEIC delegate（HEIC 読み取り機能）を含む ImageMagick が必要である。開発用 `Dockerfile` と本番用 `Dockerfile.production` は `imagemagick` をインストールしている。デプロイ候補イメージでは次を実行し、HEIC/HEIF の読み取り対応が表示されることを確認する。
+ブース共有・配信共有のOGP画像には、`Booth.thumbnail_image` の名前付き `ogp` variant（Active Storageが元画像から生成・再利用する変換画像）を使用する。
+
+- 1200x630px、JPEG、中央基準の `resize_to_fill`、品質85とする
+- 元画像は変更せず、添付後に非同期で事前生成する
+- 事前生成前に要求された場合は初回アクセス時に生成し、生成済みvariantを以後再利用する
+- 共有操作ごとの再変換、SNS別variant、cache bust parameterは設けない
+- サムネイル未設定時は、既存ロゴを中央配置した1200x630pxの `booth-share-ogp.jpg` を使用する
+
+### 4.4 実行環境
+
+実行環境には HEIC delegate（HEIC 読み取り機能）を含む ImageMagick が必要である。Active Storageのvariant processorは `mini_magick` とし、アップロード正規化とvariant生成で同じImageMagick実行環境を利用する。開発用 `Dockerfile` と本番用 `Dockerfile.production` は `imagemagick` をインストールしている。デプロイ候補イメージでは次を実行し、HEIC/HEIF の読み取り対応が表示されることを確認する。
 
 ```bash
 identify -list format | grep -E 'HEIC|HEIF'

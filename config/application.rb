@@ -13,6 +13,7 @@ module App
 
     config.i18n.default_locale = :ja
     config.x.beauty_provider = ENV.fetch("BEAUTY_PROVIDER", "banuba")
+    config.active_storage.variant_processor = :mini_magick
 
     # Propshaft の assets load path を早い段階で確定（testでも効かせる）
     config.assets.paths << Rails.root.join("app/assets/builds")

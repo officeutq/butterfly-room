@@ -62,10 +62,12 @@ streamはグローバル検索せず、取得済みブースの `stream_sessions
 | descriptionの表示名 | 公開可能な `primary_cast_user` | 公開可能な `started_by_cast_user` |
 | description（表示名あり） | `〇〇のライブ配信をButterflyveで楽しもう` | `〇〇のライブ配信をButterflyveで楽しもう` |
 | description（表示名なし） | `ライブ配信をButterflyveで楽しもう` | `ライブ配信をButterflyveで楽しもう` |
-| image | `Booth.thumbnail_image`、未設定時は `logo.png` | 同左 |
+| image | `Booth.thumbnail_image` のOGP用variant、未設定時は `booth-share-ogp.jpg` | 同左 |
 | `og:url` / canonical | streamなし共有URL | 有効なstream ID付き共有URL |
 
-画像URLと共有URLは絶対URLで生成する。
+OGP用variantは1200x630px、JPEG、中央基準の `resize_to_fill`、品質85とする。元の添付画像は変更せず、添付更新後に非同期で事前生成する。事前生成が完了していない場合は、SNSクローラーから最初に要求された時点で生成し、以降はActive Storageが同じvariantを再利用する。共有ボタンを押すたびの画像変換は行わない。
+
+代替画像は既存ロゴを中央に配置して十分な余白を確保した1200x630pxの専用JPEGとし、画面表示用の `logo.png` は置き換えない。画像URLと共有URLは絶対URLで生成する。本番・ステージングではHTTPSの公開URLを使用する。
 
 ### 6.1 公開可能な表示名
 
@@ -124,6 +126,7 @@ Instagram専用ボタンは設けない。OSやブラウザーの共有先にIns
 
 - `1 StreamSession = 1共有URL` とする
 - standby中のタイトル変更後に同一URLのSNSキャッシュが残ることを許容する
+- サムネイル変更後も同一共有URLに対するSNSキャッシュが残り、以前の画像が表示されることを許容する
 - timestamp等のキャッシュバスターを追加しない
 - SNSキャッシュの強制更新処理を実装しない
 - 共有ページは `noindex` とする
@@ -148,6 +151,7 @@ DB schema、`Booth` / `StreamSession` の状態遷移、視聴・コメント・
 - 公開店舗 / 非公開店舗、active / archivedブースの公開条件
 - streamなし、有効、ended、不存在、不正値、別ブースの解決結果
 - 配信タイトル、サムネイル、表示名の各フォールバック
+- OGP画像variantが1200x630pxのJPEGとなること、および専用代替画像が使われること
 - OGP、絶対画像URL、`og:url`、canonical、Twitter Card、`noindex`
 - JavaScript遷移先とJavaScript無効時リンク
 - 共有ページにメールアドレス等の非公開情報が含まれない
