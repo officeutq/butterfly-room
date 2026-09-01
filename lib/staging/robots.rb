@@ -2,7 +2,7 @@
 
 module Staging
   class Robots
-    ROBOTS_BODY = "User-agent: *\nDisallow: /\n"
+    ROBOTS_BODY = "User-agent: *\nAllow: /\n"
 
     def initialize(app, env: ENV)
       @app = app

@@ -113,7 +113,7 @@ chmod 600 .env.staging
 - Stripe test keyとstaging用Webhook secret
 - `IVS_STAGE_ENV=staging`、`IVS_STAGE_NAME_PREFIX=br-staging`
 - `GTM_ENABLED=false`
-- Basic認証ユーザー名とpassword
+- `BASIC_AUTH_ENABLED=false`（SNSクローラーのOGP取得を許可し、検索掲載は`noindex`で防止する）
 - 必要なBanuba、DeepAR、Google Mapsのstaging用値
 
 実値はGit、Terraform、User Data、systemd unitへ記載しません。
@@ -189,7 +189,7 @@ sudo systemctl disable --now butterflyve-monthly-settlement-staging.timer
 
 ## 9. 外形確認
 
-[post_apply_checklist.md](post_apply_checklist.md)に従い、ALB health、HTTPS、Basic認証、mail redirect、SMS mock、Stripe test、GTM無効、noindex、staging S3、IVS Stage tagを確認します。
+[post_apply_checklist.md](post_apply_checklist.md)に従い、ALB health、HTTPS、未認証公開、SNSクローラーのOGP取得、mail redirect、SMS mock、Stripe test、GTM無効、noindex、staging S3、IVS Stage tagを確認します。
 
 ## 10. EC2停止
 

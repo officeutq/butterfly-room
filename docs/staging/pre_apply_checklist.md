@@ -63,6 +63,6 @@
 - [ ] staging DB passwordの登録先を決めた
 - [ ] mail redirect先を承認した
 - [ ] Stripe test accountとWebhook endpointを承認した
-- [ ] Basic認証値を安全な保管先へ登録した
+- [ ] ステージングがダミーデータのみで、Basic認証なしの外部公開を許容できることを確認した
 - [ ] 月次timerは初期disabledのままと確認した
 - [ ] apply実行者と実行時刻を記録した

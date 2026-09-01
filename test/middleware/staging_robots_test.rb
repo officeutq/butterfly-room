@@ -15,13 +15,14 @@ class StagingRobotsTest < ActiveSupport::TestCase
     assert_operator robots_index, :<, static_index
   end
 
-  test "blocks crawling and adds a noindex response header in staging" do
+  test "allows crawling and adds a noindex response header in staging" do
     middleware = Staging::Robots.new(APP, env: { "APP_ENV" => "staging" })
 
     robots_response = middleware.call(Rack::MockRequest.env_for("/robots.txt"))
     page_response = middleware.call(Rack::MockRequest.env_for("/page"))
 
-    assert_equal "User-agent: *\nDisallow: /\n", robots_response.last.join
+    assert_equal "User-agent: *\nAllow: /\n", robots_response.last.join
+    refute_includes robots_response.last.join, "Sitemap:"
     assert_equal "noindex, nofollow", robots_response.second["x-robots-tag"]
     assert_equal "noindex, nofollow", page_response.second["x-robots-tag"]
   end

@@ -24,6 +24,16 @@ class StagingSafetyCheckTest < ActiveSupport::TestCase
     assert_nil Staging::SafetyCheck.call!(env: SAFE_ENV)
   end
 
+  test "accepts disabled Basic authentication without credentials" do
+    env = SAFE_ENV.merge(
+      "BASIC_AUTH_ENABLED" => "false",
+      "BASIC_AUTH_USERNAME" => "",
+      "BASIC_AUTH_PASSWORD" => ""
+    )
+
+    assert_nil Staging::SafetyCheck.call!(env: env)
+  end
+
   test "does not change production behavior" do
     assert_nil Staging::SafetyCheck.call!(env: { "APP_ENV" => "production" })
   end
