@@ -139,7 +139,8 @@ class Cast::BoothInfoSharingTest < ActionDispatch::IntegrationTest
       icon: ".bi-twitter-x",
       label: "Xで共有",
       expected_text: expected_text,
-      expected_url: expected_url
+      expected_url: expected_url,
+      expected_hashtags: "Butterflyve,バタフライブ"
     )
     assert_external_share_action(
       modal.at_css("[data-share-provider='line']"),
@@ -148,12 +149,14 @@ class Cast::BoothInfoSharingTest < ActionDispatch::IntegrationTest
       icon: ".bi-line",
       label: "LINEで共有",
       expected_text: expected_text,
-      expected_url: expected_url
+      expected_url: expected_url,
+      expected_hashtags: nil
     )
     refute_includes modal.text, "Instagram"
   end
 
-  def assert_external_share_action(action, host:, path:, icon:, label:, expected_text:, expected_url:)
+  def assert_external_share_action(action, host:, path:, icon:, label:, expected_text:, expected_url:,
+                                   expected_hashtags:)
     uri = URI.parse(action["href"])
     params = URI.decode_www_form(uri.query).to_h
 
@@ -162,6 +165,7 @@ class Cast::BoothInfoSharingTest < ActionDispatch::IntegrationTest
     assert_equal path, uri.path
     assert_equal expected_text, params["text"]
     assert_equal expected_url, params["url"]
+    expected_hashtags ? assert_equal(expected_hashtags, params["hashtags"]) : refute(params.key?("hashtags"))
     assert_equal "_blank", action["target"]
     assert_equal "noopener noreferrer", action["rel"]
     assert_equal label, action.text.strip
