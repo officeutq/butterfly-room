@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "mini_magick"
 
 class BoothSharingTest < ActionDispatch::IntegrationTest
   setup do
@@ -37,7 +38,9 @@ class BoothSharingTest < ActionDispatch::IntegrationTest
     assert_equal "website", doc.at_css("meta[property='og:type']")["content"]
     assert_equal "Butterflyve（バタフライブ）", doc.at_css("meta[property='og:site_name']")["content"]
     assert_equal "summary_large_image", doc.at_css("meta[name='twitter:card']")["content"]
-    assert_match %r{\Ahttps?://}, doc.at_css("meta[property='og:image']")["content"]
+    image_url = doc.at_css("meta[property='og:image']")["content"]
+    assert_match %r{\Ahttps?://}, image_url
+    assert_equal share_ogp_image_booth_url(@booth, format: :jpg), image_url
     assert_includes doc.at_css("meta[name='robots']")["content"], "noindex"
     refute_includes doc.at_css("meta[name='robots']")["content"], "nofollow"
 
@@ -56,9 +59,11 @@ class BoothSharingTest < ActionDispatch::IntegrationTest
       assert_response :success
       doc = Nokogiri::HTML(response.body)
       expected_url = share_booth_url(@booth, stream: @stream_session.id)
+      expected_image_url = share_ogp_image_booth_url(@booth, stream: @stream_session.id, format: :jpg)
       assert_equal @stream_session.title, doc.at_css("meta[property='og:title']")["content"]
       assert_equal expected_url, doc.at_css("meta[property='og:url']")["content"]
       assert_equal expected_url, doc.at_css("link[rel='canonical']")["href"]
+      assert_equal expected_image_url, doc.at_css("meta[property='og:image']")["content"]
     end
   end
 
@@ -91,21 +96,63 @@ class BoothSharingTest < ActionDispatch::IntegrationTest
       doc = Nokogiri::HTML(response.body)
       assert_equal @booth.name, doc.at_css("meta[property='og:title']")["content"]
       assert_equal share_booth_url(@booth), doc.at_css("meta[property='og:url']")["content"]
+      assert_equal share_ogp_image_booth_url(@booth, format: :jpg),
+                   doc.at_css("meta[property='og:image']")["content"]
       refute_includes response.body, other_stream.title
     end
+  end
+
+  test "fallback OGP image URL is stable per booth and stream context" do
+    second_stream = StreamSession.create!(
+      booth: @booth,
+      store: @store,
+      status: :ended,
+      title: "二つ目の共有テスト配信",
+      started_at: 1.hour.ago,
+      ended_at: Time.current,
+      started_by_cast_user: @cast
+    )
+
+    image_urls = [ @stream_session, second_stream ].map do |stream_session|
+      get share_booth_path(@booth, stream: stream_session.id)
+      assert_response :success
+
+      Nokogiri::HTML(response.body).at_css("meta[property='og:image']")["content"]
+    end
+
+    assert_equal share_ogp_image_booth_url(@booth, stream: @stream_session.id, format: :jpg), image_urls.first
+    assert_equal share_ogp_image_booth_url(@booth, stream: second_stream.id, format: :jpg), image_urls.second
+    refute_equal image_urls.first, image_urls.second
+  end
+
+  test "fallback OGP endpoint publicly serves the common JPEG without conversion" do
+    get share_ogp_image_booth_path(@booth, stream: @stream_session.id, format: :jpg),
+        headers: { "User-Agent" => "Twitterbot/1.0" }
+
+    assert_response :success
+    assert_equal "image/jpeg", response.media_type
+    assert_includes response.headers["Content-Disposition"], "inline"
+    assert_includes response.headers["Cache-Control"], "public"
+    assert_equal File.binread(Rails.root.join("app/assets/images/booth-share-ogp.jpg")), response.body.b
   end
 
   test "unpublished archived and missing booths return not found" do
     @store.update!(published: false)
     get share_booth_path(@booth)
     assert_response :not_found
+    get share_ogp_image_booth_path(@booth, format: :jpg)
+    assert_response :not_found
 
     @store.update!(published: true)
     @booth.update!(archived_at: Time.current)
     get share_booth_path(@booth)
     assert_response :not_found
+    get share_ogp_image_booth_path(@booth, format: :jpg)
+    assert_response :not_found
 
     get share_booth_path(id: 0)
+    assert_response :not_found
+    get share_ogp_image_booth_path(id: 0, format: :jpg)
     assert_response :not_found
   end
 
@@ -205,11 +252,11 @@ class BoothSharingTest < ActionDispatch::IntegrationTest
     refute_includes response.body, @cast.display_name
   end
 
-  test "attached booth thumbnail is emitted as an absolute OGP image URL" do
+  test "attached booth thumbnail OGP variant is emitted as an absolute URL" do
     @booth.thumbnail_image.attach(
-      io: File.open(file_fixture("thumb.png")),
-      filename: "thumb.png",
-      content_type: "image/png"
+      io: File.open(file_fixture("sample.jpg")),
+      filename: "sample.jpg",
+      content_type: "image/jpeg"
     )
 
     get share_booth_path(@booth)
@@ -217,7 +264,37 @@ class BoothSharingTest < ActionDispatch::IntegrationTest
     assert_response :success
     image_url = Nokogiri::HTML(response.body).at_css("meta[property='og:image']")["content"]
     assert_match %r{\Ahttps?://}, image_url
-    assert_includes image_url, "/rails/active_storage/"
+    assert_includes image_url, "/rails/active_storage/representations/"
+    refute_includes image_url, share_ogp_image_booth_path(@booth)
+  end
+
+  test "attached booth thumbnail OGP variant is a 1200x630 JPEG under 1 MB" do
+    @booth.thumbnail_image.attach(
+      io: File.open(file_fixture("thumb.png")),
+      filename: "thumb.png",
+      content_type: "image/png"
+    )
+
+    variant_data = @booth.thumbnail_image.variant(:ogp).processed.download
+    image = MiniMagick::Image.read(variant_data)
+
+    assert_equal 1200, image.width
+    assert_equal 630, image.height
+    assert_equal "JPEG", image.type
+    assert_operator variant_data.bytesize, :<, 1.megabyte
+  ensure
+    image&.destroy!
+  end
+
+  test "fallback OGP image is a 1200x630 JPEG under 1 MB" do
+    image = MiniMagick::Image.open(Rails.root.join("app/assets/images/booth-share-ogp.jpg"))
+
+    assert_equal 1200, image.width
+    assert_equal 630, image.height
+    assert_equal "JPEG", image.type
+    assert_operator image.size, :<, 1.megabyte
+  ensure
+    image&.destroy!
   end
 
   test "sitemap does not include booth sharing URLs" do

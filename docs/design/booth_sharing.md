@@ -62,10 +62,12 @@ streamはグローバル検索せず、取得済みブースの `stream_sessions
 | descriptionの表示名 | 公開可能な `primary_cast_user` | 公開可能な `started_by_cast_user` |
 | description（表示名あり） | `〇〇のライブ配信をButterflyveで楽しもう` | `〇〇のライブ配信をButterflyveで楽しもう` |
 | description（表示名なし） | `ライブ配信をButterflyveで楽しもう` | `ライブ配信をButterflyveで楽しもう` |
-| image | `Booth.thumbnail_image`、未設定時は `logo.png` | 同左 |
+| image | `Booth.thumbnail_image` のOGP用variant、未設定時は共有コンテキスト固有URLから配信する `booth-share-ogp.jpg` | 同左 |
 | `og:url` / canonical | streamなし共有URL | 有効なstream ID付き共有URL |
 
-画像URLと共有URLは絶対URLで生成する。
+OGP用variantは1200x630px、JPEG、中央基準の `resize_to_fill`、品質85とする。元の添付画像は変更せず、添付更新後に非同期で事前生成する。事前生成が完了していない場合は、SNSクローラーから最初に要求された時点で生成し、以降はActive Storageが同じvariantを再利用する。共有ボタンを押すたびの画像変換は行わない。
+
+代替画像は既存ロゴを中央に配置して十分な余白を確保した1200x630pxの専用JPEGとし、画面表示用の `logo.png` は置き換えない。共通JPEGの内容は共有時に再生成せず、`/booths/:id/share/ogp-image.jpg` から配信する。配信共有では有効なstream IDをquery parameter（クエリパラメーター）へ付け、ブース単位・配信セッション単位で安定した画像URLを生成する。画像URLと共有URLは絶対URLで生成し、本番・ステージングではHTTPSの公開URLを使用する。
 
 ### 6.1 公開可能な表示名
 
@@ -123,7 +125,9 @@ Instagram専用ボタンは設けない。OSやブラウザーの共有先にIns
 ## 9. キャッシュと検索エンジン
 
 - `1 StreamSession = 1共有URL` とする
+- サムネイル未設定時の共通画像URLもブース単位・配信セッション単位で分離し、同じ共有コンテキストでは変化させない
 - standby中のタイトル変更後に同一URLのSNSキャッシュが残ることを許容する
+- サムネイル変更後も同一共有URLに対するSNSキャッシュが残り、以前の画像が表示されることを許容する
 - timestamp等のキャッシュバスターを追加しない
 - SNSキャッシュの強制更新処理を実装しない
 - 共有ページは `noindex` とする
@@ -131,8 +135,8 @@ Instagram専用ボタンは設けない。OSやブラウザーの共有先にIns
 
 ## 10. 責務分担
 
-- route: `BoothsController` のmember actionとして共有URLを公開する
-- Controller: 公開ブースとstreamの解決、OGP値の設定、レスポンスに留める
+- route: `BoothsController` のmember actionとして共有URLと共通OGP画像URLを公開する
+- Controller: 公開ブースとstreamの解決、OGP値の設定、共通OGP画像のレスポンスに留める
 - View / 専用layout: 公開情報、meta、遷移先、フォールバックリンクを出力する
 - `BoothSharesHelper`: 共有文を生成し、X・LINE向けURLのquery parameter（クエリパラメーター）をエンコードする
 - `_share_modal.html.erb`: X、LINE、その他のアプリ、リンクコピーの共通UIを描画する
@@ -148,6 +152,7 @@ DB schema、`Booth` / `StreamSession` の状態遷移、視聴・コメント・
 - 公開店舗 / 非公開店舗、active / archivedブースの公開条件
 - streamなし、有効、ended、不存在、不正値、別ブースの解決結果
 - 配信タイトル、サムネイル、表示名の各フォールバック
+- OGP画像variantと専用代替画像が1200x630pxのJPEGとなること、および代替画像URLが共有コンテキストごとに分離されること
 - OGP、絶対画像URL、`og:url`、canonical、Twitter Card、`noindex`
 - JavaScript遷移先とJavaScript無効時リンク
 - 共有ページにメールアドレス等の非公開情報が含まれない

@@ -5,10 +5,10 @@ class BoothsController < ApplicationController
 
   layout "share", only: %i[share]
 
-  skip_before_action :authenticate_user!, only: %i[show enter share]
+  skip_before_action :authenticate_user!, only: %i[show enter share share_ogp_image]
   before_action :clear_guest_unauthenticated_alert, only: %i[show]
   before_action :redirect_guest_to_welcome, only: %i[enter]
-  before_action :set_public_booth, only: %i[show share viewer_drink_menu]
+  before_action :set_public_booth, only: %i[show share share_ogp_image viewer_drink_menu]
   before_action :set_entry_booth, only: %i[enter enter_as_cast]
   before_action :reject_banned_customer_for_booth!, only: %i[show viewer_drink_menu]
   before_action :set_viewer_stream_context, only: %i[show viewer_drink_menu]
@@ -45,6 +45,13 @@ class BoothsController < ApplicationController
     @share_url = share_booth_url(@booth, **share_url_options)
 
     set_share_meta_tags
+  end
+
+  def share_ogp_image
+    expires_in 1.year, public: true
+    send_file Rails.root.join("app/assets/images/booth-share-ogp.jpg"),
+              type: "image/jpeg",
+              disposition: "inline"
   end
 
   def viewer_drink_menu
@@ -191,9 +198,9 @@ class BoothsController < ApplicationController
     description = view_context.booth_share_og_description(share_user)
     image =
       if @booth.thumbnail_image.attached?
-        url_for(@booth.thumbnail_image)
+        url_for(@booth.thumbnail_image.variant(:ogp))
       else
-        view_context.image_url("logo.png")
+        share_ogp_image_booth_url(@booth, **share_url_options, format: :jpg)
       end
 
     set_meta_tags(

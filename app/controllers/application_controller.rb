@@ -20,7 +20,7 @@ class ApplicationController < ActionController::Base
 
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   allow_browser versions: :modern,
-                unless: -> { controller_path == "booths" && action_name == "share" }
+                unless: -> { controller_path == "booths" && action_name.in?(%w[share share_ogp_image]) }
 
   # Changes to the importmap will invalidate the etag for HTML responses
   stale_when_importmap_changes

@@ -122,6 +122,7 @@ Rails.application.routes.draw do
     member do
       get :enter
       get :share
+      get "share/ogp-image", action: :share_ogp_image, as: :share_ogp_image
       post :enter_as_cast
       get :viewer_drink_menu
     end
