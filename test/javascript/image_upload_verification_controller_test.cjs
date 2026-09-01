@@ -25,6 +25,7 @@ function loadController() {
   )
   source += `
     globalThis.cropStateFromTransform = cropStateFromTransform
+    globalThis.normalizeCropToSource = normalizeCropToSource
     globalThis.transformFromCropState = transformFromCropState
     globalThis.selectionBoxForRatio = selectionBoxForRatio
     globalThis.transformCoversSelection = transformCoversSelection
@@ -43,6 +44,7 @@ function loadController() {
   return {
     Controller: context.ImageUploadVerificationController,
     cropStateFromTransform: context.cropStateFromTransform,
+    normalizeCropToSource: context.normalizeCropToSource,
     transformFromCropState: context.transformFromCropState,
     selectionBoxForRatio: context.selectionBoxForRatio,
     transformCoversSelection: context.transformCoversSelection,
@@ -132,6 +134,71 @@ test("same source crop restores after the editor selection size changes", () => 
   })
 
   assert.deepEqual(JSON.parse(JSON.stringify(restored.crop)), state.crop)
+})
+
+test("normalizes Cropper.js subpixel overflow without changing crop size", () => {
+  const { normalizeCropToSource } = loadController()
+  const crop = {
+    x: 184.7813,
+    y: -0.768,
+    width: 1032.6875,
+    height: 542.1609,
+  }
+  const normalized = normalizeCropToSource({
+    crop,
+    sourceWidth: 1421,
+    sourceHeight: 800,
+    tolerance: 1,
+  })
+
+  assert.deepEqual(JSON.parse(JSON.stringify(normalized)), {
+    x: 184.7813,
+    y: 0,
+    width: 1032.6875,
+    height: 542.1609,
+  })
+  assert.throws(() => normalizeCropToSource({
+    crop: { ...crop, y: -2 },
+    sourceWidth: 1421,
+    sourceHeight: 800,
+    tolerance: 1,
+  }), /編集元画像の外側/)
+})
+
+test("serialized crop state stays inside the source at a subpixel boundary", () => {
+  const { cropStateFromTransform } = loadController()
+  const state = cropStateFromTransform({
+    selection: { x: 184.7813, y: 100, width: 1032.6875, height: 542.1609 },
+    matrix: [1, 0, 0, 1, 0, 100.768],
+    sourceWidth: 1421,
+    sourceHeight: 800,
+    ratioKey: "social",
+  })
+
+  assert.equal(state.crop.y, 0)
+  assert.equal(state.crop.height, 542.1609)
+  assert.ok(state.crop.y + state.crop.height <= state.source.height)
+})
+
+test("restore accepts and normalizes the reported social crop state", () => {
+  const { Controller } = loadController()
+  const controller = new Controller()
+  controller.sourceTarget = { naturalWidth: 1421, naturalHeight: 800 }
+  const state = controller.validateState({
+    schemaVersion: 1,
+    ratioKey: "social",
+    source: { width: 1421, height: 800 },
+    crop: {
+      x: 184.7813,
+      y: -0.768,
+      width: 1032.6875,
+      height: 542.1609,
+    },
+  })
+
+  assert.equal(state.crop.y, 0)
+  assert.equal(state.crop.width, 1032.6875)
+  assert.equal(state.crop.height, 542.1609)
 })
 
 test("rejects transforms that would expose blank space inside the fixed selection", () => {

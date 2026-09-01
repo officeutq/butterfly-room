@@ -13,6 +13,38 @@ function round(value, precision = 4) {
   return Math.round(value * multiplier) / multiplier
 }
 
+function clamp(value, minimum, maximum) {
+  return Math.min(Math.max(value, minimum), maximum)
+}
+
+export function normalizeCropToSource({ crop, sourceWidth, sourceHeight, tolerance = 0 }) {
+  const values = [crop?.x, crop?.y, crop?.width, crop?.height, sourceWidth, sourceHeight, tolerance]
+
+  if (!values.every(Number.isFinite) || crop.width <= 0 || crop.height <= 0) {
+    throw new Error("クロップ座標が不正です。")
+  }
+  if (
+    crop.width > sourceWidth + tolerance ||
+    crop.height > sourceHeight + tolerance ||
+    crop.x < -tolerance ||
+    crop.y < -tolerance ||
+    crop.x + crop.width > sourceWidth + tolerance ||
+    crop.y + crop.height > sourceHeight + tolerance
+  ) {
+    throw new Error("クロップ範囲が編集元画像の外側です。")
+  }
+
+  const width = Math.min(crop.width, sourceWidth)
+  const height = Math.min(crop.height, sourceHeight)
+
+  return {
+    x: clamp(crop.x, 0, sourceWidth - width),
+    y: clamp(crop.y, 0, sourceHeight - height),
+    width,
+    height,
+  }
+}
+
 function inverseTransformPoint(x, y, matrix, sourceWidth, sourceHeight) {
   const [a, b, c, d, e, f] = matrix
   const determinant = (a * d) - (b * c)
@@ -47,15 +79,26 @@ export function cropStateFromTransform({ selection, matrix, sourceWidth, sourceH
     sourceWidth,
     sourceHeight
   )
-  const x = Math.min(topLeft.x, bottomRight.x)
-  const y = Math.min(topLeft.y, bottomRight.y)
-  const width = Math.abs(bottomRight.x - topLeft.x)
-  const height = Math.abs(bottomRight.y - topLeft.y)
+  const rawCrop = {
+    x: Math.min(topLeft.x, bottomRight.x),
+    y: Math.min(topLeft.y, bottomRight.y),
+    width: Math.abs(bottomRight.x - topLeft.x),
+    height: Math.abs(bottomRight.y - topLeft.y),
+  }
   const output = RATIO_CONFIG[ratioKey]
 
-  if (!output || width <= 0 || height <= 0) {
+  if (!output || rawCrop.width <= 0 || rawCrop.height <= 0) {
     throw new Error("クロップ範囲を取得できません。")
   }
+
+  // Cropper.js may expose less than one output pixel because of subpixel rounding.
+  // Shift that tiny overflow inside the source without changing the crop size or ratio.
+  const tolerance = Math.max(
+    rawCrop.width / output.width,
+    rawCrop.height / output.height,
+    1
+  )
+  const crop = normalizeCropToSource({ crop: rawCrop, sourceWidth, sourceHeight, tolerance })
 
   return {
     schemaVersion: STATE_SCHEMA_VERSION,
@@ -65,12 +108,12 @@ export function cropStateFromTransform({ selection, matrix, sourceWidth, sourceH
       height: sourceHeight,
     },
     crop: {
-      x: round(x),
-      y: round(y),
-      width: round(width),
-      height: round(height),
+      x: round(crop.x),
+      y: round(crop.y),
+      width: round(crop.width),
+      height: round(crop.height),
     },
-    zoom: round(sourceWidth / width),
+    zoom: round(sourceWidth / crop.width),
     output: {
       width: output.width,
       height: output.height,
@@ -298,8 +341,7 @@ export default class extends Controller {
     if (!this.cropperImage || !this.cropperSelection) return
 
     try {
-      const state = JSON.parse(this.stateTarget.value)
-      this.validateState(state)
+      const state = this.validateState(JSON.parse(this.stateTarget.value))
       this.ratioTarget.value = state.ratioKey
       this.cropperSelection.aspectRatio = this.currentConfig().ratio
       await this.nextFrame()
@@ -388,15 +430,20 @@ export default class extends Controller {
       throw new Error("編集元画像のサイズがJSONと一致しません。")
     }
 
-    const tolerance = 0.5
-    if (
-      state.crop.x < -tolerance ||
-      state.crop.y < -tolerance ||
-      state.crop.x + state.crop.width > state.source.width + tolerance ||
-      state.crop.y + state.crop.height > state.source.height + tolerance
-    ) {
-      throw new Error("クロップ範囲が編集元画像の外側です。")
-    }
+    const output = RATIO_CONFIG[state.ratioKey]
+    const tolerance = Math.max(
+      state.crop.width / output.width,
+      state.crop.height / output.height,
+      1
+    )
+    const crop = normalizeCropToSource({
+      crop: state.crop,
+      sourceWidth: state.source.width,
+      sourceHeight: state.source.height,
+      tolerance,
+    })
+
+    return { ...state, crop }
   }
 
   applyStateToImage(state) {
