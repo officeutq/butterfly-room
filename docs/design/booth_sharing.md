@@ -90,9 +90,18 @@ JavaScript無効時のため、通常ブースへのリンクを本文に表示�
 
 通常のapplication layout、ログイン中ユーザーのメールアドレス、管理導線、配信視聴UI、コメント、ドリンク機能は出力しない。公開情報はブース名、ブースサムネイル、配信タイトル、公開可能な表示名に限定する。
 
-## 8. Web Share APIへ渡す値
+## 8. 共有先の選択と共有値
 
-共通の `share_controller.js` は変更せず、各Viewがdata属性を設定する。
+ブース情報画面とキャスト配信画面の既存共有ボタンは配置を変えず、押下時に共通の中央モーダル「共有先を選択」を開く。モーダルには次の操作を上から順に表示する。
+
+1. Xで共有（Bootstrap Iconsの `bi-twitter-x`）
+2. LINEで共有（Bootstrap Iconsの `bi-line`）
+3. その他のアプリで共有（`bi-share`）
+4. リンクをコピー（`bi-clipboard`）
+
+Xは `https://x.com/intent/tweet`、LINEは `https://social-plugins.line.me/lineit/share` を別タブで開き、共有文を `text`、共有専用URLを `url` としてURLエンコードして渡す。「その他のアプリで共有」は共通の `share_controller.js` からWeb Share API（OSの共有画面を開くAPI）を使用し、「リンクをコピー」は共通の `clipboard_controller.js` へ共有専用URLだけを渡す。
+
+Instagram専用ボタンは設けない。OSやブラウザーの共有先にInstagramが表示される環境では「その他のアプリで共有」から利用できるものとし、表示されない環境での利用は保証しない。
 
 ### 8.1 ブース情報画面
 
@@ -100,7 +109,7 @@ JavaScript無効時のため、通常ブースへのリンクを本文に表示�
 - url: streamなし共有専用URLの絶対URL
 - text（公開可能な専属キャスト表示名あり）: `〇〇のブースはこちら🦋`
 - text（表示名なし）: `Butterflyveのブースはこちら🦋`
-- ボタン文言: `ブースを共有`
+- モーダルを開くボタン文言: `ブースを共有`
 
 ### 8.2 キャスト配信画面
 
@@ -108,7 +117,8 @@ JavaScript無効時のため、通常ブースへのリンクを本文に表示�
 - url: current `StreamSession` ID付き共有専用URLの絶対URL
 - text（公開可能な配信開始者表示名あり）: `〇〇の配信はここから！遊びに来てね🦋`
 - text（表示名なし）: `配信はここから！遊びに来てね🦋`
-- `aria-label`、title、非表示文言: `配信を共有`
+- モーダルを開くボタンの `aria-label`、title、非表示文言: `配信を共有`
+- Bootstrapモーダルは配信映像のoverlay（映像上の操作領域）による `overflow: hidden` の影響を避けるため、`.cast-live-screen` の外側へ描画する
 
 ## 9. キャッシュと検索エンジン
 
@@ -124,7 +134,10 @@ JavaScript無効時のため、通常ブースへのリンクを本文に表示�
 - route: `BoothsController` のmember actionとして共有URLを公開する
 - Controller: 公開ブースとstreamの解決、OGP値の設定、レスポンスに留める
 - View / 専用layout: 公開情報、meta、遷移先、フォールバックリンクを出力する
-- `share_controller.js`: data属性のtitle / text / urlをWeb Share APIへ渡す
+- `BoothSharesHelper`: 共有文を生成し、X・LINE向けURLのquery parameter（クエリパラメーター）をエンコードする
+- `_share_modal.html.erb`: X、LINE、その他のアプリ、リンクコピーの共通UIを描画する
+- `share_controller.js`: モーダル内のdata属性のtitle / text / urlをWeb Share APIへ渡す
+- `clipboard_controller.js`: モーダル内の共有専用URLをクリップボードへコピーし、成否を通知する
 - `auto_redirect_controller.js`: 指定URLへのJavaScript遷移を行う
 
 DB schema、`Booth` / `StreamSession` の状態遷移、視聴・コメント・ドリンク・金銭処理は変更しない。
@@ -138,6 +151,9 @@ DB schema、`Booth` / `StreamSession` の状態遷移、視聴・コメント・
 - OGP、絶対画像URL、`og:url`、canonical、Twitter Card、`noindex`
 - JavaScript遷移先とJavaScript無効時リンク
 - 共有ページにメールアドレス等の非公開情報が含まれない
-- ブース情報画面と配信画面の共有data属性
+- ブース情報画面と配信画面の共有ボタンが共通モーダルを開くこと
+- X・LINEの遷移先、共有文、共有専用URLと、マルチバイト文字・入れ子のquery parameterを含むURLのエンコード
+- その他のアプリへ渡すWeb Share APIのdata属性と、リンクコピーへ渡すURL
+- キャスト配信画面の共有モーダルが配信映像overlayの外側へ描画されること
 - 通常ブースの未ログイン読み取り専用表示と、未ログインの`booths#enter`転送の回帰
 - sitemapへ共有URLを追加していないこと

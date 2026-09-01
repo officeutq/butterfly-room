@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "uri"
+
 module BoothSharesHelper
   def public_share_display_name(user)
     return if user.blank? || user.deleted?
@@ -26,5 +28,13 @@ module BoothSharesHelper
     return "配信はここから！遊びに来てね🦋" if display_name.blank?
 
     "#{display_name}の配信はここから！遊びに来てね🦋"
+  end
+
+  def x_share_intent_url(text:, url:)
+    "https://x.com/intent/tweet?#{URI.encode_www_form(text: text, url: url)}"
+  end
+
+  def line_share_url(text:, url:)
+    "https://social-plugins.line.me/lineit/share?#{URI.encode_www_form(text: text, url: url)}"
   end
 end

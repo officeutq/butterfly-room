@@ -1,0 +1,69 @@
+<div
+  class="modal fade"
+  id="<%= modal_id %>"
+  tabindex="-1"
+  aria-labelledby="<%= modal_id %>-label"
+  aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-5" id="<%= modal_id %>-label">共有先を選択</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="d-grid gap-2">
+          <%= link_to x_share_intent_url(text: share_text, url: share_url),
+                class: "btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2",
+                target: "_blank",
+                rel: "noopener noreferrer",
+                data: { share_provider: "x" } do %>
+            <i class="bi bi-twitter-x" aria-hidden="true"></i>
+            <span>Xで共有</span>
+          <% end %>
+
+          <%= link_to line_share_url(text: share_text, url: share_url),
+                class: "btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2",
+                target: "_blank",
+                rel: "noopener noreferrer",
+                data: { share_provider: "line" } do %>
+            <i class="bi bi-line" aria-hidden="true"></i>
+            <span>LINEで共有</span>
+          <% end %>
+
+          <button
+            type="button"
+            class="btn btn-primary d-flex align-items-center justify-content-center gap-2"
+            data-controller="share"
+            data-action="click->share#share"
+            data-share-provider="web-share"
+            data-share-title="Butterflyve"
+            data-share-text="<%= share_text %>"
+            data-share-url="<%= share_url %>">
+            <i class="bi bi-share" aria-hidden="true"></i>
+            <span>その他のアプリで共有</span>
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2"
+            data-controller="clipboard"
+            data-action="click->clipboard#copy"
+            data-share-provider="copy"
+            data-clipboard-text="<%= share_url %>"
+            data-clipboard-success-message="共有URLをコピーしました"
+            data-clipboard-failure-message="共有URLのコピーに失敗しました">
+            <i class="bi bi-clipboard" aria-hidden="true"></i>
+            <span>リンクをコピー</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          閉じる
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

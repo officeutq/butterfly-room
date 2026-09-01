@@ -1,4 +1,5 @@
 require "test_helper"
+require "uri"
 
 class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
   include Devise::Test::IntegrationHelpers
@@ -112,10 +113,10 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
     get live_cast_booth_path(@booth)
 
     assert_response :success
-    button = Nokogiri::HTML(response.body).at_css("button.live-share-button")
-    assert_equal "配信開始管理者の配信はここから！遊びに来てね🦋", button["data-share-text"]
-    refute_includes button["data-share-text"], @cast.display_name
-    assert_equal share_booth_url(@booth, stream: stream_session.id), button["data-share-url"]
+    action = stream_share_action("web-share")
+    assert_equal "配信開始管理者の配信はここから！遊びに来てね🦋", action["data-share-text"]
+    refute_includes action["data-share-text"], @cast.display_name
+    assert_equal share_booth_url(@booth, stream: stream_session.id), action["data-share-url"]
   end
 
   test "live sharing text falls back for blank or deleted stream starter" do
@@ -225,28 +226,98 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
 
   def assert_cast_booth_share_button_rendered
     stream_session = @booth.reload.current_stream_session
+    document = Nokogiri::HTML(response.body)
+    trigger = document.at_css("button.live-share-button")
+    modal = document.at_css("#stream-share-modal")
 
-    assert_includes response.body, 'aria-label="配信を共有"'
-    assert_includes response.body, 'title="配信を共有"'
-    assert_includes response.body, 'data-controller="share"'
-    assert_includes response.body, "share#share"
-    assert_includes response.body, 'data-share-title="Butterflyve"'
-    assert_includes response.body, 'data-share-text="Test Castの配信はここから！遊びに来てね🦋"'
+    assert_equal "配信を共有", trigger["aria-label"]
+    assert_equal "配信を共有", trigger["title"]
+    assert_equal "modal", trigger["data-bs-toggle"]
+    assert_equal "#stream-share-modal", trigger["data-bs-target"]
+    assert_equal "dialog", trigger["aria-haspopup"]
+    assert_equal "stream-share-modal", trigger["aria-controls"]
+    refute trigger["data-controller"]
     assert_includes response.body, "live-overlay-ops-slot"
-    assert_includes response.body, "live-ops-btn live-share-button"
-    assert_includes response.body, "live-share-button"
-    assert_includes response.body, '<span class="visually-hidden">配信を共有</span>'
+    assert_equal "配信を共有", trigger.at_css(".visually-hidden").text.strip
+    assert modal.ancestors.none? { |ancestor| ancestor["class"]&.split&.include?("cast-live-screen") }
+    assert modal.ancestors.none? { |ancestor| ancestor["class"]&.split&.include?("live-overlay-ops-slot") }
+    assert_stream_share_modal(
+      modal,
+      expected_text: "Test Castの配信はここから！遊びに来てね🦋",
+      expected_url: share_booth_url(@booth, stream: stream_session.id)
+    )
     assert_stream_share_url stream_session
   end
 
   def assert_stream_share_url(stream_session)
-    button = Nokogiri::HTML(response.body).at_css("button.live-share-button")
-    assert_equal share_booth_url(@booth, stream: stream_session.id), button["data-share-url"]
-    refute_match(/(?:timestamp|cache|_)=/, button["data-share-url"])
+    action = stream_share_action("web-share")
+    assert_equal share_booth_url(@booth, stream: stream_session.id), action["data-share-url"]
+    refute_match(/(?:timestamp|cache|_)=/, action["data-share-url"])
   end
 
   def assert_stream_share_text(expected)
-    button = Nokogiri::HTML(response.body).at_css("button.live-share-button")
-    assert_equal expected, button["data-share-text"]
+    assert_equal expected, stream_share_action("web-share")["data-share-text"]
+  end
+
+  def assert_stream_share_modal(modal, expected_text:, expected_url:)
+    assert modal
+    assert modal.at_css(".modal-dialog-centered")
+    assert_equal "共有先を選択", modal.at_css(".modal-title").text.strip
+    assert_equal %w[x line web-share copy], modal.css("[data-share-provider]").map { |action| action["data-share-provider"] }
+
+    web_share = modal.at_css("[data-share-provider='web-share']")
+    assert_equal "share", web_share["data-controller"]
+    assert_equal "click->share#share", web_share["data-action"]
+    assert_equal "Butterflyve", web_share["data-share-title"]
+    assert_equal expected_text, web_share["data-share-text"]
+    assert_equal expected_url, web_share["data-share-url"]
+    assert_equal "その他のアプリで共有", web_share.text.strip
+    assert web_share.at_css(".bi-share")
+
+    copy = modal.at_css("[data-share-provider='copy']")
+    assert_equal "clipboard", copy["data-controller"]
+    assert_equal "click->clipboard#copy", copy["data-action"]
+    assert_equal expected_url, copy["data-clipboard-text"]
+    assert_equal "リンクをコピー", copy.text.strip
+    assert copy.at_css(".bi-clipboard")
+
+    assert_external_stream_share_action(
+      modal.at_css("[data-share-provider='x']"),
+      host: "x.com",
+      path: "/intent/tweet",
+      icon: ".bi-twitter-x",
+      label: "Xで共有",
+      expected_text: expected_text,
+      expected_url: expected_url
+    )
+    assert_external_stream_share_action(
+      modal.at_css("[data-share-provider='line']"),
+      host: "social-plugins.line.me",
+      path: "/lineit/share",
+      icon: ".bi-line",
+      label: "LINEで共有",
+      expected_text: expected_text,
+      expected_url: expected_url
+    )
+    refute_includes modal.text, "Instagram"
+  end
+
+  def assert_external_stream_share_action(action, host:, path:, icon:, label:, expected_text:, expected_url:)
+    uri = URI.parse(action["href"])
+    params = URI.decode_www_form(uri.query).to_h
+
+    assert_equal "https", uri.scheme
+    assert_equal host, uri.host
+    assert_equal path, uri.path
+    assert_equal expected_text, params["text"]
+    assert_equal expected_url, params["url"]
+    assert_equal "_blank", action["target"]
+    assert_equal "noopener noreferrer", action["rel"]
+    assert_equal label, action.text.strip
+    assert action.at_css(icon)
+  end
+
+  def stream_share_action(provider)
+    Nokogiri::HTML(response.body).at_css("#stream-share-modal [data-share-provider='#{provider}']")
   end
 end

@@ -187,12 +187,16 @@ data-favorite-sync-key-value
 
 ## 7. 共有機能
 
-share_controller は Web Share API を使う。
+ブース情報画面とキャスト配信画面は、既存位置の共有ボタンから共通の共有先選択モーダルを開く。
 
-- Web Share API が利用可能な場合はOS共有を起動
-- 利用不可の場合は警告フラッシュを表示
+- Xは `x.com/intent/tweet`、LINEは `social-plugins.line.me/lineit/share` を別タブで開く
+- X・LINEの共有文とURLは `BoothSharesHelper` でURLエンコードする
+- その他のアプリは `share_controller` からWeb Share APIを起動し、利用不可の場合は警告フラッシュを表示する
+- リンクコピーは `clipboard_controller` を利用する
+- Instagram専用ボタンは設けず、OSやブラウザーが共有先として提示する場合だけ「その他のアプリで共有」から利用する
 - 店舗向けオンボーディング中は共有完了後にstep更新を通知する
-- ブース情報画面はstreamなしの共有専用URL、キャスト配信画面はcurrent `StreamSession` ID付き共有専用URLをdata属性へ設定する
+- ブース情報画面はstreamなしの共有専用URL、キャスト配信画面はcurrent `StreamSession` ID付き共有専用URLを各共有操作へ設定する
+- キャスト配信画面のモーダルは配信overlayの `overflow: hidden` の影響を避けるため、`.cast-live-screen` の外側へ描画する
 - 共有専用ページから通常ブースへの遷移は `auto_redirect_controller` をdelay `0` で利用する
 - URL、OGP、公開情報、表示名フォールバックの正本は `docs/design/booth_sharing.md` とする
 
