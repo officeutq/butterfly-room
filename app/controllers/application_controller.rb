@@ -32,7 +32,10 @@ class ApplicationController < ActionController::Base
     stored_location || super
   end
 
-  helper_method :gtm_enabled?, :gtm_container_id, :staging_environment?
+  helper_method :gtm_enabled?,
+                :gtm_container_id,
+                :staging_environment?,
+                :image_upload_verification_enabled?
 
   private
 
@@ -50,6 +53,10 @@ class ApplicationController < ActionController::Base
 
   def staging_environment?
     Staging::Runtime.staging?
+  end
+
+  def image_upload_verification_enabled?
+    ActiveModel::Type::Boolean.new.cast(ENV["IMAGE_UPLOAD_VERIFICATION_ENABLED"])
   end
 
   def sanitized_utm_params(source = params)

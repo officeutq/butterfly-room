@@ -211,3 +211,30 @@ npm run test:js
 - 旧Blobの削除は新JPEGのアップロード・添付・実体確認が成功し、transactionが完了した後に非同期で行う
 
 実行方法と結果statusは`docs/ops/image_attachment_remediation.md`を参照する。
+
+---
+
+## 10. Cropper.js移行の検証画面
+
+FilePondからCropper.jsへ移行する前段として、`/system_admin/image_upload_verification` に保存を伴わない検証画面を置く。通常は無効で、環境変数 `IMAGE_UPLOAD_VERIFICATION_ENABLED=1` を設定した場合だけsystem_adminのダッシュボードに導線を表示し、直接アクセスも許可する。無効時の直接アクセスは404とする。
+
+- Cropper.js 2.2.0を利用する
+- アバターは1:1、ヒーロー・カードは40:21（1200x630）の固定選択枠とする
+- 選択枠は移動・リサイズさせず、編集元画像を移動・拡大縮小する
+- 縮小の下限は編集エリア全体ではなく、選択枠を埋める最小倍率とする。下限をまたぐ操作は最小倍率で止め、端に寄せた状態でも余白が生じない位置へ補正する
+- 回転・反転は提供せず、画像が選択枠内で余白を作らないようにする
+- クロップ状態はCropper.js固有の変換行列ではなく、編集元画像上の`x`、`y`、`width`、`height`と編集元画像サイズでJSON化する
+- Cropper.jsのサブピクセル丸めでクロップ座標が編集元画像から1出力ピクセル未満はみ出す場合は、幅・高さとアスペクト比を変えずに画像内へ正規化する
+- JSONから同じクロップ状態を復元できることを確認する
+- 表示用画像はアバター1024x1024、ヒーロー・カード1200x630のJPEGとしてブラウザ内だけで生成する
+- 透過画像のJPEG出力背景は白、品質は0.9とする
+- 選択した画像、クロップ状態、生成JPEGはサーバーへ送信・保存しない
+- Turbo cacheへの保存前とStimulusのdisconnect時にCropper、event listener、Object URLを破棄する
+
+この検証画面が受け付ける形式はJPEG / PNG / WebPまでとする。HEIC / HEIFのブラウザ変換、Active Storage保存、既存画像移行は後続検証・実装で追加し、現行のFilePond経路にはこの段階で影響させない。
+
+縮小下限・状態復元・JPEG出力を実際のCropper.jsとChromiumで確認する場合は、既存のPlaywright用Chromiumを利用して次を実行する。Railsやログインは不要で、テスト専用の画像を使う。
+
+```bash
+node --test test/javascript/browser/image_upload_verification_zoom_test.cjs
+```

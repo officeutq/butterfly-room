@@ -1,0 +1,59 @@
+.image-upload-verification {
+  --cropper-theme-color: #0d6efd;
+
+  &__empty {
+    align-items: center;
+    background: #f8f9fa;
+    border: 2px dashed #adb5bd;
+    border-radius: 0.75rem;
+    color: #6c757d;
+    display: flex;
+    justify-content: center;
+    min-height: 18rem;
+    padding: 2rem;
+    text-align: center;
+  }
+
+  &__editor {
+    background: #212529;
+    border-radius: 0.75rem;
+    height: min(60vh, 32rem);
+    min-height: 22rem;
+    overflow: hidden;
+    position: relative;
+  }
+
+  &__editor cropper-canvas {
+    height: 100%;
+    width: 100%;
+  }
+
+  &__state {
+    font-size: 0.8rem;
+  }
+
+  &__preview {
+    align-items: center;
+    aspect-ratio: 1 / 1;
+    background: #e9ecef;
+    border-radius: 0.75rem;
+    color: #6c757d;
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+    text-align: center;
+  }
+
+  &__preview img {
+    height: 100%;
+    object-fit: contain;
+    width: 100%;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .image-upload-verification__editor {
+    height: 24rem;
+    min-height: 18rem;
+  }
+}

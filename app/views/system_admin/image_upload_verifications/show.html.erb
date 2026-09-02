@@ -1,0 +1,155 @@
+<div class="container py-4 image-upload-verification"
+     data-controller="image-upload-verification"
+     data-action="turbo:before-cache@document->image-upload-verification#beforeCache">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div>
+      <p class="text-body-secondary small mb-1">system_admin限定・検証機能</p>
+      <h1 class="h3 mb-0">画像アップロード検証</h1>
+    </div>
+    <%= link_to "ダッシュボードへ戻る", dashboard_path, class: "btn btn-outline-secondary btn-sm" %>
+  </div>
+
+  <div class="alert alert-warning" role="alert">
+    この画面はCropper.jsの技術検証専用です。選択した画像や生成したJPEGはサーバーへ保存されません。
+  </div>
+
+  <div class="row g-4">
+    <div class="col-12 col-xl-8">
+      <section class="card shadow-sm" data-bs-theme="light">
+        <div class="card-body">
+          <h2 class="h5">1. 編集元画像と用途を選択</h2>
+          <div class="row g-3 align-items-end">
+            <div class="col-12 col-lg-7">
+              <label for="image-upload-verification-file" class="form-label">編集元画像</label>
+              <input id="image-upload-verification-file"
+                     class="form-control"
+                     type="file"
+                     accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                     data-image-upload-verification-target="file"
+                     data-action="change->image-upload-verification#loadFile">
+              <div class="form-text">この検証ではJPEG / PNG / WebPを使用します。HEIC / HEIF変換は後続検証で追加します。</div>
+            </div>
+            <div class="col-12 col-lg-5">
+              <label for="image-upload-verification-ratio" class="form-label">用途・固定アスペクト比</label>
+              <select id="image-upload-verification-ratio"
+                      class="form-select"
+                      data-image-upload-verification-target="ratio"
+                      data-action="change->image-upload-verification#changeRatio">
+                <option value="square">アバター（1:1 / 1024×1024）</option>
+                <option value="social">ヒーロー・カード（40:21 / 1200×630）</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="image-upload-verification__empty mt-4"
+               data-image-upload-verification-target="empty">
+            画像を選択するとクロップ操作を開始できます。
+          </div>
+
+          <div class="mt-4" hidden data-image-upload-verification-target="workspace">
+            <div class="image-upload-verification__editor"
+                 data-image-upload-verification-target="editor">
+              <img alt="クロップ対象の編集元画像"
+                   data-image-upload-verification-target="source">
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 mt-3" role="group" aria-label="画像操作">
+              <button type="button"
+                      class="btn btn-outline-primary"
+                      data-image-upload-verification-target="control"
+                      data-action="image-upload-verification#zoomIn">
+                拡大
+              </button>
+              <button type="button"
+                      class="btn btn-outline-primary"
+                      data-image-upload-verification-target="control"
+                      data-action="image-upload-verification#zoomOut">
+                縮小
+              </button>
+              <button type="button"
+                      class="btn btn-outline-secondary"
+                      data-image-upload-verification-target="control"
+                      data-action="image-upload-verification#reset">
+                初期状態へ戻す
+              </button>
+              <button type="button"
+                      class="btn btn-primary ms-lg-auto"
+                      data-image-upload-verification-target="control"
+                      data-action="image-upload-verification#generatePreview">
+                表示用JPEGを生成
+              </button>
+            </div>
+
+            <p class="form-text mb-0 mt-2">
+              枠は固定です。ドラッグまたはホイール操作で画像を移動・拡大縮小できます。回転・反転には対応しません。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card shadow-sm mt-4" data-bs-theme="light">
+        <div class="card-body">
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <h2 class="h5 mb-0">2. ライブラリ非依存のクロップ状態</h2>
+            <div class="d-flex gap-2">
+              <button type="button"
+                      class="btn btn-outline-secondary btn-sm"
+                      data-image-upload-verification-target="control"
+                      data-action="image-upload-verification#captureState">
+                現在値を取得
+              </button>
+              <button type="button"
+                      class="btn btn-outline-primary btn-sm"
+                      data-image-upload-verification-target="control"
+                      data-action="image-upload-verification#restoreState">
+                JSONから復元
+              </button>
+            </div>
+          </div>
+          <label for="image-upload-verification-state" class="visually-hidden">クロップ状態JSON</label>
+          <textarea id="image-upload-verification-state"
+                    class="form-control font-monospace mt-3 image-upload-verification__state"
+                    rows="14"
+                    spellcheck="false"
+                    data-image-upload-verification-target="state"></textarea>
+          <div class="form-text"><code>crop</code> は編集元画像のピクセル座標です。<code>zoom</code> は編集元画像の横幅に対する拡大率です。</div>
+        </div>
+      </section>
+    </div>
+
+    <div class="col-12 col-xl-4">
+      <section class="card shadow-sm" data-bs-theme="light">
+        <div class="card-body">
+          <h2 class="h5">3. 表示用JPEG</h2>
+          <div class="image-upload-verification__preview">
+            <span data-image-upload-verification-target="previewEmpty">まだ生成されていません。</span>
+            <img alt="生成した表示用JPEG"
+                 hidden
+                 data-image-upload-verification-target="preview">
+          </div>
+          <p class="small text-body-secondary mt-3 mb-2"
+             data-image-upload-verification-target="previewMetadata">-</p>
+          <a class="btn btn-outline-primary btn-sm disabled"
+             aria-disabled="true"
+             data-image-upload-verification-target="download">
+            JPEGをダウンロード
+          </a>
+        </div>
+      </section>
+
+      <section class="card shadow-sm mt-4" data-bs-theme="light">
+        <div class="card-body">
+          <h2 class="h5">検証情報</h2>
+          <dl class="row small mb-0">
+            <dt class="col-5">Cropper.js</dt>
+            <dd class="col-7">2.2.0</dd>
+            <dt class="col-5">編集元</dt>
+            <dd class="col-7" data-image-upload-verification-target="sourceMetadata">-</dd>
+            <dt class="col-5">状態</dt>
+            <dd class="col-7" data-image-upload-verification-target="status" aria-live="polite">画像未選択</dd>
+          </dl>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
