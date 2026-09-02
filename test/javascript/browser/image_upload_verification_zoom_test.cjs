@@ -162,6 +162,15 @@ test("real Cropper.js reaches the selection minimum, restores it, and exports wi
       await Promise.all([first, second, latest])
       const latestState = JSON.parse(controller.stateTarget.value)
 
+      const beforeReconnect = load()
+      await new Promise((resolve) => setTimeout(resolve, 10))
+      controller.disconnect()
+      controller.connect()
+      controller.ratioTarget.value = "square"
+      const afterReconnect = load()
+      await Promise.all([beforeReconnect, afterReconnect])
+      const reconnectedState = JSON.parse(controller.stateTarget.value)
+
       const pending = load()
       await new Promise((resolve) => setTimeout(resolve, 10))
       controller.beforeCache()
@@ -175,7 +184,7 @@ test("real Cropper.js reaches the selection minimum, restores it, and exports wi
       const failure = { status: controller.statusTarget.textContent, cropper: !!controller.cropper,
         download: controller.sourceDownloadTarget.hasAttribute("href"), disabled: controller.controlTargets.every((element) => element.disabled) }
       await load()
-      return { square, social, warning, firstJpeg, secondJpeg, unchangedInput, maximumActive, latestState, cleaned, failure,
+      return { square, social, warning, firstJpeg, secondJpeg, unchangedInput, maximumActive, latestState, reconnectedState, cleaned, failure,
         recovered: !!controller.cropper && controller.sourceDownloadTarget.hasAttribute("href") }
     })
     assert.equal(lifecycle.square.source.width, 1820)
@@ -188,6 +197,8 @@ test("real Cropper.js reaches the selection minimum, restores it, and exports wi
     assert.equal(lifecycle.maximumActive, 1)
     assert.equal(lifecycle.latestState.ratioKey, "social")
     assert.deepEqual(lifecycle.latestState.source, { width: 1200, height: 675 })
+    assert.equal(lifecycle.reconnectedState.ratioKey, "square")
+    assert.deepEqual(lifecycle.reconnectedState.source, { width: 1820, height: 1024 })
     assert.equal(lifecycle.cleaned, true)
     assert.match(lifecycle.failure.status, /画像実体/)
     assert.equal(lifecycle.failure.cropper, false)

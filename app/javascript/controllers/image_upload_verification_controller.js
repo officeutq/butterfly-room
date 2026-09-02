@@ -273,12 +273,13 @@ export default class extends Controller {
     this.cropperSelection = null
     this.sourceObjectUrl = null
     this.previewObjectUrl = null
-    this.loadGeneration = 0
-    this.previewGeneration = 0
+    // Stimulus may reconnect this same instance before a native conversion ends.
+    this.loadGeneration = (this.loadGeneration || 0) + 1
+    this.previewGeneration = (this.previewGeneration || 0) + 1
     this.isDisconnected = false
     this.sourceLoadCleanup = null
     this.selectedFile = null
-    this.normalizationTask = null
+    this.normalizationTask ||= null
     this.normalizedRatioKey = null
     this.boundTransformGuard = this.constrainTransform.bind(this)
     this.boundStateUpdate = this.updateStateAfterOperation.bind(this)
