@@ -29,6 +29,7 @@ function loadController() {
     globalThis.transformFromCropState = transformFromCropState
     globalThis.selectionBoxForRatio = selectionBoxForRatio
     globalThis.transformCoversSelection = transformCoversSelection
+    globalThis.constrainTransformToSelection = constrainTransformToSelection
   `
 
   const context = vm.createContext({
@@ -48,6 +49,7 @@ function loadController() {
     transformFromCropState: context.transformFromCropState,
     selectionBoxForRatio: context.selectionBoxForRatio,
     transformCoversSelection: context.transformCoversSelection,
+    constrainTransformToSelection: context.constrainTransformToSelection,
     revokedUrls,
   }
 }
@@ -221,6 +223,117 @@ test("rejects transforms that would expose blank space inside the fixed selectio
     selection,
     matrix: [0.2, 0, 0, 0.2, 0, 0],
   }), false)
+})
+
+test("zoom-out reaches the selection minimum for both ratios and image orientations", () => {
+  const { constrainTransformToSelection, cropStateFromTransform, selectionBoxForRatio, transformCoversSelection } = loadController()
+
+  for (const [sourceWidth, sourceHeight] of [[1421, 800], [800, 1421]]) {
+    for (const [ratioKey, ratio] of [["square", 1], ["social", 40 / 21]]) {
+      const selection = selectionBoxForRatio({ canvasWidth: 800, canvasHeight: 500, ratio })
+      const source = { sourceWidth, sourceHeight, selection }
+      const matrix = constrainTransformToSelection({ ...source, matrix: [0.01, 0, 0, 0.01, 100, 200] })
+      const minimumScale = Math.max(selection.width / sourceWidth, selection.height / sourceHeight)
+
+      assert.equal(matrix[0], minimumScale)
+      assert.equal(matrix[3], minimumScale)
+      assert.ok(minimumScale < Math.max(800 / sourceWidth, 500 / sourceHeight))
+      assert.equal(transformCoversSelection({ ...source, matrix, tolerance: 1e-7 }), true)
+
+      const state = cropStateFromTransform({ ...source, matrix, ratioKey })
+      assert.ok(state.crop.width === sourceWidth || state.crop.height === sourceHeight)
+      assert.ok(Math.abs(state.crop.width / state.crop.height - ratio) < 1e-6)
+      assert.ok(state.crop.x >= 0 && state.crop.y >= 0)
+    }
+  }
+})
+
+test("zoom-out at an image edge corrects the position instead of rejecting the zoom", () => {
+  const { constrainTransformToSelection, cropStateFromTransform, transformFromCropState } = loadController()
+  const source = {
+    sourceWidth: 1421,
+    sourceHeight: 800,
+    selection: { x: 100, y: 100, width: 600, height: 315 },
+  }
+  const oldMatrix = transformFromCropState({ ...source, crop: { x: 0, y: 0, width: 600, height: 315 } })
+  const scale = oldMatrix[0] / 1.1
+  const matrix = constrainTransformToSelection({
+    ...source,
+    oldMatrix,
+    matrix: [scale, 0, 0, scale, oldMatrix[4], oldMatrix[5]],
+  })
+  const state = cropStateFromTransform({ ...source, matrix, ratioKey: "social" })
+
+  assert.equal(matrix[0], scale)
+  assert.equal(state.crop.x, 0)
+  assert.equal(state.crop.y, 0)
+  assert.ok(state.crop.width > 600)
+})
+
+test("zoom-out stays stable at the minimum and allows zooming back in", () => {
+  const { constrainTransformToSelection, transformFromCropState } = loadController()
+  const source = {
+    sourceWidth: 1421,
+    sourceHeight: 800,
+    selection: { x: 100, y: 100, width: 600, height: 315 },
+  }
+  const minimum = transformFromCropState({
+    ...source, crop: { x: 0, y: 0, width: 1421, height: 1421 * 21 / 40 },
+  })
+  let matrix = minimum
+
+  for (let index = 0; index < 20; index += 1) {
+    const scale = matrix[0] / 1.1
+    matrix = constrainTransformToSelection({
+      ...source, oldMatrix: matrix, matrix: [scale, 0, 0, scale, matrix[4], matrix[5]],
+    })
+  }
+
+  matrix.forEach((value, index) => assert.ok(Math.abs(value - minimum[index]) < 1e-7))
+  const zoomedIn = constrainTransformToSelection({
+    ...source, oldMatrix: matrix, matrix: [matrix[0] * 1.1, 0, 0, matrix[3] * 1.1, matrix[4], matrix[5]],
+  })
+  assert.ok(zoomedIn[0] > matrix[0])
+})
+
+test("transform guard applies a corrected matrix without recursive updates", () => {
+  const { Controller } = loadController()
+  const controller = new Controller()
+  controller.sourceTarget = { naturalWidth: 1200, naturalHeight: 630 }
+  controller.cropperSelection = { x: 100, y: 100, width: 600, height: 315 }
+  let current = [1, 0, 0, 1, 0, 0]
+  let calls = 0
+  controller.cropperImage = {
+    $setTransform(matrix) {
+      calls += 1
+      assert.ok(calls <= 2, "guard must not recurse after correction")
+      let prevented = false
+      controller.constrainTransform({
+        detail: { matrix, oldMatrix: current },
+        preventDefault() { prevented = true },
+      })
+      if (!prevented) current = matrix
+    },
+  }
+
+  controller.cropperImage.$setTransform([0.1, 0, 0, 0.1, 0, 0])
+
+  assert.equal(calls, 2)
+  assert.equal(current[0], 0.5)
+  assert.equal(current[3], 0.5)
+  assert.doesNotMatch(controller.cropperTemplate(40 / 21), /min-fit=/)
+})
+
+test("unsupported transforms are rejected before they can distort the image", () => {
+  const { constrainTransformToSelection } = loadController()
+  const source = {
+    sourceWidth: 1200,
+    sourceHeight: 630,
+    selection: { x: 100, y: 100, width: 600, height: 315 },
+  }
+  for (const matrix of [[0, 0, 0, 0, 0, 0], [1, 0, 0, 2, 0, 0], [1, 0.2, 0, 1, 0, 0], [NaN, 0, 0, 1, 0, 0]]) {
+    assert.equal(constrainTransformToSelection({ ...source, matrix }), null)
+  }
 })
 
 test("disconnect destroys Cropper and revokes source and preview object URLs", () => {

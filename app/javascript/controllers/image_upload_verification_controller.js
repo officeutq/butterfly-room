@@ -3,6 +3,7 @@ import Cropper from "cropperjs"
 
 const STATE_SCHEMA_VERSION = 1
 const JPEG_QUALITY = 0.9
+const TRANSFORM_EPSILON = 1e-7
 const RATIO_CONFIG = Object.freeze({
   square: Object.freeze({ ratio: 1, width: 1024, height: 1024 }),
   social: Object.freeze({ ratio: 40 / 21, width: 1200, height: 630 }),
@@ -185,6 +186,59 @@ export function transformCoversSelection({ matrix, selection, sourceWidth, sourc
     bounds.top <= selection.y + tolerance &&
     bounds.right >= selection.x + selection.width - tolerance &&
     bounds.bottom >= selection.y + selection.height - tolerance
+}
+
+export function constrainTransformToSelection({ matrix, oldMatrix, selection, sourceWidth, sourceHeight }) {
+  if (!Array.isArray(matrix) || matrix.length !== 6 || !matrix.every(Number.isFinite)) return null
+
+  const [a, b, c, d, e, f] = matrix
+  const dimensions = [sourceWidth, sourceHeight, selection.width, selection.height]
+  if (
+    !dimensions.every((value) => Number.isFinite(value) && value > 0) ||
+    ![selection.x, selection.y].every(Number.isFinite) ||
+    a <= 0 || Math.abs(a - d) > TRANSFORM_EPSILON ||
+    Math.abs(b) > TRANSFORM_EPSILON || Math.abs(c) > TRANSFORM_EPSILON
+  ) return null
+
+  const minimumScale = Math.max(selection.width / sourceWidth, selection.height / sourceHeight)
+  if (a >= minimumScale && transformCoversSelection({
+    matrix, selection, sourceWidth, sourceHeight, tolerance: TRANSFORM_EPSILON,
+  })) return matrix
+
+  const scale = Math.max(a, minimumScale)
+  let translateX = e
+  let translateY = f
+
+  if (a < minimumScale) {
+    if (oldMatrix?.length === 6 && oldMatrix.every(Number.isFinite) && oldMatrix[0] >= minimumScale) {
+      // Stop a zoom step exactly at the limit, keeping its original focal point.
+      // At the limit this also prevents repeated zoom-out gestures from drifting.
+      const progress = clamp((oldMatrix[0] - scale) / (oldMatrix[0] - a), 0, 1)
+      translateX = oldMatrix[4] + (e - oldMatrix[4]) * progress
+      translateY = oldMatrix[5] + (f - oldMatrix[5]) * progress
+    } else {
+      const centerX = selection.x + selection.width / 2 - sourceWidth / 2
+      const centerY = selection.y + selection.height / 2 - sourceHeight / 2
+      translateX = centerX - (centerX - e) * scale / a
+      translateY = centerY - (centerY - f) * scale / a
+    }
+  }
+
+  // Keep the image covering the selection, not the larger editor canvas.
+  const originX = sourceWidth * (1 - scale) / 2
+  const originY = sourceHeight * (1 - scale) / 2
+  const left = clamp(
+    originX + translateX,
+    selection.x + selection.width - sourceWidth * scale,
+    selection.x
+  )
+  const top = clamp(
+    originY + translateY,
+    selection.y + selection.height - sourceHeight * scale,
+    selection.y
+  )
+
+  return [scale, 0, 0, scale, left - originX, top - originY]
 }
 
 export default class extends Controller {
@@ -505,10 +559,11 @@ export default class extends Controller {
 
   constrainTransform(event) {
     const matrix = event.detail?.matrix
-    if (!matrix || !this.cropperSelection) return
+    if (!matrix || !this.cropperSelection || !this.cropperImage) return
 
-    const covered = transformCoversSelection({
+    const constrained = constrainTransformToSelection({
       matrix,
+      oldMatrix: event.detail.oldMatrix,
       selection: {
         x: this.cropperSelection.x,
         y: this.cropperSelection.y,
@@ -519,13 +574,16 @@ export default class extends Controller {
       sourceHeight: this.sourceTarget.naturalHeight,
     })
 
-    if (!covered) event.preventDefault()
+    if (constrained && constrained.every((value, index) => Math.abs(value - matrix[index]) <= TRANSFORM_EPSILON)) return
+
+    event.preventDefault()
+    if (constrained) this.cropperImage.$setTransform(constrained)
   }
 
   cropperTemplate(ratio) {
     return `
       <cropper-canvas background scale-step="0.1">
-        <cropper-image initial-fit="cover" min-fit="cover" scalable translatable></cropper-image>
+        <cropper-image initial-fit="cover" scalable translatable></cropper-image>
         <cropper-shade></cropper-shade>
         <cropper-handle action="move" plain></cropper-handle>
         <cropper-selection initial-coverage="0.82" aspect-ratio="${ratio}" outlined precise>
