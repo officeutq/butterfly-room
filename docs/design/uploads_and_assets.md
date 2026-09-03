@@ -341,3 +341,7 @@ HEIC入力は標準16MPを維持し、Worker専用の32MP比較を明示選択�
 ## 13. 2画像の送信方式・一時保存検証（#1132）
 
 共通検証ページにmultipart（Rails経由の一括送信）とActive Storage direct upload（ブラウザから保存先への直接送信）の比較を追加する。両方式で同じ開始時点のクロップを生成し、実体検査後の測定JSONを表示する。通常の画像添付は更新しない。仕様・清掃・デプロイ前提・検証結果・未確定事項は [image_upload_transport_verification.md](image_upload_transport_verification.md) を正とする。
+
+## 14. 2画像の一体更新・既存画像移行の試作（#1133）
+
+本番モデルを変更せず、事前アップロード済みsource/displayとcrop dataの一体更新、期待attachment/blob IDによる競合拒否、失敗時清掃を試作した。既存表示Blobから独立した編集元JPEGと中央クロップ画像を生成し、低解像度時の最低寸法への拡大、dry-run、再開・冪等性の移行方針も確認した。Service分割・失敗状態・移行順序・残課題は [image_attachment_pair_and_migration_prototype.md](image_attachment_pair_and_migration_prototype.md) を正とする。
