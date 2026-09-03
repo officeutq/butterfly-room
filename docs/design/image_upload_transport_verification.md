@@ -42,7 +42,7 @@ JSONと画像の**寸法・形式・範囲**の整合を検査するが、表示
 - 中止APIはまず `canceled` にする。ブラウザの中止通知は回線断やページ終了時に届かないことがあるため、通知だけに依存しない。完了・失敗・未送信・中止の全状態を期限で清掃する。
 - 清掃は `ImageUploadVerificationCleanupJob` を本番設定で5分ごとに実行。フラグを無効化しても清掃する。1回100行以内、当該検証IDの `image-upload-verification/` キーだけを対象にし、他用途へ添付されたBlobは拒否する。保存先削除に失敗した行は残し、次回再試行する。全未添付Blobの一括削除はしない。
 - 署名済みPUTはブラウザの中止だけでは失効せず、期限内なら再送できる。このため即時purgeせず、発行上限15分＋URL5分に対して開始1時間後まで猶予を取る。期限前に開始した長時間PUTが清掃後に完了するケースは、この猶予だけで完全には防げない。[AWSの署名URLの仕様](https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-presigned-url.html)を前提とする。
-- ステージングのS3はバージョン管理有効。通常のキー削除は旧世代の物理削除を保証しない。検証prefix限定で、現行画像は1日・旧世代は非現行化から1日で期限切れにし、不要な削除マーカーを清掃するTerraform設定を追加した。これは非同期で、厳密な24時間以内削除ではない。通常の添付キーには適用しない。[S3の期限切れ処理](https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-expire-general-considerations.html)参照。
+- ステージングのS3はバージョン管理有効。通常のキー削除では旧世代が残る。今回、バケットの自動削除設定は追加しない。検証終了後、署名URLの失効と進行中の送信がないことを確認し、検証prefixの現行・旧世代・削除マーカーを一覧で確認する。必要な後片付けは、検証用と確認できたキー・version IDだけを明示して行い、通常の添付には触れない。旧世代の物理削除は取り消せないため、設定の復元とは区別する。[S3のバージョン削除](https://docs.aws.amazon.com/AmazonS3/latest/userguide/DeletingObjectVersions.html)参照。
 - 直接送信の一時Blobは署名URL期限まで書き換え可能なので、本番添付へそのまま昇格するコードは追加しない。#1133で、実体検査済みデータを別キーへ複製してから添付する等の不変化を検討する。
 
 ## 実行環境の調査（2026-09-03、変更せず読み取り）
@@ -50,7 +50,7 @@ JSONと画像の**寸法・形式・範囲**の整合を検査するが、表示
 - ステージング実行コードは#1137の `5a69c31`、Rails production / APP_ENV staging、検証フラグ有効、Pumaスレッド数2。
 - 共有ALBの `idle_timeout.timeout_seconds=60`、`client_keep_alive.seconds=3600` をAWS APIで確認。60秒は無通信時間で、アップロード全体の所要時間上限ではない。共有ALB設定は変更しない。
 - 配置済み `config/puma.rb` にbody容量制限・タイムアウトの明示設定なし。同梱Puma既定は `http_content_length_limit=nil`、`first_data_timeout=30`、`persistent_timeout=65`。後二者は業務リクエスト全体の制限ではない。
-- S3 CORSは `https://staging.butterflyve.jp` のGET/HEADのみ。バージョン管理Enabled、ライフサイクル設定は無しをAWS APIで確認した。今回の変更案はPUT追加と検証prefixの期限管理だけで、IAM・本番S3・共有ALBは変更しない。既存ステージングEC2のIAM定義にはPutObject/GetObject/DeleteObjectがある。
+- 変更前のS3 CORSは `https://staging.butterflyve.jp` のGET/HEADのみ。バージョン管理Enabled、ライフサイクル設定は無しをAWS APIで確認した。今回のS3設定変更は、ブラウザからの直接送信比較に必要なPUT追加だけ。バージョン管理・公開設定・暗号化・ライフサイクル・IAM・本番S3・共有ALBは変更しない。既存ステージングEC2のIAM定義にはPutObject/GetObject/DeleteObjectがある。
 - Rails側のJPEG容量検査は、WebサーバーやRackによるmultipart受信前の全体容量制限ではない。**25MiB＋multipart境界分の受信上限をどこで実施するかは未決定**。未知長body、低速接続、S3ダウンロード/アップロードのタイムアウトと再試行値、ピークメモリは実測と設定判断が必要。本番へ公開する前に#1134で解消する。
 
 ## 検証・起動手順
@@ -97,9 +97,9 @@ node --test test/javascript/browser/image_upload_transport_rails_test.cjs
 
 この実装時点では、ステージングへのデプロイ・DB migration・Terraform applyは**未実施**。
 
-1. `docs/staging/pre_apply_checklist.md` に従い、既存の検証prefixに保存物がないか確認する。保存planでstaging bucketのCORS更新と検証prefixだけのライフサイクル追加であることを確認・承認後にapplyする。既存ライフサイクルが新たに作られていたら上書きせず統合方針を再確認する。
+1. `docs/staging/pre_apply_checklist.md` に従い、変更前のCORSを保存する。保存planでstaging bucketのCORSにPUTを追加する1件だけであることを確認後にapplyする。別の変更があればそのplanは適用しない。自動削除設定は追加しない。
 2. staging DB/APP_ENV/保存先を確認して、検証テーブルのmigrationを実行する。本番DBへは実行しない。
-3. appに加えてworkerも同じコードへ更新し、定期清掃ジョブの登録・稼働を確認する。従来の検証のようなappだけの更新では清掃できない。定期清掃とprefix期限管理が用意できるまではステージング送信検証を開始しない。
+3. appに加えてworkerも同じコードへ更新し、定期清掃ジョブの登録・稼働を確認する。従来の検証のようなappだけの更新では清掃できない。更新前のapp・workerは別々のイメージを保護し、環境設定をバックアップする。DB追加は検証テーブル1個に限定する。アプリ切戻し時は追加テーブルを残せるため、検証データを意図せず消す自動DB巻戻しは行わない。
 4. 既存のフラグ付き管理者ページで実S3 PUT・multipart・実体検査・再試行・中止・清掃を確認する。ログインなしや他ロールは拒否されることも再確認する。
 5. iPhone 15 Proの既に変換成功した12MP/24MP HEICと、低速回線・大きいJPEGで2方式のJSONを採取する。入力ファイル名はIssueへ載せない。変換結果の画質判断と送信結果を混同しない。
 6. S3のCORS・HTTP失敗、容量境界、ALB無通信タイムアウト、サーバー/ブラウザのメモリ、途中離脱後の現行/旧世代削除を記録する。期限切れPUTの再送や清掃後の遅延PUTも扱う。
