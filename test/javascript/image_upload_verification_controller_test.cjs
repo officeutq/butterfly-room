@@ -18,6 +18,7 @@ function loadController() {
     "class Controller {}"
   )
   source = source.replace('import Cropper from "cropperjs"', "class Cropper {}")
+  source = source.replace('import { normalizeEditingSource } from "controllers/image_upload_verification/source_normalizer"', "")
   source = source.replaceAll("export function ", "function ")
   source = source.replace(
     "export default class extends Controller",
@@ -61,6 +62,25 @@ function fakeClassList() {
     toggle() {},
   }
 }
+
+test("source load resolves on load and rejects when replaced instead of leaving a pending task", async () => {
+  const { Controller } = loadController()
+  const controller = new Controller()
+  const listeners = new Map()
+  controller.sourceTarget = {
+    complete: false,
+    addEventListener: (name, callback) => listeners.set(name, callback),
+    removeEventListener: (name) => listeners.delete(name),
+  }
+  const loaded = controller.waitForSourceImage()
+  listeners.get("load")()
+  await loaded
+  assert.equal(listeners.size, 0)
+  const cancelled = controller.waitForSourceImage()
+  controller.clearPendingSourceLoad()
+  await assert.rejects(cancelled, /中止/)
+  assert.equal(listeners.size, 0)
+})
 
 test("fixed selection box stays centered at 40:21", () => {
   const { selectionBoxForRatio } = loadController()
@@ -357,6 +377,11 @@ test("disconnect destroys Cropper and revokes source and preview object URLs", (
     },
     previewEmptyTarget: { hidden: true },
     previewMetadataTarget: { textContent: "" },
+    normalizedPreviewTarget: { removeAttribute() {} },
+    normalizationReportTarget: {},
+    normalizationWarningTarget: {},
+    sourceMetadataTarget: {},
+    sourceDownloadTarget: { classList: fakeClassList(), removeAttribute() {}, setAttribute() {} },
     statusTarget: { classList: fakeClassList(), textContent: "" },
   })
   controller.connect()

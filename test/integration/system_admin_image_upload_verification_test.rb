@@ -47,6 +47,10 @@ class SystemAdminImageUploadVerificationTest < ActionDispatch::IntegrationTest
       assert_select "input[type=file][accept*='image/webp']"
       assert_select "select[data-image-upload-verification-target=ratio] option[value=square]", text: /1:1/
       assert_select "select[data-image-upload-verification-target=ratio] option[value=social]", text: /40:21/
+      assert_select "select[data-image-upload-verification-target=normalizationQuality] option[selected][value='0.94']"
+      assert_select "select[data-image-upload-verification-target=normalizationMode] option[value=bounded]"
+      assert_select "[data-image-upload-verification-target=sourceDownload]"
+      assert_select "textarea[data-image-upload-verification-target=normalizationReport][readonly]"
       assert_select ".image-upload-verification form", count: 0
     end
   end

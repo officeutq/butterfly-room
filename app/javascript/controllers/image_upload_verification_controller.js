@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import Cropper from "cropperjs"
+import { normalizeEditingSource } from "controllers/image_upload_verification/source_normalizer"
 
 const STATE_SCHEMA_VERSION = 1
 const JPEG_QUALITY = 0.9
@@ -248,11 +249,17 @@ export default class extends Controller {
     "editor",
     "empty",
     "file",
+    "normalizationQuality",
+    "normalizationMode",
+    "normalizationReport",
+    "normalizationWarning",
+    "normalizedPreview",
     "preview",
     "previewEmpty",
     "previewMetadata",
     "ratio",
     "source",
+    "sourceDownload",
     "sourceMetadata",
     "state",
     "status",
@@ -266,10 +273,14 @@ export default class extends Controller {
     this.cropperSelection = null
     this.sourceObjectUrl = null
     this.previewObjectUrl = null
-    this.loadGeneration = 0
-    this.previewGeneration = 0
+    // Stimulus may reconnect this same instance before a native conversion ends.
+    this.loadGeneration = (this.loadGeneration || 0) + 1
+    this.previewGeneration = (this.previewGeneration || 0) + 1
     this.isDisconnected = false
     this.sourceLoadCleanup = null
+    this.selectedFile = null
+    this.normalizationTask ||= null
+    this.normalizedRatioKey = null
     this.boundTransformGuard = this.constrainTransform.bind(this)
     this.boundStateUpdate = this.updateStateAfterOperation.bind(this)
     this.setControlsDisabled(true)
@@ -294,69 +305,125 @@ export default class extends Controller {
       return
     }
 
+    this.selectedFile = file
+    await this.normalizeSource()
+  }
+
+  async normalizeSource() {
+    const file = this.selectedFile
+    if (!file || this.isDisconnected) return
+
     const generation = this.loadGeneration + 1
     this.loadGeneration = generation
+    const isCurrent = () => !this.isDisconnected && generation === this.loadGeneration
+    const config = this.currentConfig()
+    const ratioKey = this.ratioTarget.value
+    const quality = Number(this.normalizationQualityTarget.value)
+    const mode = this.normalizationModeTarget.value
+    const previousTask = this.normalizationTask
     this.clearPendingSourceLoad()
     this.destroyCropper()
     this.revokeSourceObjectUrl()
+    this.clearNormalization()
     this.clearPreview()
+    this.stateTarget.value = ""
+    this.sourceTarget.removeAttribute("src")
+    this.workspaceTarget.hidden = true
+    this.emptyTarget.hidden = false
     this.setControlsDisabled(true)
-    this.setStatus("画像を読み込んでいます…")
+    this.setStatus("編集元JPEGへ変換しています…")
 
-    this.sourceObjectUrl = URL.createObjectURL(file)
-    this.sourceTarget.src = this.sourceObjectUrl
-    this.emptyTarget.hidden = true
-    this.workspaceTarget.hidden = false
+    // Serialize native decoding/encoding: changing settings cannot allocate
+    // several full-resolution bitmaps at once. Only the latest result is used.
+    this.normalizationTask = (async () => {
+      await previousTask
+      if (!isCurrent()) return
+      try {
+        const { blob, report } = await normalizeEditingSource(file, {
+          minimumWidth: config.width, minimumHeight: config.height, quality, mode, isCurrent,
+        })
+        if (!isCurrent()) return
+        this.sourceObjectUrl = URL.createObjectURL(blob)
+        this.sourceTarget.src = this.sourceObjectUrl
+        this.emptyTarget.hidden = true
+        this.workspaceTarget.hidden = false
 
-    try {
-      await this.waitForSourceImage()
-      if (this.isDisconnected || generation !== this.loadGeneration) return
+        await this.waitForSourceImage()
+        if (!isCurrent()) return
 
-      this.cropper = new Cropper(this.sourceTarget, {
-        container: this.editorTarget,
-        template: this.cropperTemplate(this.currentConfig().ratio),
-      })
-      this.cropperCanvas = this.cropper.getCropperCanvas()
-      this.cropperImage = this.cropper.getCropperImage()
-      this.cropperSelection = this.cropper.getCropperSelection()
+        this.cropper = new Cropper(this.sourceTarget, {
+          container: this.editorTarget,
+          template: this.cropperTemplate(config.ratio),
+        })
+        this.cropperCanvas = this.cropper.getCropperCanvas()
+        this.cropperImage = this.cropper.getCropperImage()
+        this.cropperSelection = this.cropper.getCropperSelection()
 
-      if (!this.cropperCanvas || !this.cropperImage || !this.cropperSelection) {
-        throw new Error("Cropper.jsの編集要素を初期化できません。")
+        if (!this.cropperCanvas || !this.cropperImage || !this.cropperSelection) {
+          throw new Error("Cropper.jsの編集要素を初期化できません。")
+        }
+
+        await this.cropperImage.$ready()
+        if (!isCurrent()) return
+
+        this.layoutSelection()
+        this.cropperImage.addEventListener("transform", this.boundTransformGuard)
+        this.cropperCanvas.addEventListener("actionend", this.boundStateUpdate)
+        this.observeEditorResize()
+        this.normalizedRatioKey = ratioKey
+        this.renderNormalization(report)
+        this.setControlsDisabled(false)
+        this.captureState()
+        const generated = await this.generatePreview()
+        if (isCurrent() && generated) this.setStatus("操作できます（編集元JPEGへ正規化済み）")
+      } catch (error) {
+        if (!isCurrent()) return
+
+        this.destroyCropper()
+        this.revokeSourceObjectUrl()
+        this.clearNormalization()
+        this.sourceTarget.removeAttribute("src")
+        this.workspaceTarget.hidden = true
+        this.emptyTarget.hidden = false
+        this.setControlsDisabled(true)
+        this.setStatus(error.message || "画像を読み込めませんでした。", true)
       }
-
-      await this.cropperImage.$ready()
-      if (this.isDisconnected || generation !== this.loadGeneration) return
-
-      this.layoutSelection()
-      this.cropperImage.addEventListener("transform", this.boundTransformGuard)
-      this.cropperCanvas.addEventListener("actionend", this.boundStateUpdate)
-      this.observeEditorResize()
-      this.sourceMetadataTarget.textContent = `${file.name} / ${this.sourceTarget.naturalWidth}×${this.sourceTarget.naturalHeight}`
-      this.setControlsDisabled(false)
-      this.captureState()
-      await this.generatePreview()
-      this.setStatus("操作できます")
-    } catch (error) {
-      if (generation !== this.loadGeneration) return
-
-      this.destroyCropper()
-      this.setControlsDisabled(true)
-      this.setStatus(error.message || "画像を読み込めませんでした。", true)
-    }
+    })()
+    await this.normalizationTask
   }
 
   async changeRatio() {
-    if (!this.cropperSelection || !this.cropperImage) return
+    await this.normalizeSource()
+  }
 
-    this.cropperSelection.aspectRatio = this.currentConfig().ratio
-    await this.nextFrame()
-    if (!this.cropperSelection || this.isDisconnected) return
+  renderNormalization(report) {
+    const source = report.source
+    this.normalizationReportTarget.value = JSON.stringify(report, null, 2)
+    this.sourceMetadataTarget.textContent = `${report.input.name} / ${source.width}×${source.height} / ${this.formatBytes(source.bytes)} / quality ${source.quality} / ${report.milliseconds.total}ms`
+    this.normalizedPreviewTarget.src = this.sourceObjectUrl
+    this.normalizedPreviewTarget.hidden = false
+    this.sourceDownloadTarget.href = this.sourceObjectUrl
+    this.sourceDownloadTarget.download = `source-${this.ratioTarget.value}-${source.width}x${source.height}-q${source.quality}.jpg`
+    this.sourceDownloadTarget.classList.remove("disabled")
+    this.sourceDownloadTarget.removeAttribute("aria-disabled")
+    this.normalizationWarningTarget.textContent = source.enlarged
+      ? `小さい画像を約${round(source.scale, 2)}倍に拡大しました。登録は妨げませんが、細部の解像感は増えません。`
+      : source.reduced ? "大きい画像を暫定上限まで縮小しました。元寸法を保つ設定とも比較してください。" : ""
+    this.normalizationWarningTarget.hidden = !this.normalizationWarningTarget.textContent
+  }
 
-    this.layoutSelection()
-    this.resetImageTransform()
-    this.captureState()
-    await this.generatePreview()
-    this.setStatus("用途と固定アスペクト比を変更しました")
+  clearNormalization() {
+    this.normalizedRatioKey = null
+    this.normalizedPreviewTarget.removeAttribute("src")
+    this.normalizedPreviewTarget.hidden = true
+    this.normalizationReportTarget.value = ""
+    this.normalizationWarningTarget.textContent = ""
+    this.normalizationWarningTarget.hidden = true
+    this.sourceMetadataTarget.textContent = "-"
+    this.sourceDownloadTarget.removeAttribute("href")
+    this.sourceDownloadTarget.removeAttribute("download")
+    this.sourceDownloadTarget.classList.add("disabled")
+    this.sourceDownloadTarget.setAttribute("aria-disabled", "true")
   }
 
   zoomIn() {
@@ -374,8 +441,7 @@ export default class extends Controller {
 
     this.resetImageTransform()
     this.captureState()
-    await this.generatePreview()
-    this.setStatus("初期状態へ戻しました")
+    if (await this.generatePreview()) this.setStatus("初期状態へ戻しました")
   }
 
   captureState() {
@@ -393,20 +459,21 @@ export default class extends Controller {
 
   async restoreState() {
     if (!this.cropperImage || !this.cropperSelection) return
+    const generation = this.loadGeneration
 
     try {
       const state = this.validateState(JSON.parse(this.stateTarget.value))
       this.ratioTarget.value = state.ratioKey
       this.cropperSelection.aspectRatio = this.currentConfig().ratio
       await this.nextFrame()
-      if (!this.cropperSelection || this.isDisconnected) return
+      if (!this.cropperSelection || this.isDisconnected || generation !== this.loadGeneration) return
 
       this.layoutSelection()
       this.applyStateToImage(state)
       this.captureState()
-      await this.generatePreview()
-      this.setStatus("JSONのクロップ状態を復元しました")
+      if (await this.generatePreview()) this.setStatus("JSONのクロップ状態を復元しました")
     } catch (error) {
+      if (generation !== this.loadGeneration) return
       this.setStatus(error.message || "クロップ状態を復元できませんでした。", true)
     }
   }
@@ -440,6 +507,7 @@ export default class extends Controller {
       this.downloadTarget.download = `crop-${this.ratioTarget.value}-${config.width}x${config.height}.jpg`
       this.downloadTarget.classList.remove("disabled")
       this.downloadTarget.removeAttribute("aria-disabled")
+      return true
     } catch (error) {
       if (generation !== this.previewGeneration) return
       this.setStatus(error.message || "表示用JPEGを生成できませんでした。", true)
@@ -462,6 +530,9 @@ export default class extends Controller {
   }
 
   validateState(state) {
+    if (this.normalizedRatioKey && state?.ratioKey !== this.normalizedRatioKey) {
+      throw new Error("正規化した編集元と同じ用途のJSONを使用してください。用途変更は画像選択欄から行えます。")
+    }
     const numbers = [
       state?.source?.width,
       state?.source?.height,
@@ -608,25 +679,26 @@ export default class extends Controller {
 
     return new Promise((resolve, reject) => {
       const onLoad = () => {
-        this.clearPendingSourceLoad()
+        this.clearPendingSourceLoad(false)
         resolve()
       }
       const onError = () => {
-        this.clearPendingSourceLoad()
+        this.clearPendingSourceLoad(false)
         reject(new Error("ブラウザで画像を読み込めませんでした。"))
       }
 
-      this.sourceLoadCleanup = () => {
+      this.sourceLoadCleanup = (cancel) => {
         this.sourceTarget.removeEventListener("load", onLoad)
         this.sourceTarget.removeEventListener("error", onError)
+        if (cancel) reject(new Error("編集元画像の読み込みを中止しました。"))
       }
       this.sourceTarget.addEventListener("load", onLoad)
       this.sourceTarget.addEventListener("error", onError)
     })
   }
 
-  clearPendingSourceLoad() {
-    this.sourceLoadCleanup?.()
+  clearPendingSourceLoad(cancel = true) {
+    this.sourceLoadCleanup?.(cancel)
     this.sourceLoadCleanup = null
   }
 
@@ -692,6 +764,8 @@ export default class extends Controller {
     this.clearPendingSourceLoad()
     this.destroyCropper()
     this.revokeSourceObjectUrl()
+    this.selectedFile = null
+    this.clearNormalization()
     this.clearPreview()
     this.setControlsDisabled(true)
 

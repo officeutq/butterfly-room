@@ -238,3 +238,94 @@ FilePondからCropper.jsへ移行する前段として、`/system_admin/image_up
 ```bash
 node --test test/javascript/browser/image_upload_verification_zoom_test.cjs
 ```
+
+## 11. 編集元JPEGの正規化検証（#1130）
+
+10節の検証画面を拡張し、入力を未クロップの編集元JPEGへ変換してからCropper.jsへ渡す。以下は**検証用の候補方針**であり、1〜9節の本番FilePond・Active Storage・`ImageAttachments::UpdateService` の仕様は変更しない。
+
+### 正規化手順
+
+1. ファイル容量とJPEG / PNG / WebPの実体ヘッダーを確認し、デコード前に寸法・画素数・縦横比を検査する。拡張子・申告MIMEだけを信用せず、確認したMIMEで読み込む。アニメーションPNG / WebPはこの検証では対象外とする。
+2. `createImageBitmap` の `imageOrientation: "from-image"` でEXIFの向きを反映する。`InvalidStateError`、またはAPI非対応時だけ `HTMLImageElement.decode()` へ切り替える。向きはブラウザの読み込みで反映させ、手動の追加回転は行わない。読み込んだ実寸法も再検査する。
+3. 用途の必要寸法を満たすように全体を等比拡大し、大きい場合は選択した上限へ等比縮小する。切り抜き・余白追加は行わない。
+4. sRGBのCanvas（描画領域）を白で塗り、`imageSmoothingQuality: "high"` で全体を描画する。品質0.94のJPEGとして再生成し、元EXIF / GPSは引き継がない。
+5. 生成した同じJPEGを編集元プレビュー・ダウンロード・Cropper.jsへ渡す。クロップJSONの `source` はこのJPEGの寸法とする。表示用JPEGは従来どおり品質0.90、1024×1024または1200×630。
+
+向き・色空間のAPI仕様は [HTML Standard: ImageBitmap](https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#imagebitmap) と [Canvas](https://html.spec.whatwg.org/multipage/canvas.html) を参照。WebPの実体確認は [WebP Container Specification](https://developers.google.com/speed/webp/docs/riff_container) に基づく。
+
+### 拡大・縮小と候補上限
+
+入力寸法は向き補正後の `w, h` とする。
+
+```text
+requiredScale = max(用途の横幅 / w, 用途の高さ / h)
+maximumScale = min(最大辺 / w, 最大辺 / h, sqrt(最大画素数 / (w * h)))
+scale = min(max(1, requiredScale), maximumScale)
+```
+
+`requiredScale > maximumScale` は、最低寸法と上限を両立できないためエラーとする。整数化は上限を超えないよう切り捨て、用途の最低寸法を下回らないよう補正する。縦横比の差は整数化による1px未満に限る。
+
+| 項目 | 暫定候補 | 位置づけ |
+| --- | --- | --- |
+| 入力容量 | 20MiB以下 | デコード前に拒否 |
+| 入力寸法 | 長辺8192px・3200万画素以下 | ヘッダーとデコード後の両方で検査 |
+| 入力縦横比 | 長辺/短辺が8以下 | 用途・出力上限との両立条件でも制限される |
+| 編集元・既定設定 | 長辺4096px・800万画素以下 | 以後のCropper・再編集の負荷を抑える候補 |
+| 編集元・比較設定 | 長辺8192px・3200万画素以下 | 元寸法維持を比較する高メモリ消費モード。上限自体は外さない |
+| 編集元JPEG品質 | 0.94候補、0.90 / 0.98と比較可能 | ブラウザのエンコーダーにより容量・画質は異なる |
+
+例えば320×180の入力はアバター用1820×1024、ヒーロー・カード用1200×675となる。6000×4000は既定設定で3464×2309、比較設定で6000×4000となる。100×800の入力はヒーロー・カード用に最低1200×9600が必要になり、比較設定でもエラーとなる。
+
+低解像度画像は拡大倍率と「細部の解像感は増えない」旨を警告表示するが、処理は妨げない。大きい画像の縮小も通知する。
+
+### 状態・解放・失敗時の扱い
+
+- 用途・品質・上限設定を変更すると、最初に選択した入力ファイルから再変換してクロップを初期化する。生成JPEGの再圧縮を繰り返さない。
+- JSON復元は同じ用途・編集元寸法に限定する。この検証のJSONは画像識別子を含まないため、別画像の同寸法JSONは識別できない。本番保存時の画像との関連付けは後続Issueで扱う。
+- 変換は直列化し、連続した変更では最後の結果だけを表示する。ブラウザ内部で進行中のデコード・エンコード自体は中断できないため、その完了後に不要な結果を破棄する。
+- ImageBitmap、フォールバック画像のURL、一時Canvas、編集元・表示用URLを解放する。Turbo遷移・disconnect時には入力ファイルの参照も破棄する。
+- 破損画像、上限超過、描画領域確保失敗、JPEG生成失敗は状態欄へ表示する。失敗した新画像を古い編集元・ダウンロードと混同しないよう表示を空にし、別画像や設定変更で再試行できる。
+- ヘッダー検査は完全なセキュリティ検証ではない。本番移行時のサーバー検証は引き続き必要。上限内でも低メモリ端末のタブ終了を完全には防げず、タブ終了はJavaScriptから捕捉できない。
+
+### 再現可能な検証
+
+```bash
+npm run test:js
+node --test test/javascript/browser/image_source_normalization_test.cjs
+node --test test/javascript/browser/image_upload_verification_zoom_test.cjs
+```
+
+ブラウザ検証は既存のPlaywright（ブラウザ自動テスト）を使い、ログイン・DB・サーバー保存なしで実コードを実行する。初回は `npx playwright install chromium firefox webkit` で検証用ブラウザを用意する。既定はChromium。他のエンジンはPowerShellで以下のように指定する。
+
+```powershell
+$env:IMAGE_VERIFICATION_BROWSER = "firefox" # または webkit
+node --test test/javascript/browser/image_source_normalization_test.cjs
+node --test test/javascript/browser/image_upload_verification_zoom_test.cjs
+Remove-Item Env:IMAGE_VERIFICATION_BROWSER
+```
+
+テスト内に4色・透過・EXIF全8方向とGPS情報・文字/細かい模様・大きい画像の生成手順を保持する。入出力サンプルを毎回生成し、出力の寸法・4領域の色・JPEGのAPP1セグメントが残らないことを検証する。テストログに容量と処理時間を出力する。手元の画像は検証画面の「編集元JPEGをダウンロード」と測定JSONから確認・記録できる。
+
+2026-09-02、Windows上のPlaywrightによるChromium 149.0.7827.55、Firefox 151.0、WebKit 26.5で、3形式の変換・向き・透過・EXIF/GPS除去、およびCropperの縮小下限・JSON復元・設定連続変更・離脱・エラー後再試行が通過した。FirefoxではEXIF付きJPEGの `createImageBitmap` が失敗し、`HTMLImageElement` への切り替えで全8方向を確認した。**Windows WebKitの結果はiPhone Safari実機の結果ではない。**
+
+測定例（各エンジン内で同じ1000×700の文字/模様PNGを使い、1200×840へ拡大。容量はbyte / 時間はms）:
+
+| エンジン | 品質0.90 | 品質0.94 | 品質0.98 |
+| --- | --- | --- | --- |
+| Chromium | 344716 / 1038.8 | 451924 / 1061.0 | 698963 / 1057.9 |
+| Firefox | 546323 / 15 | 730989 / 16 | 1215080 / 17 |
+| WebKit | 367363 / 76 | 481221 / 81 | 738347 / 85 |
+
+大きい6000×4000 JPEGの測定例（品質0.94）:
+
+| エンジン | 入力容量 | 既定3464×2309：容量 / 時間 | 元寸法維持：容量 / 時間 |
+| --- | --- | --- | --- |
+| Chromium | 1487654 | 740869 / 1233.8 | 1526581 / 1210.4 |
+| Firefox | 2338129 | 1219901 / 131 | 2356536 / 197 |
+| WebKit | 1449322 | 758372 / 536 | 1438714 / 469 |
+
+これらは単発の経過時間で、ファイル読み込み・ブラウザの処理待ちを含む。特にChromiumの独立ページの計測には約1秒のエンコード待ちが含まれた。入力生成自体も各ブラウザのCanvasで行うため、圧縮や文字描画の差があり、エンジン間の速度順位・同一画質を保証するベンチマークではない。既存検証画面上では別途測定JSONを採取する。
+
+0.98は模様サンプルで0.94比約1.5〜1.7倍の容量となったため、編集元0.94・表示用0.90を引き続き候補とする。全解像度保持は大きい画像の再編集メモリを増やすため、既定では800万画素へ抑える。ただし画質の目視評価・メモリ実測に基づく本番値の確定はまだ行わない。
+
+未確認: 実写真での画質受け入れ、広色域/ICCプロファイル画像の色差、実機iPhone Safari / Android Chrome、実端末の最大メモリと連続変換。スマホ確認は#1131、生成JPEGの容量制限・送信は#1132、本番採用値の確定は#1134へ引き継ぐ。入力20MiBの制限が、生成後JPEGの容量上限を保証するものではない。
