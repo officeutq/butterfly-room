@@ -96,7 +96,7 @@ image_upload_verification_controller
 - JPEG変換
 - 既存画像削除フラグ制御
 
-`image_upload_verification_controller` はsystem_admin限定のCropper.js移行検証専用とする。編集元JPEGへの変換は `controllers/image_upload_verification/source_normalizer.js` に分離し、既存のFilePond・保存処理には接続しない。仕様・暫定上限・測定方法は `uploads_and_assets.md` の10〜11節を参照する。
+`image_upload_verification_controller` はsystem_admin限定のCropper.js移行検証専用とする。編集元JPEGへの変換は `controllers/image_upload_verification/source_normalizer.js`、HEICの判別と中止は同ディレクトリの `heic_converter.js`、ネイティブデコードは `image_upload_verification/heic_worker.js` に分離し、既存のFilePond・保存処理には接続しない。仕様・暫定上限・測定方法は `uploads_and_assets.md` の10〜12節と `heic_verification.md` を参照する。
 
 ---
 

@@ -231,7 +231,7 @@ FilePondからCropper.jsへ移行する前段として、`/system_admin/image_up
 - 選択した画像、クロップ状態、生成JPEGはサーバーへ送信・保存しない
 - Turbo cacheへの保存前とStimulusのdisconnect時にCropper、event listener、Object URLを破棄する
 
-この検証画面が受け付ける形式はJPEG / PNG / WebPまでとする。HEIC / HEIFのブラウザ変換、Active Storage保存、既存画像移行は後続検証・実装で追加し、現行のFilePond経路にはこの段階で影響させない。
+当初の検証対象はJPEG / PNG / WebP。#1131でHEIC / HEIFのブラウザJPEG変換を追加した（12節参照）。Active Storage保存と既存画像移行は未実装で、現行のFilePond経路には影響させない。
 
 縮小下限・状態復元・JPEG出力を実際のCropper.jsとChromiumで確認する場合は、既存のPlaywright用Chromiumを利用して次を実行する。Railsやログインは不要で、テスト専用の画像を使う。
 
@@ -328,4 +328,10 @@ Remove-Item Env:IMAGE_VERIFICATION_BROWSER
 
 0.98は模様サンプルで0.94比約1.5〜1.7倍の容量となったため、編集元0.94・表示用0.90を引き続き候補とする。全解像度保持は大きい画像の再編集メモリを増やすため、既定では800万画素へ抑える。ただし画質の目視評価・メモリ実測に基づく本番値の確定はまだ行わない。
 
-未確認: 実写真での画質受け入れ、広色域/ICCプロファイル画像の色差、実機iPhone Safari / Android Chrome、実端末の最大メモリと連続変換。スマホ確認は#1131、生成JPEGの容量制限・送信は#1132、本番採用値の確定は#1134へ引き継ぐ。入力20MiBの制限が、生成後JPEGの容量上限を保証するものではない。
+ユーザーにより、小さい写真・透過PNGでの画質低下は想定内として確認済み。広色域/ICCプロファイル画像の色差、実機iPhone Safari / Android Chrome、実端末の最大メモリと連続変換は未確認。スマホ確認は#1131、生成JPEGの容量制限・送信は#1132、本番採用値の確定は#1134へ引き継ぐ。入力20MiBの制限が、生成後JPEGの容量上限を保証するものではない。
+
+## 12. HEIC / HEIFブラウザ変換の検証（#1131）
+
+検証画面だけで、HEIC / HEIF → フルサイズJPEG → 11節の編集元正規化 → Cropper.jsの順に処理する。Worker（画面操作と分離した処理）の比較、中止、変換測定を追加した。選定理由・暫定上限・PC自動テスト結果・未実施の実機チェックは [heic_verification.md](heic_verification.md) に集約する。
+
+本番のFilePond、サーバー側HEIC正規化、Active Storage、`ImageAttachments::UpdateService` の挙動は変更しない。実機検証とライセンス条件の採用判断が残るため、#1131の完了を意味しない。

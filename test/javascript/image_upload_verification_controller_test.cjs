@@ -19,6 +19,7 @@ function loadController() {
   )
   source = source.replace('import Cropper from "cropperjs"', "class Cropper {}")
   source = source.replace('import { normalizeEditingSource } from "controllers/image_upload_verification/source_normalizer"', "")
+  source = source.replace('import { prepareHeicInput } from "controllers/image_upload_verification/heic_converter"', "")
   source = source.replaceAll("export function ", "function ")
   source = source.replace(
     "export default class extends Controller",
@@ -365,6 +366,7 @@ test("disconnect destroys Cropper and revokes source and preview object URLs", (
 
   Object.assign(controller, {
     controlTargets: [],
+    cancelConversionTarget: {},
     downloadTarget: {
       classList: fakeClassList(),
       removeAttribute() {},

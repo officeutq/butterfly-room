@@ -1,6 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 import Cropper from "cropperjs"
 import { normalizeEditingSource } from "controllers/image_upload_verification/source_normalizer"
+import { prepareHeicInput } from "controllers/image_upload_verification/heic_converter"
 
 const STATE_SCHEMA_VERSION = 1
 const JPEG_QUALITY = 0.9
@@ -243,12 +244,16 @@ export function constrainTransformToSelection({ matrix, oldMatrix, selection, so
 }
 
 export default class extends Controller {
+  static values = { heicWorkerUrl: String, heicDecoderUrl: String }
+
   static targets = [
     "control",
     "download",
     "editor",
     "empty",
     "file",
+    "heicMode",
+    "cancelConversion",
     "normalizationQuality",
     "normalizationMode",
     "normalizationReport",
@@ -280,6 +285,7 @@ export default class extends Controller {
     this.sourceLoadCleanup = null
     this.selectedFile = null
     this.normalizationTask ||= null
+    this.heicAbort = null
     this.normalizedRatioKey = null
     this.boundTransformGuard = this.constrainTransform.bind(this)
     this.boundStateUpdate = this.updateStateAfterOperation.bind(this)
@@ -300,7 +306,7 @@ export default class extends Controller {
     if (!file) return
 
     if (!this.supportedFile(file)) {
-      this.setStatus("JPEG / PNG / WebPを選択してください。", true)
+      this.setStatus("JPEG / PNG / WebP / HEIC / HEIFを選択してください。", true)
       event.currentTarget.value = ""
       return
     }
@@ -320,7 +326,12 @@ export default class extends Controller {
     const ratioKey = this.ratioTarget.value
     const quality = Number(this.normalizationQualityTarget.value)
     const mode = this.normalizationModeTarget.value
+    const heicMode = this.heicModeTarget.value
     const previousTask = this.normalizationTask
+    this.heicAbort?.abort()
+    const abort = new AbortController()
+    this.heicAbort = abort
+    this.cancelConversionTarget.disabled = false
     this.clearPendingSourceLoad()
     this.destroyCropper()
     this.revokeSourceObjectUrl()
@@ -339,10 +350,16 @@ export default class extends Controller {
       await previousTask
       if (!isCurrent()) return
       try {
-        const { blob, report } = await normalizeEditingSource(file, {
+        const prepared = await prepareHeicInput(file, {
+          workerUrl: this.heicWorkerUrlValue, decoderUrl: this.heicDecoderUrlValue,
+          signal: abort.signal, mode: heicMode,
+        })
+        if (!isCurrent()) return
+        const { blob, report } = await normalizeEditingSource(prepared.file, {
           minimumWidth: config.width, minimumHeight: config.height, quality, mode, isCurrent,
         })
         if (!isCurrent()) return
+        report.heicConversion = prepared.conversion
         this.sourceObjectUrl = URL.createObjectURL(blob)
         this.sourceTarget.src = this.sourceObjectUrl
         this.emptyTarget.hidden = true
@@ -364,6 +381,10 @@ export default class extends Controller {
         }
 
         await this.cropperImage.$ready()
+        // A cached image can be complete before Cropper's load/centering has
+        // reached layout. Two animation frames allow the first paint to settle.
+        await this.nextFrame()
+        await this.nextFrame()
         if (!isCurrent()) return
 
         this.layoutSelection()
@@ -387,6 +408,11 @@ export default class extends Controller {
         this.emptyTarget.hidden = false
         this.setControlsDisabled(true)
         this.setStatus(error.message || "画像を読み込めませんでした。", true)
+      } finally {
+        if (isCurrent()) {
+          this.cancelConversionTarget.disabled = true
+          this.heicAbort = null
+        }
       }
     })()
     await this.normalizationTask
@@ -396,10 +422,17 @@ export default class extends Controller {
     await this.normalizeSource()
   }
 
+  cancelConversion() {
+    this.cleanup({ resetUi: true })
+    this.setStatus("変換を中止しました。画像を選び直してください。")
+  }
+
   renderNormalization(report) {
     const source = report.source
     this.normalizationReportTarget.value = JSON.stringify(report, null, 2)
-    this.sourceMetadataTarget.textContent = `${report.input.name} / ${source.width}×${source.height} / ${this.formatBytes(source.bytes)} / quality ${source.quality} / ${report.milliseconds.total}ms`
+    const inputName = report.heicConversion?.input.name || report.input.name
+    const conversionTime = report.heicConversion?.elapsedMilliseconds || 0
+    this.sourceMetadataTarget.textContent = `${inputName} / ${source.width}×${source.height} / ${this.formatBytes(source.bytes)} / quality ${source.quality} / ${round(report.milliseconds.total + conversionTime, 1)}ms`
     this.normalizedPreviewTarget.src = this.sourceObjectUrl
     this.normalizedPreviewTarget.hidden = false
     this.sourceDownloadTarget.href = this.sourceObjectUrl
@@ -667,9 +700,9 @@ export default class extends Controller {
   }
 
   supportedFile(file) {
-    if (["image/jpeg", "image/png", "image/webp"].includes(file.type)) return true
+    if (["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "image/heic-sequence", "image/heif-sequence"].includes(file.type)) return true
 
-    return /\.(?:jpe?g|png|webp)$/i.test(file.name)
+    return /\.(?:jpe?g|png|webp|heic|heif)$/i.test(file.name)
   }
 
   waitForSourceImage() {
@@ -761,6 +794,9 @@ export default class extends Controller {
   cleanup({ resetUi = false } = {}) {
     this.loadGeneration += 1
     this.previewGeneration += 1
+    this.heicAbort?.abort()
+    this.heicAbort = null
+    this.cancelConversionTarget.disabled = true
     this.clearPendingSourceLoad()
     this.destroyCropper()
     this.revokeSourceObjectUrl()
