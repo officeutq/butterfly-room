@@ -3,63 +3,16 @@ const fs = require("node:fs")
 const path = require("node:path")
 const test = require("node:test")
 const browsers = require("@playwright/test")
+const { openVerificationPage } = require("./helpers/image_verification_page.cjs")
 
 const root = path.resolve(__dirname, "../../..")
-const view = fs.readFileSync(path.join(root, "app/views/system_admin/image_upload_verifications/show.html.erb"), "utf8")
-  .replace(/<%[\s\S]*?%>/g, "")
-const html = `<!doctype html>
-<html><head>
-  <meta charset="utf-8">
-  <style>
-    .image-upload-verification__editor { width: 800px; height: 500px; }
-    cropper-canvas { width: 100%; height: 100%; }
-    [hidden] { display: none !important; }
-  </style>
-  <script type="importmap">{"imports":{"@hotwired/stimulus":"/stimulus.js","cropperjs":"/cropper.js","controllers/image_upload_verification/source_normalizer":"/source_normalizer.js"}}</script>
-</head><body>${view}
-  <script type="module">
-    import ImageUploadVerificationController from "/controller.js"
-    // Test the production controller against real Cropper.js in an isolated page.
-    // Stimulus target wiring is supplied here; Rails authentication is not involved.
-    const controller = new ImageUploadVerificationController()
-    for (const name of ImageUploadVerificationController.targets) {
-      const elements = document.querySelectorAll('[data-image-upload-verification-target="' + name + '"]')
-      controller[name + "Target"] = elements[0]
-      controller[name + "Targets"] = Array.from(elements)
-    }
-    controller.connect()
-    window.verification = controller
-  </script>
-</body></html>`
 
 test("real Cropper.js reaches the selection minimum, restores it, and exports without blank borders", async () => {
   const browser = await browsers[process.env.IMAGE_VERIFICATION_BROWSER || "chromium"].launch({ headless: true })
+  let environment
   try {
-    const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } })
-    const errors = []
-    page.on("pageerror", (error) => errors.push(error.message))
-    const sources = {
-      "/": { contentType: "text/html", body: html },
-      "/stimulus.js": { contentType: "text/javascript", body: "export class Controller {}" },
-      "/controller.js": {
-        contentType: "text/javascript",
-        body: fs.readFileSync(path.join(root, "app/javascript/controllers/image_upload_verification_controller.js"), "utf8"),
-      },
-      "/cropper.js": {
-        contentType: "text/javascript",
-        body: fs.readFileSync(path.join(root, "node_modules/cropperjs/dist/cropper.esm.js"), "utf8"),
-      },
-      "/source_normalizer.js": {
-        contentType: "text/javascript",
-        body: fs.readFileSync(path.join(root, "app/javascript/controllers/image_upload_verification/source_normalizer.js"), "utf8"),
-      },
-    }
-    await page.route("http://image-upload.test/**", (route) => {
-      const source = sources[new URL(route.request().url()).pathname]
-      return route.fulfill(source ? { status: 200, ...source } : { status: 404, body: "" })
-    })
-    await page.goto("http://image-upload.test/")
-    await page.waitForFunction(() => !!window.verification)
+    environment = await openVerificationPage(browser)
+    const { page, errors } = environment
 
     for (const [width, height] of [[1421, 800], [800, 1421]]) {
       for (const ratioKey of ["square", "social"]) {
@@ -212,6 +165,7 @@ test("real Cropper.js reaches the selection minimum, restores it, and exports wi
       await page.screenshot({ path: process.env.IMAGE_VERIFICATION_SCREENSHOT, fullPage: true })
     }
   } finally {
+    await environment?.close()
     await browser.close()
   }
 })
