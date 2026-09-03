@@ -216,7 +216,7 @@ npm run test:js
 
 ## 10. Cropper.js移行の検証画面
 
-FilePondからCropper.jsへ移行する前段として、`/system_admin/image_upload_verification` に保存を伴わない検証画面を置く。通常は無効で、環境変数 `IMAGE_UPLOAD_VERIFICATION_ENABLED=1` を設定した場合だけsystem_adminのダッシュボードに導線を表示し、直接アクセスも許可する。無効時の直接アクセスは404とする。
+FilePondからCropper.jsへ移行する前段として、`/system_admin/image_upload_verification` に検証画面を置く。通常は無効で、環境変数 `IMAGE_UPLOAD_VERIFICATION_ENABLED=1` を設定した場合だけsystem_adminのダッシュボードに導線を表示し、直接アクセスも許可する。無効時の直接アクセスは404とする。#1132から、明示操作による一時保存の検証を追加した（13節参照）。
 
 - Cropper.js 2.2.0を利用する
 - アバターは1:1、ヒーロー・カードは40:21（1200x630）の固定選択枠とする
@@ -228,10 +228,10 @@ FilePondからCropper.jsへ移行する前段として、`/system_admin/image_up
 - JSONから同じクロップ状態を復元できることを確認する
 - 表示用画像はアバター1024x1024、ヒーロー・カード1200x630のJPEGとしてブラウザ内だけで生成する
 - 透過画像のJPEG出力背景は白、品質は0.9とする
-- 選択した画像、クロップ状態、生成JPEGはサーバーへ送信・保存しない
+- 画像の選択・クロップ操作だけでは送信しない。「2画像を一時保存して検証」を押した場合だけ、編集元JPEG・表示用JPEG・クロップ情報を検証専用領域へ送信する
 - Turbo cacheへの保存前とStimulusのdisconnect時にCropper、event listener、Object URLを破棄する
 
-当初の検証対象はJPEG / PNG / WebP。#1131でHEIC / HEIFのブラウザJPEG変換を追加した（12節参照）。Active Storage保存と既存画像移行は未実装で、現行のFilePond経路には影響させない。
+当初の検証対象はJPEG / PNG / WebP。#1131でHEIC / HEIFのブラウザJPEG変換を追加した（12節参照）。#1132のActive Storage保存は一時検証だけで、本番添付・既存画像移行は未実装。現行のFilePond経路には影響させない。
 
 縮小下限・状態復元・JPEG出力を実際のCropper.jsとChromiumで確認する場合は、既存のPlaywright用Chromiumを利用して次を実行する。Railsやログインは不要で、テスト専用の画像を使う。
 
@@ -337,3 +337,7 @@ Remove-Item Env:IMAGE_VERIFICATION_BROWSER
 HEIC入力は標準16MPを維持し、Worker専用の32MP比較を明示選択できる。これは24MP写真を試す高負荷な検証設定であり、本番上限の決定ではない。容量20MiB・長辺8192px・縦横比8:1・30秒制限・後続の既定800万画素への正規化は維持する。画面を開き直すと標準へ戻り、メインスレッド比較は常に4MPまで。JSONに実行した上限を記録する。
 
 本番のFilePond、サーバー側HEIC正規化、Active Storage、`ImageAttachments::UpdateService` の挙動は変更しない。実機検証とライセンス条件の採用判断が残るため、#1131の完了を意味しない。
+
+## 13. 2画像の送信方式・一時保存検証（#1132）
+
+共通検証ページにmultipart（Rails経由の一括送信）とActive Storage direct upload（ブラウザから保存先への直接送信）の比較を追加する。両方式で同じ開始時点のクロップを生成し、実体検査後の測定JSONを表示する。通常の画像添付は更新しない。仕様・清掃・デプロイ前提・検証結果・未確定事項は [image_upload_transport_verification.md](image_upload_transport_verification.md) を正とする。

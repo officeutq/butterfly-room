@@ -59,6 +59,10 @@ class SystemAdminImageUploadVerificationTest < ActionDispatch::IntegrationTest
       assert_select "select[data-image-upload-verification-target=normalizationMode] option[value=bounded]"
       assert_select "[data-image-upload-verification-target=sourceDownload]"
       assert_select "textarea[data-image-upload-verification-target=normalizationReport][readonly]"
+      assert_select "[data-image-upload-verification-upload-url-value=?]", system_admin_image_upload_verification_runs_path
+      assert_select "[data-image-upload-verification-target~=uploadStart][disabled]"
+      assert_select "[data-image-upload-verification-target=uploadTransport] option[value=direct]"
+      assert_select "textarea[data-image-upload-verification-target=uploadReport][readonly]"
       assert_select ".image-upload-verification form", count: 0
     end
   end

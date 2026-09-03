@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_27_010000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_03_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -193,6 +193,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_27_010000) do
     t.datetime "created_at", null: false
     t.string "title"
     t.datetime "updated_at", null: false
+  end
+
+  create_table "image_upload_verification_runs", force: :cascade do |t|
+    t.datetime "cleanup_after", null: false
+    t.datetime "created_at", null: false
+    t.jsonb "crop_data", default: {}, null: false
+    t.bigint "display_blob_id"
+    t.datetime "expires_at", null: false
+    t.jsonb "report", default: {}, null: false
+    t.bigint "source_blob_id"
+    t.string "state", default: "pending", null: false
+    t.string "transport", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["cleanup_after"], name: "index_image_upload_verification_runs_on_cleanup_after"
+    t.index ["display_blob_id"], name: "index_image_upload_verification_runs_on_display_blob_id"
+    t.index ["source_blob_id"], name: "index_image_upload_verification_runs_on_source_blob_id"
+    t.index ["user_id"], name: "index_image_upload_verification_runs_on_user_id"
   end
 
   create_table "lp_analytics_events", force: :cascade do |t|
@@ -747,6 +765,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_27_010000) do
   add_foreign_key "favorite_stores", "users"
   add_foreign_key "favorite_users", "users"
   add_foreign_key "favorite_users", "users", column: "target_user_id"
+  add_foreign_key "image_upload_verification_runs", "active_storage_blobs", column: "display_blob_id"
+  add_foreign_key "image_upload_verification_runs", "active_storage_blobs", column: "source_blob_id"
+  add_foreign_key "image_upload_verification_runs", "users"
   add_foreign_key "lp_analytics_events", "lp_analytics_visits"
   add_foreign_key "notification_reads", "notifications"
   add_foreign_key "notification_reads", "users"

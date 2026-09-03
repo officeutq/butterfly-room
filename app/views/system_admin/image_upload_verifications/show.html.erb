@@ -2,6 +2,7 @@
      data-controller="image-upload-verification"
      data-image-upload-verification-heic-worker-url-value="<%= asset_path('image_upload_verification/heic_worker.js') %>"
      data-image-upload-verification-heic-decoder-url-value="<%= asset_path('heic-to/src/lib/libheif-without-unsafe-eval.js') %>"
+     data-image-upload-verification-upload-url-value="<%= system_admin_image_upload_verification_runs_path %>"
      data-action="turbo:before-cache@document->image-upload-verification#beforeCache">
   <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
     <div>
@@ -12,7 +13,7 @@
   </div>
 
   <div class="alert alert-warning" role="alert">
-    この画面はCropper.jsの技術検証専用です。選択した画像や生成したJPEGはサーバーへ保存されません。
+    この画面は技術検証専用です。画像を選択するだけでは送信しません。「2画像を一時保存して検証」を押すと、編集元JPEG・表示用JPEG・クロップ情報を一時保存します。本番のプロフィール・店舗・ブース画像は変更しません。個人情報を含まないテスト画像を使用してください。
   </div>
 
   <div class="row g-4">
@@ -219,6 +220,28 @@
             <dt class="col-5">状態</dt>
             <dd class="col-7" data-image-upload-verification-target="status" aria-live="polite">画像未選択</dd>
           </dl>
+        </div>
+      </section>
+      <section class="card shadow-sm mt-4" data-bs-theme="light">
+        <div class="card-body">
+          <h2 class="h5">5. 2画像の一時保存・送信比較</h2>
+          <p class="small">開始時のクロップで表示用JPEGを生成し直し、編集元JPEGと一緒に送ります。同じ画像で両方式を試してください。</p>
+          <label for="image-upload-transport" class="form-label">送信方式</label>
+          <select id="image-upload-transport" class="form-select" data-image-upload-verification-target="uploadTransport">
+            <option value="multipart">multipart（Rails経由で2枚を一括送信）</option>
+            <option value="direct">Active Storage直接送信（2枚を順に送信）</option>
+          </select>
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <button type="button" class="btn btn-primary" disabled data-image-upload-verification-target="uploadStart control"
+                    data-action="image-upload-verification#startUpload">2画像を一時保存して検証</button>
+            <button type="button" class="btn btn-outline-danger" disabled data-image-upload-verification-target="uploadCancel"
+                    data-action="image-upload-verification#cancelUpload">送信を中止</button>
+          </div>
+          <p class="small mt-3" role="status" aria-live="polite" data-image-upload-verification-target="uploadStatus">未送信</p>
+          <label for="image-upload-report" class="form-label small">保存・送信の測定JSON</label>
+          <textarea id="image-upload-report" class="form-control font-monospace small" rows="12" readonly data-image-upload-verification-target="uploadReport"></textarea>
+          <p class="form-text mb-0">暫定上限: 編集元20MiB・表示用5MiB、編集元3200万画素・長辺8192px、各通信120秒。通常の編集元は引き続き800万画素に縮小します。最大20件まで保持し、開始から1時間後以降、清掃処理が削除します（ローカルは手動清掃が必要）。中止は即時削除ではありません。失敗後は同じボタンで新しい検証を開始します。転送100%は保存完了ではなく、続けてサーバーが実体を検査します。</p>
+          <p class="form-text mb-0 mt-2">直接送信にはS3のPUTを許可するCORS設定が必要です。保存時間に元画像の変換時間は含みません。検証データは通常添付に使わず、再編集・差し替えの永続保存は次のIssue #1133で検証します。</p>
         </div>
       </section>
     </div>
