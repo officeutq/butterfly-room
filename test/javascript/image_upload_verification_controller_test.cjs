@@ -366,6 +366,9 @@ test("disconnect destroys Cropper and revokes source and preview object URLs", (
 
   Object.assign(controller, {
     controlTargets: [],
+    heicModeTarget: { value: "worker" },
+    heicLimitTarget: { value: "large" },
+    heicLimitWarningTarget: {},
     cancelConversionTarget: {},
     downloadTarget: {
       classList: fakeClassList(),
@@ -387,6 +390,8 @@ test("disconnect destroys Cropper and revokes source and preview object URLs", (
     statusTarget: { classList: fakeClassList(), textContent: "" },
   })
   controller.connect()
+  assert.equal(controller.heicLimitTarget.value, "standard", "reconnection must require a fresh opt-in")
+  assert.equal(controller.heicLimitWarningTarget.hidden, true)
   controller.sourceObjectUrl = "blob:source"
   controller.previewObjectUrl = "blob:preview"
   controller.cropper = { destroy: () => { destroyCount += 1 } }

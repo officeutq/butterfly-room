@@ -1,22 +1,30 @@
 // Verification-only adapter for the unmodified CSP build shipped by heic-to 1.5.2.
 // See docs/design/heic_verification.md for version, license, and limitations.
-export const HEIC_LIMITS = Object.freeze({ bytes: 20 * 1024 ** 2, pixels: 16_000_000, edge: 8192, images: 20, mainPixels: 4_000_000 })
+export const HEIC_LIMITS = Object.freeze({ bytes: 20 * 1024 ** 2, pixels: 16_000_000, comparisonPixels: 32_000_000, edge: 8192, images: 20, mainPixels: 4_000_000 })
 
-export function validateHeicDimensions(width, height, mode) {
+function pixelLimitFor(mode, limitMode) {
   if (!["worker", "main"].includes(mode)) throw new Error("HEIC変換方式が不正です。")
-  const pixels = mode === "main" ? HEIC_LIMITS.mainPixels : HEIC_LIMITS.pixels
+  if (!["standard", "large"].includes(limitMode)) throw new Error("HEICの上限設定が不正です。")
+  if (mode === "main") return HEIC_LIMITS.mainPixels
+  return limitMode === "large" ? HEIC_LIMITS.comparisonPixels : HEIC_LIMITS.pixels
+}
+
+export function validateHeicDimensions(width, height, mode, limitMode = "standard") {
+  const pixels = pixelLimitFor(mode, limitMode)
   if (![width, height].every((value) => Number.isSafeInteger(value) && value > 0) ||
       width * height > pixels || Math.max(width, height) > HEIC_LIMITS.edge || Math.max(width / height, height / width) > 8) {
     throw new Error(mode === "main"
       ? "メインスレッド比較は400万画素以下です。Worker方式で試してください。"
-      : "HEIC / HEIFが暫定上限（1600万画素・長辺8192px・縦横比8:1）を超えています。")
+      : `HEIC / HEIF（${width}×${height}px）が暫定上限（${pixels / 10_000}万画素・長辺8192px・縦横比8:1）を超えています。`)
   }
 }
 
-export async function convertHeicBuffer({ buffer, decoderUrl, mode = "worker", signal }) {
+export async function convertHeicBuffer({ buffer, decoderUrl, mode = "worker", limitMode = "standard", signal }) {
   const started = performance.now()
   const check = () => { if (signal?.aborted) throw new DOMException("変換を中止しました。", "AbortError") }
   check()
+  const pixelLimit = pixelLimitFor(mode, limitMode)
+  const effectiveLimitMode = mode === "main" ? "standard" : limitMode
   if (!(buffer instanceof ArrayBuffer) || !buffer.byteLength || buffer.byteLength > HEIC_LIMITS.bytes) {
     throw new Error("HEIC / HEIFは空でない20MiB以下のファイルを選択してください。")
   }
@@ -36,7 +44,7 @@ export async function convertHeicBuffer({ buffer, decoderUrl, mode = "worker", s
     const width = first.get_width()
     const height = first.get_height()
     // Check dimensions before decompressing pixels, and decode only the first image.
-    validateHeicDimensions(width, height, mode)
+    validateHeicDimensions(width, height, mode, effectiveLimitMode)
     check()
     decoded = await lib.heif_js_decode_image2(first.handle, lib.heif_colorspace.heif_colorspace_RGB, lib.heif_chroma.heif_chroma_interleaved_RGBA)
     if (!decoded || decoded.code) throw new Error("対応外または破損したHEIC / HEIFです。JPEGへ書き出して再試行してください。")
@@ -54,7 +62,7 @@ export async function convertHeicBuffer({ buffer, decoderUrl, mode = "worker", s
     if (typeof OffscreenCanvas !== "function" && typeof document === "undefined") {
       const ended = performance.now()
       return { rgbaBuffer: rgba.buffer, report: {
-        library: "heic-to 1.5.2 / bundled libheif 1.22.2 (CSP build)", mode,
+        library: "heic-to 1.5.2 / bundled libheif 1.22.2 (CSP build)", mode, limitMode: effectiveLimitMode, pixelLimit,
         imageCount: images.length, selectedImageIndex: 0, width, height, bytes: null, quality: 0.94,
         memory: { rgbaBytes: rgba.byteLength, libraryHeapBytes: lib.HEAPU8?.byteLength ?? null, peakBytes: null },
         milliseconds: { libraryLoad: loadedAt - started, decodeAndDraw: ended - loadedAt, encode: 0, total: ended - started },
@@ -80,7 +88,7 @@ export async function convertHeicBuffer({ buffer, decoderUrl, mode = "worker", s
     if (blob?.type !== "image/jpeg" || !blob.size) throw new Error("HEIC / HEIFからJPEGを生成できませんでした。")
     const ms = (value) => Math.round(value * 10) / 10
     return { blob, report: {
-      library: "heic-to 1.5.2 / bundled libheif 1.22.2 (CSP build)", mode,
+      library: "heic-to 1.5.2 / bundled libheif 1.22.2 (CSP build)", mode, limitMode: effectiveLimitMode, pixelLimit,
       jpegEncoder: typeof OffscreenCanvas === "function" ? "offscreen-canvas" : "main-canvas",
       imageCount: images.length, selectedImageIndex: 0, width, height, bytes: blob.size, quality: 0.94,
       memory: { rgbaBytes: rgba.byteLength, libraryHeapBytes: heapBytes, peakBytes: null },
@@ -96,10 +104,10 @@ export async function convertHeicBuffer({ buffer, decoderUrl, mode = "worker", s
 
 // Worker decoding remains mandatory when selected; only JPEG encoding moves to
 // the page on engines without OffscreenCanvas in workers (e.g. Windows WebKit).
-export async function encodeHeicRgba({ rgbaBuffer, report }) {
+export async function encodeHeicRgba({ rgbaBuffer, report }, { limitMode = "standard" } = {}) {
   const started = performance.now()
   const { width, height } = report
-  validateHeicDimensions(width, height, "worker")
+  validateHeicDimensions(width, height, "worker", limitMode)
   if (rgbaBuffer.byteLength !== width * height * 4) throw new Error("変換済みHEICの画素データが不正です。")
   const canvas = document.createElement("canvas")
   try {

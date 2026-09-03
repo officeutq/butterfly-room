@@ -253,6 +253,8 @@ export default class extends Controller {
     "empty",
     "file",
     "heicMode",
+    "heicLimit",
+    "heicLimitWarning",
     "cancelConversion",
     "normalizationQuality",
     "normalizationMode",
@@ -287,6 +289,8 @@ export default class extends Controller {
     this.normalizationTask ||= null
     this.heicAbort = null
     this.normalizedRatioKey = null
+    this.heicLimitTarget.value = "standard"
+    this.updateHeicLimit()
     this.boundTransformGuard = this.constrainTransform.bind(this)
     this.boundStateUpdate = this.updateStateAfterOperation.bind(this)
     this.setControlsDisabled(true)
@@ -316,6 +320,7 @@ export default class extends Controller {
   }
 
   async normalizeSource() {
+    this.updateHeicLimit()
     const file = this.selectedFile
     if (!file || this.isDisconnected) return
 
@@ -327,6 +332,7 @@ export default class extends Controller {
     const quality = Number(this.normalizationQualityTarget.value)
     const mode = this.normalizationModeTarget.value
     const heicMode = this.heicModeTarget.value
+    const limitMode = heicMode === "worker" ? this.heicLimitTarget.value : "standard"
     const previousTask = this.normalizationTask
     this.heicAbort?.abort()
     const abort = new AbortController()
@@ -352,7 +358,7 @@ export default class extends Controller {
       try {
         const prepared = await prepareHeicInput(file, {
           workerUrl: this.heicWorkerUrlValue, decoderUrl: this.heicDecoderUrlValue,
-          signal: abort.signal, mode: heicMode,
+          signal: abort.signal, mode: heicMode, limitMode,
         })
         if (!isCurrent()) return
         const { blob, report } = await normalizeEditingSource(prepared.file, {
@@ -420,6 +426,12 @@ export default class extends Controller {
 
   async changeRatio() {
     await this.normalizeSource()
+  }
+
+  updateHeicLimit() {
+    const worker = this.heicModeTarget.value === "worker"
+    this.heicLimitTarget.disabled = !worker
+    this.heicLimitWarningTarget.hidden = !worker || this.heicLimitTarget.value !== "large"
   }
 
   cancelConversion() {

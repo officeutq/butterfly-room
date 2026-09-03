@@ -35,7 +35,7 @@ async function openVerificationPage(browser, { strictCsp = false } = {}) {
     "/cropper.js": "node_modules/cropperjs/dist/cropper.esm.js",
   }
   const requests = []
-  const fixtures = new Set(["medium.heic", "large.heic", "rotated.heif", "alpha.heic", "multiple.heic"])
+  const fixtures = new Set(["medium.heic", "large.heic", "photo-24mp.heic", "rotated.heif", "alpha.heic", "multiple.heic"])
   const server = http.createServer((request, response) => {
     const pathname = new URL(request.url, "http://127.0.0.1").pathname
     requests.push(pathname)

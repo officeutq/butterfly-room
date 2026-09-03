@@ -80,7 +80,16 @@
               <option value="worker">Worker（推奨・画面操作と分離して変換）</option>
               <option value="main">メインスレッド（比較専用・400万画素まで）</option>
             </select>
-            <p class="form-text">HEICの暫定上限は20MiB・1600万画素・長辺8192px・縦横比8:1です。Workerは30秒で停止します。メインスレッド比較中は画面操作が止まり、中止も処理終了後になります。失敗時に未変換画像を使用する代替処理は行いません。</p>
+            <label for="image-upload-verification-heic-limit" class="form-label mt-2">HEICの入力画素数上限（Worker専用）</label>
+            <select id="image-upload-verification-heic-limit" class="form-select"
+                    data-image-upload-verification-target="heicLimit"
+                    data-action="change->image-upload-verification#normalizeSource">
+              <option value="standard" selected>標準（1600万画素まで）</option>
+              <option value="large">大きい写真の比較（3200万画素まで・高負荷）</option>
+            </select>
+            <p class="alert alert-warning small mt-2" role="status" hidden
+               data-image-upload-verification-target="heicLimitWarning">32MPは24MP写真を試す検証専用設定です。端末によってはメモリ不足でSafariなどのタブが終了する可能性があります。12MPで成功した端末で1枚ずつ試し、処理時間・操作・連続差し替えの結果を記録してください。実メモリのピークは測定していません。</p>
+            <p class="form-text">HEICの入力は既定1600万画素、比較時のみ3200万画素までです。20MiB・長辺8192px・縦横比8:1・Workerの30秒制限は共通です。メインスレッドは上限設定によらず400万画素までで、比較中は画面操作が止まり、中止も処理終了後になります。設定変更時は選択中の画像を再変換し、クロップを初期化します。検証画面を開き直すと標準へ戻ります。失敗時に未変換画像を使用する代替処理は行いません。</p>
             <button type="button" class="btn btn-outline-danger btn-sm" disabled
                     data-image-upload-verification-target="cancelConversion"
                     data-action="image-upload-verification#cancelConversion">変換を中止</button>

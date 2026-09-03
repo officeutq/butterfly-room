@@ -20,7 +20,7 @@ export function isHeicNamed(file) {
 
 function aborted() { return new DOMException("変換を中止しました。", "AbortError") }
 
-export function convertInWorker(buffer, { workerUrl, decoderUrl, signal, timeoutMs = TIMEOUT_MS }) {
+export function convertInWorker(buffer, { workerUrl, decoderUrl, signal, limitMode = "standard", timeoutMs = TIMEOUT_MS }) {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) { reject(aborted()); return }
     let worker
@@ -45,14 +45,15 @@ export function convertInWorker(buffer, { workerUrl, decoderUrl, signal, timeout
       worker.onerror = () => finish(new Error("HEIC変換Workerを実行できません。読み込み制限・ブラウザの対応状況を確認してください。"))
       worker.onmessageerror = () => finish(new Error("HEIC変換結果を受け取れませんでした。"))
       timer = setTimeout(() => finish(new Error("HEIC変換が30秒を超えたため中止しました。小さい画像で試してください。")), timeoutMs)
-      worker.postMessage({ buffer, decoderUrl, mode: "worker" }, [buffer])
+      worker.postMessage({ buffer, decoderUrl, mode: "worker", limitMode }, [buffer])
     } catch (error) { finish(error) }
   })
 }
 
-export async function prepareHeicInput(file, { workerUrl, decoderUrl, signal, mode = "worker" }) {
+export async function prepareHeicInput(file, { workerUrl, decoderUrl, signal, mode = "worker", limitMode = "standard" }) {
   if (signal?.aborted) throw aborted()
   if (!["worker", "main"].includes(mode)) throw new Error("HEIC変換方式が不正です。")
+  if (!["standard", "large"].includes(limitMode)) throw new Error("HEICの上限設定が不正です。")
   if (!file.size || file.size > MAX_BYTES) throw new Error("空でない20MiB以下の画像を選択してください。")
   const header = await file.slice(0, 4096).arrayBuffer()
   if (signal?.aborted) throw aborted()
@@ -68,15 +69,15 @@ export async function prepareHeicInput(file, { workerUrl, decoderUrl, signal, mo
   if (mode === "main") {
     // Deliberately separate diagnostic path. Never silently fall back from Worker.
     const { convertHeicBuffer } = await import(workerUrl)
-    result = await convertHeicBuffer({ buffer, decoderUrl, mode, signal })
+    result = await convertHeicBuffer({ buffer, decoderUrl, mode, limitMode, signal })
   } else {
-    result = await convertInWorker(buffer, { workerUrl, decoderUrl, signal })
+    result = await convertInWorker(buffer, { workerUrl, decoderUrl, signal, limitMode })
   }
   if (signal?.aborted) throw aborted()
   if (result.rgbaBuffer) {
     const { encodeHeicRgba } = await import(workerUrl)
     if (signal?.aborted) throw aborted()
-    result = await encodeHeicRgba(result)
+    result = await encodeHeicRgba(result, { limitMode })
   }
   if (signal?.aborted) throw aborted()
   if (result.blob?.type !== "image/jpeg") throw new Error("変換後のJPEGを確認できません。未変換画像は使用しません。")

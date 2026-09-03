@@ -3,12 +3,16 @@
 No photographs, personal data, or production objects are used.
 """
 from pathlib import Path
+import argparse
 
 from PIL import Image, ImageDraw
 from pillow_heif import register_heif_opener
 
 register_heif_opener()
 destination = Path(__file__).resolve().parent
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--only", help="Generate only the named fixture, leaving the others unchanged")
+options = parser.parse_args()
 
 
 def quadrants(width, height):
@@ -20,12 +24,15 @@ def quadrants(width, height):
 
 
 def save(image, name, **kwargs):
+    if options.only and options.only != name:
+        return
     image.save(destination / name, format="HEIF", quality=70, **kwargs)
     print(name, (destination / name).stat().st_size)
 
 
 save(quadrants(1200, 800), "medium.heic")
 save(quadrants(4000, 3000), "large.heic")
+save(quadrants(5712, 4284), "photo-24mp.heic")
 oriented = quadrants(160, 96)
 oriented.getexif()[274] = 6  # Stored as container rotation + EXIF by pillow-heif.
 save(oriented, "rotated.heif")

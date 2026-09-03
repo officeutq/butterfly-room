@@ -334,4 +334,6 @@ Remove-Item Env:IMAGE_VERIFICATION_BROWSER
 
 検証画面だけで、HEIC / HEIF → フルサイズJPEG → 11節の編集元正規化 → Cropper.jsの順に処理する。Worker（画面操作と分離した処理）の比較、中止、変換測定を追加した。選定理由・暫定上限・PC自動テスト結果・未実施の実機チェックは [heic_verification.md](heic_verification.md) に集約する。
 
+HEIC入力は標準16MPを維持し、Worker専用の32MP比較を明示選択できる。これは24MP写真を試す高負荷な検証設定であり、本番上限の決定ではない。容量20MiB・長辺8192px・縦横比8:1・30秒制限・後続の既定800万画素への正規化は維持する。画面を開き直すと標準へ戻り、メインスレッド比較は常に4MPまで。JSONに実行した上限を記録する。
+
 本番のFilePond、サーバー側HEIC正規化、Active Storage、`ImageAttachments::UpdateService` の挙動は変更しない。実機検証とライセンス条件の採用判断が残るため、#1131の完了を意味しない。

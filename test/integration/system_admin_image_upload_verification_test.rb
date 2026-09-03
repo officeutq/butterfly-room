@@ -49,6 +49,9 @@ class SystemAdminImageUploadVerificationTest < ActionDispatch::IntegrationTest
       assert_select "[data-image-upload-verification-heic-worker-url-value*='image_upload_verification/heic_worker']"
       assert_select "[data-image-upload-verification-heic-decoder-url-value*='libheif-without-unsafe-eval']"
       assert_select "select[data-image-upload-verification-target=heicMode] option[value=worker]"
+      assert_select "select[data-image-upload-verification-target=heicLimit] option[selected][value=standard]", text: /1600万/
+      assert_select "select[data-image-upload-verification-target=heicLimit] option[value=large]", text: /3200万/
+      assert_select "[data-image-upload-verification-target=heicLimitWarning][hidden]", text: /メモリ不足/
       assert_select "button[data-image-upload-verification-target=cancelConversion][disabled]"
       assert_select "select[data-image-upload-verification-target=ratio] option[value=square]", text: /1:1/
       assert_select "select[data-image-upload-verification-target=ratio] option[value=social]", text: /40:21/

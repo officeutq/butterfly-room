@@ -68,6 +68,8 @@ test("HEIC conversion, crop and cancellation use same-origin lazy modules under 
       assert.equal(result.report.heicConversion.height, 32)
       assert.equal(result.report.heicConversion.imageCount, 1)
       assert.equal(result.report.heicConversion.selectedImageIndex, 0)
+      assert.equal(result.report.heicConversion.limitMode, "standard")
+      assert.equal(result.report.heicConversion.pixelLimit, result.report.heicConversion.mode === "main" ? 4_000_000 : 16_000_000)
       assert.equal(result.report.input.mimeType, "image/jpeg")
       assert.equal(result.preview, "image/jpeg")
       assert.deepEqual(result.restored.crop, result.state.crop)
@@ -146,6 +148,92 @@ test("HEIC conversion, crop and cancellation use same-origin lazy modules under 
     }
     assert.deepEqual(errors, [])
     t.diagnostic(`${browserName} ${browser.version()}`)
+  } finally {
+    await environment?.close()
+    await browser.close()
+  }
+})
+
+test("24MP HEIC requires explicit 32MP opt-in and limit changes cancel stale conversions", { timeout: 120_000 }, async (t) => {
+  const browserName = process.env.IMAGE_VERIFICATION_BROWSER || "chromium"
+  const browser = await browsers[browserName].launch({ headless: true })
+  let environment
+  try {
+    environment = await openVerificationPage(browser, { strictCsp: true })
+    const { page, errors } = environment
+    const result = await page.evaluate(async () => {
+      const controller = window.verification
+      const NativeWorker = window.Worker
+      let activeWorkers = 0
+      window.Worker = class extends NativeWorker {
+        constructor(...args) { super(...args); activeWorkers += 1 }
+        terminate() { activeWorkers -= 1; super.terminate() }
+      }
+      const file = new File([await (await fetch("/heic/photo-24mp.heic")).blob()], "photo-24mp.heic", { type: "image/heic" })
+      const empty = () => !controller.cropper && !controller.sourceObjectUrl && !controller.previewObjectUrl &&
+        !controller.sourceDownloadTarget.hasAttribute("href") && !controller.downloadTarget.hasAttribute("href") &&
+        !controller.normalizationReportTarget.value && !controller.stateTarget.value && activeWorkers === 0
+      const defaults = controller.heicLimitTarget.value === "standard" && controller.heicLimitWarningTarget.hidden
+      await controller.loadFile({ currentTarget: { files: [file] } })
+      const standardError = controller.statusTarget.textContent
+      const standardEmpty = empty()
+      controller.heicLimitTarget.value = "large"
+      const reports = []
+      for (const ratio of ["social", "square"]) {
+        controller.ratioTarget.value = ratio
+        await controller.normalizeSource()
+        if (!controller.cropper) throw new Error(controller.statusTarget.textContent)
+        const report = JSON.parse(controller.normalizationReportTarget.value)
+        const state = controller.captureState()
+        controller.zoomIn()
+        controller.stateTarget.value = JSON.stringify(state)
+        await controller.restoreState()
+        reports.push({ report, state, restored: controller.captureState(), warning: !controller.heicLimitWarningTarget.hidden, activeWorkers })
+      }
+      controller.heicModeTarget.value = "main"
+      await controller.normalizeSource()
+      const main = { error: controller.statusTarget.textContent, disabled: controller.heicLimitTarget.disabled, warningHidden: controller.heicLimitWarningTarget.hidden, empty: empty() }
+      controller.heicModeTarget.value = "worker"
+      const pending = controller.normalizeSource()
+      for (let attempt = 0; activeWorkers === 0 && attempt < 100; attempt += 1) await new Promise((resolve) => setTimeout(resolve, 2))
+      if (!activeWorkers) throw new Error("Limit change must interrupt an active Worker")
+      controller.heicLimitTarget.value = "standard"
+      await controller.normalizeSource()
+      await pending
+      const switched = { error: controller.statusTarget.textContent, empty: empty(), warningHidden: controller.heicLimitWarningTarget.hidden }
+      const small = new File([await (await fetch("/sample.heic")).blob()], "sample.heic")
+      await controller.loadFile({ currentTarget: { files: [small] } })
+      const recovered = !!controller.cropper && activeWorkers === 0
+      controller.heicLimitTarget.value = "large"
+      controller.beforeCache()
+      controller.disconnect()
+      controller.connect()
+      const reset = controller.heicLimitTarget.value === "standard" && controller.heicLimitWarningTarget.hidden && empty()
+      window.Worker = NativeWorker
+      return { defaults, standardError, standardEmpty, reports, main, switched, recovered, reset }
+    })
+    assert.equal(result.defaults, true)
+    assert.match(result.standardError, /5712×4284.*1600万/)
+    assert.equal(result.standardEmpty, true)
+    for (const { report, state, restored, warning, activeWorkers } of result.reports) {
+      assert.deepEqual([report.heicConversion.width, report.heicConversion.height], [5712, 4284])
+      assert.equal(report.heicConversion.limitMode, "large")
+      assert.equal(report.heicConversion.pixelLimit, 32_000_000)
+      assert.equal(report.heicConversion.memory.rgbaBytes, 5712 * 4284 * 4)
+      assert.equal(report.heicConversion.memory.peakBytes, null)
+      assert.deepEqual([report.source.width, report.source.height], [3265, 2449])
+      assert.deepEqual(restored.crop, state.crop)
+      assert.equal(warning, true)
+      assert.equal(activeWorkers, 0)
+      t.diagnostic(JSON.stringify({ browser: browserName, ...report.heicConversion }))
+    }
+    assert.match(result.main.error, /400万/)
+    assert.equal(result.main.disabled && result.main.warningHidden && result.main.empty, true)
+    assert.match(result.switched.error, /1600万/)
+    assert.equal(result.switched.empty && result.switched.warningHidden, true)
+    assert.equal(result.recovered, true)
+    assert.equal(result.reset, true)
+    assert.deepEqual(errors, [])
   } finally {
     await environment?.close()
     await browser.close()

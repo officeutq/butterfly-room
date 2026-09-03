@@ -42,6 +42,7 @@ test("ordinary files are passed through; empty, oversized, mislabeled and aborte
   }
   await assert.rejects(prepareHeicInput(jpeg, { ...options, signal: AbortSignal.abort() }), { name: "AbortError" })
   await assert.rejects(prepareHeicInput(jpeg, { ...options, mode: "invalid" }), /方式/)
+  await assert.rejects(prepareHeicInput(jpeg, { ...options, limitMode: "invalid" }), /上限設定/)
 })
 
 test("Worker is terminated on success, decode failure, worker error, transfer failure, abort and timeout", async (t) => {
@@ -56,6 +57,7 @@ test("Worker is terminated on success, decode failure, worker error, transfer fa
       terminate() { this.terminated += 1 }
       postMessage(data, transfer) {
         assert.equal(data.mode, "worker")
+        assert.equal(data.limitMode, "standard")
         assert.equal(transfer[0], data.buffer)
         if (scenario === "throw") throw new Error("transfer failed")
         queueMicrotask(() => {
@@ -89,11 +91,50 @@ test("HEIC dimension limits distinguish Worker and main comparison before pixel 
   }
   assert.throws(() => validateHeicDimensions(2001, 2000, "main"), /400万/)
   assert.throws(() => validateHeicDimensions(100, 100, "unknown"), /方式/)
+  assert.throws(() => validateHeicDimensions(5712, 4284, "worker"), /5712×4284.*1600万/)
+  validateHeicDimensions(5712, 4284, "worker", "large")
+  validateHeicDimensions(8000, 4000, "worker", "large")
+  for (const [width, height] of [[8000, 4001], [8064, 6048], [8193, 1025], [8000, 999], [0, 1]]) {
+    assert.throws(() => validateHeicDimensions(width, height, "worker", "large"), /3200万/)
+  }
+  assert.throws(() => validateHeicDimensions(2001, 2000, "main", "large"), /400万/)
+  assert.throws(() => validateHeicDimensions(100, 100, "worker", "invalid"), /上限設定/)
+})
+
+test("HEIC comparison selection is transferred to Worker without altering pass-through images", async (t) => {
+  const { prepareHeicInput } = await converter
+  const original = global.Worker
+  t.after(() => { global.Worker = original })
+  let count = 0
+  global.Worker = class {
+    terminate() {}
+    postMessage(data) {
+      count++
+      assert.equal(data.limitMode, "large")
+      queueMicrotask(() => this.onmessage({ data: { ok: true, blob: new Blob(["jpeg"], { type: "image/jpeg" }), report: { limitMode: data.limitMode, pixelLimit: 32_000_000 } } }))
+    }
+  }
+  const options = { workerUrl: "/worker", decoderUrl: "/decoder", limitMode: "large" }
+  const jpeg = new File(["jpeg"], "photo.jpg", { type: "image/jpeg" })
+  assert.equal((await prepareHeicInput(jpeg, options)).conversion, null)
+  assert.equal(count, 0)
+  const result = await prepareHeicInput(new File([header("heic")], "photo.heic"), options)
+  assert.equal(result.conversion.limitMode, "large")
+  assert.equal(result.conversion.pixelLimit, 32_000_000)
+  assert.equal(count, 1)
+})
+
+test("RGBA fallback also enforces the explicitly chosen pixel limit", async () => {
+  const { encodeHeicRgba } = await worker
+  const result = { rgbaBuffer: new ArrayBuffer(0), report: { width: 5712, height: 4284, limitMode: "large" } }
+  await assert.rejects(encodeHeicRgba(result), /1600万/, "report alone must not opt in to the larger allocation")
+  await assert.rejects(encodeHeicRgba(result, { limitMode: "large" }), /画素データ/, "valid dimensions reach the RGBA length check")
+  await assert.rejects(encodeHeicRgba(result, { limitMode: "invalid" }), /上限設定/)
 })
 
 test("native handles are freed on success, dimension rejection, decoder error and invalid channel", async () => {
   const { convertHeicBuffer } = await worker
-  for (const scenario of ["success", "dimensions", "decodeError", "shortChannel", "manyImages"]) {
+  for (const scenario of ["success", "dimensions", "dimensions24", "decodeError", "shortChannel", "manyImages"]) {
     const source = `
       export const calls = { pixels: 0, image: 0, handle: 0, context: 0 }
       export default function build() {
@@ -101,7 +142,7 @@ test("native handles are freed on success, dimension rejection, decoder error an
           HeifDecoder: class {
             constructor() { this.decoder = 123 }
             decode() { return Array.from({ length: ${scenario === "manyImages" ? 21 : 1} }, () => ({ handle: 1,
-              get_width: () => ${scenario === "dimensions" ? 9000 : 2}, get_height: () => 2,
+              get_width: () => ${scenario === "dimensions" ? 9000 : scenario === "dimensions24" ? 5712 : 2}, get_height: () => ${scenario === "dimensions24" ? 4284 : 2},
               free() { calls.handle++ } })) }
           },
           heif_colorspace: { heif_colorspace_RGB: 1 }, heif_chroma: { heif_chroma_interleaved_RGBA: 1 },
@@ -120,9 +161,10 @@ test("native handles are freed on success, dimension rejection, decoder error an
     else await assert.rejects(promise)
     assert.equal(calls.context, 1, scenario)
     assert.equal(calls.handle, scenario === "manyImages" ? 21 : 1, scenario)
-    assert.equal(calls.pixels, ["dimensions", "manyImages"].includes(scenario) ? 0 : 1, scenario)
+    assert.equal(calls.pixels, ["dimensions", "dimensions24", "manyImages"].includes(scenario) ? 0 : 1, scenario)
     assert.equal(calls.image, ["success", "shortChannel"].includes(scenario) ? 1 : 0, scenario)
   }
   await assert.rejects(convertHeicBuffer({ buffer: new ArrayBuffer(0) }), /20MiB/)
   await assert.rejects(convertHeicBuffer({ buffer: new ArrayBuffer(1), signal: AbortSignal.abort() }), { name: "AbortError" })
+  await assert.rejects(convertHeicBuffer({ buffer: new ArrayBuffer(1), limitMode: "invalid" }), /上限設定/)
 })
