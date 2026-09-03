@@ -91,11 +91,22 @@ node --test test/javascript/browser/image_upload_transport_rails_test.cjs
 
 自動確認対象: 認可・無効化・CSRF、実Disk PUTとmultipart、2画像の実体・寸法・バイト一致、別ユーザー/別検証/役割入替/改ざんsigned ID、容量・破損・不足ファイル、部分保存失敗、DB完了失敗、中止中の完了、再試行、期限・20件上限、清掃失敗再試行、関係ないBlobの維持。ブラウザでは開始時クロップとの整合と、画像差し替え時の中止・古い結果の抑制も確認する。
 
-2026-09-03、関連Rails 33件/254 assertions、JavaScript 78件、実Cropperブラウザでのクロップ・中止検証が通過した。ローカルの実Rails/Stimulus/Active Storageを使った両用途×両方式の4送信はChromium・Firefox・WebKitの3エンジンで通過した（390px幅の横はみ出し無し）。**PC上のWebKitであり、iPhone実機の保存確認ではない。** RuboCop 546ファイル、Zeitwerk、Brakeman 7.1.2でエラー・警告なし。`bin/brakeman` の最新バージョン必須チェックは既存7.1.2が古いため停止したので、CIと同じ `bundle exec brakeman --no-pager` で実スキャンを行った。CSSビルド成功、既存Sass非推奨警告あり。Terraform fmt/validate成功、plan/applyは未実施。
+2026-09-03、関連Rails 33件/254 assertions、JavaScript 78件、実Cropperブラウザでのクロップ・中止検証が通過した。ローカルの実Rails/Stimulus/Active Storageを使った両用途×両方式の4送信はChromium・Firefox・WebKitの3エンジンで通過した（390px幅の横はみ出し無し）。**PC上のWebKitであり、iPhone実機の保存確認ではない。** RuboCop 546ファイル、Zeitwerk、Brakeman 7.1.2でエラー・警告なし。`bin/brakeman` の最新バージョン必須チェックは既存7.1.2が古いため停止したので、CIと同じ `bundle exec brakeman --no-pager` で実スキャンを行った。CSSビルド成功、既存Sass非推奨警告あり。Terraform fmt/validate成功。
 
 ## ステージング適用前提と残作業
 
-この実装時点では、ステージングへのデプロイ・DB migration・Terraform applyは**未実施**。
+2026-09-03、ユーザー承認に基づき、ステージングの検証テーブル追加・CORSのPUT追加・app/worker反映を実施した。候補は `d9ae003`。反映前の設定・イメージと切戻し手順は [ステージング反映記録](../staging/image_upload_verification_1138.md) を参照する。自動削除設定は追加していない。
+
+ステージングの候補コンテナ内で、既存管理者の認証を検証プロセス内だけに設定し、Railsのリクエスト経路から生成したグラデーションJPEGを送った。両用途×両方式の計4件で実S3保存・読み戻しSHA-256一致・中止を確認した。直接送信では実際の署名付きURLへHTTPの事前確認（preflight）とPUTを実行し、許可元ヘッダーも一致した。実インターネット経由のブラウザ送信・iPhone・速度比較の代替ではない。
+
+| 用途 | 2枚の合計byte | multipartのサーバー時間 | 直接送信の完了API時間 |
+| --- | ---: | ---: | ---: |
+| social | 49668 | 541.1ms | 225.3ms |
+| square | 45726 | 389.9ms | 224.5ms |
+
+両方式の時間の計測範囲は異なるため、直接送信が速いという採用判断には使わない。ダッシュボードのリンク、新しい保存欄、未ログイン拒否・非管理者403、HTTPS `/up`、新JS配信、ALB正常性を確認した。既存の画像添付5件はID・所有先・Blob参照も不変だった。清掃の5分間隔登録と実workerでの生成テストデータ清掃も確認した。
+
+以下は適用条件・継続検証の手順。1〜3は今回実施済みで、未確認の実機・境界・低速回線は継続する。
 
 1. `docs/staging/pre_apply_checklist.md` に従い、変更前のCORSを保存する。保存planでstaging bucketのCORSにPUTを追加する1件だけであることを確認後にapplyする。別の変更があればそのplanは適用しない。自動削除設定は追加しない。
 2. staging DB/APP_ENV/保存先を確認して、検証テーブルのmigrationを実行する。本番DBへは実行しない。

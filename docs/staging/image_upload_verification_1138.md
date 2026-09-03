@@ -48,3 +48,15 @@ DB接続先を確認した候補コンテナから、migration `20260903130000` 
 緊急時は、変更後に他のCORS変更が入っていないことを確認して、保存済みJSONを `aws s3api put-bucket-cors --bucket butterfly-room-staging --expected-bucket-owner 137775584467 --cors-configuration file://tmp/image-upload-staging-1138/cors.before.json --profile butterfly-room-staging --region ap-northeast-1` で復元できる。その場合も後でTerraformコードをGET/HEADへ戻して差分を確認する。
 
 S3のバージョン管理は変えない。アプリの清掃後も検証画像の旧世代が残り得る。旧世代の後片付けは検証prefix・キー・version IDを確認して別途実施する。設定の復元と、画像の物理削除（取り消せない）は区別する。
+
+## 反映結果（2026-09-03）
+
+- Terraform 1.15.8、init/validate成功。対象限定の保存planは更新1件だけで適用成功、同対象の再planは差分なし。全体planには従来からの最新AMI選択による2件の再作成提案だけが残る。適用していない。
+- S3 CORSはGET/HEAD/PUT、許可元はステージング1件。公開ブロック4項目true、所有権強制、AES256暗号化、バージョン管理Enabledを維持。ライフサイクル設定は引き続き存在しない。
+- migration `20260903130000` だけを実行し、追加テーブルが1個だけ・旧テーブル削除なしを照合。既存画像添付は5件のまま。
+- app/workerとも `d9ae0039cd542276f76942ce7b39dd3c1fa09116` の候補を反映。イメージID: `sha256:d6aa48c9e72e1683ff5476b11f3e2e612482dd407b1c882c2fc5c9dd36eb5971`。再起動ループなし、HTTPSとALB正常。
+- `.env.staging` は控えと同一。未追跡の既存画像調査ファイル2個は維持。容量確保のため、確認済みの未使用・非共有ビルドコンテキストだけを削除した。稼働・切戻し用イメージとvolumeは削除していない。最終空き容量は約3.8GiB。
+- 両用途×両方式の4件を実S3で確認。生成したテスト用グラデーション画像だけを使用。管理者ページの導線・新保存欄・権限拒否を検証。`ImageUploadVerificationCleanupJob` の定期登録と実workerでの清掃を確認。
+- 自動確認で作った検証ID 1〜4（生成画像8個）は後片付け済み。直接送信の署名URL失効・送信完了を確認後、対象行だけを清掃対象にしてworkerで削除し、旧世代8個・削除マーカー8個は確認済みキーとversion IDを指定して削除した。検証prefixの残存世代・マーカーは0。通常画像は対象外。これは再生成可能なテスト画像の不可逆削除であり、バケット設定の変更ではない。
+- 23:30 JSTの定期清掃実行も完了。清掃確認スクリプトの初回待機はRailsのクエリキャッシュで古い存在確認を読んでタイムアウトしたが、workerログ・別接続で削除済みを確認した。監視を `uncached` に修正し、後続の清掃も完了を確認。アプリの清掃処理の修正は不要だった。
+- CIのquality/test成功。iPhoneの保存・低速回線・実メモリ・本番採用方式の判断は未完了で、PR #1138はDraftを維持する。
