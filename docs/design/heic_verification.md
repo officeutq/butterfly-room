@@ -1,8 +1,8 @@
 # HEIC / HEIFブラウザ変換の検証（#1131）
 
-更新: 2026-09-03。親Epic #1128 / 大Epic #1127。
+更新: 2026-09-04。親Epic #1128 / 大Epic #1127。
 
-本書は**保存を伴わない検証実装**の記録。iPhoneの12MP実撮影HEICはユーザー報告で変換成功を確認したが、24MP・実機操作の網羅確認・Android Chrome・本番採用判断は未完了である。本番のFilePond・Active Storage・`ImageAttachments::UpdateService` は変更しない。
+本書は**保存を伴わない検証実装**の記録。iPhone 15 Proの12MP・24MP実撮影HEICはユーザー報告で変換と連続差し替えに成功した。実機操作の横断確認、Android Chrome、配布条件確認は#1152・#1153へ引き継いだ。本番採用値と通常経路は#1134で確定した [Cropper.js画像アップロード確定設計](image_upload_cropper_architecture.md) を優先する。本検証自体は本番のFilePond・Active Storage・`ImageAttachments::UpdateService`を変更していない。
 
 ## ライブラリ比較と暫定選定
 
@@ -170,4 +170,4 @@ JSON復元・画面回転・JPEG取得:
 未確認・問題点:
 ```
 
-未完了: 実撮影画像の世代差、HEIFの対応codec幅、HDR/10bit/広色域/ICCの色と階調、Live Photo由来の実コンテナ、スマホ実機のタッチ操作・回転・保存、メモリ不足/タブ終了、実機の連続変換、配布ライセンスの最終判断。これらを確認するまで#1131をDoneにしない。
+検証時点の未完了範囲は、実撮影画像の世代差、HEIFの対応codec幅、HDR/10bit/広色域/ICCの色と階調、Live Photo由来の実コンテナ、スマホ実機のタッチ操作・回転・通常フォーム保存、メモリ不足/タブ終了、配布条件の最終確認である。#1131は技術候補の検証Issueとして完了し、本番module・配布条件は#1152、通常フォームのPC・スマホ実機確認は#1153を完了gateとする。
