@@ -9,6 +9,8 @@ Rails.application.config.filter_parameters += [
 
 # LP行動分析payloadと紐づくフォーム入力は内容全体をログへ出さない。
 Rails.application.config.filter_parameters += [
+  :verification,
+  :blob,
   :lp_analytics_event,
   :lp_analytics_visit_id,
   :store_registration,

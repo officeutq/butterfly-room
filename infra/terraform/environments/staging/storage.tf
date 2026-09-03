@@ -43,9 +43,40 @@ resource "aws_s3_bucket_cors_configuration" "app" {
 
   cors_rule {
     allowed_headers = ["*"]
-    allowed_methods = ["GET", "HEAD"]
+    allowed_methods = ["GET", "HEAD", "PUT"]
     allowed_origins = ["https://${var.staging_domain}"]
     expose_headers  = ["ETag"]
     max_age_seconds = 3600
+  }
+}
+
+# Only disposable image-upload verification data, never regular attachments.
+# Delayed PUTs and noncurrent versions can survive application-level deletion.
+resource "aws_s3_bucket_lifecycle_configuration" "image_upload_verification" {
+  bucket = aws_s3_bucket.app.id
+
+  rule {
+    id     = "expire-image-upload-verification"
+    status = "Enabled"
+    filter {
+      prefix = "image-upload-verification/"
+    }
+    expiration {
+      days = 1
+    }
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+  }
+
+  rule {
+    id     = "remove-image-upload-verification-delete-markers"
+    status = "Enabled"
+    filter {
+      prefix = "image-upload-verification/"
+    }
+    expiration {
+      expired_object_delete_marker = true
+    }
   }
 }

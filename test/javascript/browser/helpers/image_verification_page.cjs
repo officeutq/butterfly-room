@@ -9,7 +9,7 @@ async function openVerificationPage(browser, { strictCsp = false } = {}) {
   const view = read("app/views/system_admin/image_upload_verifications/show.html.erb").replace(/<%[\s\S]*?%>/g, "")
   const html = `<!doctype html><html><head><meta charset="utf-8">
     <style>.image-upload-verification__editor { width: 800px; height: 500px; } cropper-canvas { width: 100%; height: 100%; } [hidden] { display: none !important; }</style>
-    <script type="importmap" nonce="heic-test">{"imports":{"@hotwired/stimulus":"/stimulus.js","cropperjs":"/cropper.js","controllers/image_upload_verification/source_normalizer":"/source_normalizer.js","controllers/image_upload_verification/heic_converter":"/heic_converter.js"}}</script>
+    <script type="importmap" nonce="heic-test">{"imports":{"@hotwired/stimulus":"/stimulus.js","cropperjs":"/cropper.js","controllers/image_upload_verification/source_normalizer":"/source_normalizer.js","controllers/image_upload_verification/heic_converter":"/heic_converter.js","controllers/image_upload_verification/upload_client":"/upload_client.js"}}</script>
     </head><body>${view}<script type="module" nonce="heic-test">
     import Controller from "/controller.js"
     import { prepareHeicInput, convertInWorker } from "/heic_converter.js"
@@ -17,9 +17,10 @@ async function openVerificationPage(browser, { strictCsp = false } = {}) {
     window.convertInWorker = convertInWorker
     const controller = new Controller()
     for (const name of Controller.targets) {
-      const elements = document.querySelectorAll('[data-image-upload-verification-target="' + name + '"]')
+      const elements = document.querySelectorAll('[data-image-upload-verification-target~="' + name + '"]')
       controller[name + "Target"] = elements[0]
       controller[name + "Targets"] = Array.from(elements)
+      controller["has" + name[0].toUpperCase() + name.slice(1) + "Target"] = elements.length > 0
     }
     controller.heicWorkerUrlValue = new URL("/worker.js", location).href
     controller.heicDecoderUrlValue = new URL("/decoder.js", location).href
@@ -28,6 +29,7 @@ async function openVerificationPage(browser, { strictCsp = false } = {}) {
     </script></body></html>`
   const scripts = {
     "/controller.js": "app/javascript/controllers/image_upload_verification_controller.js",
+    "/upload_client.js": "app/javascript/controllers/image_upload_verification/upload_client.js",
     "/source_normalizer.js": "app/javascript/controllers/image_upload_verification/source_normalizer.js",
     "/heic_converter.js": "app/javascript/controllers/image_upload_verification/heic_converter.js",
     "/worker.js": "app/javascript/image_upload_verification/heic_worker.js",

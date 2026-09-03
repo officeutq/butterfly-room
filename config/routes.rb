@@ -236,6 +236,13 @@ Rails.application.routes.draw do
   # --- System Admin ---
   namespace :system_admin do
     resource :image_upload_verification, only: :show
+    resources :image_upload_verification_runs, only: %i[create destroy] do
+      member do
+        post :multipart
+        post :complete
+        post "direct_upload/:role", action: :direct_upload, as: :direct_upload
+      end
+    end
     resources :referral_codes, only: %i[index new create edit update]
     resources :users, only: %i[index new create edit update destroy]
     resources :effects, only: %i[index new create edit update]

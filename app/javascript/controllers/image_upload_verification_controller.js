@@ -2,6 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 import Cropper from "cropperjs"
 import { normalizeEditingSource } from "controllers/image_upload_verification/source_normalizer"
 import { prepareHeicInput } from "controllers/image_upload_verification/heic_converter"
+import { UploadVerificationClient } from "controllers/image_upload_verification/upload_client"
 
 const STATE_SCHEMA_VERSION = 1
 const JPEG_QUALITY = 0.9
@@ -244,7 +245,7 @@ export function constrainTransformToSelection({ matrix, oldMatrix, selection, so
 }
 
 export default class extends Controller {
-  static values = { heicWorkerUrl: String, heicDecoderUrl: String }
+  static values = { heicWorkerUrl: String, heicDecoderUrl: String, uploadUrl: String }
 
   static targets = [
     "control",
@@ -271,6 +272,11 @@ export default class extends Controller {
     "state",
     "status",
     "workspace",
+    "uploadTransport",
+    "uploadStart",
+    "uploadCancel",
+    "uploadStatus",
+    "uploadReport",
   ]
 
   connect() {
@@ -289,6 +295,10 @@ export default class extends Controller {
     this.normalizationTask ||= null
     this.heicAbort = null
     this.normalizedRatioKey = null
+    this.sourceBlob = null
+    this.previewBlob = null
+    this.uploadClient = null
+    this.uploadTask = null
     this.heicLimitTarget.value = "standard"
     this.updateHeicLimit()
     this.boundTransformGuard = this.constrainTransform.bind(this)
@@ -323,6 +333,8 @@ export default class extends Controller {
     this.updateHeicLimit()
     const file = this.selectedFile
     if (!file || this.isDisconnected) return
+
+    this.cancelUpload()
 
     const generation = this.loadGeneration + 1
     this.loadGeneration = generation
@@ -366,6 +378,7 @@ export default class extends Controller {
         })
         if (!isCurrent()) return
         report.heicConversion = prepared.conversion
+        this.sourceBlob = blob
         this.sourceObjectUrl = URL.createObjectURL(blob)
         this.sourceTarget.src = this.sourceObjectUrl
         this.emptyTarget.hidden = true
@@ -458,6 +471,7 @@ export default class extends Controller {
   }
 
   clearNormalization() {
+    this.sourceBlob = null
     this.normalizedRatioKey = null
     this.normalizedPreviewTarget.removeAttribute("src")
     this.normalizedPreviewTarget.hidden = true
@@ -531,6 +545,7 @@ export default class extends Controller {
     this.previewGeneration = generation
 
     try {
+      const state = this.buildState()
       const canvas = await this.cropperSelection.$toCanvas({
         width: config.width,
         height: config.height,
@@ -541,8 +556,13 @@ export default class extends Controller {
       })
       const blob = await this.canvasToJpeg(canvas)
       if (this.isDisconnected || generation !== this.previewGeneration) return
+      if (JSON.stringify(state) !== JSON.stringify(this.buildState())) {
+        throw new Error("生成中にクロップが変わりました。操作を止めて再度生成してください。")
+      }
 
       this.revokePreviewObjectUrl()
+      this.previewBlob = blob
+      this.previewState = state
       this.previewObjectUrl = URL.createObjectURL(blob)
       this.previewTarget.src = this.previewObjectUrl
       this.previewTarget.hidden = false
@@ -572,6 +592,53 @@ export default class extends Controller {
       sourceHeight: this.sourceTarget.naturalHeight,
       ratioKey: this.ratioTarget.value,
     })
+  }
+
+  async startUpload() {
+    if (this.uploadTask || !this.sourceBlob || !this.cropperSelection) return
+    const client = new UploadVerificationClient({ url: this.uploadUrlValue, onProgress: (label, percent) => {
+      if (this.uploadClient === client) this.uploadStatusTarget.textContent = `${label}${percent === null ? "…" : ` ${percent}%（転送）`}`
+    } })
+    this.uploadClient = client
+    this.uploadStartTarget.disabled = true
+    this.uploadCancelTarget.disabled = false
+    this.uploadReportTarget.value = ""
+    const transport = this.uploadTransportTarget.value
+    const task = (async () => {
+      try {
+        if (!await this.generatePreview()) throw new Error("表示用JPEGを生成できませんでした。操作を止めて再試行してください。")
+        client.checkCanceled()
+        const report = await client.upload({ source: this.sourceBlob, display: this.previewBlob, cropData: this.previewState }, transport)
+        if (this.uploadClient !== client) return
+        this.uploadReportTarget.value = JSON.stringify(report, null, 2)
+        this.uploadStatusTarget.textContent = "2画像の一時保存・実体確認に成功しました。測定JSONを記録してください。"
+      } catch (error) {
+        if (this.uploadClient === client) {
+          this.uploadStatusTarget.textContent = error.message
+          this.uploadReportTarget.value = JSON.stringify({ transport, state: "failed", error: error.message }, null, 2)
+        }
+      } finally {
+        if (this.uploadClient === client) {
+          this.uploadStartTarget.disabled = !this.sourceBlob
+          this.uploadCancelTarget.disabled = true
+          this.uploadClient = null
+        }
+      }
+    })()
+    this.uploadTask = task
+    await task
+    if (this.uploadTask === task) this.uploadTask = null
+  }
+
+  cancelUpload() {
+    this.uploadClient?.cancel()
+    this.uploadClient = null
+    this.uploadTask = null
+    // Optional guards also support the older isolated controller test harness.
+    if (this.hasUploadStatusTarget) this.uploadStatusTarget.textContent = "未送信（送信中の場合は中止。残った画像は期限後に清掃します）"
+    if (this.hasUploadReportTarget) this.uploadReportTarget.value = ""
+    if (this.hasUploadCancelTarget) this.uploadCancelTarget.disabled = true
+    if (this.hasUploadStartTarget) this.uploadStartTarget.disabled = !this.sourceBlob
   }
 
   validateState(state) {
@@ -779,6 +846,8 @@ export default class extends Controller {
   }
 
   clearPreview() {
+    this.previewBlob = null
+    this.previewState = null
     this.previewGeneration += 1
     this.revokePreviewObjectUrl()
     this.previewTarget.removeAttribute("src")
@@ -804,6 +873,7 @@ export default class extends Controller {
   }
 
   cleanup({ resetUi = false } = {}) {
+    this.cancelUpload()
     this.loadGeneration += 1
     this.previewGeneration += 1
     this.heicAbort?.abort()
