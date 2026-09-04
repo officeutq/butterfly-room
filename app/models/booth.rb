@@ -1,4 +1,6 @@
 class Booth < ApplicationRecord
+  include ImageAttachmentPurposes
+
   belongs_to :store
   belongs_to :current_stream_session, class_name: "StreamSession", optional: true
 
@@ -13,6 +15,15 @@ class Booth < ApplicationRecord
                        quality: 85,
                        preprocessed: true
   end
+  has_one_attached :thumbnail_image_source
+
+  image_attachment_purpose :thumbnail,
+    source_attachment: :thumbnail_image_source,
+    display_attachment: :thumbnail_image,
+    crop_attribute: :thumbnail_image_crop_data,
+    ratio_key: :social,
+    output_width: 1200,
+    output_height: 630
 
   enum :status, { offline: 0, live: 1, away: 2, standby: 3 }
 

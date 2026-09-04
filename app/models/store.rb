@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Store < ApplicationRecord
+  include ImageAttachmentPurposes
+
   belongs_to :referral_code, optional: true
   belongs_to :lp_analytics_visit,
     class_name: "LpAnalytics::Visit",
@@ -19,6 +21,15 @@ class Store < ApplicationRecord
   has_many :support_inquiries, dependent: :restrict_with_error
   has_one :active_payout_account, -> { active }, class_name: "StorePayoutAccount"
   has_one_attached :thumbnail
+  has_one_attached :thumbnail_source
+
+  image_attachment_purpose :thumbnail,
+    source_attachment: :thumbnail_source,
+    display_attachment: :thumbnail,
+    crop_attribute: :thumbnail_crop_data,
+    ratio_key: :social,
+    output_width: 1200,
+    output_height: 630
 
   enum :business_type, {
     cabaret: 0,

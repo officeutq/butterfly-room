@@ -1,4 +1,6 @@
 class User < ApplicationRecord
+  include ImageAttachmentPurposes
+
   devise :database_authenticatable, :recoverable, :rememberable
 
   enum :role, { customer: 0, cast: 1, store_admin: 2, system_admin: 3 }
@@ -53,6 +55,24 @@ class User < ApplicationRecord
   }.freeze
 
   has_one_attached :avatar
+  has_one_attached :avatar_source
+  has_one_attached :cover_image
+  has_one_attached :cover_image_source
+
+  image_attachment_purpose :avatar,
+    source_attachment: :avatar_source,
+    display_attachment: :avatar,
+    crop_attribute: :avatar_crop_data,
+    ratio_key: :square,
+    output_width: 1024,
+    output_height: 1024
+  image_attachment_purpose :cover,
+    source_attachment: :cover_image_source,
+    display_attachment: :cover_image,
+    crop_attribute: :cover_image_crop_data,
+    ratio_key: :social,
+    output_width: 1200,
+    output_height: 630
 
   has_one :wallet, foreign_key: :customer_user_id, dependent: :destroy, inverse_of: :customer_user
   has_many :store_memberships, dependent: :destroy
