@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_03_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_04_093354) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -63,6 +63,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_03_130000) do
     t.string "name", null: false
     t.integer "status", default: 0, null: false
     t.bigint "store_id", null: false
+    t.jsonb "thumbnail_image_crop_data", default: {}, null: false
     t.datetime "updated_at", null: false
     t.index ["archived_at"], name: "index_booths_on_archived_at"
     t.index ["current_stream_session_id"], name: "index_booths_on_current_stream_session_id"
@@ -592,6 +593,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_03_130000) do
     t.boolean "published", default: false, null: false
     t.bigint "referral_code_id"
     t.boolean "sales_support_company", default: false, null: false
+    t.jsonb "thumbnail_crop_data", default: {}, null: false
     t.string "tiktok_url"
     t.datetime "updated_at", null: false
     t.string "website_url"
@@ -676,7 +678,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_03_130000) do
   end
 
   create_table "users", force: :cascade do |t|
+    t.jsonb "avatar_crop_data", default: {}, null: false
     t.text "bio"
+    t.jsonb "cover_image_crop_data", default: {}, null: false
     t.datetime "created_at", null: false
     t.datetime "deleted_at"
     t.string "display_name"
