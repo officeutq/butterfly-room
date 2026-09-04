@@ -98,6 +98,8 @@ image_upload_verification_controller
 
 `image_upload_verification_controller` はsystem_admin限定のCropper.js移行検証専用とする。編集元JPEGへの変換は `controllers/image_upload_verification/source_normalizer.js`、HEICの判別と中止は同ディレクトリの `heic_converter.js`、ネイティブデコードは `image_upload_verification/heic_worker.js` に分離し、既存のFilePond・保存処理には接続しない。#1132の送信比較は同ディレクトリの `upload_client.js` が担当し、直接送信を選んだ場合だけRails同梱の `@rails/activestorage` を読み込む。既存フォームの自動direct uploadは開始しない。仕様・暫定上限・測定方法は `uploads_and_assets.md` の10〜13節、`heic_verification.md`、`image_upload_transport_verification.md` を参照する。
 
+Cropper.js移行後は、検証Controllerを通常画面へ直接流用せず、編集元正規化、HEIC変換、固定比率Cropper、フォーム連携を共通モジュールへ分離する。通常画面のStimulus Controller（画面操作を担当するクラス）は用途設定、現在の編集元・crop data、生成した2画像、削除・キャンセル状態を所有する。Rails multipartの通常フォームへ編集元JPEG・表示用JPEGを含め、Active Storage direct uploadは初期採用しない。確定仕様と解放条件は [Cropper.js画像アップロード確定設計](image_upload_cropper_architecture.md) を正とする。
+
 ---
 
 ### 3.5 美顔・エフェクト検証系
@@ -207,7 +209,7 @@ data-favorite-sync-key-value
 
 ## 8. 画像アップロード
 
-image_upload_controller は FilePond を利用する。
+現在の`image_upload_controller`はFilePondを利用する。以下は新方式への切り替えが完了するまでの現行仕様である。
 
 仕様:
 
@@ -220,6 +222,8 @@ image_upload_controller は FilePond を利用する。
 - 品質94
 - 背景白
 - HEIC / HEIF / WebP / PNG / JPEG を受け付ける
+
+移行後はCropper.js 2.2.0を利用し、ブラウザで生成した未クロップの編集元JPEG、固定比率の表示用JPEG、編集元ピクセル座標のcrop dataを同じRails multipartフォームで送る。アバターは1:1・1024×1024、Userカバー・Store・Boothは40:21・1200×630とする。Turboキャッシュ前と`disconnect`でCropper、Worker、Object URL等を破棄し、再接続時に二重初期化しない。詳細は [Cropper.js画像アップロード確定設計](image_upload_cropper_architecture.md) を参照する。
 
 ---
 

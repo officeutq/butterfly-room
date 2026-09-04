@@ -742,3 +742,18 @@ end
 * Google API通信中にDB transactionを保持せず、429・5xx・timeoutだけを有限回retryする
 * Secret値はAWS Secrets Managerからworker実行時に取得し、Git、環境変数、通常log、Googleスプレッドシートへ出さない
 * 詳細な設定・障害復旧は[LP行動分析 Google Sheets連携運用手順](ops/lp_analytics_google_sheets.md)、横断確認は[LP行動分析 横断検証・rollout手順](ops/lp_analytics_validation.md)に従う
+
+---
+
+# 8. Cropper.js画像更新（Phase2目標）
+
+User / Store / Boothの新方式では、1用途につき編集元画像・表示用画像・crop dataを一つの画像組として扱う。Controller（リクエストを受ける層）は認可、strong parameters、Service（業務処理を集約するクラス）呼出し、レスポンスに留める。
+
+* 共通ServiceがRails multipartで受けた2個のJPEG実体、寸法、容量、crop dataを検査し、Active Storageへ事前保存する
+* レコードロック下で編集開始時のattachment ID・blob IDを照合し、古い画面による上書きを拒否する
+* 新規・差し替えは編集元・表示用・crop data、再編集は表示用・crop data、削除は3点すべてを一つのDB transactionで更新する
+* transaction失敗時は旧状態を維持し、新規Blobだけを清掃する。成功後に参照されなくなった旧Blobを非同期清掃する
+* Controllerがモデルごとに画像処理を再実装せず、通常属性を含む関連処理はServiceへblock等で委譲して同じtransactionに含める
+* 既存画像移行は通常更新と同じ保存Serviceを使い、dry-run、ID範囲、途中再開、冪等性、期待ID照合を備えた専用Service / taskから呼び出す
+
+添付名、crop schema、ブラウザ正規化、上限、移行順、撤去条件は [Cropper.js画像アップロード確定設計](design/image_upload_cropper_architecture.md) を正とする。現行FilePond経路は通常画面の切替と既存画像移行が完了するまで維持する。

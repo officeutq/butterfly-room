@@ -1,5 +1,7 @@
 # 編集元・表示用の一体更新と既存画像移行の試作（#1133）
 
+> 本書はローカルDiskでの試作記録であり、実行可能な移行batchやステージング移行の完了記録ではない。編集元上限、保存名、multipart契約、段階的な環境実行は#1134で確定した [Cropper.js画像アップロード確定設計](image_upload_cropper_architecture.md) と [実装計画](image_upload_implementation_plan.md) を優先する。
+
 ## 範囲と結論
 
 本Issueは、本番モデルへ添付・カラムを追加せず、将来の画像更新Service（業務処理を集約するクラス）と一回限りの移行処理の境界を試作する。FilePond、本番フォーム、保存済み画像、本番・ステージングS3は変更しない。
@@ -23,7 +25,7 @@
 | Store | `thumbnail` | `thumbnail_source` | `thumbnail` | 40:21、1200×630 |
 | Booth | `thumbnail_image` | `thumbnail_image_source` | `thumbnail_image` | 40:21、1200×630 |
 
-`cover_image`の最終命名、どの画面をヒーロー・カード画像として共有するかは#1134で確定する。本試作はsquare/socialという用途キーでモデル名に依存しない。
+最終命名は`cover_image_source` / `cover_image` / `cover_image_crop_data`とし、Userカード・プロフィールヒーロー・OGPで共有する。本試作自体はsquare/socialという用途キーでモデル名に依存しない。
 
 ## 一体更新の契約
 
@@ -96,7 +98,7 @@ DBとS3を一つのtransactionにはできない。したがって「事前ア�
 
 #1132のiPhone実測では、同一の約3.96MB・square画像でmultipartが全体4083ms、directが1859msだった。両方式ともsource/displayのSHA-256は一致した。一方、当面の同時接続数は少なく、運用と失敗状態が単純なRails経由をユーザーが有力と考えている。
 
-本試作の一体更新Serviceは送信方式に依存しない。#1134ではRails経由を初期案として容量・タイムアウトを確認し、利用増加や実測に応じてdirectへ切り替えられる境界を維持する。directを採る場合は、書換可能な署名URLの一時キーから検査済み確定キーへ複製したBlobだけを本Serviceへ渡す。
+本試作の一体更新Serviceは送信方式に依存しない。#1134でRails multipartを初期方式、source 20MiB・display 5MiB・全体26MiB・クライアント待ち45秒とした。利用増加や実測に応じてdirectへ切り替えられる境界は維持する。将来directを採る場合は、書換可能な署名URLの一時キーから検査済み確定キーへ複製したBlobだけを本Serviceへ渡す。
 
 ## 自動確認結果と後続Issue
 
@@ -111,4 +113,4 @@ DBとS3を一つのtransactionにはできない。したがって「事前ア�
 - dry-run件数、拡大・欠損・破損分類、ID範囲、途中再開、再実行スキップ
 - Userの既存avatarから2用途を作る際に同じ移行元を使うこと
 
-残る判断は、Userの新しいヒーロー・カード添付名、削除時にsourceも消す契約、Rails multipartの入口容量制限、crop schemaの最終version、移行ログ保存期間である。これらを#1134で仕様化して、モデル追加・フォーム移行・移行バッチ・FilePond撤去の実装Epic/Issueへ分割する。
+#1134で、Userカバー添付名、用途単位でsourceも削除する契約、multipart全体26MiB、crop schema version 1、移行ログの本番完了後90日保持を確定した。モデル追加、フォーム移行、移行batch、環境別実行、FilePond撤去は#1140〜#1145へ分割した。

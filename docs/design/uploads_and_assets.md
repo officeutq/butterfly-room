@@ -1,5 +1,7 @@
 # Uploads / Assets 設計
 
+> 1〜9節は現在の本番FilePond経路、10〜14節は検証記録である。検証結果から確定したCropper.js移行後の目標仕様は [Cropper.js画像アップロード確定設計](image_upload_cropper_architecture.md) を正とする。実装用Issueが完了するまでは本書の現行仕様を変更済みとして扱わない。
+
 ## 1. 概要
 
 本アプリでは、プロフィール画像・ブース画像・店舗画像などの画像アップロードに FilePond を利用する。
@@ -328,7 +330,7 @@ Remove-Item Env:IMAGE_VERIFICATION_BROWSER
 
 0.98は模様サンプルで0.94比約1.5〜1.7倍の容量となったため、編集元0.94・表示用0.90を引き続き候補とする。全解像度保持は大きい画像の再編集メモリを増やすため、既定では800万画素へ抑える。ただし画質の目視評価・メモリ実測に基づく本番値の確定はまだ行わない。
 
-ユーザーにより、小さい写真・透過PNGでの画質低下は想定内として確認済み。広色域/ICCプロファイル画像の色差、実機iPhone Safari / Android Chrome、実端末の最大メモリと連続変換は未確認。スマホ確認は#1131、生成JPEGの容量制限・送信は#1132、本番採用値の確定は#1134へ引き継ぐ。入力20MiBの制限が、生成後JPEGの容量上限を保証するものではない。
+ユーザーにより、小さい写真・透過PNGでの画質低下は想定内として確認済み。広色域/ICCプロファイル画像の色差、Android Chrome、実端末の最大メモリ等は検証時点で未確認だった。iPhone 15 Proの12MP / 24MP結果を含め#1134で本番候補値を確定し、HEIC配布条件は#1152、通常フォームの実機確認は#1153へ引き継いだ。入力20MiBの制限が、生成後JPEGの容量上限を保証するものではない。
 
 ## 12. HEIC / HEIFブラウザ変換の検証（#1131）
 
@@ -336,7 +338,7 @@ Remove-Item Env:IMAGE_VERIFICATION_BROWSER
 
 HEIC入力は標準16MPを維持し、Worker専用の32MP比較を明示選択できる。これは24MP写真を試す高負荷な検証設定であり、本番上限の決定ではない。容量20MiB・長辺8192px・縦横比8:1・30秒制限・後続の既定800万画素への正規化は維持する。画面を開き直すと標準へ戻り、メインスレッド比較は常に4MPまで。JSONに実行した上限を記録する。
 
-本番のFilePond、サーバー側HEIC正規化、Active Storage、`ImageAttachments::UpdateService` の挙動は変更しない。実機検証とライセンス条件の採用判断が残るため、#1131の完了を意味しない。
+本検証コード自体は、本番のFilePond、サーバー側HEIC正規化、Active Storage、`ImageAttachments::UpdateService` の挙動を変更しない。検証時点で残った実機横断確認と配布条件は#1152・#1153へ移し、#1134の確定設計に対する本番公開gateとする。
 
 ## 13. 2画像の送信方式・一時保存検証（#1132）
 
@@ -345,3 +347,9 @@ HEIC入力は標準16MPを維持し、Worker専用の32MP比較を明示選択�
 ## 14. 2画像の一体更新・既存画像移行の試作（#1133）
 
 本番モデルを変更せず、事前アップロード済みsource/displayとcrop dataの一体更新、期待attachment/blob IDによる競合拒否、失敗時清掃を試作した。既存表示Blobから独立した編集元JPEGと中央クロップ画像を生成し、低解像度時の最低寸法への拡大、dry-run、再開・冪等性の移行方針も確認した。Service分割・失敗状態・移行順序・残課題は [image_attachment_pair_and_migration_prototype.md](image_attachment_pair_and_migration_prototype.md) を正とする。
+
+## 15. 検証後の採用仕様（#1134）
+
+#1129〜#1133を統合し、初期送信はRails multipart、編集元は品質0.94・長辺4096px・800万画素以下、入力は20MiB・長辺8192px・3200万画素・縦横比8:1以下とする。User / Store / Boothは用途ごとに編集元Blob・固定寸法の表示用Blob・schema version 1のcrop dataを保持する。
+
+添付名、通常更新、競合・清掃、段階的な既存画像移行、ステージング検証、本番移行、FilePond・検証機能の撤去条件を含む確定内容は [image_upload_cropper_architecture.md](image_upload_cropper_architecture.md) を参照する。検証文書中の「候補」「未決定」は各検証時点の記録として残し、最終判断は確定設計を優先する。
