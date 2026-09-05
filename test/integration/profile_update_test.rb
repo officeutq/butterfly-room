@@ -197,6 +197,25 @@ class ProfileUpdateTest < ActionDispatch::IntegrationTest
     assert_complete_pair(user, :cover)
   end
 
+  test "profile image pair update returns the redirect destination as JSON" do
+    user = create_profile_user("profile_image_pair_json")
+    sign_in user, scope: :user
+
+    patch profile_path,
+          params: {
+            user: { bio: "JSONで保存" },
+            avatar_image_pair: replace_pair_params(user:, purpose: :avatar)
+          },
+          headers: { "ACCEPT" => "application/json" }
+
+    assert_response :success
+    response_body = JSON.parse(response.body)
+    assert_equal "complete", response_body.fetch("state")
+    assert_equal root_path, response_body.fetch("redirect_url")
+    assert_equal "JSONで保存", user.reload.bio
+    assert_complete_pair(user, :avatar)
+  end
+
   test "profile image pairs can be re-edited, replaced and deleted independently" do
     user = create_profile_user("profile_image_pair_operations")
     install_pair(user, :avatar)
@@ -248,6 +267,26 @@ class ProfileUpdateTest < ActionDispatch::IntegrationTest
     assert_equal "カバー削除後", user.bio
   end
 
+  test "new profile editor can explicitly delete a display-only legacy avatar" do
+    user = create_profile_user("profile_legacy_avatar_delete")
+    old_blob = attach_existing_avatar(user)
+    sign_in user, scope: :user
+
+    perform_enqueued_jobs do
+      patch profile_path, params: {
+        user: { bio: "" },
+        avatar_image_pair: delete_pair_params(user:, purpose: :avatar)
+      }
+    end
+
+    assert_redirected_to root_path
+    user.reload
+    assert_not user.avatar.attached?
+    assert_not user.avatar_source.attached?
+    assert_equal({}, user.avatar_crop_data)
+    assert_not ActiveStorage::Blob.exists?(old_blob.id)
+  end
+
   test "an invalid cover update keeps both existing pairs and normal attributes" do
     user = create_profile_user("profile_image_pair_failure", bio: "更新前")
     install_pair(user, :avatar)
@@ -290,14 +329,19 @@ class ProfileUpdateTest < ActionDispatch::IntegrationTest
     )
     sign_in user, scope: :user
 
-    patch profile_path, params: {
-      user: { bio: "保存されない" },
-      avatar_image_pair: replace_pair_params(user:, purpose: :avatar),
-      cover_image_pair: stale_cover
-    }
+    patch profile_path,
+          params: {
+            user: { bio: "保存されない" },
+            avatar_image_pair: replace_pair_params(user:, purpose: :avatar),
+            cover_image_pair: stale_cover
+          },
+          headers: { "ACCEPT" => "application/json" }
 
-    assert_redirected_to edit_profile_path
-    assert_includes flash[:alert], "画像が別の操作で更新されました"
+    assert_response :conflict
+    response_body = JSON.parse(response.body)
+    assert_equal "image_pair_stale", response_body.fetch("error")
+    assert_equal false, response_body.fetch("retryable")
+    assert_includes response_body.fetch("message"), "画像が別の操作で更新されました"
     user.reload
     assert_equal "更新前", user.bio
     assert_equal previous_avatar_ids, pair_ids(user, :avatar)

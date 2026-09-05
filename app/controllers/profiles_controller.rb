@@ -23,6 +23,19 @@ class ProfilesController < ApplicationController
         legacy_avatar_upload: upload,
         remove_legacy_avatar: remove_avatar
       ).call
+    rescue Profiles::UpdateService::StaleImageError
+      return respond_profile_update_error(
+        @user.errors.full_messages,
+        status: :conflict,
+        code: "image_pair_stale"
+      )
+    rescue Profiles::UpdateService::ImageUploadError
+      return respond_profile_update_error(
+        @user.errors.full_messages,
+        status: :service_unavailable,
+        code: "image_upload_failed",
+        retryable: true
+      )
     rescue ActiveRecord::RecordInvalid, Profiles::UpdateService::Error
       return respond_profile_update_error(@user.errors.full_messages)
     rescue ActionController::ParameterMissing, ImageAttachments::MultipartPayload::Invalid => error
@@ -30,7 +43,7 @@ class ProfilesController < ApplicationController
       return respond_profile_update_error(@user.errors.full_messages)
     end
 
-    if session.delete(:redirect_to_booth_edit_after_profile_update)
+    destination = if session.delete(:redirect_to_booth_edit_after_profile_update)
       booth = current_booth_for_invitation_flow
 
       if booth.present?
@@ -40,12 +53,20 @@ class ProfilesController < ApplicationController
         end
 
         session[:redirect_to_home_after_cast_booth_update] = true
-        redirect_to edit_cast_booth_path(booth), notice: "プロフィールを更新しました"
+        edit_cast_booth_path(booth)
       else
-        redirect_to root_path, notice: "プロフィールを更新しました"
+        root_path
       end
     else
-      redirect_to root_path, notice: "プロフィールを更新しました"
+      root_path
+    end
+
+    respond_to do |format|
+      format.html { redirect_to destination, notice: "プロフィールを更新しました" }
+      format.json do
+        flash[:notice] = "プロフィールを更新しました"
+        render json: { state: "complete", redirect_url: destination }
+      end
     end
   end
 
@@ -145,7 +166,12 @@ class ProfilesController < ApplicationController
          .find_by(id: booth_id, booth_casts: { cast_user_id: current_user.id })
   end
 
-  def respond_profile_update_error(messages)
+  def respond_profile_update_error(
+    messages,
+    status: :unprocessable_entity,
+    code: "profile_update_invalid",
+    retryable: false
+  )
     message = messages.join(" / ")
 
     respond_to do |format|
@@ -161,6 +187,10 @@ class ProfilesController < ApplicationController
 
       format.html do
         redirect_to edit_profile_path, alert: message
+      end
+
+      format.json do
+        render json: { error: code, message:, retryable: }, status:
       end
     end
   end

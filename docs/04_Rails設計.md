@@ -751,9 +751,10 @@ User / Store / Boothの新方式では、1用途につき編集元画像・表�
 
 * `ImageAttachments::PairValidator`がRails multipartまたは移行処理から受けた2個のJPEG実体、寸法、容量、crop dataを共通検査する。クライアント由来の`sourceBlobId`は保存せず、更新Serviceが確定したBlob IDで付与する
 * `ImageAttachments::MultipartPayload`が`image_pair`配下の操作、source、display、JSON文字列のcrop data、編集開始時の4つの期待IDを共通parameter契約として検査する
-* Viewは`shared/_image_attachment_editor.html.erb`へ用途別root、`square` / `social`、現在の2画像URL・crop data・期待IDを渡す。共通partialとStimulus Controllerがmultipart項目を生成し、個別ViewやControllerへCropper.js固有parameterを追加しない
+* Viewは`shared/_image_attachment_editor.html.erb`へ用途別root、`square` / `social`、現在の2画像URL・crop data・期待IDを渡す。共通partialとStimulus Controllerがmultipart項目を生成し、個別ViewやControllerへCropper.js固有parameterを追加しない。再編集用sourceはActive Storage proxy URLで同一originから読み込む
 * `ImageAttachments::MultipartUpdateService`が全画像の検査後、`StagedBlobUploadService`で用途別Active Storageへ事前保存し、保存先の存在確認後に`StagedPairUpdateService`へ一体更新を委譲する。1レコードの複数用途を受けた場合も全用途と通常属性を一つのtransactionで更新する
-* `Profiles::UpdateService`がUserのavatar / coverを用途別rootから受け取り、通常属性と一体更新する。通常画面の切替までは既存FilePondのavatar parameterも受け付けるが、新旧parameterが同時なら二重更新せず拒否する
+* `Profiles::UpdateService`がUserのavatar / coverを用途別rootから受け取り、通常属性と一体更新する。サーバー互換として既存FilePondのavatar parameterも撤去Issueまでは受け付けるが、通常プロフィールViewは送信しない。新旧parameterが同時なら二重更新せず拒否する
+* Userプロフィールの画像変更時は`image_pair_form_controller`が`ImagePairMultipartClient`で両用途と通常属性を一回だけ送信し、45秒超過・通信失敗時は自動再送せず入力を保持する。成功レスポンスの同一origin遷移先だけを採用する
 * multipart全体はPumaと`MultipartBodyLimit`で26MiBに制限し、`Content-Length`欠落・虚偽も実読込量で拒否する。ブラウザは`ImagePairMultipartClient`で45秒を上限とし、自動再送しない
 * レコードロック下で編集開始時のattachment ID・blob IDを照合し、古い画面による上書きを拒否する
 * 新規・差し替えは編集元・表示用・crop data、再編集は表示用・crop data、削除は3点すべてを一つのDB transactionで更新する

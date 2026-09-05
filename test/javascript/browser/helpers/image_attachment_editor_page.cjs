@@ -9,16 +9,17 @@ async function openImageAttachmentEditorPage(browser, { strictCsp = false } = {}
   const html = `<!doctype html><html><head><meta charset="utf-8">
     <style>
       [hidden] { display: none !important; }
-      .editor { width: 800px; height: 500px; }
+      .editor { width: min(800px, 100%); height: 500px; }
+      [data-image-attachment-editor-target~="currentPreview"] { max-width: 100%; }
       cropper-canvas { width: 100%; height: 100%; }
     </style>
     <script type="importmap" nonce="heic-test">{"imports":{"@hotwired/stimulus":"/stimulus.js","cropperjs":"/cropper.js","image_attachments/cropper_editor":"/cropper_editor.js","image_attachments/source_normalizer":"/source_normalizer.js","image_attachments/heic_converter":"/heic_converter.js"}}</script>
     </head><body><script type="module" nonce="heic-test">
       import Controller from "/controller.js"
 
-      const markup = () => \`
+      const markup = (id = "component") => \`
         <form id="form">
-          <section id="component">
+          <section id="\${id}">
             <input type="file" data-image-attachment-editor-target="fileInput">
             <img hidden data-image-attachment-editor-target="currentPreview">
             <p data-image-attachment-editor-target="previewEmpty"></p>
@@ -40,12 +41,9 @@ async function openImageAttachmentEditorPage(browser, { strictCsp = false } = {}
           </section>
         </form>\`
 
-      window.mountEditor = (options = {}) => {
-        window.editor?.disconnect()
-        document.body.insertAdjacentHTML("afterbegin", markup())
-        document.querySelectorAll("#form ~ #form").forEach((element) => element.remove())
+      const buildController = (element, options = {}) => {
         const controller = new Controller()
-        controller.element = document.querySelector("#component")
+        controller.element = element
         for (const name of Controller.targets) {
           const elements = controller.element.querySelectorAll('[data-image-attachment-editor-target~="' + name + '"]')
           controller[name + "Target"] = elements[0]
@@ -64,8 +62,35 @@ async function openImageAttachmentEditorPage(browser, { strictCsp = false } = {}
         controller.hasCurrentCropDataValue = !!options.currentCropData
         controller.hasCurrentSourceBlobIdValue = Number.isSafeInteger(options.currentSourceBlobId) && options.currentSourceBlobId > 0
         controller.connect()
-        window.editor = controller
         return controller
+      }
+
+      window.mountEditor = (options = {}) => {
+        window.editor?.disconnect()
+        window.editors?.forEach((controller) => controller.disconnect())
+        document.querySelector("#form")?.remove()
+        document.body.insertAdjacentHTML("afterbegin", markup())
+        const controller = buildController(document.querySelector("#component"), options)
+        window.editor = controller
+        window.editors = null
+        return controller
+      }
+
+      window.mountEditors = (options) => {
+        window.editor?.disconnect()
+        window.editors?.forEach((controller) => controller.disconnect())
+        document.querySelector("#form")?.remove()
+        document.body.insertAdjacentHTML("afterbegin", markup("component-0"))
+        const form = document.querySelector("#form")
+        const template = document.createElement("template")
+        template.innerHTML = markup("component-1")
+        form.append(template.content.querySelector("section"))
+        window.editor = null
+        window.editors = options.map((value, index) => buildController(
+          document.querySelector("#component-" + index),
+          value
+        ))
+        return window.editors
       }
 
       window.imageFile = async ({ width, height, type = "image/png", name = "input.png" }) => {

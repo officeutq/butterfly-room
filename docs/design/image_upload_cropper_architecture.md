@@ -114,7 +114,7 @@ Controller（リクエストを受ける層）は認可、strong parameters、�
 
 通常フォームは1用途につき、既定では`image_pair`を次のmultipart parameter契約で送る。Userのavatar / coverのように同じフォームで複数用途を扱う場合は、用途別のroot名をControllerから`MultipartPayload.from_params`へ指定し、配下は同じ契約を使う。`crop_data`はJSON文字列、`expected`は編集画面を開いた時点のIDとし、画像未設定時は4項目を空文字で送る。Controllerはstrong parametersと値検査を共通化した結果を`ImageAttachments::MultipartUpdateService`へ渡す。
 
-Userプロフィールでは`avatar_image_pair`と`cover_image_pair`を用途別rootとし、`Profiles::UpdateService`が通常属性と両用途を一体更新する。移行中の既存FilePond用`user[avatar]` / `user[remove_avatar]`はUI切替まで維持するが、新方式rootとの同時送信は画面再読み込みを求めて拒否する。
+Userプロフィールでは`avatar_image_pair`と`cover_image_pair`を用途別rootとし、`Profiles::UpdateService`が通常属性と両用途を一体更新する。通常Viewは既存FilePond用`user[avatar]` / `user[remove_avatar]`を送信しない。サーバー互換は撤去Issueまで維持するが、新方式rootとの同時送信は画面再読み込みを求めて拒否する。
 
 ```text
 image_pair[operation] = replace | reedit | delete
@@ -130,6 +130,8 @@ image_pair[expected][display_blob_id]
 multipart全体の26MiB上限はPumaでRails到達前に適用し、同じ上限のRack middlewareでも`Content-Length`の超過・欠落・虚偽を検知する。middlewareはmultipartだけを対象とし、413では`image_pair_request_too_large`と`retryable: true`を返す。Pumaの上限はサーバー全体のbodyに作用するため、新方式以外も26MiBを超える必要がないことを維持する。個別画像は`PairValidator`でsource 20MiB、display 5MiBをBlob作成前に検査する。
 
 ブラウザ送信には`ImagePairMultipartClient`を使い、待ち時間を45秒で打ち切って手動再送可能に戻す。自動再送は行わない。通信中断・タイムアウト後もサーバー側が完了する可能性があるため、再送時も元の`expected`を使う。先行送信が完了済みなら後着送信を競合として拒否し、後着側の一時Blobだけを清掃する。
+
+Userプロフィールではフォーム単位の`image_pair_form_controller`がavatar / coverの確定済みpayloadを一つの`FormData`として送る。いずれかが編集中・生成中なら送信せず、失敗時は生成済みFileと期待IDを保持して手動再送できる状態へ戻す。成功時だけRailsが返した同一originの遷移先へ移動する。既存編集元はS3のCORS変更を前提にせず、署名済みActive Storage proxy URLから同一originで読み込む。
 
 ALBの無通信タイムアウト60秒とS3設定は初期実装で変更しない。クライアント側の画像送信待ちは45秒を上限とし、超過時は再送可能な状態へ戻す。ステージングで20MiB境界と低速条件を確認し、既存60秒内に収まらない場合だけインフラ変更を別途判断する。
 
