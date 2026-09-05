@@ -751,6 +751,7 @@ User / Store / Boothの新方式では、1用途につき編集元画像・表�
 
 * `ImageAttachments::PairValidator`がRails multipartまたは移行処理から受けた2個のJPEG実体、寸法、容量、crop dataを共通検査する。クライアント由来の`sourceBlobId`は保存せず、更新Serviceが確定したBlob IDで付与する
 * `ImageAttachments::MultipartPayload`が`image_pair`配下の操作、source、display、JSON文字列のcrop data、編集開始時の4つの期待IDを共通parameter契約として検査する
+* Viewは`shared/_image_attachment_editor.html.erb`へ用途別root、`square` / `social`、現在の2画像URL・crop data・期待IDを渡す。共通partialとStimulus Controllerがmultipart項目を生成し、個別ViewやControllerへCropper.js固有parameterを追加しない
 * `ImageAttachments::MultipartUpdateService`が全画像の検査後、`StagedBlobUploadService`で用途別Active Storageへ事前保存し、保存先の存在確認後に`StagedPairUpdateService`へ一体更新を委譲する
 * multipart全体はPumaと`MultipartBodyLimit`で26MiBに制限し、`Content-Length`欠落・虚偽も実読込量で拒否する。ブラウザは`ImagePairMultipartClient`で45秒を上限とし、自動再送しない
 * レコードロック下で編集開始時のattachment ID・blob IDを照合し、古い画面による上書きを拒否する

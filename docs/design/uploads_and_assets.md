@@ -235,10 +235,13 @@ FilePondからCropper.jsへ移行する前段として、`/system_admin/image_up
 
 当初の検証対象はJPEG / PNG / WebP。#1131でHEIC / HEIFのブラウザJPEG変換を追加した（12節参照）。#1132のActive Storage保存は一時検証だけで、本番添付・既存画像移行は未実装。現行のFilePond経路には影響させない。
 
+#1150で、検証画面から固定比率・最小倍率・端補正・crop data復元を `image_attachments/cropper_editor.js` へ分離し、通常画面向けの `image_attachment_editor_controller` と共通partialを追加した。共通partialは5節の現行FilePond入力とは別で、個別フォームへ接続する後続Issueまでは通常経路に表示しない。HEIC / HEIFの通常画面入力も#1152で接続する。
+
 縮小下限・状態復元・JPEG出力を実際のCropper.jsとChromiumで確認する場合は、既存のPlaywright用Chromiumを利用して次を実行する。Railsやログインは不要で、テスト専用の画像を使う。
 
 ```bash
 node --test test/javascript/browser/image_upload_verification_zoom_test.cjs
+node --test test/javascript/browser/image_attachment_editor_test.cjs
 ```
 
 ## 11. 編集元JPEGの正規化検証（#1130）

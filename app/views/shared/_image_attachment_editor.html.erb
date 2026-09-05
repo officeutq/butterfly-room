@@ -1,0 +1,137 @@
+<%#
+  locals:
+    param_root:, ratio_key:, label:,
+    current_source_url: nil, current_display_url: nil, current_crop_data: nil,
+    expected: {}, id: nil
+%>
+<%
+  param_root = local_assigns.fetch(:param_root).to_s
+  ratio_key = local_assigns.fetch(:ratio_key).to_s
+  label = local_assigns.fetch(:label)
+  current_source_url = local_assigns[:current_source_url].to_s
+  current_display_url = local_assigns[:current_display_url].to_s
+  current_crop_data = local_assigns[:current_crop_data]
+  current_crop_json = if current_crop_data.present?
+    current_crop_data.is_a?(String) ? current_crop_data : current_crop_data.to_h.to_json
+  else
+    ""
+  end
+  expected = local_assigns.fetch(:expected, {}).to_h.with_indifferent_access
+  source_blob_id = expected[:source_blob_id]
+  dom_id = local_assigns[:id].presence || "image-attachment-editor-#{param_root.dasherize}"
+  output_label = {
+    "square" => "1:1（1024×1024）",
+    "social" => "40:21（1200×630）"
+  }.fetch(ratio_key)
+%>
+
+<section
+  id="<%= dom_id %>"
+  class="image-attachment-editor mb-3"
+  aria-labelledby="<%= dom_id %>-label"
+  data-controller="image-attachment-editor"
+  data-action="turbo:before-cache@document->image-attachment-editor#beforeCache"
+  data-image-attachment-editor-ratio-key-value="<%= ratio_key %>"
+  <% if current_source_url.present? %>data-image-attachment-editor-current-source-url-value="<%= current_source_url %>"<% end %>
+  <% if current_display_url.present? %>data-image-attachment-editor-current-display-url-value="<%= current_display_url %>"<% end %>
+  <% if current_crop_json.present? %>data-image-attachment-editor-current-crop-data-value="<%= current_crop_json %>"<% end %>
+  <% if source_blob_id.present? %>data-image-attachment-editor-current-source-blob-id-value="<%= source_blob_id %>"<% end %>>
+  <h2 id="<%= dom_id %>-label" class="h6 mb-2"><%= label %></h2>
+  <p id="<%= dom_id %>-help" class="form-text mt-0">
+    JPEG / PNG / WebPを選択できます。出力は<%= output_label %>です。画像を選んだだけでは保存されません。
+  </p>
+
+  <div class="image-attachment-editor__picker mb-3">
+    <label for="<%= dom_id %>-picker" class="form-label">新しい画像を選択</label>
+    <input
+      id="<%= dom_id %>-picker"
+      type="file"
+      class="form-control"
+      accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+      aria-describedby="<%= dom_id %>-help <%= dom_id %>-status"
+      data-image-attachment-editor-target="fileInput"
+      data-action="change->image-attachment-editor#selectFile">
+  </div>
+
+  <div class="image-attachment-editor__preview image-attachment-editor__preview--<%= ratio_key %> mb-3">
+    <img
+      alt="<%= label %>の現在の表示"
+      class="image-attachment-editor__preview-image"
+      hidden
+      data-image-attachment-editor-target="currentPreview">
+    <p class="mb-0 text-body-secondary" data-image-attachment-editor-target="previewEmpty">画像は設定されていません。</p>
+    <p class="mb-0 text-danger" role="status" hidden data-image-attachment-editor-target="deletionNotice">
+      この画像はフォーム保存時に削除されます。
+    </p>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <button type="button" class="btn btn-outline-primary btn-sm" hidden
+            data-image-attachment-editor-target="editButton"
+            data-action="image-attachment-editor#editExisting">
+      現在の構図を編集
+    </button>
+    <button type="button" class="btn btn-outline-danger btn-sm" hidden
+            data-image-attachment-editor-target="deleteButton"
+            data-action="image-attachment-editor#removeImage">
+      現在の画像を削除
+    </button>
+    <button type="button" class="btn btn-outline-secondary btn-sm" hidden
+            data-image-attachment-editor-target="undoButton"
+            data-action="image-attachment-editor#undoChange">
+      画像の変更を取り消す
+    </button>
+  </div>
+
+  <div class="image-attachment-editor__workspace mb-3" hidden data-image-attachment-editor-target="workspace">
+    <p id="<%= dom_id %>-instructions" class="form-text">
+      画像をドラッグまたはスワイプして移動し、ホイール・ピンチ・ボタンで拡大縮小します。キーボードでは矢印キーで移動、＋・－で拡大縮小できます。
+    </p>
+    <div
+      class="image-attachment-editor__canvas"
+      role="group"
+      tabindex="0"
+      aria-label="<%= label %>のクロップ編集"
+      aria-describedby="<%= dom_id %>-instructions <%= dom_id %>-status"
+      data-image-attachment-editor-target="editor"
+      data-action="keydown->image-attachment-editor#moveWithKeyboard">
+      <img alt="<%= label %>の編集元画像" crossorigin="anonymous" data-image-attachment-editor-target="source">
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 mt-3" role="group" aria-label="画像編集操作">
+      <button type="button" class="btn btn-outline-secondary btn-sm" disabled
+              aria-label="画像を拡大"
+              data-image-attachment-editor-target="editorControl"
+              data-action="image-attachment-editor#zoomIn">拡大</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" disabled
+              aria-label="画像を縮小"
+              data-image-attachment-editor-target="editorControl"
+              data-action="image-attachment-editor#zoomOut">縮小</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" disabled
+              data-image-attachment-editor-target="editorControl"
+              data-action="image-attachment-editor#resetImage">中央へ戻す</button>
+      <button type="button" class="btn btn-primary btn-sm" disabled
+              data-image-attachment-editor-target="editorControl applyButton"
+              data-action="image-attachment-editor#applyCrop">この構図を使用</button>
+      <button type="button" class="btn btn-link btn-sm" disabled
+              data-image-attachment-editor-target="editorControl"
+              data-action="image-attachment-editor#cancelEdit">画像編集をキャンセル</button>
+    </div>
+  </div>
+
+  <p class="alert alert-warning small" role="status" hidden data-image-attachment-editor-target="warning"></p>
+  <p id="<%= dom_id %>-status" class="form-text" role="status" aria-live="polite" tabindex="-1"
+     data-image-attachment-editor-target="status">画像未選択です。</p>
+
+  <input type="hidden" name="<%= param_root %>[operation]" value=""
+         data-image-attachment-editor-target="operationInput">
+  <input type="file" name="<%= param_root %>[source]" hidden
+         data-image-attachment-editor-target="sourceInput">
+  <input type="file" name="<%= param_root %>[display]" hidden
+         data-image-attachment-editor-target="displayInput">
+  <input type="hidden" name="<%= param_root %>[crop_data]" value=""
+         data-image-attachment-editor-target="cropDataInput">
+  <% ImageAttachments::MultipartPayload::EXPECTED_ID_KEYS.each do |key| %>
+    <input type="hidden" name="<%= param_root %>[expected][<%= key %>]" value="<%= expected[key] %>">
+  <% end %>
+</section>
