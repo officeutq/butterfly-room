@@ -340,7 +340,7 @@ Remove-Item Env:IMAGE_VERIFICATION_BROWSER
 
 HEIC入力は標準16MPを維持し、Worker専用の32MP比較を明示選択できる。これは24MP写真を試す高負荷な検証設定であり、本番上限の決定ではない。容量20MiB・長辺8192px・縦横比8:1・30秒制限・後続の既定800万画素への正規化は維持する。画面を開き直すと標準へ戻り、メインスレッド比較は常に4MPまで。JSONに実行した上限を記録する。
 
-通常経路もHEIC選択時だけ共通Workerを利用するが、個別フォームへの接続までは本番のFilePond、サーバー側HEIC正規化、Active Storage、`ImageAttachments::UpdateService` の挙動を変更しない。実機横断確認は#1153を#1134の確定設計に対する本番公開gateとする。
+通常経路もHEIC選択時だけ共通Workerを利用するが、個別フォームへの接続までは本番のFilePondとサーバー側HEIC正規化を維持する。#1155でプロフィール保存側はavatar / coverの新方式画像組と通常属性を一体更新できるようにし、UI切替まで既存`ImageAttachments::UpdateService`経路も排他的に維持する。実機横断確認は#1153を#1134の確定設計に対する本番公開gateとする。
 
 ## 13. 2画像の送信方式・一時保存検証（#1132）
 

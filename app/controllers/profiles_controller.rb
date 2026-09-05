@@ -16,16 +16,17 @@ class ProfilesController < ApplicationController
     remove_avatar = attributes.delete(:remove_avatar)
 
     begin
-      ImageAttachments::UpdateService.new(
-        record: @user,
-        attachment_name: :avatar,
+      Profiles::UpdateService.new(
+        user: @user,
         attributes:,
-        upload:,
-        remove_attachment: remove_avatar,
-        max_width: 1024,
-        max_height: 1024
+        image_updates: image_pair_payloads,
+        legacy_avatar_upload: upload,
+        remove_legacy_avatar: remove_avatar
       ).call
-    rescue ActiveRecord::RecordInvalid, ImageAttachments::UpdateService::Error
+    rescue ActiveRecord::RecordInvalid, Profiles::UpdateService::Error
+      return respond_profile_update_error(@user.errors.full_messages)
+    rescue ActionController::ParameterMissing, ImageAttachments::MultipartPayload::Invalid => error
+      @user.errors.add(:base, error.message)
       return respond_profile_update_error(@user.errors.full_messages)
     end
 
@@ -113,6 +114,19 @@ class ProfilesController < ApplicationController
 
   def profile_params
     params.require(:user).permit(:display_name, :bio, :avatar, :remove_avatar)
+  end
+
+  def image_pair_payloads
+    {
+      avatar: :avatar_image_pair,
+      cover: :cover_image_pair
+    }.filter_map do |purpose, root|
+      next if params.dig(root, :operation).blank?
+
+      [ purpose, ImageAttachments::MultipartPayload.from_params(params, root:) ]
+    end.to_h
+  rescue TypeError
+    raise ImageAttachments::MultipartPayload::Invalid, "画像送信パラメータが不正です。"
   end
 
   def phone_otp_params
