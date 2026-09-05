@@ -26,7 +26,8 @@ class HomeController < ApplicationController
     if @mode == "users"
       users =
         User.public_profiles
-          .left_joins(:avatar_attachment)
+          .left_joins(:cover_image_attachment)
+          .includes(cover_image_attachment: :blob)
 
       keywords.each do |keyword|
         q_like = "%#{ActiveRecord::Base.sanitize_sql_like(keyword)}%"
