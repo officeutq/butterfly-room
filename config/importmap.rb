@@ -11,5 +11,6 @@ pin "bootstrap", to: "/esm/bootstrap/bootstrap.esm.js"
 pin "cropperjs", to: "cropperjs/dist/cropper.esm.js"
 pin "@rails/activestorage", to: "activestorage.esm.js", preload: false
 pin "lp_analytics/event_sender"
+pin "image_attachments/multipart_client"
 
 pin "banuba-web-sdk", to: "/banuba/sdk/BanubaSDK.browser.esm.js"

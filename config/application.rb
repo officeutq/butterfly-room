@@ -4,6 +4,8 @@ require "rails/all"
 
 require_relative "../lib/staging/basic_auth"
 require_relative "../lib/staging/robots"
+require_relative "../lib/image_attachments/multipart_limits"
+require_relative "../lib/image_attachments/multipart_body_limit"
 
 Bundler.require(*Rails.groups)
 
@@ -23,6 +25,7 @@ module App
 
     config.autoload_lib(ignore: %w[assets tasks])
 
+    config.middleware.insert_before 0, ImageAttachments::MultipartBodyLimit
     config.middleware.insert_before ActionDispatch::Static, Staging::Robots
     config.middleware.use Staging::BasicAuth
   end
