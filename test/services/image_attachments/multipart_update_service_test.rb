@@ -40,6 +40,62 @@ class ImageAttachments::MultipartUpdateServiceTest < ActiveSupport::TestCase
     assert_not ImageAttachments::StagedBlobMetadata.owned?(@record.avatar.blob)
   end
 
+  test "multiple purposes and normal attributes commit in one transaction" do
+    avatar_source = jpeg_upload(1200, 1200, color: "red")
+    avatar_display = jpeg_upload(1024, 1024, color: "blue")
+    cover_source = jpeg_upload(1200, 630, color: "green")
+    cover_display = jpeg_upload(1200, 630, color: "yellow")
+
+    multi_service(
+      updates: {
+        avatar: replace_payload(source: avatar_source, display: avatar_display),
+        cover: social_replace_payload(source: cover_source, display: cover_display)
+      },
+      attributes: { bio: "2用途と同時更新" }
+    ).call
+
+    @record.reload
+    assert_equal "2用途と同時更新", @record.bio
+    assert_equal File.binread(avatar_source.tempfile.path), @record.avatar_source.download
+    assert_equal File.binread(avatar_display.tempfile.path), @record.avatar.download
+    assert_equal File.binread(cover_source.tempfile.path), @record.cover_image_source.download
+    assert_equal File.binread(cover_display.tempfile.path), @record.cover_image.download
+    assert_equal @record.avatar_source.blob.id, @record.avatar_crop_data.fetch("sourceBlobId")
+    assert_equal @record.cover_image_source.blob.id, @record.cover_image_crop_data.fetch("sourceBlobId")
+  end
+
+  test "a stale second purpose rolls back the first purpose and removes every staged Blob" do
+    avatar_expected = snapshot_hash
+    cover_expected = snapshot_hash(:cover)
+    @record.cover_image.attach(blob)
+    competing_cover_id = @record.cover_image.blob.id
+    count = ActiveStorage::Blob.count
+
+    assert_raises(ImageAttachments::StagedPairUpdateService::StalePairError) do
+      multi_service(
+        updates: {
+          avatar: replace_payload(
+            source: jpeg_upload(1200, 1200),
+            display: jpeg_upload(1024, 1024),
+            expected: avatar_expected
+          ),
+          cover: social_replace_payload(
+            source: jpeg_upload(1200, 630),
+            display: jpeg_upload(1200, 630),
+            expected: cover_expected
+          )
+        },
+        attributes: { bio: "保存されない" }
+      ).call
+    end
+
+    @record.reload
+    assert_empty_pair
+    assert_equal competing_cover_id, @record.cover_image.blob.id
+    assert_nil @record.bio
+    assert_equal count, ActiveStorage::Blob.count
+  end
+
   test "reedit uploads only display and preserves the editing source" do
     install_pair
     source_blob = @record.avatar_source.blob
@@ -202,6 +258,14 @@ class ImageAttachments::MultipartUpdateServiceTest < ActiveSupport::TestCase
     )
   end
 
+  def multi_service(updates:, attributes: {})
+    ImageAttachments::MultipartUpdateService.new(
+      record: @record,
+      updates:,
+      attributes:
+    )
+  end
+
   def install_pair
     service(payload: replace_payload(
       source: jpeg_upload(1200, 1200, color: "gray"),
@@ -220,6 +284,16 @@ class ImageAttachments::MultipartUpdateServiceTest < ActiveSupport::TestCase
     )
   end
 
+  def social_replace_payload(source:, display:, expected: snapshot_hash(:cover))
+    payload(
+      operation: "replace",
+      source:,
+      display:,
+      crop_data: social_crop_data,
+      expected:
+    )
+  end
+
   def payload(operation:, expected:, source: nil, display: nil, crop_data: nil)
     {
       operation:,
@@ -230,8 +304,8 @@ class ImageAttachments::MultipartUpdateServiceTest < ActiveSupport::TestCase
     }
   end
 
-  def snapshot_hash
-    snapshot = ImageAttachments::StagedPairUpdateService.capture(record: @record, purpose: :avatar)
+  def snapshot_hash(purpose = :avatar)
+    snapshot = ImageAttachments::StagedPairUpdateService.capture(record: @record, purpose:)
     snapshot.to_h
   end
 
@@ -249,6 +323,33 @@ class ImageAttachments::MultipartUpdateServiceTest < ActiveSupport::TestCase
         "quality" => 0.9
       }
     }
+  end
+
+  def social_crop_data
+    {
+      "schemaVersion" => 1,
+      "ratioKey" => "social",
+      "source" => { "width" => 1200, "height" => 630 },
+      "crop" => { "x" => 0, "y" => 0, "width" => 1200, "height" => 630 },
+      "zoom" => 1.0,
+      "output" => {
+        "width" => 1200,
+        "height" => 630,
+        "mimeType" => "image/jpeg",
+        "quality" => 0.9
+      }
+    }
+  end
+
+  def blob
+    File.open(file_fixture("sample.jpg"), "rb") do |io|
+      ActiveStorage::Blob.create_and_upload!(
+        io:,
+        filename: "existing.jpg",
+        content_type: "image/jpeg",
+        identify: false
+      )
+    end
   end
 
   def jpeg_upload(width, height, color: "purple")

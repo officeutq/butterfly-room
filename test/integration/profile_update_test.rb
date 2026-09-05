@@ -1,14 +1,21 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "mini_magick"
+require "tempfile"
 
 class ProfileUpdateTest < ActionDispatch::IntegrationTest
   include ActionDispatch::TestProcess
   include ActiveJob::TestHelper
 
+  setup do
+    @tempfiles = []
+  end
+
   teardown do
     clear_enqueued_jobs
     clear_performed_jobs
+    @tempfiles.each(&:close!)
   end
 
   test "profile update redirects to home with notice" do
@@ -172,6 +179,167 @@ class ProfileUpdateTest < ActionDispatch::IntegrationTest
     assert_equal old_blob.id, user.avatar.blob.id
   end
 
+  test "profile update creates avatar and cover image pairs with normal attributes" do
+    user = create_profile_user("profile_image_pairs")
+    sign_in user, scope: :user
+
+    patch profile_path, params: {
+      user: { display_name: "画像組ユーザー", bio: "2用途を同時保存" },
+      avatar_image_pair: replace_pair_params(user:, purpose: :avatar),
+      cover_image_pair: replace_pair_params(user:, purpose: :cover)
+    }
+
+    assert_redirected_to root_path
+    user.reload
+    assert_equal "画像組ユーザー", user.display_name
+    assert_equal "2用途を同時保存", user.bio
+    assert_complete_pair(user, :avatar)
+    assert_complete_pair(user, :cover)
+  end
+
+  test "profile image pairs can be re-edited, replaced and deleted independently" do
+    user = create_profile_user("profile_image_pair_operations")
+    install_pair(user, :avatar)
+    install_pair(user, :cover)
+    user.reload
+    avatar_source_id = user.avatar_source.blob.id
+    avatar_display_id = user.avatar.blob.id
+    old_cover_source_id = user.cover_image_source.blob.id
+    old_cover_display_id = user.cover_image.blob.id
+    sign_in user, scope: :user
+
+    patch profile_path, params: {
+      user: { bio: "再編集と差し替え" },
+      avatar_image_pair: reedit_pair_params(user:, purpose: :avatar),
+      cover_image_pair: replace_pair_params(user:, purpose: :cover)
+    }
+
+    assert_redirected_to root_path
+    user.reload
+    assert_equal "再編集と差し替え", user.bio
+    assert_equal avatar_source_id, user.avatar_source.blob.id
+    assert_not_equal avatar_display_id, user.avatar.blob.id
+    assert_not_equal old_cover_source_id, user.cover_image_source.blob.id
+    assert_not_equal old_cover_display_id, user.cover_image.blob.id
+    cover_ids = pair_ids(user, :cover)
+
+    patch profile_path, params: {
+      user: { display_name: "アバター削除後" },
+      avatar_image_pair: delete_pair_params(user:, purpose: :avatar)
+    }
+
+    assert_redirected_to root_path
+    user.reload
+    assert_not user.avatar_source.attached?
+    assert_not user.avatar.attached?
+    assert_equal({}, user.avatar_crop_data)
+    assert_equal cover_ids, pair_ids(user, :cover)
+
+    patch profile_path, params: {
+      user: { bio: "カバー削除後" },
+      cover_image_pair: delete_pair_params(user:, purpose: :cover)
+    }
+
+    assert_redirected_to root_path
+    user.reload
+    assert_not user.cover_image_source.attached?
+    assert_not user.cover_image.attached?
+    assert_equal({}, user.cover_image_crop_data)
+    assert_equal "カバー削除後", user.bio
+  end
+
+  test "an invalid cover update keeps both existing pairs and normal attributes" do
+    user = create_profile_user("profile_image_pair_failure", bio: "更新前")
+    install_pair(user, :avatar)
+    install_pair(user, :cover)
+    user.reload
+    previous_avatar_ids = pair_ids(user, :avatar)
+    previous_cover_ids = pair_ids(user, :cover)
+    blob_count = ActiveStorage::Blob.count
+    sign_in user, scope: :user
+
+    patch profile_path, params: {
+      user: { bio: "保存されない" },
+      avatar_image_pair: replace_pair_params(user:, purpose: :avatar),
+      cover_image_pair: replace_pair_params(
+        user:,
+        purpose: :cover,
+        display: jpeg_upload(1024, 1024)
+      )
+    }
+
+    assert_redirected_to edit_profile_path
+    user.reload
+    assert_equal "更新前", user.bio
+    assert_equal previous_avatar_ids, pair_ids(user, :avatar)
+    assert_equal previous_cover_ids, pair_ids(user, :cover)
+    assert_equal blob_count, ActiveStorage::Blob.count
+  end
+
+  test "a stale cover update rolls back the avatar pair and normal attributes" do
+    user = create_profile_user("profile_image_pair_stale", bio: "更新前")
+    install_pair(user, :avatar)
+    install_pair(user, :cover)
+    user.reload
+    previous_avatar_ids = pair_ids(user, :avatar)
+    previous_cover_ids = pair_ids(user, :cover)
+    blob_count = ActiveStorage::Blob.count
+    stale_cover = reedit_pair_params(user:, purpose: :cover)
+    stale_cover[:expected] = stale_cover.fetch(:expected).merge(
+      display_blob_id: user.cover_image.blob.id + 1
+    )
+    sign_in user, scope: :user
+
+    patch profile_path, params: {
+      user: { bio: "保存されない" },
+      avatar_image_pair: replace_pair_params(user:, purpose: :avatar),
+      cover_image_pair: stale_cover
+    }
+
+    assert_redirected_to edit_profile_path
+    assert_includes flash[:alert], "画像が別の操作で更新されました"
+    user.reload
+    assert_equal "更新前", user.bio
+    assert_equal previous_avatar_ids, pair_ids(user, :avatar)
+    assert_equal previous_cover_ids, pair_ids(user, :cover)
+    assert_equal blob_count, ActiveStorage::Blob.count
+  end
+
+  test "profile update rejects legacy and image pair uploads together" do
+    user = create_profile_user("profile_image_pair_mixed", bio: "更新前")
+    blob_count = ActiveStorage::Blob.count
+    sign_in user, scope: :user
+
+    patch profile_path, params: {
+      user: {
+        bio: "保存されない",
+        avatar: image_upload("sample.jpg", "image/jpeg")
+      },
+      avatar_image_pair: replace_pair_params(user:, purpose: :avatar)
+    }
+
+    assert_redirected_to edit_profile_path
+    assert_includes flash[:alert], "新旧の画像更新を同時に送信できません"
+    user.reload
+    assert_equal "更新前", user.bio
+    assert_not user.avatar.attached?
+    assert_not user.avatar_source.attached?
+    assert_equal blob_count, ActiveStorage::Blob.count
+  end
+
+  test "profile image pair update requires authentication" do
+    user = create_profile_user("profile_image_pair_unauthorized")
+
+    patch profile_path, params: {
+      user: { bio: "保存されない" },
+      avatar_image_pair: replace_pair_params(user:, purpose: :avatar)
+    }
+
+    assert_redirected_to new_user_session_path
+    assert_nil user.reload.bio
+    assert_not user.avatar.attached?
+  end
+
   test "profile edit shows current email and email change link" do
     user = User.create!(
       email: "profile_email_link@example.com",
@@ -268,5 +436,104 @@ class ProfileUpdateTest < ActionDispatch::IntegrationTest
 
   def image_upload(filename, content_type)
     fixture_file_upload(Rails.root.join("test/fixtures/files", filename), content_type)
+  end
+
+  def install_pair(user, purpose)
+    ImageAttachments::MultipartUpdateService.new(
+      record: user,
+      purpose:,
+      payload: replace_pair_params(user:, purpose:)
+    ).call
+  end
+
+  def replace_pair_params(user:, purpose:, display: nil)
+    dimensions = source_dimensions(purpose)
+    {
+      operation: "replace",
+      source: jpeg_upload(*dimensions),
+      display: display || jpeg_upload(*output_dimensions(purpose)),
+      crop_data: JSON.generate(crop_data(purpose)),
+      expected: snapshot_hash(user, purpose)
+    }
+  end
+
+  def reedit_pair_params(user:, purpose:)
+    {
+      operation: "reedit",
+      display: jpeg_upload(*output_dimensions(purpose), color: "green"),
+      crop_data: JSON.generate(crop_data(purpose)),
+      expected: snapshot_hash(user, purpose)
+    }
+  end
+
+  def delete_pair_params(user:, purpose:)
+    {
+      operation: "delete",
+      crop_data: "",
+      expected: snapshot_hash(user, purpose)
+    }
+  end
+
+  def snapshot_hash(user, purpose)
+    ImageAttachments::StagedPairUpdateService.capture(record: user, purpose:).to_h
+  end
+
+  def crop_data(purpose)
+    width, height = source_dimensions(purpose)
+    output_width, output_height = output_dimensions(purpose)
+    {
+      "schemaVersion" => 1,
+      "ratioKey" => purpose == :avatar ? "square" : "social",
+      "source" => { "width" => width, "height" => height },
+      "crop" => { "x" => 0, "y" => 0, "width" => width, "height" => height },
+      "zoom" => 1.0,
+      "output" => {
+        "width" => output_width,
+        "height" => output_height,
+        "mimeType" => "image/jpeg",
+        "quality" => 0.9
+      }
+    }
+  end
+
+  def source_dimensions(purpose)
+    purpose == :avatar ? [ 1200, 1200 ] : [ 1200, 630 ]
+  end
+
+  def output_dimensions(purpose)
+    purpose == :avatar ? [ 1024, 1024 ] : [ 1200, 630 ]
+  end
+
+  def jpeg_upload(width, height, color: "purple")
+    tempfile = Tempfile.new([ "profile-image", ".jpg" ]).tap { |file| @tempfiles << file }
+    MiniMagick.convert do |command|
+      command.size("#{width}x#{height}")
+      command << "xc:#{color}"
+      command << "JPEG:#{tempfile.path}"
+    end
+    tempfile.binmode
+    tempfile.rewind
+    Rack::Test::UploadedFile.new(tempfile.path, "image/jpeg", true, original_filename: "profile.jpg")
+  end
+
+  def assert_complete_pair(user, purpose)
+    configuration = user.image_attachment_purpose_for(purpose)
+    source = user.public_send(configuration.source_attachment)
+    display = user.public_send(configuration.display_attachment)
+    data = user.public_send(configuration.crop_attribute)
+
+    assert source.attached?
+    assert display.attached?
+    assert_not_equal source.blob.id, display.blob.id
+    assert_equal source.blob.id, data.fetch("sourceBlobId")
+  end
+
+  def pair_ids(user, purpose)
+    configuration = user.image_attachment_purpose_for(purpose)
+    [
+      user.public_send(configuration.source_attachment).blob.id,
+      user.public_send(configuration.display_attachment).blob.id,
+      user.public_send(configuration.crop_attribute).fetch("sourceBlobId")
+    ]
   end
 end

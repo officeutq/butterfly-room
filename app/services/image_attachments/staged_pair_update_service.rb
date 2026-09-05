@@ -58,22 +58,12 @@ module ImageAttachments
     def call
       raise Error, "service instances cannot be reused" if @called
 
-      @called = true
       committed = false
       transaction_completed = false
 
-      validate_operation_payload!
-      validate_staged_blobs!
+      validate_staged!
       @record.class.transaction do
-        @record.lock! if @record.persisted?
-        verify_expected_snapshot!
-        lock_staged_blobs!
-
-        @record.assign_attributes(@attributes)
-        apply_operation!
-        @record.save!
-        yield @record if block_given?
-        @staged_blobs.each_value { |blob| StagedBlobMetadata.clear!(blob) }
+        apply_in_transaction! { |record| yield record if block_given? }
         transaction_completed = true
       end
 
@@ -88,6 +78,39 @@ module ImageAttachments
       @record
     ensure
       cleanup_staged_blobs unless committed
+    end
+
+    # Multi-purpose updates validate every image before opening their shared
+    # transaction, then call this method for each purpose inside that one
+    # transaction. The orchestrator retains staged Blob ownership until the
+    # outer transaction commits and is responsible for failure cleanup.
+    def validate_staged!
+      raise Error, "service instances cannot be reused" if @called
+
+      validate_operation_payload!
+      validate_staged_blobs!
+      @validated = true
+      self
+    end
+
+    def apply_in_transaction!
+      raise Error, "staged image pair must be validated first" unless @validated
+      raise Error, "service instances cannot be reused" if @called
+      unless @record.class.connection.transaction_open?
+        raise Error, "image pair must be applied inside a transaction"
+      end
+
+      @called = true
+      @record.lock! if @record.persisted?
+      verify_expected_snapshot!
+      lock_staged_blobs!
+
+      @record.assign_attributes(@attributes)
+      apply_operation!
+      @record.save!
+      yield @record if block_given?
+      @staged_blobs.each_value { |blob| StagedBlobMetadata.clear!(blob) }
+      @record
     end
 
     private

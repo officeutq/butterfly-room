@@ -106,12 +106,15 @@ Controller（リクエストを受ける層）は認可、strong parameters、�
 - Railsで受信した一時ファイルからBlobを事前作成し、保存先に実体が存在することを確認してから短いDB transactionを開始する。
 - 編集開始時のsource/display attachment ID・blob IDを保存時にレコードロック下で再照合する。古いタブや移行後の上書きは409相当の再編集要求にする。
 - 新規・差し替えは2添付とcrop data、再編集は表示用添付とcrop data、削除は2添付とcrop dataを一つのtransactionで更新する。
+- 同じレコードの複数用途を一回のフォーム送信で更新する場合は、全用途を検査・事前保存した後、通常属性を含めて一つのtransactionでcommitする。一用途の競合・検証・保存失敗でも他用途を含む更新全体をrollbackし、今回事前保存したBlobを清掃する。
 - transaction失敗時は旧状態を維持し、新規Blobだけを同期清掃する。成功後に参照されなくなった旧Blobを非同期清掃する。別添付から参照されるBlobは削除しない。
 - DBとS3は同一transactionにできないため、プロセス強制終了時に残った本機能所有の未添付Blobを期限付き清掃できる識別情報を持たせる。
 
 事前保存するBlobのmetadataには`image_attachment_staging`を付け、`schemaVersion`、用途、`source` / `display`の役割、`cleanupAfter`を記録する。既定の清掃期限は作成から1時間とし、画像組のcommit時に同じtransaction内で印を外す。5分ごとの定期Jobは、期限を過ぎ、専用metadataが正しく、どこにも添付されていないBlobだけを清掃する。保存先の削除後にBlob行を削除し、保存先削除に失敗した場合は行とmetadataを残して次回再試行できるようにする。
 
 通常フォームは1用途につき、既定では`image_pair`を次のmultipart parameter契約で送る。Userのavatar / coverのように同じフォームで複数用途を扱う場合は、用途別のroot名をControllerから`MultipartPayload.from_params`へ指定し、配下は同じ契約を使う。`crop_data`はJSON文字列、`expected`は編集画面を開いた時点のIDとし、画像未設定時は4項目を空文字で送る。Controllerはstrong parametersと値検査を共通化した結果を`ImageAttachments::MultipartUpdateService`へ渡す。
+
+Userプロフィールでは`avatar_image_pair`と`cover_image_pair`を用途別rootとし、`Profiles::UpdateService`が通常属性と両用途を一体更新する。移行中の既存FilePond用`user[avatar]` / `user[remove_avatar]`はUI切替まで維持するが、新方式rootとの同時送信は画面再読み込みを求めて拒否する。
 
 ```text
 image_pair[operation] = replace | reedit | delete
