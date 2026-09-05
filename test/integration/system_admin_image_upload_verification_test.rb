@@ -55,8 +55,9 @@ class SystemAdminImageUploadVerificationTest < ActionDispatch::IntegrationTest
       assert_select "button[data-image-upload-verification-target=cancelConversion][disabled]"
       assert_select "select[data-image-upload-verification-target=ratio] option[value=square]", text: /1:1/
       assert_select "select[data-image-upload-verification-target=ratio] option[value=social]", text: /40:21/
-      assert_select "select[data-image-upload-verification-target=normalizationQuality] option[selected][value='0.94']"
-      assert_select "select[data-image-upload-verification-target=normalizationMode] option[value=bounded]"
+      assert_select "select[data-image-upload-verification-target=normalizationQuality]", count: 0
+      assert_select "select[data-image-upload-verification-target=normalizationMode]", count: 0
+      assert_select "p", text: /編集元JPEGは品質0.94、長辺4096px・800万画素以下に固定/
       assert_select "[data-image-upload-verification-target=sourceDownload]"
       assert_select "textarea[data-image-upload-verification-target=normalizationReport][readonly]"
       assert_select "[data-image-upload-verification-upload-url-value=?]", system_admin_image_upload_verification_runs_path

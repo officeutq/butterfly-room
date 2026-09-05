@@ -96,7 +96,7 @@ image_upload_verification_controller
 - JPEG変換
 - 既存画像削除フラグ制御
 
-`image_upload_verification_controller` はsystem_admin限定のCropper.js移行検証専用とする。編集元JPEGへの変換は `controllers/image_upload_verification/source_normalizer.js`、HEICの判別と中止は同ディレクトリの `heic_converter.js`、ネイティブデコードは `image_upload_verification/heic_worker.js` に分離し、既存のFilePond・保存処理には接続しない。#1132の送信比較は同ディレクトリの `upload_client.js` が担当し、直接送信を選んだ場合だけRails同梱の `@rails/activestorage` を読み込む。既存フォームの自動direct uploadは開始しない。仕様・暫定上限・測定方法は `uploads_and_assets.md` の10〜13節、`heic_verification.md`、`image_upload_transport_verification.md` を参照する。
+`image_upload_verification_controller` はsystem_admin限定のCropper.js移行検証専用とする。編集元JPEGへの変換は通常画面向け共通moduleの `image_attachments/source_normalizer.js` を利用し、固定品質・固定上限、用途別最低寸法、世代管理、資源解放、コード付き結果を一つのAPIに集約する。検証専用の処理時間や比較設定は共通APIに含めない。HEICの判別と中止は `controllers/image_upload_verification/heic_converter.js`、ネイティブデコードは `image_upload_verification/heic_worker.js` に分離しており、後続Issueで通常画面向け共通moduleへ移す。既存のFilePond・保存処理にはまだ接続しない。#1132の送信比較は検証用 `upload_client.js` が担当し、直接送信を選んだ場合だけRails同梱の `@rails/activestorage` を読み込む。既存フォームの自動direct uploadは開始しない。仕様・上限・測定記録は `uploads_and_assets.md` の10〜13節、`heic_verification.md`、`image_upload_transport_verification.md` を参照する。
 
 Cropper.js移行後は、検証Controllerを通常画面へ直接流用せず、編集元正規化、HEIC変換、固定比率Cropper、フォーム連携を共通モジュールへ分離する。通常画面のStimulus Controller（画面操作を担当するクラス）は用途設定、現在の編集元・crop data、生成した2画像、削除・キャンセル状態を所有する。Rails multipartの通常フォームへ編集元JPEG・表示用JPEGを含め、Active Storage direct uploadは初期採用しない。確定仕様と解放条件は [Cropper.js画像アップロード確定設計](image_upload_cropper_architecture.md) を正とする。
 

@@ -41,7 +41,7 @@ heic-toのnpm表記はLGPL-3.0、LICENSE本文は**LGPL version 3 or later**。M
 2. HEIC選択時だけ同一origin（配信元）のWorkerを起動し、入力ArrayBufferを転送。通常のJPEG / PNG / WebPではWorker・decoderを読み込まない
 3. decoderがコンテナを解析して画像ハンドルを取得。**先頭画像の寸法を検査してから**HEVC画素を展開する。代表画像が2番目でも先頭を使い、動画・個別画像選択は扱わない
 4. libheifが反映した向きのRGBA（展開後の画素データ）をsRGB Canvasへ置き、白背景を合成。未クロップのフルサイズJPEGを品質0.94で生成する。手動の二重回転はしない。入力のEXIF/GPSをコピーしない
-5. そのJPEGを既存 `normalizeEditingSource` に渡し、用途別最低寸法・編集元上限・品質を適用。その出力だけをCropper.jsへ渡す。変換中間JPEGの品質は0.94固定、画面の品質選択は最終編集元の品質
+5. そのJPEGを共通の `ImageSourceNormalizer.normalize(file, { ratioKey })` に渡し、用途別最低寸法・固定の編集元上限・品質0.94を適用する。その出力だけをCropper.jsへ渡す。HEIC変換中間JPEGと最終編集元JPEGの品質は0.94固定で、画面から変更しない
 6. 成功・失敗・中止・時間切れでWorkerをterminateし、画像ハンドルとデコード画像・コンテキスト・一時Canvasを解放。中止・画像差し替え・Turbo cache前・disconnectでは古い結果を反映しない
 
 WorkerでOffscreenCanvas（画面外の描画領域）が使えない場合、**HEICのデコードはWorker内のまま**行い、RGBAを転送して画面側のCanvasでJPEGだけ生成する。Windows WebKitでこの経路を確認。`jpegEncoder` で実行経路を区別する。Workerからメイン処理への黙ったデコード切替や、未変換HEICをCropperへ渡す処理はない。

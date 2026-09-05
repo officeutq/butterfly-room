@@ -1,6 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import Cropper from "cropperjs"
-import { normalizeEditingSource } from "controllers/image_upload_verification/source_normalizer"
+import { ImageSourceNormalizer } from "image_attachments/source_normalizer"
 import { prepareHeicInput } from "controllers/image_upload_verification/heic_converter"
 import { UploadVerificationClient } from "controllers/image_upload_verification/upload_client"
 
@@ -257,8 +257,6 @@ export default class extends Controller {
     "heicLimit",
     "heicLimitWarning",
     "cancelConversion",
-    "normalizationQuality",
-    "normalizationMode",
     "normalizationReport",
     "normalizationWarning",
     "normalizedPreview",
@@ -293,6 +291,7 @@ export default class extends Controller {
     this.sourceLoadCleanup = null
     this.selectedFile = null
     this.normalizationTask ||= null
+    this.sourceNormalizer ||= new ImageSourceNormalizer()
     this.heicAbort = null
     this.normalizedRatioKey = null
     this.sourceBlob = null
@@ -341,12 +340,11 @@ export default class extends Controller {
     const isCurrent = () => !this.isDisconnected && generation === this.loadGeneration
     const config = this.currentConfig()
     const ratioKey = this.ratioTarget.value
-    const quality = Number(this.normalizationQualityTarget.value)
-    const mode = this.normalizationModeTarget.value
     const heicMode = this.heicModeTarget.value
     const limitMode = heicMode === "worker" ? this.heicLimitTarget.value : "standard"
     const previousTask = this.normalizationTask
     this.heicAbort?.abort()
+    this.sourceNormalizer.cancel()
     const abort = new AbortController()
     this.heicAbort = abort
     this.cancelConversionTarget.disabled = false
@@ -373,13 +371,16 @@ export default class extends Controller {
           signal: abort.signal, mode: heicMode, limitMode,
         })
         if (!isCurrent()) return
-        const { blob, report } = await normalizeEditingSource(prepared.file, {
-          minimumWidth: config.width, minimumHeight: config.height, quality, mode, isCurrent,
-        })
+        const normalized = await this.sourceNormalizer.normalize(prepared.file, { ratioKey })
         if (!isCurrent()) return
-        report.heicConversion = prepared.conversion
-        this.sourceBlob = blob
-        this.sourceObjectUrl = URL.createObjectURL(blob)
+        const report = {
+          input: normalized.input,
+          decoded: normalized.decoded,
+          source: normalized.source,
+          heicConversion: prepared.conversion,
+        }
+        this.sourceBlob = normalized.file
+        this.sourceObjectUrl = URL.createObjectURL(normalized.file)
         this.sourceTarget.src = this.sourceObjectUrl
         this.emptyTarget.hidden = true
         this.workspaceTarget.hidden = false
@@ -411,7 +412,7 @@ export default class extends Controller {
         this.cropperCanvas.addEventListener("actionend", this.boundStateUpdate)
         this.observeEditorResize()
         this.normalizedRatioKey = ratioKey
-        this.renderNormalization(report)
+        this.renderNormalization(report, normalized.warning)
         this.setControlsDisabled(false)
         this.captureState()
         const generated = await this.generatePreview()
@@ -452,21 +453,18 @@ export default class extends Controller {
     this.setStatus("変換を中止しました。画像を選び直してください。")
   }
 
-  renderNormalization(report) {
+  renderNormalization(report, warning) {
     const source = report.source
     this.normalizationReportTarget.value = JSON.stringify(report, null, 2)
     const inputName = report.heicConversion?.input.name || report.input.name
-    const conversionTime = report.heicConversion?.elapsedMilliseconds || 0
-    this.sourceMetadataTarget.textContent = `${inputName} / ${source.width}×${source.height} / ${this.formatBytes(source.bytes)} / quality ${source.quality} / ${round(report.milliseconds.total + conversionTime, 1)}ms`
+    this.sourceMetadataTarget.textContent = `${inputName} / ${source.width}×${source.height} / ${this.formatBytes(source.bytes)} / quality ${source.quality}`
     this.normalizedPreviewTarget.src = this.sourceObjectUrl
     this.normalizedPreviewTarget.hidden = false
     this.sourceDownloadTarget.href = this.sourceObjectUrl
     this.sourceDownloadTarget.download = `source-${this.ratioTarget.value}-${source.width}x${source.height}-q${source.quality}.jpg`
     this.sourceDownloadTarget.classList.remove("disabled")
     this.sourceDownloadTarget.removeAttribute("aria-disabled")
-    this.normalizationWarningTarget.textContent = source.enlarged
-      ? `小さい画像を約${round(source.scale, 2)}倍に拡大しました。登録は妨げませんが、細部の解像感は増えません。`
-      : source.reduced ? "大きい画像を暫定上限まで縮小しました。元寸法を保つ設定とも比較してください。" : ""
+    this.normalizationWarningTarget.textContent = warning?.message || ""
     this.normalizationWarningTarget.hidden = !this.normalizationWarningTarget.textContent
   }
 
@@ -878,6 +876,7 @@ export default class extends Controller {
     this.previewGeneration += 1
     this.heicAbort?.abort()
     this.heicAbort = null
+    this.sourceNormalizer?.cancel()
     this.cancelConversionTarget.disabled = true
     this.clearPendingSourceLoad()
     this.destroyCropper()

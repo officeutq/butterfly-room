@@ -4,16 +4,19 @@ const path = require("node:path")
 const test = require("node:test")
 const browsers = require("@playwright/test")
 
-const normalizer = fs.readFileSync(path.resolve(__dirname, "../../../app/javascript/controllers/image_upload_verification/source_normalizer.js"), "utf8")
+const normalizer = fs.readFileSync(path.resolve(__dirname, "../../../app/javascript/image_attachments/source_normalizer.js"), "utf8")
 
-test("browser normalization: three formats, EXIF 1–8, transparency, metadata and quality/size measurements", async (t) => {
+test("browser normalization: formats, EXIF 1–8, transparency, metadata, fixed limits and error recovery", async (t) => {
   const browserName = process.env.IMAGE_VERIFICATION_BROWSER || "chromium"
   const browser = await browsers[browserName].launch({ headless: true })
   try {
     const page = await browser.newPage()
     await page.route("http://normalizer.test/**", (route) => route.fulfill(new URL(route.request().url()).pathname === "/normalizer.js"
       ? { contentType: "text/javascript", body: normalizer }
-      : { contentType: "text/html", body: '<script type="module">import { normalizeEditingSource } from "/normalizer.js"; window.normalize = normalizeEditingSource</script>' }))
+      : {
+          contentType: "text/html",
+          body: '<script type="module">import { ImageSourceNormalizer } from "/normalizer.js"; const normalizer = new ImageSourceNormalizer(); window.normalize = (file, ratioKey) => normalizer.normalize(file, { ratioKey })</script>',
+        }))
     await page.goto("http://normalizer.test/")
     await page.waitForFunction(() => !!window.normalize)
     const results = await page.evaluate(async () => {
@@ -35,9 +38,6 @@ test("browser normalization: three formats, EXIF 1–8, transparency, metadata a
             context.fillStyle = `rgba(${seed & 255},${(seed >>> 8) & 255},${(seed >>> 16) & 255},0.5)`
             context.fillRect(seed % width, (seed >>> 12) % height, 4, 4)
           }
-          context.fillStyle = "white"
-          context.font = "40px sans-serif"
-          context.fillText("Source JPEG / 0123456789", 20, 60)
         } else {
           for (const [index, color] of ["#f00000", "#00f000", "#0000f0", "#f0f000"].entries()) {
             if (transparent && index === 3) continue
@@ -93,34 +93,55 @@ test("browser normalization: three formats, EXIF 1–8, transparency, metadata a
         const jpeg = new Uint8Array(await file.arrayBuffer())
         return new File([jpeg.slice(0, 2), segment, jpeg.slice(2)], `orientation-${orientation}.jpg`, { type: "image/jpeg" })
       }
-      const config = { minimumWidth: 1024, minimumHeight: 1024 }
+
       const formats = []
       for (const type of ["image/jpeg", "image/png", "image/webp"]) {
         const input = await fixture(320, 180, type, type !== "image/jpeg")
-        const result = await window.normalize(input, config)
-        formats.push({ report: result.report, colors: await pixels(result.blob), app1: await hasApp1(result.blob) })
+        const result = await window.normalize(input, "square")
+        formats.push({
+          input: result.input,
+          decoded: result.decoded,
+          source: result.source,
+          warning: result.warning,
+          colors: await pixels(result.file),
+          app1: await hasApp1(result.file),
+        })
       }
+
       const orientations = []
       const jpeg = await fixture(80, 40, "image/jpeg")
       for (let orientation = 1; orientation <= 8; orientation += 1) {
         const input = await withExif(jpeg, orientation)
-        const result = await window.normalize(input, config).catch((error) => {
+        const result = await window.normalize(input, "square").catch((error) => {
           throw new Error(`EXIF ${orientation}: ${error.message} / ${error.cause?.message}`)
         })
-        orientations.push({ orientation, inputApp1: await hasApp1(input), outputApp1: await hasApp1(result.blob), colors: await pixels(result.blob), decoded: result.report.decoded })
+        orientations.push({
+          orientation,
+          inputApp1: await hasApp1(input),
+          outputApp1: await hasApp1(result.file),
+          colors: await pixels(result.file),
+          decoded: result.decoded,
+          source: result.source,
+        })
       }
-      const measurements = []
-      const textured = await fixture(1000, 700, "image/png", false, true)
-      for (const quality of [0.9, 0.94, 0.98]) {
-        const result = await window.normalize(textured, { minimumWidth: 1200, minimumHeight: 630, quality })
-        measurements.push(result.report)
-      }
+
       const large = await fixture(6000, 4000, "image/jpeg", false, true)
-      for (const mode of ["bounded", "retain"]) {
-        const result = await window.normalize(large, { minimumWidth: 1200, minimumHeight: 630, mode })
-        measurements.push(result.report)
+      const largeResult = await window.normalize(large, "social")
+      let corruptError
+      try {
+        await window.normalize(new File(["broken"], "broken.jpg", { type: "image/jpeg" }), "square")
+      } catch (error) {
+        corruptError = { name: error.name, code: error.code }
       }
-      return { formats, orientations, measurements }
+      const recovered = await window.normalize(await fixture(320, 180, "image/png"), "social")
+
+      return {
+        formats,
+        orientations,
+        large: { source: largeResult.source, warning: largeResult.warning },
+        corruptError,
+        recovered: { source: recovered.source, warning: recovered.warning },
+      }
     })
     const palette = { R: [240, 0, 0], G: [0, 240, 0], B: [0, 0, 240], Y: [240, 240, 0], W: [255, 255, 255] }
     const expectColors = (actual, names) => names.forEach((name, index) => {
@@ -128,12 +149,14 @@ test("browser normalization: three formats, EXIF 1–8, transparency, metadata a
       assert.equal(actual[index][3], 255)
     })
     for (const result of results.formats) {
-      assert.equal(result.report.source.mimeType, "image/jpeg")
-      assert.equal(result.report.source.width, 1820)
-      assert.equal(result.report.source.height, 1024)
-      assert.equal(result.report.source.colorSpace, "srgb")
+      assert.equal(result.source.mimeType, "image/jpeg")
+      assert.equal(result.source.width, 1820)
+      assert.equal(result.source.height, 1024)
+      assert.equal(result.source.quality, 0.94)
+      assert.equal(result.source.colorSpace, "srgb")
+      assert.equal(result.warning.code, "source_enlarged")
       assert.equal(result.app1, false)
-      expectColors(result.colors, result.report.input.mimeType === "image/jpeg" ? ["R", "G", "B", "Y"] : ["R", "G", "B", "W"])
+      expectColors(result.colors, result.input.mimeType === "image/jpeg" ? ["R", "G", "B", "Y"] : ["R", "G", "B", "W"])
     }
     const orders = ["RGBY", "GRYB", "YBGR", "BYRG", "RBGY", "BRYG", "YGBR", "GYRB"]
     results.orientations.forEach((result, index) => {
@@ -141,18 +164,19 @@ test("browser normalization: three formats, EXIF 1–8, transparency, metadata a
       assert.equal(result.outputApp1, false)
       assert.equal(result.decoded.width, index < 4 ? 80 : 40)
       assert.equal(result.decoded.height, index < 4 ? 40 : 80)
+      assert.equal(result.source.quality, 0.94)
       expectColors(result.colors, [...orders[index]])
     })
-    const [q90, q94, q98, bounded, retain] = results.measurements
-    assert.ok(q90.source.bytes < q94.source.bytes && q94.source.bytes < q98.source.bytes)
-    assert.ok(bounded.source.width <= 4096 && bounded.source.width * bounded.source.height <= 8_000_000)
-    assert.equal(retain.source.width, 6000)
-    assert.equal(retain.source.height, 4000)
+    assert.ok(results.large.source.width <= 4096)
+    assert.ok(results.large.source.width * results.large.source.height <= 8_000_000)
+    assert.equal(results.large.warning.code, "source_reduced")
+    assert.deepEqual(results.corruptError, { name: "ImageSourceNormalizationError", code: "unsupported_image" })
+    assert.equal(results.recovered.source.width, 1200)
+    assert.equal(results.recovered.source.height, 675)
+    assert.equal(results.recovered.warning.code, "source_enlarged")
     t.diagnostic(`${browserName} ${browser.version()}`)
     t.diagnostic(`EXIF decode: ${[...new Set(results.orientations.map((result) => result.decoded.method))].join(", ")}`)
-    for (const report of [...results.formats.map((item) => item.report), ...results.measurements]) {
-      t.diagnostic(JSON.stringify({ input: report.input, source: report.source, mode: report.mode, milliseconds: report.milliseconds }))
-    }
+    t.diagnostic(JSON.stringify({ formats: results.formats.map(({ input, decoded, source, warning }) => ({ input, decoded, source, warning })), large: results.large, recovered: results.recovered }))
   } finally {
     await browser.close()
   }
