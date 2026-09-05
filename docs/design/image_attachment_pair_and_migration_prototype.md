@@ -1,6 +1,6 @@
 # 編集元・表示用の一体更新と既存画像移行の試作（#1133）
 
-> 本書はローカルDiskでの試作記録であり、実行可能な移行batchやステージング移行の完了記録ではない。編集元上限、保存名、multipart契約、段階的な環境実行は#1134で確定した [Cropper.js画像アップロード確定設計](image_upload_cropper_architecture.md) と [実装計画](image_upload_implementation_plan.md) を優先する。
+> 本書はローカルDiskでの試作記録である。実行可能な移行batchは#1161で`ImageAttachments::LegacyMigrationService`と`image_attachments:migrate_legacy_pairs`として実装した。現行の編集元上限、保存名、guard、段階的な環境実行は[Cropper.js画像アップロード確定設計](image_upload_cropper_architecture.md)と[既存画像を新方式へ移行する運用手順](../ops/legacy_image_pair_migration.md)を優先する。ステージング・本番での実行完了を本書から読み取らない。
 
 ## 範囲と結論
 

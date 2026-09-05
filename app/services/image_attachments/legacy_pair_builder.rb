@@ -4,24 +4,26 @@ require "mini_magick"
 require "tempfile"
 
 module ImageAttachments
-  # Prototype used to decide how legacy display images become independently
-  # stored editing sources and deterministic initial crops. It does not attach
-  # the generated blobs to production records.
+  # Converts one legacy display Blob into a validated, independently stored
+  # editing source and deterministic display image. Generated Blobs remain
+  # staged until LegacyMigrationService commits them to the target record.
   class LegacyPairBuilder
-    OUTPUTS = {
-      "square" => [ 1024, 1024 ],
-      "social" => [ 1200, 630 ]
-    }.freeze
     RATIOS = {
       "square" => [ 1, 1 ],
       "social" => [ 40, 21 ]
     }.freeze
     SUPPORTED_FORMATS = NormalizeService::SUPPORTED_FORMATS
-    MAX_SOURCE_DIMENSION = 8192
-    MAX_SOURCE_PIXELS = 32_000_000
+    MAX_INPUT_BYTES = 20.megabytes
+    MAX_INPUT_DIMENSION = 8192
+    MAX_INPUT_PIXELS = 32_000_000
+    MAX_INPUT_ASPECT_RATIO = 8
+    MAX_SOURCE_DIMENSION = PairValidator::MAX_SOURCE_EDGE
+    MAX_SOURCE_PIXELS = PairValidator::MAX_SOURCE_PIXELS
     SOURCE_QUALITY = 94
     DISPLAY_QUALITY = 90
     PROCESSING_TIMEOUT_SECONDS = 30
+
+    Upload = Data.define(:tempfile, :content_type)
 
     Result = Data.define(
       :source_blob,
@@ -31,31 +33,37 @@ module ImageAttachments
       :input_height,
       :source_width,
       :source_height,
-      :enlarged
+      :enlarged,
+      :reduced
     )
 
     class Error < StandardError; end
     class InvalidImageError < Error; end
     class UploadFailedError < Error; end
 
-    def initialize(source_blob:, ratio_key:)
-      @source_blob = source_blob
-      @ratio_key = ratio_key.to_s
-      @output_width, @output_height = OUTPUTS.fetch(@ratio_key) do
-        raise ArgumentError, "unknown ratio_key: #{@ratio_key}"
-      end
+    def initialize(record:, purpose:, legacy_blob:, blob_upload_service: StagedBlobUploadService)
+      @record = record
+      @purpose_name = purpose.to_sym
+      @purpose = record.image_attachment_purpose_for(@purpose_name)
+      @legacy_blob = legacy_blob
+      @ratio_key = @purpose.ratio_key.to_s
+      @output_width = Integer(@purpose.output_width)
+      @output_height = Integer(@purpose.output_height)
+      @blob_upload_service = blob_upload_service
       @pending_blobs = []
       @transferred = false
       @called = false
+
+      RATIOS.fetch(@ratio_key) { raise ArgumentError, "unknown ratio_key: #{@ratio_key}" }
     end
 
     def call(dry_run: false)
       raise Error, "builder instances cannot be reused" if @called
 
       @called = true
-      validate_source_blob!
+      validate_legacy_blob!
 
-      @source_blob.open do |input|
+      @legacy_blob.open do |input|
         input_image = identify(input.path)
         validate_input!(input_image)
 
@@ -68,23 +76,16 @@ module ImageAttachments
           Tempfile.create([ "legacy-display", ".jpg" ], binmode: true) do |display_file|
             build_display(source_file.path, display_file.path, crop)
             validate_display!(display_file.path)
+            crop_data = crop_data_for(crop, source_image)
+            validate_generated_pair!(source_file, display_file, crop_data)
 
             prepared_source_blob = nil
             display_blob = nil
             unless dry_run
-              prepared_source_blob = upload(source_file, filename: "source.jpg", image: source_image)
-              display_blob = upload(
-                display_file,
-                filename: "display.jpg",
-                image: SourceImage.new(
-                  format: "JPEG",
-                  width: @output_width,
-                  height: @output_height,
-                  orientation: "Undefined"
-                )
-              )
+              prepared_source_blob = upload(source_file, role: :source)
+              display_blob = upload(display_file, role: :display)
             end
-            crop_data = crop_data_for(crop, source_image, prepared_source_blob)
+            crop_data = crop_data.merge("sourceBlobId" => prepared_source_blob&.id)
 
             @transferred = true
             return Result.new(
@@ -95,7 +96,8 @@ module ImageAttachments
               input_height: input_image.height,
               source_width: source_image.width,
               source_height: source_image.height,
-              enlarged: source_image.width * source_image.height > input_image.width * input_image.height
+              enlarged: source_image.width * source_image.height > oriented_pixel_count(input_image),
+              reduced: source_image.width * source_image.height < oriented_pixel_count(input_image)
             )
           end
         end
@@ -112,9 +114,10 @@ module ImageAttachments
     SourceImage = Data.define(:format, :width, :height, :orientation)
     Crop = Data.define(:x, :y, :width, :height)
 
-    def validate_source_blob!
-      unless @source_blob.is_a?(ActiveStorage::Blob) && @source_blob.persisted? && @source_blob.service.exist?(@source_blob.key)
-        raise InvalidImageError, "source blob is missing"
+    def validate_legacy_blob!
+      unless @legacy_blob.is_a?(ActiveStorage::Blob) && @legacy_blob.persisted? &&
+          @legacy_blob.byte_size.between?(1, MAX_INPUT_BYTES) && @legacy_blob.service.exist?(@legacy_blob.key)
+        raise InvalidImageError, "legacy blob is missing or exceeds the byte limit"
       end
     end
 
@@ -137,21 +140,15 @@ module ImageAttachments
 
     def validate_input!(image)
       unless SUPPORTED_FORMATS.include?(image.format) && image.width.positive? && image.height.positive? &&
-          image.width <= MAX_SOURCE_DIMENSION && image.height <= MAX_SOURCE_DIMENSION &&
-          image.width * image.height <= MAX_SOURCE_PIXELS
+          image.width <= MAX_INPUT_DIMENSION && image.height <= MAX_INPUT_DIMENSION &&
+          image.width * image.height <= MAX_INPUT_PIXELS &&
+          [ image.width.fdiv(image.height), image.height.fdiv(image.width) ].max <= MAX_INPUT_ASPECT_RATIO
         raise InvalidImageError, "legacy image format or dimensions are unsupported"
       end
     end
 
     def prepare_source(input_path, output_path)
       input_image = identify(input_path)
-      if exact_copy_allowed?(input_image)
-        File.open(input_path, "rb") do |input|
-          File.open(output_path, "wb") { |output| IO.copy_stream(input, output) }
-        end
-        return
-      end
-
       target_width, target_height = prepared_dimensions(input_image)
       validate_prepared_dimensions!(target_width, target_height)
 
@@ -161,7 +158,7 @@ module ImageAttachments
         command.auto_orient
         # The legacy display may be smaller than the future output. Enlarge
         # only when needed, preserving the whole image and its aspect ratio.
-        command.resize("#{target_width}x#{target_height}!") if target_width != input_image.width || target_height != input_image.height
+        command.resize("#{target_width}x#{target_height}!")
         command.background("white")
         command.alpha("remove")
         command.alpha("off")
@@ -172,15 +169,20 @@ module ImageAttachments
       end
     end
 
-    def exact_copy_allowed?(image)
-      image.format == "JPEG" && image.width >= @output_width && image.height >= @output_height &&
-        image.orientation.in?(%w[Undefined TopLeft])
-    end
-
     def prepared_dimensions(image)
       width, height = oriented_dimensions(image)
-      scale = [ 1.0, @output_width.fdiv(width), @output_height.fdiv(height) ].max
-      [ (width * scale).ceil, (height * scale).ceil ]
+      required_scale = [ @output_width.fdiv(width), @output_height.fdiv(height) ].max
+      maximum_scale = [
+        MAX_SOURCE_DIMENSION.fdiv(width),
+        MAX_SOURCE_DIMENSION.fdiv(height),
+        Math.sqrt(MAX_SOURCE_PIXELS.fdiv(width * height))
+      ].min
+      if required_scale > maximum_scale
+        raise InvalidImageError, "legacy image cannot meet the minimum dimensions within source limits"
+      end
+
+      scale = [ [ 1.0, required_scale ].max, maximum_scale ].min
+      [ [ @output_width, (width * scale).floor ].max, [ @output_height, (height * scale).floor ].max ]
     end
 
     def oriented_dimensions(image)
@@ -198,7 +200,9 @@ module ImageAttachments
     end
 
     def validate_prepared_source!(image)
-      unless image.format == "JPEG" && image.width >= @output_width && image.height >= @output_height
+      unless image.format == "JPEG" && image.width >= @output_width && image.height >= @output_height &&
+          image.width <= MAX_SOURCE_DIMENSION && image.height <= MAX_SOURCE_DIMENSION &&
+          image.width * image.height <= MAX_SOURCE_PIXELS
         raise InvalidImageError, "prepared source does not meet minimum dimensions"
       end
     end
@@ -235,34 +239,38 @@ module ImageAttachments
       raise InvalidImageError, "display image dimensions are invalid"
     end
 
-    def upload(file, filename:, image:)
-      file.rewind
-      blob = ActiveStorage::Blob.build_after_unfurling(
-        io: file,
-        filename: filename,
-        content_type: "image/jpeg",
-        metadata: { identified: true, analyzed: true, width: image.width, height: image.height },
-        service_name: @source_blob.service_name,
-        identify: false
+    def validate_generated_pair!(source_file, display_file, crop_data)
+      source_file.rewind
+      display_file.rewind
+      PairValidator.new(purpose: @purpose).call(
+        source: Upload.new(tempfile: source_file, content_type: PairValidator::JPEG_CONTENT_TYPE),
+        display: Upload.new(tempfile: display_file, content_type: PairValidator::JPEG_CONTENT_TYPE),
+        crop_data:
       )
-      blob.save!
-      @pending_blobs << blob
-      file.rewind
-      blob.upload_without_unfurling(file)
-      raise UploadFailedError, "prepared blob was not stored" unless blob.service.exist?(blob.key)
+    rescue PairValidator::Invalid => error
+      raise InvalidImageError, "generated image pair is invalid (#{error.class.name})"
+    end
 
+    def upload(file, role:)
+      file.rewind
+      blob = @blob_upload_service.new(
+        record: @record,
+        purpose: @purpose_name,
+        role:,
+        upload: Upload.new(tempfile: file, content_type: PairValidator::JPEG_CONTENT_TYPE)
+      ).call
+      @pending_blobs << blob
       blob
-    rescue UploadFailedError
-      raise
+    rescue StagedBlobUploadService::UploadFailedError => error
+      raise UploadFailedError, "prepared blob upload failed (#{error.class.name})"
     rescue StandardError => error
       raise UploadFailedError, "prepared blob upload failed (#{error.class.name})"
     end
 
-    def crop_data_for(crop, source_image, source_blob)
+    def crop_data_for(crop, source_image)
       {
         "schemaVersion" => 1,
         "ratioKey" => @ratio_key,
-        "sourceBlobId" => source_blob&.id,
         "source" => { "width" => source_image.width, "height" => source_image.height },
         "crop" => { "x" => crop.x, "y" => crop.y, "width" => crop.width, "height" => crop.height },
         "zoom" => source_image.width.fdiv(crop.width).round(4),
@@ -277,8 +285,7 @@ module ImageAttachments
 
     def cleanup_pending_blobs
       @pending_blobs.each do |blob|
-        blob.reload
-        blob.purge unless blob.attachments.exists?
+        StagedBlobPurgeService.new(blob:).call
       rescue ActiveRecord::RecordNotFound
         nil
       rescue StandardError => error
@@ -291,8 +298,13 @@ module ImageAttachments
       command.limit("map", NormalizeService::MAP_LIMIT)
       command.limit("disk", NormalizeService::DISK_LIMIT)
       command.limit("thread", NormalizeService::THREAD_LIMIT.to_s)
-      command.limit("width", MAX_SOURCE_DIMENSION.to_s)
-      command.limit("height", MAX_SOURCE_DIMENSION.to_s)
+      command.limit("width", MAX_INPUT_DIMENSION.to_s)
+      command.limit("height", MAX_INPUT_DIMENSION.to_s)
+    end
+
+    def oriented_pixel_count(image)
+      width, height = oriented_dimensions(image)
+      width * height
     end
   end
 end
