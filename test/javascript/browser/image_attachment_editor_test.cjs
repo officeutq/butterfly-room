@@ -214,7 +214,23 @@ test("shared editor restores, stages re-edit/delete, cancels, and reconnects saf
         cropper: !!wrongController.cropper,
         status: wrongController.statusTarget.textContent,
       }
-      return { baseline, restored, submitAllowed, reedit, deletion, cancelled, reconnect, mismatch }
+
+      const legacy = await window.currentImage()
+      const legacyController = window.mountEditor({ currentDisplayUrl: legacy.currentDisplayUrl, ratioKey: "square" })
+      const legacyBaseline = {
+        preview: !legacyController.currentPreviewTarget.hidden,
+        edit: !legacyController.editButtonTarget.hidden,
+        deletion: !legacyController.deleteButtonTarget.hidden,
+      }
+      legacyController.removeImage()
+      const legacyDeletion = {
+        operation: legacyController.operationInputTarget.value,
+        visible: !legacyController.deletionNoticeTarget.hidden,
+      }
+      return {
+        baseline, restored, submitAllowed, reedit, deletion, cancelled, reconnect, mismatch,
+        legacyBaseline, legacyDeletion,
+      }
     })
 
     assert.deepEqual(result.baseline, { phase: "idle", preview: true, edit: true, deletion: false })
@@ -238,6 +254,77 @@ test("shared editor restores, stages re-edit/delete, cancels, and reconnects saf
     assert.equal(result.mismatch.operation, "")
     assert.equal(result.mismatch.cropper, false)
     assert.match(result.mismatch.status, /編集元画像がクロップ情報と一致しません/)
+    assert.deepEqual(result.legacyBaseline, { preview: true, edit: false, deletion: true })
+    assert.deepEqual(result.legacyDeletion, { operation: "delete", visible: true })
+    assert.deepEqual(environment.errors, [])
+  } finally {
+    await environment?.close()
+    await browser.close()
+  }
+})
+
+test("two profile editors stay independent at smartphone width and source load failure is non-destructive", async () => {
+  const browser = await browsers[process.env.IMAGE_VERIFICATION_BROWSER || "chromium"].launch({ headless: true })
+  let environment
+  try {
+    environment = await openImageAttachmentEditorPage(browser)
+    await environment.page.setViewportSize({ width: 390, height: 844 })
+    const result = await environment.page.evaluate(async () => {
+      const [avatar, cover] = window.mountEditors([
+        { ratioKey: "square" },
+        { ratioKey: "social" },
+      ])
+      const avatarFile = await window.imageFile({ width: 1200, height: 1200 })
+      await avatar.selectFile({ currentTarget: { files: [avatarFile] } })
+      await avatar.applyCrop()
+      const afterAvatar = {
+        avatar: avatar.operationInputTarget.value,
+        cover: cover.operationInputTarget.value,
+      }
+
+      const coverFile = await window.imageFile({ width: 1200, height: 630 })
+      await cover.selectFile({ currentTarget: { files: [coverFile] } })
+      const coverEditorWidth = cover.editorTarget.clientWidth
+      cover.cancelEdit()
+      const afterCoverCancel = {
+        avatar: avatar.operationInputTarget.value,
+        cover: cover.operationInputTarget.value,
+      }
+      const form = document.querySelector("#form")
+      let submitAllowed = false
+      form.addEventListener("submit", (event) => {
+        submitAllowed = !event.defaultPrevented
+        event.preventDefault()
+      }, { once: true })
+      form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }))
+      const mobile = {
+        viewport: innerWidth,
+        documentWidth: document.documentElement.scrollWidth,
+        editorWidths: [coverEditorWidth],
+      }
+
+      const missing = await window.currentImage()
+      missing.currentSourceUrl = "/missing-source.jpg"
+      const failed = window.mountEditor(missing)
+      await failed.editExisting()
+      const loadFailure = {
+        operation: failed.operationInputTarget.value,
+        preview: !failed.currentPreviewTarget.hidden,
+        workspace: !failed.workspaceTarget.hidden,
+        status: failed.statusTarget.textContent,
+      }
+      return { afterAvatar, afterCoverCancel, submitAllowed, mobile, loadFailure }
+    })
+
+    assert.deepEqual(result.afterAvatar, { avatar: "replace", cover: "" })
+    assert.deepEqual(result.afterCoverCancel, { avatar: "replace", cover: "" })
+    assert.equal(result.submitAllowed, true)
+    assert.ok(result.mobile.documentWidth <= result.mobile.viewport, JSON.stringify(result.mobile))
+    result.mobile.editorWidths.forEach((width) => assert.ok(width <= result.mobile.viewport))
+    assert.equal(result.loadFailure.operation, "")
+    assert.equal(result.loadFailure.preview, true)
+    assert.equal(result.loadFailure.workspace, false)
+    assert.match(result.loadFailure.status, /編集元画像を読み込めませんでした/)
     assert.deepEqual(environment.errors, [])
   } finally {
     await environment?.close()

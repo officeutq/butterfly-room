@@ -106,6 +106,19 @@ module ApplicationHelper
     end
   end
 
+  def image_attachment_editor_state(record, purpose)
+    configuration = record.image_attachment_purpose_for(purpose)
+    source = record.public_send(configuration.source_attachment)
+    display = record.public_send(configuration.display_attachment)
+
+    {
+      current_source_url: (rails_storage_proxy_path(source, disposition: "inline") if source.attached?),
+      current_display_url: (url_for(display) if display.attached?),
+      current_crop_data: record.public_send(configuration.crop_attribute),
+      expected: ImageAttachments::StagedPairUpdateService.capture(record:, purpose:).to_h
+    }
+  end
+
   # --- Layout helpers (Issue #212) ---
 
   def role_badge(user)

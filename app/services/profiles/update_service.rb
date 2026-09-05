@@ -5,6 +5,8 @@ module Profiles
     PURPOSES = %i[avatar cover].freeze
 
     class Error < StandardError; end
+    class StaleImageError < Error; end
+    class ImageUploadError < Error; end
 
     def initialize(
       user:,
@@ -41,7 +43,7 @@ module Profiles
            ImageAttachments::StagedPairUpdateService::Error => error
       retain_attributes_for_errors
       @user.errors.add(:base, error_message(error)) if @user.errors.empty?
-      raise Error, error.message
+      raise wrapped_error_class(error), error.message
     end
 
     private
@@ -96,6 +98,17 @@ module Profiles
         "画像を保存できませんでした。再度保存してください。"
       else
         error.message
+      end
+    end
+
+    def wrapped_error_class(error)
+      case error
+      when ImageAttachments::StagedPairUpdateService::StalePairError
+        StaleImageError
+      when ImageAttachments::StagedBlobUploadService::UploadFailedError
+        ImageUploadError
+      else
+        Error
       end
     end
   end

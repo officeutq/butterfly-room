@@ -130,6 +130,7 @@ export default class extends Controller {
       if (!this.isCurrent(generation)) return
 
       this.releaseEditor()
+      this.workspaceTarget.hidden = true
       this.revokeWorkingSourceObjectUrl()
       this.workingSourceFile = null
       this.fileInputTarget.value = ""
@@ -139,7 +140,7 @@ export default class extends Controller {
   }
 
   async editExisting() {
-    if (!this.hasCurrentImage()) return
+    if (!this.canEditCurrentImage()) return
 
     this.resetToBaseline({ announce: false })
     const generation = this.generation
@@ -161,6 +162,7 @@ export default class extends Controller {
       if (!this.isCurrent(generation)) return
 
       this.releaseEditor()
+      this.workspaceTarget.hidden = true
       this.phase = "idle"
       this.renderError(error.message || "現在の画像を再編集できませんでした。")
     }
@@ -275,7 +277,7 @@ export default class extends Controller {
   }
 
   removeImage() {
-    if (!this.hasCurrentImage()) return
+    if (!this.hasCurrentDisplayImage()) return
 
     this.resetToBaseline({ announce: false })
     this.operationInputTarget.value = "delete"
@@ -298,6 +300,7 @@ export default class extends Controller {
   validateFormSubmit(event) {
     if (this.phase === "processing" || this.phase.startsWith("editing-")) {
       event.preventDefault()
+      event.imageAttachmentEditorInvalid = true
       this.renderError("画像の構図を確定するか、画像編集をキャンセルしてから保存してください。")
       this.statusTarget.focus()
       return
@@ -314,6 +317,7 @@ export default class extends Controller {
     if (valid) return
 
     event.preventDefault()
+    event.imageAttachmentEditorInvalid = true
     this.renderError("画像の送信準備が完了していません。画像の変更をやり直してください。")
     this.statusTarget.focus()
   }
@@ -493,7 +497,7 @@ export default class extends Controller {
     this.deletionNoticeTarget.hidden = true
     this.undoButtonTarget.hidden = true
     this.workspaceTarget.hidden = true
-    const hasCurrent = this.hasCurrentImage()
+    const hasCurrent = this.hasCurrentDisplayImage()
     if (hasCurrent) {
       this.currentPreviewTarget.src = this.currentDisplayUrlValue
       this.currentPreviewTarget.hidden = false
@@ -503,7 +507,7 @@ export default class extends Controller {
       this.currentPreviewTarget.hidden = true
       this.previewEmptyTarget.hidden = false
     }
-    this.editButtonTarget.hidden = !hasCurrent
+    this.editButtonTarget.hidden = !this.canEditCurrentImage()
     this.deleteButtonTarget.hidden = !hasCurrent
     this.phase = "idle"
     this.renderWarning("")
@@ -519,9 +523,13 @@ export default class extends Controller {
     this.setInputFile(this.displayInputTarget, null)
   }
 
-  hasCurrentImage() {
-    return this.hasCurrentSourceUrlValue && this.currentSourceUrlValue.length > 0 &&
-      this.hasCurrentDisplayUrlValue && this.currentDisplayUrlValue.length > 0 &&
+  hasCurrentDisplayImage() {
+    return this.hasCurrentDisplayUrlValue && this.currentDisplayUrlValue.length > 0
+  }
+
+  canEditCurrentImage() {
+    return this.hasCurrentDisplayImage() &&
+      this.hasCurrentSourceUrlValue && this.currentSourceUrlValue.length > 0 &&
       this.hasCurrentCropDataValue && this.currentCropDataValue.length > 0 &&
       this.hasCurrentSourceBlobIdValue && Number.isSafeInteger(this.currentSourceBlobIdValue) &&
       this.currentSourceBlobIdValue > 0

@@ -1,11 +1,10 @@
 # Uploads / Assets 設計
 
-> 1〜9節は現在の本番FilePond経路、10〜14節は検証記録である。検証結果から確定したCropper.js移行後の目標仕様は [Cropper.js画像アップロード確定設計](image_upload_cropper_architecture.md) を正とする。実装用Issueが完了するまでは本書の現行仕様を変更済みとして扱わない。
+> 1〜9節はStore / Boothと移行中の互換処理に残るFilePond経路、10〜14節は検証記録である。Userプロフィールは#1156からCropper.js経路を利用する。検証結果から確定したCropper.js移行仕様は [Cropper.js画像アップロード確定設計](image_upload_cropper_architecture.md) を正とする。
 
 ## 1. 概要
 
-本アプリでは、プロフィール画像・ブース画像・店舗画像などの画像アップロードに FilePond を利用する。
-アップロード前にクライアントサイドでリサイズ・JPEG変換を行う。ただし、HEIC/HEIF はブラウザによって変換できないため、クライアント側の変換結果だけを保存可否の根拠にしない。
+Store / Booth画像はFilePond経路を利用する。Userプロフィールのavatar / coverは共通Cropper.js部品で固定比率編集し、HEIC / HEIFを含む入力からブラウザで編集元・表示用JPEGを生成してRails multipartで保存する。どちらの経路もブラウザの申告だけを保存可否の根拠にせず、Rails側で画像実体を再検査する。
 
 ---
 
@@ -340,7 +339,7 @@ Remove-Item Env:IMAGE_VERIFICATION_BROWSER
 
 HEIC入力は標準16MPを維持し、Worker専用の32MP比較を明示選択できる。これは24MP写真を試す高負荷な検証設定であり、本番上限の決定ではない。容量20MiB・長辺8192px・縦横比8:1・30秒制限・後続の既定800万画素への正規化は維持する。画面を開き直すと標準へ戻り、メインスレッド比較は常に4MPまで。JSONに実行した上限を記録する。
 
-通常経路もHEIC選択時だけ共通Workerを利用するが、個別フォームへの接続までは本番のFilePondとサーバー側HEIC正規化を維持する。#1155でプロフィール保存側はavatar / coverの新方式画像組と通常属性を一体更新できるようにし、UI切替まで既存`ImageAttachments::UpdateService`経路も排他的に維持する。実機横断確認は#1153を#1134の確定設計に対する本番公開gateとする。
+通常経路もHEIC選択時だけ共通Workerを利用する。#1155でプロフィール保存側はavatar / coverの新方式画像組と通常属性を一体更新できるようにし、#1156でプロフィールViewをCropper.jsへ切り替えた。既存`ImageAttachments::UpdateService`経路は撤去Issueまでサーバー互換として排他的に維持する。実機横断確認は#1153を#1134の確定設計に対する本番公開gateとする。
 
 ## 13. 2画像の送信方式・一時保存検証（#1132）
 
