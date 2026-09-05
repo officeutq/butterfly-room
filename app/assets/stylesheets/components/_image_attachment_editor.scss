@@ -1,0 +1,59 @@
+.image-attachment-editor {
+  --cropper-theme-color: #0d6efd;
+
+  &__preview {
+    align-items: center;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.75rem;
+    display: flex;
+    justify-content: center;
+    max-width: 40rem;
+    overflow: hidden;
+    padding: 1rem;
+    text-align: center;
+  }
+
+  &__preview--square {
+    aspect-ratio: 1 / 1;
+    max-width: 24rem;
+  }
+
+  &__preview--social {
+    aspect-ratio: 40 / 21;
+  }
+
+  &__preview-image {
+    height: 100%;
+    object-fit: contain;
+    width: 100%;
+  }
+
+  &__canvas {
+    background: #212529;
+    border: 2px solid transparent;
+    border-radius: 0.75rem;
+    height: min(60vh, 32rem);
+    min-height: 22rem;
+    overflow: hidden;
+    position: relative;
+  }
+
+  &__canvas:focus-visible {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    outline: 0;
+  }
+
+  &__canvas cropper-canvas {
+    height: 100%;
+    width: 100%;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .image-attachment-editor__canvas {
+    height: 24rem;
+    min-height: 18rem;
+  }
+}

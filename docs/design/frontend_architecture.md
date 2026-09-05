@@ -87,6 +87,7 @@ onboarding_controller
 image_upload_controller
 filepond_verification_controller
 image_upload_verification_controller
+image_attachment_editor_controller
 ```
 
 役割:
@@ -98,7 +99,7 @@ image_upload_verification_controller
 
 `image_upload_verification_controller` はsystem_admin限定のCropper.js移行検証専用とする。編集元JPEGへの変換は通常画面向け共通moduleの `image_attachments/source_normalizer.js` を利用し、固定品質・固定上限、用途別最低寸法、世代管理、資源解放、コード付き結果を一つのAPIに集約する。検証専用の処理時間や比較設定は共通APIに含めない。HEICの判別と中止は `controllers/image_upload_verification/heic_converter.js`、ネイティブデコードは `image_upload_verification/heic_worker.js` に分離しており、後続Issueで通常画面向け共通moduleへ移す。既存のFilePond・保存処理にはまだ接続しない。#1132の送信比較は検証用 `upload_client.js` が担当し、直接送信を選んだ場合だけRails同梱の `@rails/activestorage` を読み込む。既存フォームの自動direct uploadは開始しない。仕様・上限・測定記録は `uploads_and_assets.md` の10〜13節、`heic_verification.md`、`image_upload_transport_verification.md` を参照する。
 
-Cropper.js移行後は、検証Controllerを通常画面へ直接流用せず、編集元正規化、HEIC変換、固定比率Cropper、フォーム連携を共通モジュールへ分離する。通常画面のStimulus Controller（画面操作を担当するクラス）は用途設定、現在の編集元・crop data、生成した2画像、削除・キャンセル状態を所有する。Rails multipartの通常フォームへ編集元JPEG・表示用JPEGを含め、Active Storage direct uploadは初期採用しない。確定仕様と解放条件は [Cropper.js画像アップロード確定設計](image_upload_cropper_architecture.md) を正とする。
+#1150で通常画面向けの `image_attachment_editor_controller`、`shared/_image_attachment_editor.html.erb`、`image_attachments/cropper_editor.js` を追加した。共通フォームは用途設定、現在の編集元URL・表示用URL・crop data・編集開始時IDだけを外部から受け取り、新規・差し替え・再編集・削除を同じmultipart parameter契約へ変換する。固定選択枠、最小倍率、端補正、schema version 1の復元は `cropper_editor.js` に集約し、検証Controllerも同じ処理を利用する。個別のUser / Store / Boothフォームへの接続とHEIC / HEIF入力は後続Issueで行うため、この段階では現行FilePond経路を変更しない。Active Storage direct uploadは初期採用しない。確定仕様と解放条件は [Cropper.js画像アップロード確定設計](image_upload_cropper_architecture.md) を正とする。
 
 ---
 
@@ -223,7 +224,7 @@ data-favorite-sync-key-value
 - 背景白
 - HEIC / HEIF / WebP / PNG / JPEG を受け付ける
 
-移行後はCropper.js 2.2.0を利用し、ブラウザで生成した未クロップの編集元JPEG、固定比率の表示用JPEG、編集元ピクセル座標のcrop dataを同じRails multipartフォームで送る。アバターは1:1・1024×1024、Userカバー・Store・Boothは40:21・1200×630とする。Turboキャッシュ前と`disconnect`でCropper、Worker、Object URL等を破棄し、再接続時に二重初期化しない。詳細は [Cropper.js画像アップロード確定設計](image_upload_cropper_architecture.md) を参照する。
+移行後はCropper.js 2.2.0を利用し、ブラウザで生成した未クロップの編集元JPEG、固定比率の表示用JPEG、編集元ピクセル座標のcrop dataを同じRails multipartフォームで送る。アバターは1:1・1024×1024、Userカバー・Store・Boothは40:21・1200×630とする。`image_attachment_editor_controller` は確定前のファイルを通常フォームの非表示file inputへ設定し、`replace`では編集元と表示用、`reedit`では表示用だけ、`delete`では画像なしを送る。編集中のフォーム送信は止め、キャンセルでは保存対象を初期状態へ戻す。Turboキャッシュ前と`disconnect`でCropper、Object URL、event listener等を破棄し、再接続時に二重初期化しない。詳細は [Cropper.js画像アップロード確定設計](image_upload_cropper_architecture.md) を参照する。
 
 ---
 

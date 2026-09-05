@@ -81,6 +81,10 @@ crop dataはJSONBで保存し、schema version 1を次の形で扱う。
 
 1〜5は `image_attachments/source_normalizer.js` の `ImageSourceNormalizer` に集約する。`normalize(file, { ratioKey })` は固定仕様で編集元JPEG、入力・向き補正後・編集元の情報、拡大・縮小警告を返し、失敗時はコード付きエラーを返す。品質や処理上限、検証用の計測modeを呼び出し側から変更させない。
 
+6の固定比率編集、編集元座標とCropper.js変換の相互変換、最小倍率・端補正、schema version 1の検査は `image_attachments/cropper_editor.js` に集約する。通常フォームは `shared/_image_attachment_editor.html.erb` を描画し、`image_attachment_editor_controller` が現在の編集元・表示用・crop data・期待IDと、生成したmultipart file inputを管理する。個別フォームは `square` / `social` の用途と現在状態を渡し、Cropper.js固有の変換行列やDOM座標を永続parameterに含めない。
+
+構図の確定までは通常フォームの送信対象を更新せず、編集中の通常フォーム送信を拒否する。確定後は `replace` / `reedit` / `delete` と必要な画像だけを5節の契約へ設定し、取消時は編集開始時の表示と空の操作へ戻す。保存の成否は親フォームが扱う。
+
 入力変更、用途変更、処理再試行は最初の入力ファイルから行い、生成JPEGを繰り返し再圧縮しない。共通moduleが処理を世代番号で直列化し、古い非同期結果を反映しない。Turboキャッシュ前とStimulusの`disconnect`で `cancel()` / `dispose()` を呼び、Cropper、Worker、ImageBitmap、Object URL、event listenerを解放する。
 
 ### 4.2 HEIC / HEIF

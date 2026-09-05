@@ -9,7 +9,7 @@ async function openVerificationPage(browser, { strictCsp = false } = {}) {
   const view = read("app/views/system_admin/image_upload_verifications/show.html.erb").replace(/<%[\s\S]*?%>/g, "")
   const html = `<!doctype html><html><head><meta charset="utf-8">
     <style>.image-upload-verification__editor { width: 800px; height: 500px; } cropper-canvas { width: 100%; height: 100%; } [hidden] { display: none !important; }</style>
-    <script type="importmap" nonce="heic-test">{"imports":{"@hotwired/stimulus":"/stimulus.js","cropperjs":"/cropper.js","image_attachments/source_normalizer":"/source_normalizer.js","controllers/image_upload_verification/heic_converter":"/heic_converter.js","controllers/image_upload_verification/upload_client":"/upload_client.js"}}</script>
+    <script type="importmap" nonce="heic-test">{"imports":{"@hotwired/stimulus":"/stimulus.js","cropperjs":"/cropper.js","image_attachments/cropper_editor":"/cropper_editor.js","image_attachments/source_normalizer":"/source_normalizer.js","controllers/image_upload_verification/heic_converter":"/heic_converter.js","controllers/image_upload_verification/upload_client":"/upload_client.js"}}</script>
     </head><body>${view}<script type="module" nonce="heic-test">
     import Controller from "/controller.js"
     import { prepareHeicInput, convertInWorker } from "/heic_converter.js"
@@ -30,6 +30,7 @@ async function openVerificationPage(browser, { strictCsp = false } = {}) {
   const scripts = {
     "/controller.js": "app/javascript/controllers/image_upload_verification_controller.js",
     "/upload_client.js": "app/javascript/controllers/image_upload_verification/upload_client.js",
+    "/cropper_editor.js": "app/javascript/image_attachments/cropper_editor.js",
     "/source_normalizer.js": "app/javascript/image_attachments/source_normalizer.js",
     "/heic_converter.js": "app/javascript/controllers/image_upload_verification/heic_converter.js",
     "/worker.js": "app/javascript/image_upload_verification/heic_worker.js",

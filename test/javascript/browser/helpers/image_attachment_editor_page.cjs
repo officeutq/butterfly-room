@@ -1,0 +1,163 @@
+const fs = require("node:fs")
+const http = require("node:http")
+const path = require("node:path")
+
+const root = path.resolve(__dirname, "../../../..")
+const read = (file) => fs.readFileSync(path.join(root, file), "utf8")
+
+async function openImageAttachmentEditorPage(browser) {
+  const html = `<!doctype html><html><head><meta charset="utf-8">
+    <style>
+      [hidden] { display: none !important; }
+      .editor { width: 800px; height: 500px; }
+      cropper-canvas { width: 100%; height: 100%; }
+    </style>
+    <script type="importmap">{"imports":{"@hotwired/stimulus":"/stimulus.js","cropperjs":"/cropper.js","image_attachments/cropper_editor":"/cropper_editor.js","image_attachments/source_normalizer":"/source_normalizer.js"}}</script>
+    </head><body><script type="module">
+      import Controller from "/controller.js"
+
+      const markup = () => \`
+        <form id="form">
+          <section id="component">
+            <input type="file" data-image-attachment-editor-target="fileInput">
+            <img hidden data-image-attachment-editor-target="currentPreview">
+            <p data-image-attachment-editor-target="previewEmpty"></p>
+            <p hidden data-image-attachment-editor-target="deletionNotice"></p>
+            <button type="button" hidden data-image-attachment-editor-target="editButton"></button>
+            <button type="button" hidden data-image-attachment-editor-target="deleteButton"></button>
+            <button type="button" hidden data-image-attachment-editor-target="undoButton"></button>
+            <div hidden data-image-attachment-editor-target="workspace">
+              <div class="editor" data-image-attachment-editor-target="editor"><img data-image-attachment-editor-target="source"></div>
+              <button type="button" disabled data-image-attachment-editor-target="editorControl"></button>
+              <button type="button" disabled data-image-attachment-editor-target="editorControl applyButton"></button>
+            </div>
+            <p hidden data-image-attachment-editor-target="warning"></p>
+            <p tabindex="-1" data-image-attachment-editor-target="status"></p>
+            <input type="hidden" name="image[operation]" data-image-attachment-editor-target="operationInput">
+            <input type="file" name="image[source]" hidden data-image-attachment-editor-target="sourceInput">
+            <input type="file" name="image[display]" hidden data-image-attachment-editor-target="displayInput">
+            <input type="hidden" name="image[crop_data]" data-image-attachment-editor-target="cropDataInput">
+          </section>
+        </form>\`
+
+      window.mountEditor = (options = {}) => {
+        window.editor?.disconnect()
+        document.body.insertAdjacentHTML("afterbegin", markup())
+        document.querySelectorAll("#form ~ #form").forEach((element) => element.remove())
+        const controller = new Controller()
+        controller.element = document.querySelector("#component")
+        for (const name of Controller.targets) {
+          const elements = controller.element.querySelectorAll('[data-image-attachment-editor-target~="' + name + '"]')
+          controller[name + "Target"] = elements[0]
+          controller[name + "Targets"] = Array.from(elements)
+          controller["has" + name[0].toUpperCase() + name.slice(1) + "Target"] = elements.length > 0
+        }
+        controller.ratioKeyValue = options.ratioKey || "square"
+        controller.currentSourceUrlValue = options.currentSourceUrl || ""
+        controller.currentDisplayUrlValue = options.currentDisplayUrl || ""
+        controller.currentCropDataValue = options.currentCropData || ""
+        controller.currentSourceBlobIdValue = options.currentSourceBlobId || 0
+        controller.hasCurrentSourceUrlValue = !!options.currentSourceUrl
+        controller.hasCurrentDisplayUrlValue = !!options.currentDisplayUrl
+        controller.hasCurrentCropDataValue = !!options.currentCropData
+        controller.hasCurrentSourceBlobIdValue = Number.isSafeInteger(options.currentSourceBlobId) && options.currentSourceBlobId > 0
+        controller.connect()
+        window.editor = controller
+        return controller
+      }
+
+      window.imageFile = async ({ width, height, type = "image/png", name = "input.png" }) => {
+        const canvas = document.createElement("canvas")
+        canvas.width = width
+        canvas.height = height
+        const context = canvas.getContext("2d")
+        context.fillStyle = "rgb(20, 80, 160)"
+        context.fillRect(0, 0, width, height)
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, type, 0.94))
+        canvas.width = 0
+        canvas.height = 0
+        return new File([blob], name, { type })
+      }
+
+      window.currentImage = async ({ ratioKey = "social", sourceBlobId = 42, stateSourceBlobId = sourceBlobId } = {}) => {
+        const file = await window.imageFile({ width: 1421, height: 800, type: "image/jpeg", name: "source.jpg" })
+        const sourceUrl = URL.createObjectURL(file)
+        const displayUrl = URL.createObjectURL(file)
+        const crop = ratioKey === "square"
+          ? { x: 310.5, y: 0, width: 800, height: 800 }
+          : { x: 100, y: 100, width: 1200, height: 630 }
+        const output = ratioKey === "square"
+          ? { width: 1024, height: 1024, mimeType: "image/jpeg", quality: 0.9 }
+          : { width: 1200, height: 630, mimeType: "image/jpeg", quality: 0.9 }
+        const state = {
+          schemaVersion: 1,
+          ratioKey,
+          sourceBlobId: stateSourceBlobId,
+          source: { width: 1421, height: 800 },
+          crop,
+          zoom: Math.round((1421 / crop.width) * 10000) / 10000,
+          output,
+        }
+        return {
+          currentSourceUrl: sourceUrl,
+          currentDisplayUrl: displayUrl,
+          currentCropData: JSON.stringify(state),
+          currentSourceBlobId: sourceBlobId,
+          ratioKey,
+        }
+      }
+
+      window.mountEditor({ ratioKey: "square" })
+      window.ready = true
+    </script></body></html>`
+  const scripts = {
+    "/controller.js": "app/javascript/controllers/image_attachment_editor_controller.js",
+    "/cropper_editor.js": "app/javascript/image_attachments/cropper_editor.js",
+    "/source_normalizer.js": "app/javascript/image_attachments/source_normalizer.js",
+    "/cropper.js": "node_modules/cropperjs/dist/cropper.esm.js",
+  }
+  const server = http.createServer((request, response) => {
+    const pathname = new URL(request.url, "http://127.0.0.1").pathname
+    if (pathname === "/") {
+      response.setHeader("Content-Type", "text/html; charset=utf-8")
+      response.end(html)
+    } else if (pathname === "/stimulus.js") {
+      response.setHeader("Content-Type", "text/javascript")
+      response.end(`export class Controller {
+        dispatch(name, { detail } = {}) {
+          const event = new CustomEvent("image-attachment-editor:" + name, { bubbles: true, detail })
+          this.element.dispatchEvent(event)
+          return event
+        }
+      }`)
+    } else if (scripts[pathname]) {
+      response.setHeader("Content-Type", "text/javascript")
+      response.end(read(scripts[pathname]))
+    } else {
+      response.writeHead(404)
+      response.end()
+    }
+  })
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve))
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
+  const errors = []
+  page.on("pageerror", (error) => errors.push(error.message))
+  try {
+    await page.goto(`http://127.0.0.1:${server.address().port}/`)
+    await page.waitForFunction(() => window.ready)
+    return {
+      page,
+      errors,
+      close: async () => {
+        await page.close()
+        await new Promise((resolve) => server.close(resolve))
+      },
+    }
+  } catch (error) {
+    await page.close()
+    await new Promise((resolve) => server.close(resolve))
+    throw error
+  }
+}
+
+module.exports = { openImageAttachmentEditorPage }
