@@ -5,7 +5,8 @@ class UsersController < ApplicationController
   before_action :clear_guest_unauthenticated_alert, only: %i[show]
 
   def show
-    @user = visible_users.find(params[:id])
+    @user = visible_users.with_attached_cover_image.find(params[:id])
+    set_user_meta_tags
 
     @cast_booths = []
     @admin_stores = []
@@ -72,5 +73,39 @@ class UsersController < ApplicationController
     return User.active if user_signed_in?
 
     User.public_profiles
+  end
+
+  def set_user_meta_tags
+    brand_name = "Butterflyve（バタフライブ）"
+    name = view_context.display_name_or_anonymous(@user)
+    description = @user.bio.to_s.squish.presence || "#{name}のプロフィールです。"
+    description = description.truncate(160)
+    image = if @user.cover_image.attached?
+      url_for(@user.cover_image)
+    else
+      view_context.image_url("no_image_logo.png")
+    end
+    publicly_visible = User.public_profiles.where(id: @user.id).exists?
+
+    set_meta_tags(
+      title: name,
+      description:,
+      noindex: !publicly_visible,
+      nofollow: !publicly_visible,
+      canonical: user_url(@user),
+      og: {
+        title: "#{name} | #{brand_name}",
+        description:,
+        type: "profile",
+        url: user_url(@user),
+        image:
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: "#{name} | #{brand_name}",
+        description:,
+        image:
+      }
+    )
   end
 end

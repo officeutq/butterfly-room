@@ -665,7 +665,7 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     refute_includes body, "Hidden No Admin Membership"
   end
 
-  test "並び順: users は display_name → avatar → bio → id の優先順で表示される" do
+  test "並び順: users は display_name → cover → bio → id の優先順で表示される" do
     customer = create_user!(email: "user_profile_order_customer@example.com", role: :customer)
 
     plain_old = create_user!(email: "user_profile_order_plain_old@example.com", role: :cast)
@@ -674,20 +674,20 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     plain_new = create_user!(email: "user_profile_order_plain_new@example.com", role: :cast)
     plain_new.update!(display_name: "Profile Plain New Id")
 
-    bio_without_avatar = create_user!(email: "user_profile_order_bio@example.com", role: :cast)
-    bio_without_avatar.update!(display_name: "Profile Bio Without Avatar", bio: "Bio Without Avatar Marker")
+    bio_without_cover = create_user!(email: "user_profile_order_bio@example.com", role: :cast)
+    bio_without_cover.update!(display_name: "Profile Bio Without Cover", bio: "Bio Without Cover Marker")
 
-    avatar_without_bio = create_user!(email: "user_profile_order_avatar@example.com", role: :cast)
-    avatar_without_bio.update!(display_name: "Profile Avatar Without Bio")
-    attach_image!(avatar_without_bio.avatar)
+    cover_without_bio = create_user!(email: "user_profile_order_cover@example.com", role: :cast)
+    cover_without_bio.update!(display_name: "Profile Cover Without Bio")
+    attach_image!(cover_without_bio.cover_image)
 
-    avatar_with_bio = create_user!(email: "user_profile_order_full@example.com", role: :cast)
-    avatar_with_bio.update!(display_name: "Profile Avatar With Bio", bio: "Avatar With Bio Marker")
-    attach_image!(avatar_with_bio.avatar)
+    cover_with_bio = create_user!(email: "user_profile_order_full@example.com", role: :cast)
+    cover_with_bio.update!(display_name: "Profile Cover With Bio", bio: "Cover With Bio Marker")
+    attach_image!(cover_with_bio.cover_image)
 
     unnamed_full = create_user!(email: "user_profile_order_unnamed@example.com", role: :cast)
     unnamed_full.update!(bio: "Unnamed Full Profile Marker")
-    attach_image!(unnamed_full.avatar)
+    attach_image!(unnamed_full.cover_image)
 
     deleted_full = create_user!(email: "user_profile_order_deleted@example.com", role: :cast)
     deleted_full.update!(
@@ -695,7 +695,7 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
       bio: "Deleted Full Profile Marker",
       deleted_at: Time.current
     )
-    attach_image!(deleted_full.avatar)
+    attach_image!(deleted_full.cover_image)
 
     login_as(customer, scope: :user)
 
@@ -704,9 +704,9 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
 
     body = @response.body
 
-    assert_operator body.index(avatar_with_bio.display_name), :<, body.index(avatar_without_bio.display_name)
-    assert_operator body.index(avatar_without_bio.display_name), :<, body.index(bio_without_avatar.display_name)
-    assert_operator body.index(bio_without_avatar.display_name), :<, body.index(plain_new.display_name)
+    assert_operator body.index(cover_with_bio.display_name), :<, body.index(cover_without_bio.display_name)
+    assert_operator body.index(cover_without_bio.display_name), :<, body.index(bio_without_cover.display_name)
+    assert_operator body.index(bio_without_cover.display_name), :<, body.index(plain_new.display_name)
     assert_operator body.index(plain_new.display_name), :<, body.index(plain_old.display_name)
     assert_operator body.index(plain_old.display_name), :<, body.index(unnamed_full.bio)
     refute_includes body, deleted_full.display_name

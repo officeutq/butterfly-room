@@ -405,6 +405,7 @@ end
 * `home#show` のtitle、description、canonical、OGP、非表示H1はサービス公開トップとして設定し、ドメインルートを示す `WebSite` 構造化データを出力する。既存の表示要素と配置は変更しない
 * `home#welcome` のtitle、description、canonical、OGPはログイン・視聴者アカウント新規作成の案内ページとして設定し、`WebSite` 構造化データは出力しない
 * `stores#show` のdescriptionとOGP descriptionは `Stores::MetaDescriptionBuilder` で同一内容を生成する。登録済みの店舗名・エリア・業態の日本語表示名・営業時間・店舗説明だけを使用し、店舗説明の空白を正規化して最終結果を160文字以内とする。業態の「その他」は未入力として扱い、住所全文は使用しない
+* `users#show` のカード・ヒーロー領域・OGPは1200x630pxの表示用`cover_image`を利用し、小型アイコン用の`avatar`や再編集用の`cover_image_source`を利用しない。カバー未設定時は共通ロゴへフォールバックする。公開プロフィールにはcanonicalと`profile` OGPを設定し、ログイン中の本人等だけが閲覧できる非公開プロフィールには`noindex,nofollow`を設定する
 * sitemapは `/`、`/welcome`、`Store.published` の店舗詳細URLを列挙する。`noindex` の共有専用URLは追加しない
 
 ---

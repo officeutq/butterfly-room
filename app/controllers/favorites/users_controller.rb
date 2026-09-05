@@ -10,7 +10,7 @@ module Favorites
         current_user
           .favorite_users
           .joins(:target_user)
-          .includes(target_user: [ { avatar_attachment: :blob } ])
+          .includes(target_user: [ { cover_image_attachment: :blob } ])
           .order(created_at: :desc, id: :desc)
 
       if @q.present?

@@ -113,7 +113,7 @@ native file inputの`accept`には各形式の拡張子とMIME typeを併記し�
 適用先と保存上限は次のとおりとする。
 
 - `Admin::StoresController#update`: `thumbnail`、1920x1080
-- `ProfilesController#update`: `avatar`、1024x1024
+- `ProfilesController#update`: 旧方式互換の`avatar`、1024x1024。通常プロフィール画面は新方式の`avatar_image_pair` / `cover_image_pair`を利用する
 - `Cast::BoothsController#update`: `thumbnail_image`、1920x1080
 - `Admin::BoothsController#create`: `thumbnail_image`、1920x1080
 
@@ -128,6 +128,8 @@ native file inputの`accept`には各形式の拡張子とMIME typeを併記し�
 - 事前生成前に要求された場合は初回アクセス時に生成し、生成済みvariantを以後再利用する
 - 共有操作ごとの再変換、SNS別variant、cache bust parameterは設けない
 - サムネイル未設定時は、既存ロゴを中央配置した1200x630pxの `booth-share-ogp.jpg` を、ブース単位・配信セッション単位の共有コンテキスト固有URLから無変換で配信する
+
+User公開プロフィールのOGP画像には、Cropper.jsで生成・保存した1200x630pxの`cover_image`を再変換せず使用する。`cover_image`未設定時はカード・プロフィールのヒーロー領域と同じ共通ロゴ`no_image_logo.png`へフォールバックする。小型アイコン用の`avatar`や再編集用の`cover_image_source`はOGPへ使用しない。
 
 ### 4.4 実行環境
 

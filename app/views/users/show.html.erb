@@ -1,9 +1,9 @@
 <div class="user-show">
   <div class="user-show-hero">
-    <% if @user.avatar.attached? %>
-      <%= image_tag @user.avatar,
+    <% if @user.cover_image.attached? %>
+      <%= image_tag @user.cover_image,
             class: "user-show-hero-image",
-            alt: display_name_or_anonymous(@user) %>
+            alt: "#{display_name_or_anonymous(@user)}のカバー画像" %>
     <% else %>
       <div class="user-show-hero-placeholder">
         <%= image_tag "no_image_logo.png", class: "no-image-logo", alt: "画像なし" %>
