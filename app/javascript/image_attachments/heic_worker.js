@@ -1,4 +1,4 @@
-// Verification-only adapter for the unmodified CSP build shipped by heic-to 1.5.2.
+// Replaceable adapter for the unmodified CSP build shipped by heic-to 1.5.2.
 // See docs/design/heic_verification.md for version, license, and limitations.
 export const HEIC_LIMITS = Object.freeze({ bytes: 20 * 1024 ** 2, pixels: 16_000_000, comparisonPixels: 32_000_000, edge: 8192, images: 20, mainPixels: 4_000_000 })
 

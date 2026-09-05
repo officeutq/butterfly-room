@@ -18,6 +18,36 @@ export function isHeicNamed(file) {
   return /^image\/(heic|heif)(-sequence)?$/i.test(file.type) || /\.hei[cf]$/i.test(file.name)
 }
 
+export class ImageHeicConverter {
+  constructor({ workerUrl, decoderUrl } = {}) {
+    this.workerUrl = workerUrl
+    this.decoderUrl = decoderUrl
+    this.abortController = null
+  }
+
+  async prepare(file) {
+    this.cancel()
+    const abortController = new AbortController()
+    this.abortController = abortController
+    try {
+      return await prepareHeicInput(file, {
+        workerUrl: this.workerUrl,
+        decoderUrl: this.decoderUrl,
+        signal: abortController.signal,
+        mode: "worker",
+        limitMode: "large",
+      })
+    } finally {
+      if (this.abortController === abortController) this.abortController = null
+    }
+  }
+
+  cancel() {
+    this.abortController?.abort()
+    this.abortController = null
+  }
+}
+
 function aborted() { return new DOMException("変換を中止しました。", "AbortError") }
 
 export function convertInWorker(buffer, { workerUrl, decoderUrl, signal, limitMode = "standard", timeoutMs = TIMEOUT_MS }) {
@@ -61,6 +91,9 @@ export async function prepareHeicInput(file, { workerUrl, decoderUrl, signal, mo
   if (!brand) {
     if (isHeicNamed(file)) throw new Error("HEIC / HEIFの実体を確認できません。対応外形式または破損ファイルです。")
     return { file, conversion: null }
+  }
+  if (![workerUrl, decoderUrl].every((url) => typeof url === "string" && url.length > 0)) {
+    throw new Error("HEIC変換モジュールのURLを確認できません。")
   }
   const started = performance.now()
   const buffer = await file.arrayBuffer()

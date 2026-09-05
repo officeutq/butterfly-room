@@ -1,6 +1,6 @@
 <div class="container py-4 image-upload-verification"
      data-controller="image-upload-verification"
-     data-image-upload-verification-heic-worker-url-value="<%= asset_path('image_upload_verification/heic_worker.js') %>"
+     data-image-upload-verification-heic-worker-url-value="<%= asset_path('image_attachments/heic_worker.js') %>"
      data-image-upload-verification-heic-decoder-url-value="<%= asset_path('heic-to/src/lib/libheif-without-unsafe-eval.js') %>"
      data-image-upload-verification-upload-url-value="<%= system_admin_image_upload_verification_runs_path %>"
      data-action="turbo:before-cache@document->image-upload-verification#beforeCache">
@@ -74,7 +74,7 @@
                     data-image-upload-verification-target="cancelConversion"
                     data-action="image-upload-verification#cancelConversion">変換を中止</button>
             <p class="form-text mb-0 mt-2">実機では両方の用途で指移動・ピンチ・縮小下限・JSON復元・画面回転・画像差し替え・画面往復を確認してください。端末名・OS・ブラウザ・結果と測定JSONをIssue #1131へ記録します。PC上の検証を実機確認とは扱いません。</p>
-            <p class="form-text mb-0 mt-2">検証候補: heic-to 1.5.2内のlibheif 1.22.2（LGPL-3.0以降）。<a href="/licenses/heic-verification.txt" target="_blank" rel="noopener">ライセンス・ソース情報</a></p>
+            <p class="form-text mb-0 mt-2">採用ライブラリ: heic-to 1.5.2内のlibheif 1.22.2（LGPL-3.0以降）。<a href="/licenses/heic-verification.txt" target="_blank" rel="noopener">ライセンス・ソース情報</a></p>
           </details>
 
           <div class="image-upload-verification__empty mt-4"

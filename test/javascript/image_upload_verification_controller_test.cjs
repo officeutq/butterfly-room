@@ -36,7 +36,7 @@ function loadController() {
     "class ImageSourceNormalizer { cancel() {} }"
   )
   controllerSource = controllerSource.replace(
-    'import { prepareHeicInput } from "controllers/image_upload_verification/heic_converter"',
+    'import { prepareHeicInput } from "image_attachments/heic_converter"',
     ""
   )
   controllerSource = controllerSource.replace(

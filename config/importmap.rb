@@ -14,5 +14,6 @@ pin "lp_analytics/event_sender"
 pin "image_attachments/multipart_client"
 pin "image_attachments/cropper_editor"
 pin "image_attachments/source_normalizer"
+pin "image_attachments/heic_converter"
 
 pin "banuba-web-sdk", to: "/banuba/sdk/BanubaSDK.browser.esm.js"

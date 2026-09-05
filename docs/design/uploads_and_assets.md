@@ -235,7 +235,7 @@ FilePondからCropper.jsへ移行する前段として、`/system_admin/image_up
 
 当初の検証対象はJPEG / PNG / WebP。#1131でHEIC / HEIFのブラウザJPEG変換を追加した（12節参照）。#1132のActive Storage保存は一時検証だけで、本番添付・既存画像移行は未実装。現行のFilePond経路には影響させない。
 
-#1150で、検証画面から固定比率・最小倍率・端補正・crop data復元を `image_attachments/cropper_editor.js` へ分離し、通常画面向けの `image_attachment_editor_controller` と共通partialを追加した。共通partialは5節の現行FilePond入力とは別で、個別フォームへ接続する後続Issueまでは通常経路に表示しない。HEIC / HEIFの通常画面入力も#1152で接続する。
+#1150で、検証画面から固定比率・最小倍率・端補正・crop data復元を `image_attachments/cropper_editor.js` へ分離し、通常画面向けの `image_attachment_editor_controller` と共通partialを追加した。#1152でHEIC / HEIF変換を `image_attachments/heic_converter.js` と独立Workerへ移し、通常UIはWorker・3200万画素上限に固定した。JPEG / PNG / WebPではdecoderを読み込まず、HEIC / HEIFはフルサイズJPEGへ変換してから共通正規化へ渡す。共通partialは5節の現行FilePond入力とは別で、個別フォームへ接続する後続Issueまでは通常経路に表示しない。
 
 縮小下限・状態復元・JPEG出力を実際のCropper.jsとChromiumで確認する場合は、既存のPlaywright用Chromiumを利用して次を実行する。Railsやログインは不要で、テスト専用の画像を使う。
 
@@ -336,11 +336,11 @@ Remove-Item Env:IMAGE_VERIFICATION_BROWSER
 
 ## 12. HEIC / HEIFブラウザ変換の検証（#1131）
 
-検証画面だけで、HEIC / HEIF → フルサイズJPEG → 11節の編集元正規化 → Cropper.jsの順に処理する。Worker（画面操作と分離した処理）の比較、中止、変換測定を追加した。選定理由・暫定上限・PC自動テスト結果・未実施の実機チェックは [heic_verification.md](heic_verification.md) に集約する。
+検証画面で、HEIC / HEIF → フルサイズJPEG → 11節の編集元正規化 → Cropper.jsの順に処理を検証した。#1152で同じ変換を通常フォーム向け共通moduleへ移し、共通partialからライセンス・ソース情報へ到達できるようにした。Worker（画面操作と分離した処理）の比較、中止、変換測定は検証画面に残す。選定理由・上限・PC自動テスト結果・未実施の実機チェックは [heic_verification.md](heic_verification.md) に集約する。
 
 HEIC入力は標準16MPを維持し、Worker専用の32MP比較を明示選択できる。これは24MP写真を試す高負荷な検証設定であり、本番上限の決定ではない。容量20MiB・長辺8192px・縦横比8:1・30秒制限・後続の既定800万画素への正規化は維持する。画面を開き直すと標準へ戻り、メインスレッド比較は常に4MPまで。JSONに実行した上限を記録する。
 
-本検証コード自体は、本番のFilePond、サーバー側HEIC正規化、Active Storage、`ImageAttachments::UpdateService` の挙動を変更しない。検証時点で残った実機横断確認と配布条件は#1152・#1153へ移し、#1134の確定設計に対する本番公開gateとする。
+通常経路もHEIC選択時だけ共通Workerを利用するが、個別フォームへの接続までは本番のFilePond、サーバー側HEIC正規化、Active Storage、`ImageAttachments::UpdateService` の挙動を変更しない。実機横断確認は#1153を#1134の確定設計に対する本番公開gateとする。
 
 ## 13. 2画像の送信方式・一時保存検証（#1132）
 

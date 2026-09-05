@@ -1,8 +1,8 @@
 # HEIC / HEIFブラウザ変換の検証（#1131）
 
-更新: 2026-09-04。親Epic #1128 / 大Epic #1127。
+更新: 2026-09-05。親Epic #1128 / 大Epic #1127。
 
-本書は**保存を伴わない検証実装**の記録。iPhone 15 Proの12MP・24MP実撮影HEICはユーザー報告で変換と連続差し替えに成功した。実機操作の横断確認、Android Chrome、配布条件確認は#1152・#1153へ引き継いだ。本番採用値と通常経路は#1134で確定した [Cropper.js画像アップロード確定設計](image_upload_cropper_architecture.md) を優先する。本検証自体は本番のFilePond・Active Storage・`ImageAttachments::UpdateService`を変更していない。
+本書は検証結果と、その結果を#1152で通常フォーム向け共通moduleへ反映した記録。iPhone 15 Proの12MP・24MP実撮影HEICはユーザー報告で変換と連続差し替えに成功した。配布条件の技術対応は#1152、通常フォームの実機横断確認は#1153で扱う。本番採用値と通常経路は#1134で確定した [Cropper.js画像アップロード確定設計](image_upload_cropper_architecture.md) を優先する。個別フォーム接続までは本番のFilePond・Active Storage・`ImageAttachments::UpdateService`を変更しない。
 
 ## ライブラリ比較と暫定選定
 
@@ -16,7 +16,7 @@
 
 heic-toは **1.5.2を完全固定**。高水準の `heicTo` / `heic-to/next` は内部Workerを呼出側から破棄できず、画素展開前の上限判定も挟めないため、そのまま使わない。パッケージ内の無改変 `src/lib/libheif-without-unsafe-eval.js` を、アプリ側で所有する独立したmodule Worker（モジュール形式の別スレッド）から読み込む。
 
-これはパッケージの内部パスと低水準APIを使う**検証用アダプター**で、長期互換性の保証はない。更新時はパス、解放API、画素展開前の寸法判定、CSP、回転・透過・複数画像テストを再確認する。本番では同版の独立decoder配布を続けるかも含め#1134で決める。`libheif-js` 系の直接採用も代替候補として残す。
+これはパッケージの内部パスと低水準APIを使うアダプターで、長期互換性の保証はない。#1152で `image_attachments/heic_converter.js` の `ImageHeicConverter` を通常UIとのAPI境界とし、低水準実装を `image_attachments/heic_worker.js` に閉じ込めた。更新時はパス、解放API、画素展開前の寸法判定、CSP、回転・透過・複数画像テストを再確認する。条件を満たす同じ入出力のdecoderへ差し替え可能とし、`libheif-js` 系の直接採用も代替候補として残す。
 
 一次資料:
 
@@ -31,13 +31,13 @@ heic-toは **1.5.2を完全固定**。高水準の `heicTo` / `heic-to/next` は
 heic-toのnpm表記はLGPL-3.0、LICENSE本文は**LGPL version 3 or later**。MITとして扱わない。含まれるlibheif/libde265もLGPLである。
 
 - 無改変decoderをアプリ本体と結合せず、独立モジュールとして自サイトから配信する
-- 検証画面から `/licenses/heic-verification.txt` へリンクし、LGPL/GPL本文、対応する版のソース・ビルド手順を提示する
-- 配布時のソース提供・再リンク/置換・利用条件・特許等を含む最終的な採用可否は別途確認する。検証実装やリンク設置だけで法的適合を保証しない
-- npm auditでは既存の `immutable` / `nanoid` / `picomatch` にhigh 3件を検出した。今回追加したheic-toのnpm依存は0件で、これらの更新は本Issueで行わない。ネイティブdecoder全体の安全性を保証する監査でもない
+- 検証画面と通常の画像編集UIから `/licenses/heic-verification.txt` へリンクし、LGPL/GPL本文、対応する版のソース・ビルド手順、npm完全版、配布decoderとLICENSEのchecksumを提示する
+- 配布時のソース提供・再リンク/置換・利用条件・特許等を含む法的適合を本実装やリンク設置だけで保証しない
+- 2026-09-05の `bin/importmap audit` は検出なし。`npm audit --omit=dev` では既存の `@banuba/webar` 配下に `fflate` のmoderate 1件と `nanoid` のhigh 1件を検出した。`heic-to` 1.5.2自体のnpm依存は0件で、既存Banuba依存の更新は本Issueで行わない。ネイティブdecoder全体の安全性を保証する監査でもない
 
 ## 処理経路とリソース解放
 
-1. 軽量な `heic_converter.js` が容量と先頭4096byte以内の `ftyp` を検査。HEIC / HEIFのmajor/compatible brandを見て判別する。拡張子・MIMEだけでは実体と認めず、AVIF / AVISは除外する
+1. 軽量な `image_attachments/heic_converter.js` が容量と先頭4096byte以内の `ftyp` を検査。HEIC / HEIFのmajor/compatible brandを見て判別する。拡張子・MIMEだけでは実体と認めず、AVIF / AVISは除外する
 2. HEIC選択時だけ同一origin（配信元）のWorkerを起動し、入力ArrayBufferを転送。通常のJPEG / PNG / WebPではWorker・decoderを読み込まない
 3. decoderがコンテナを解析して画像ハンドルを取得。**先頭画像の寸法を検査してから**HEVC画素を展開する。代表画像が2番目でも先頭を使い、動画・個別画像選択は扱わない
 4. libheifが反映した向きのRGBA（展開後の画素データ）をsRGB Canvasへ置き、白背景を合成。未クロップのフルサイズJPEGを品質0.94で生成する。手動の二重回転はしない。入力のEXIF/GPSをコピーしない
@@ -52,7 +52,7 @@ WorkerでOffscreenCanvas（画面外の描画領域）が使えない場合、**
 
 既存のグローバルCSP設定は変更していない。独立ブラウザテストでは `script-src 'self'`（テスト起動用nonce併用）・`worker-src 'self'` の制限下で実行し、`unsafe-eval` / `wasm-unsafe-eval` / `worker-src blob:` なしで通過した。Blob画像の表示は別に `img-src blob:` が必要。テスト中の出力画像取得にのみ `connect-src blob:` を使用する。
 
-Railsの `asset_path` でWorkerとdecoderのdigest付きURLを渡す。`node_modules` は既存のasset pathに入っており、追加のCDNやimportmapへの重いdecoderの静的pinは不要。通常のimportmapに含まれる軽量な判定モジュールとは区別する。
+Railsの `asset_path` でWorkerとdecoderのdigest付きURLを渡す。`node_modules` は既存のasset pathに入っており、追加のCDNやimportmapへの重いdecoderの静的pinは不要。通常のimportmapには軽量な判定・制御moduleだけをpinし、重いdecoderはHEIC / HEIF選択時まで読み込まない。
 
 Dockerでは `node_modules` が専用volumeのため、初回は次を実行する（ホスト側だけのnpm installでは不足する）。
 
@@ -60,7 +60,7 @@ Dockerでは `node_modules` が専用volumeのため、初回は次を実行す�
 docker compose exec -T app npm install --ignore-scripts
 ```
 
-ローカル開発環境でWorkerとdecoderのdigest付きURLがHTTP 200 / text/javascriptで配信されることを確認済み。本番asset precompile・圧縮転送・CDN上のCSPは未確認で、gzip値は実際の転送量を保証しない。
+ローカル開発環境でWorkerとdecoderのdigest付きURLがHTTP 200 / text/javascriptで配信されることを確認済み。2026-09-05にproduction asset precompileを実行し、converter・Worker・無改変decoderがそれぞれ独立したdigest付きassetとしてmanifestに登録され、productionの `asset_path` がそのURLを返すことを確認した。CDN上の圧縮転送とCSPは環境ごとに確認が必要で、gzip値は実際の転送量を保証しない。
 
 ## 暫定上限・失敗時の扱い
 
@@ -73,6 +73,8 @@ docker compose exec -T app npm install --ignore-scripts
 | コンテナの静止画像 | 20画像以下、展開するのは先頭だけ |
 | Worker待ち時間 | 起動・読み込み・デコード・Worker内JPEG生成を含む30秒 |
 | 後続の編集元正規化 | #1130の候補設定を継続 |
+
+検証画面は比較記録のため標準16MPと32MPを残す。通常フォームの `ImageHeicConverter` は、iPhone 24MPを受け付ける確定仕様に従いWorker・32MPへ固定し、メインスレッド比較を公開しない。
 
 上限値は実機測定に基づく確定値ではない。HEICの初期画素展開はJPEG入力より保守的に制限した。4800万画素などは後段で縮小する前に拒否する。入力20MiBは、生成JPEGが20MiB以下になる保証ではなく、中間JPEGが後続の入力容量上限に達する場合も失敗とする。容量調整・送信は#1132へ引き継ぐ。
 

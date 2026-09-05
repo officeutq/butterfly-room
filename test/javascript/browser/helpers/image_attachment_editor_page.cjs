@@ -5,15 +5,15 @@ const path = require("node:path")
 const root = path.resolve(__dirname, "../../../..")
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8")
 
-async function openImageAttachmentEditorPage(browser) {
+async function openImageAttachmentEditorPage(browser, { strictCsp = false } = {}) {
   const html = `<!doctype html><html><head><meta charset="utf-8">
     <style>
       [hidden] { display: none !important; }
       .editor { width: 800px; height: 500px; }
       cropper-canvas { width: 100%; height: 100%; }
     </style>
-    <script type="importmap">{"imports":{"@hotwired/stimulus":"/stimulus.js","cropperjs":"/cropper.js","image_attachments/cropper_editor":"/cropper_editor.js","image_attachments/source_normalizer":"/source_normalizer.js"}}</script>
-    </head><body><script type="module">
+    <script type="importmap" nonce="heic-test">{"imports":{"@hotwired/stimulus":"/stimulus.js","cropperjs":"/cropper.js","image_attachments/cropper_editor":"/cropper_editor.js","image_attachments/source_normalizer":"/source_normalizer.js","image_attachments/heic_converter":"/heic_converter.js"}}</script>
+    </head><body><script type="module" nonce="heic-test">
       import Controller from "/controller.js"
 
       const markup = () => \`
@@ -57,6 +57,8 @@ async function openImageAttachmentEditorPage(browser) {
         controller.currentDisplayUrlValue = options.currentDisplayUrl || ""
         controller.currentCropDataValue = options.currentCropData || ""
         controller.currentSourceBlobIdValue = options.currentSourceBlobId || 0
+        controller.heicWorkerUrlValue = new URL("/worker.js", location).href
+        controller.heicDecoderUrlValue = new URL("/decoder.js", location).href
         controller.hasCurrentSourceUrlValue = !!options.currentSourceUrl
         controller.hasCurrentDisplayUrlValue = !!options.currentDisplayUrl
         controller.hasCurrentCropDataValue = !!options.currentCropData
@@ -114,10 +116,16 @@ async function openImageAttachmentEditorPage(browser) {
     "/controller.js": "app/javascript/controllers/image_attachment_editor_controller.js",
     "/cropper_editor.js": "app/javascript/image_attachments/cropper_editor.js",
     "/source_normalizer.js": "app/javascript/image_attachments/source_normalizer.js",
+    "/heic_converter.js": "app/javascript/image_attachments/heic_converter.js",
+    "/worker.js": "app/javascript/image_attachments/heic_worker.js",
+    "/decoder.js": "node_modules/heic-to/src/lib/libheif-without-unsafe-eval.js",
     "/cropper.js": "node_modules/cropperjs/dist/cropper.esm.js",
   }
+  const requests = []
   const server = http.createServer((request, response) => {
     const pathname = new URL(request.url, "http://127.0.0.1").pathname
+    requests.push(pathname)
+    if (strictCsp) response.setHeader("Content-Security-Policy", "default-src 'none'; script-src 'self' 'nonce-heic-test'; worker-src 'self'; connect-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'")
     if (pathname === "/") {
       response.setHeader("Content-Type", "text/html; charset=utf-8")
       response.end(html)
@@ -133,6 +141,12 @@ async function openImageAttachmentEditorPage(browser) {
     } else if (scripts[pathname]) {
       response.setHeader("Content-Type", "text/javascript")
       response.end(read(scripts[pathname]))
+    } else if (pathname.startsWith("/heic/")) {
+      const filename = path.basename(pathname)
+      const allowed = new Set(["medium.heic", "photo-24mp.heic"])
+      if (!allowed.has(filename)) { response.writeHead(404); response.end(); return }
+      response.setHeader("Content-Type", "image/heic")
+      response.end(fs.readFileSync(path.join(root, "test/fixtures/files/heic", filename)))
     } else {
       response.writeHead(404)
       response.end()
@@ -148,6 +162,7 @@ async function openImageAttachmentEditorPage(browser) {
     return {
       page,
       errors,
+      requests,
       close: async () => {
         await page.close()
         await new Promise((resolve) => server.close(resolve))
