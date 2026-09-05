@@ -116,6 +116,8 @@ Controller（リクエストを受ける層）は認可、strong parameters、�
 
 Userプロフィールでは`avatar_image_pair`と`cover_image_pair`を用途別rootとし、`Profiles::UpdateService`が通常属性と両用途を一体更新する。通常Viewは既存FilePond用`user[avatar]` / `user[remove_avatar]`を送信しない。サーバー互換は撤去Issueまで維持するが、新方式rootとの同時送信は画面再読み込みを求めて拒否する。
 
+Store管理フォームでは既定rootの`image_pair`を利用し、`Stores::UpdateService`が通常属性と`thumbnail`画像組を一体更新する。通常Viewは既存FilePond用`store[thumbnail]` / `store[remove_thumbnail]`を送信しない。サーバー互換は撤去Issueまで維持するが、新旧parameterを同時送信した場合は二重処理せず拒否する。
+
 ```text
 image_pair[operation] = replace | reedit | delete
 image_pair[source] = 編集元JPEG（replaceだけ）
@@ -131,7 +133,7 @@ multipart全体の26MiB上限はPumaでRails到達前に適用し、同じ上限
 
 ブラウザ送信には`ImagePairMultipartClient`を使い、待ち時間を45秒で打ち切って手動再送可能に戻す。自動再送は行わない。通信中断・タイムアウト後もサーバー側が完了する可能性があるため、再送時も元の`expected`を使う。先行送信が完了済みなら後着送信を競合として拒否し、後着側の一時Blobだけを清掃する。
 
-Userプロフィールではフォーム単位の`image_pair_form_controller`がavatar / coverの確定済みpayloadを一つの`FormData`として送る。いずれかが編集中・生成中なら送信せず、失敗時は生成済みFileと期待IDを保持して手動再送できる状態へ戻す。成功時だけRailsが返した同一originの遷移先へ移動する。既存編集元はS3のCORS変更を前提にせず、署名済みActive Storage proxy URLから同一originで読み込む。
+UserプロフィールとStore管理フォームではフォーム単位の`image_pair_form_controller`が確定済みpayloadと通常属性を一つの`FormData`として送る。いずれかが編集中・生成中なら送信せず、失敗時は生成済みFileと期待IDを保持して手動再送できる状態へ戻す。成功時だけRailsが返した同一originの遷移先へ移動する。送信ボタンに確認文がある場合はXHR送信前にも確認する。既存編集元はS3のCORS変更を前提にせず、署名済みActive Storage proxy URLから同一originで読み込む。
 
 ALBの無通信タイムアウト60秒とS3設定は初期実装で変更しない。クライアント側の画像送信待ちは45秒を上限とし、超過時は再送可能な状態へ戻す。ステージングで20MiB境界と低速条件を確認し、既存60秒内に収まらない場合だけインフラ変更を別途判断する。
 

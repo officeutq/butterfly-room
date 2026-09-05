@@ -26,6 +26,7 @@ export default class extends Controller {
     // until every editor has had a chance to mark an unfinished payload.
     queueMicrotask(() => {
       if (event.imageAttachmentEditorInvalid || this.isDisconnected || this.submitting) return
+      if (!this.confirmSubmission(event)) return
 
       this.submitMultipartForm()
     })
@@ -35,7 +36,7 @@ export default class extends Controller {
     this.submitting = true
     this.setSubmitting(true)
     this.clearError()
-    this.renderEditorStatuses("画像とプロフィールを保存しています…")
+    this.renderEditorStatuses("画像と入力内容を保存しています…")
 
     try {
       const result = await this.client.submit({
@@ -59,6 +60,11 @@ export default class extends Controller {
 
   hasImageOperation() {
     return this.operationInputs().some((input) => input.value.length > 0)
+  }
+
+  confirmSubmission(event) {
+    const message = event.submitter?.dataset?.turboConfirm
+    return !message || window.confirm(message)
   }
 
   operationInputs() {

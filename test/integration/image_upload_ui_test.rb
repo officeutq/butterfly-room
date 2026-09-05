@@ -6,7 +6,7 @@ class ImageUploadUiTest < ActionDispatch::IntegrationTest
   ACCEPTED_FILE_TYPES = ".jpg,.jpeg,.png,.webp,.heic,.heif," \
                         "image/jpeg,image/png,image/webp,image/heic,image/heif"
 
-  test "store thumbnail uses the common validated image upload UI" do
+  test "store thumbnail uses the social Cropper editor without FilePond" do
     store_admin = create_user("image-ui-store-admin", :store_admin)
     store = Store.create!(name: "画像UI店舗")
     StoreMembership.create!(store:, user: store_admin, membership_role: :admin)
@@ -15,10 +15,58 @@ class ImageUploadUiTest < ActionDispatch::IntegrationTest
     get edit_admin_store_path(store)
 
     assert_response :success
-    assert_image_upload_ui(
-      input_name: "store[thumbnail]",
-      remove_name: "store[remove_thumbnail]"
+    assert_select "script[src^='/vendor/filepond/']", count: 0
+    assert_select(
+      "form[data-controller='image-pair-form'][data-action*='image-pair-form#submit']" \
+      "[enctype='multipart/form-data']",
+      count: 1
     )
+    assert_select "input[type='file'][name='store[thumbnail]']", count: 0
+    assert_select "input[name='store[remove_thumbnail]']", count: 0
+    assert_cropper_editor(param_root: "image_pair", ratio_key: "social", label: "店舗画像")
+    assert_select "[data-image-pair-form-target='error'][role='alert'][hidden]", count: 1
+    assert_select "[data-image-pair-form-target='submitButton'][data-turbo-submits-with='保存中…']", count: 1
+  end
+
+  test "store Cropper editor exposes a complete current pair for re-editing" do
+    store_admin = create_user("image-ui-current-store-admin", :store_admin)
+    store = Store.create!(name: "現在画像店舗")
+    StoreMembership.create!(store:, user: store_admin, membership_role: :admin)
+    attach_fixture(store.thumbnail_source, "store-source.jpg")
+    attach_fixture(store.thumbnail, "store-display.jpg")
+    store.update!(thumbnail_crop_data: {
+      "schemaVersion" => 1,
+      "ratioKey" => "social",
+      "sourceBlobId" => store.thumbnail_source.blob.id,
+      "source" => { "width" => 1200, "height" => 630 },
+      "crop" => { "x" => 0, "y" => 0, "width" => 1200, "height" => 630 },
+      "zoom" => 1.0,
+      "output" => {
+        "width" => 1200,
+        "height" => 630,
+        "mimeType" => "image/jpeg",
+        "quality" => 0.9
+      }
+    })
+
+    sign_in store_admin, scope: :user
+    get edit_admin_store_path(store)
+
+    assert_response :success
+    assert_select "#image-attachment-editor-image-pair" do
+      assert_select "[data-image-attachment-editor-current-display-url-value]", count: 1
+      assert_select "[data-image-attachment-editor-current-source-url-value]", count: 1
+      assert_select "[data-image-attachment-editor-current-crop-data-value]", count: 1
+      assert_select(
+        "[data-image-attachment-editor-current-source-blob-id-value='#{store.thumbnail_source.blob.id}']",
+        count: 1
+      )
+      assert_select(
+        "input[name='image_pair[expected][display_blob_id]'][value='#{store.thumbnail.blob.id}']",
+        count: 1
+      )
+    end
+    assert_includes response.body, "/rails/active_storage/blobs/proxy/"
   end
 
   test "booth thumbnail uses the common validated image upload UI" do
