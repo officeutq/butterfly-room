@@ -10,6 +10,10 @@
 #     schedule: at 5am every day
 
 production:
+  image_attachment_staged_blob_cleanup:
+    class: ImageAttachments::StagedBlobCleanupJob
+    queue: default
+    schedule: every 5 minutes
   image_upload_verification_cleanup:
     class: ImageUploadVerificationCleanupJob
     queue: default

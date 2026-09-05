@@ -101,6 +101,8 @@ Controller（リクエストを受ける層）は認可、strong parameters、�
 - transaction失敗時は旧状態を維持し、新規Blobだけを同期清掃する。成功後に参照されなくなった旧Blobを非同期清掃する。別添付から参照されるBlobは削除しない。
 - DBとS3は同一transactionにできないため、プロセス強制終了時に残った本機能所有の未添付Blobを期限付き清掃できる識別情報を持たせる。
 
+事前保存するBlobのmetadataには`image_attachment_staging`を付け、`schemaVersion`、用途、`source` / `display`の役割、`cleanupAfter`を記録する。既定の清掃期限は作成から1時間とし、画像組のcommit時に同じtransaction内で印を外す。5分ごとの定期Jobは、期限を過ぎ、専用metadataが正しく、どこにも添付されていないBlobだけを清掃する。保存先の削除後にBlob行を削除し、保存先削除に失敗した場合は行とmetadataを残して次回再試行できるようにする。
+
 ALBの無通信タイムアウト60秒とS3設定は初期実装で変更しない。クライアント側の画像送信待ちは45秒を上限とし、超過時は再送可能な状態へ戻す。ステージングで20MiB境界と低速条件を確認し、既存60秒内に収まらない場合だけインフラ変更を別途判断する。
 
 既存 `ImageAttachments::UpdateService` は移行期間中のFilePond経路と、単一添付をサーバー正規化する経路のために維持する。新方式はブラウザ生成済みの2画像を再圧縮しないため、試作した `StagedPairUpdateService` を本番契約へ仕上げ、責務を混在させない。

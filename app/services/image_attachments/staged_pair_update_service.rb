@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
 module ImageAttachments
-  # Prototype for committing two already-uploaded blobs and their crop data as
-  # one logical image update. Content validation belongs before this service.
+  # Commits already-validated and uploaded source/display blobs as one image
+  # pair. Uploading and image decoding stay outside the short DB transaction.
   class StagedPairUpdateService
+    OPERATIONS = %i[replace reedit delete].freeze
+
     Snapshot = Data.define(
       :source_attachment_id,
       :source_blob_id,
@@ -17,9 +19,10 @@ module ImageAttachments
     class InvalidCropDataError < Error; end
     class TransactionRolledBackError < Error; end
 
-    def self.capture(record:, source_attachment_name:, display_attachment_name:)
-      source = record.public_send(source_attachment_name).attachment
-      display = record.public_send(display_attachment_name).attachment
+    def self.capture(record:, purpose:)
+      configuration = record.image_attachment_purpose_for(purpose)
+      source = record.public_send(configuration.source_attachment).attachment
+      display = record.public_send(configuration.display_attachment).attachment
       Snapshot.new(
         source_attachment_id: source&.id,
         source_blob_id: source&.blob_id,
@@ -30,23 +33,23 @@ module ImageAttachments
 
     def initialize(
       record:,
-      source_attachment_name:,
-      display_attachment_name:,
-      crop_attribute:,
-      crop_data:,
+      purpose:,
+      operation:,
       expected_snapshot:,
-      new_display_blob:,
-      new_source_blob: nil
+      attributes: {},
+      crop_data: nil,
+      new_source_blob: nil,
+      new_display_blob: nil
     )
       @record = record
-      @source_attachment_name = source_attachment_name.to_sym
-      @display_attachment_name = display_attachment_name.to_sym
-      @crop_attribute = crop_attribute.to_sym
-      @crop_data = crop_data
+      @purpose = record.image_attachment_purpose_for(purpose)
+      @operation = operation.to_sym if operation.respond_to?(:to_sym)
       @expected_snapshot = expected_snapshot
+      @attributes = attributes.to_h.symbolize_keys
+      @crop_data = crop_data
       @new_source_blob = new_source_blob
       @new_display_blob = new_display_blob
-      @pending_blobs = [ @new_source_blob, @new_display_blob ].compact.uniq
+      @staged_blobs = { source: @new_source_blob, display: @new_display_blob }.compact
       @called = false
 
       validate_contract!
@@ -58,67 +61,123 @@ module ImageAttachments
       @called = true
       committed = false
       transaction_completed = false
-      old_blobs = []
 
+      validate_operation_payload!
       validate_staged_blobs!
       @record.class.transaction do
         @record.lock! if @record.persisted?
         verify_expected_snapshot!
+        lock_staged_blobs!
 
-        current_source_blob = current_blob(@source_attachment_name)
-        source_blob = @new_source_blob || current_source_blob
-        raise InvalidStagedBlobError, "an editing source is required" unless source_blob
-        raise InvalidStagedBlobError, "source and display blobs must be independent" if source_blob.id == @new_display_blob.id
-
-        old_blobs << current_source_blob if @new_source_blob
-        old_blobs << current_blob(@display_attachment_name)
-        @record.public_send("#{@source_attachment_name}=", @new_source_blob) if @new_source_blob
-        @record.public_send("#{@display_attachment_name}=", @new_display_blob)
-        @record.public_send("#{@crop_attribute}=", persisted_crop_data(source_blob))
+        @record.assign_attributes(@attributes)
+        apply_operation!
         @record.save!
         yield @record if block_given?
+        @staged_blobs.each_value { |blob| StagedBlobMetadata.clear!(blob) }
         transaction_completed = true
       end
-      # ActiveRecord::Rollback is intentionally swallowed by transaction. Do
-      # not mistake that path for a commit and leak the staged blobs.
-      raise TransactionRolledBackError, "image pair transaction was rolled back" unless transaction_completed
+
+      # ActiveRecord::Rollback is swallowed by transaction. Treat it as a
+      # failed image update so the staged blobs are not leaked.
+      unless transaction_completed
+        raise TransactionRolledBackError, "image pair transaction was rolled back"
+      end
 
       committed = true
-      @pending_blobs.clear
-      old_blobs.compact.uniq.each { |blob| purge_replaced_blob_later(blob) }
+      @staged_blobs.clear
       @record
     ensure
-      cleanup_pending_blobs unless committed
+      cleanup_staged_blobs unless committed
     end
 
     private
 
     def validate_contract!
+      unless OPERATIONS.include?(@operation)
+        raise ArgumentError, "operation must be replace, reedit, or delete"
+      end
       unless @expected_snapshot.is_a?(Snapshot)
         raise ArgumentError, "expected_snapshot must be captured before staging the update"
       end
-      [ @source_attachment_name, @display_attachment_name ].each do |name|
+
+      [ @purpose.source_attachment, @purpose.display_attachment ].each do |name|
         @record.class.attachment_reflections.fetch(name.to_s)
       end
-      unless @record.has_attribute?(@crop_attribute)
-        raise ArgumentError, "unknown crop attribute: #{@crop_attribute}"
+      unless @record.has_attribute?(@purpose.crop_attribute)
+        raise ArgumentError, "unknown crop attribute: #{@purpose.crop_attribute}"
       end
-      raise ArgumentError, "new_display_blob is required" unless @new_display_blob
+
+      forbidden = [ @purpose.source_attachment, @purpose.display_attachment, @purpose.crop_attribute ]
+      if (@attributes.keys & forbidden).any?
+        raise ArgumentError, "attributes must not include image pair fields"
+      end
     rescue KeyError => error
       raise ArgumentError, "unknown attachment: #{error.key}"
     end
 
-    def validate_staged_blobs!
-      @pending_blobs.each do |blob|
-        unless blob.is_a?(ActiveStorage::Blob) && blob.persisted? && !blob.attachments.exists? && blob.service.exist?(blob.key)
-          raise InvalidStagedBlobError, "staged blob is missing, already attached, or not stored"
+    def validate_operation_payload!
+      case @operation
+      when :replace
+        unless @new_source_blob && @new_display_blob && @crop_data
+          raise InvalidStagedBlobError, "replace requires source, display, and crop data"
         end
+      when :reedit
+        unless @new_source_blob.nil? && @new_display_blob && @crop_data
+          raise InvalidStagedBlobError, "reedit requires only display and crop data"
+        end
+      when :delete
+        unless @new_source_blob.nil? && @new_display_blob.nil? && @crop_data.blank?
+          raise InvalidStagedBlobError, "delete does not accept staged blobs or crop data"
+        end
+      end
+
+      return unless @new_source_blob && @new_source_blob.id == @new_display_blob&.id
+
+      raise InvalidStagedBlobError, "source and display blobs must be independent"
+    end
+
+    def validate_staged_blobs!
+      @staged_blobs.each do |role, blob|
+        validate_staged_blob!(blob, role:, check_storage: true)
       end
     end
 
+    def validate_staged_blob!(blob, role:, check_storage:)
+      unless blob.is_a?(ActiveStorage::Blob) && blob.persisted?
+        raise InvalidStagedBlobError, "staged blob is invalid"
+      end
+
+      blob.reload
+      byte_limit = PairValidator::BYTE_LIMITS.fetch(role)
+      valid = !blob.attachments.exists? &&
+        blob.content_type == PairValidator::JPEG_CONTENT_TYPE &&
+        blob.byte_size.between?(1, byte_limit) &&
+        blob.service_name == attachment_service_name(role) &&
+        StagedBlobMetadata.active?(blob, purpose: @purpose, role:)
+      valid &&= blob.service.exist?(blob.key) if check_storage
+      raise InvalidStagedBlobError, "staged blob is missing, expired, attached, or not owned" unless valid
+    rescue ActiveRecord::RecordNotFound
+      raise InvalidStagedBlobError, "staged blob no longer exists"
+    end
+
+    def lock_staged_blobs!
+      return if @staged_blobs.empty?
+
+      ids = @staged_blobs.values.map(&:id).sort
+      locked = ActiveStorage::Blob.lock.where(id: ids).order(:id).index_by(&:id)
+      unless locked.length == ids.length
+        raise InvalidStagedBlobError, "staged blob no longer exists"
+      end
+
+      @staged_blobs.transform_values! { |blob| locked.fetch(blob.id) }
+      @staged_blobs.each { |role, blob| validate_staged_blob!(blob, role:, check_storage: false) }
+      @new_source_blob = @staged_blobs[:source]
+      @new_display_blob = @staged_blobs[:display]
+    end
+
     def verify_expected_snapshot!
-      source = locked_attachment(@source_attachment_name)
-      display = locked_attachment(@display_attachment_name)
+      source = locked_attachment(@purpose.source_attachment)
+      display = locked_attachment(@purpose.display_attachment)
       actual = Snapshot.new(
         source_attachment_id: source&.id,
         source_blob_id: source&.blob_id,
@@ -131,10 +190,49 @@ module ImageAttachments
     end
 
     def locked_attachment(name)
-      @record.association("#{name}_attachment").reload
+      @record.association("#{name}_attachment").reload if @record.persisted?
       attachment = @record.public_send(name).attachment
-      attachment&.lock!
+      attachment&.lock! if @record.persisted?
       attachment
+    end
+
+    def apply_operation!
+      case @operation
+      when :replace
+        assign_replacement!
+      when :reedit
+        assign_reedit!
+      when :delete
+        assign_delete!
+      end
+    end
+
+    def assign_replacement!
+      @record.public_send("#{@purpose.source_attachment}=", @new_source_blob)
+      @record.public_send("#{@purpose.display_attachment}=", @new_display_blob)
+      @record.public_send("#{@purpose.crop_attribute}=", persisted_crop_data(@new_source_blob))
+    end
+
+    def assign_reedit!
+      source_blob = current_blob(@purpose.source_attachment)
+      raise InvalidStagedBlobError, "an editing source is required" unless source_blob
+      if source_blob.id == @new_display_blob.id
+        raise InvalidStagedBlobError, "source and display blobs must be independent"
+      end
+
+      validated_crop = validated_crop_data
+      validate_existing_source_crop!(source_blob, validated_crop)
+      @record.public_send("#{@purpose.display_attachment}=", @new_display_blob)
+      @record.public_send(
+        "#{@purpose.crop_attribute}=",
+        validated_crop.merge("sourceBlobId" => source_blob.id)
+      )
+    end
+
+    def assign_delete!
+      @record.public_send("#{@purpose.source_attachment}=", nil)
+      @record.public_send("#{@purpose.display_attachment}=", nil)
+      @record.public_send("#{@purpose.crop_attribute}=", {})
     end
 
     def current_blob(name)
@@ -143,31 +241,47 @@ module ImageAttachments
     end
 
     def persisted_crop_data(source_blob)
-      unless @crop_data.is_a?(Hash) && @crop_data["schemaVersion"] == 1 &&
-          @crop_data["source"].is_a?(Hash) && @crop_data["crop"].is_a?(Hash) && @crop_data["output"].is_a?(Hash)
-        raise InvalidCropDataError, "crop data has an unsupported schema"
+      validated_crop_data.merge("sourceBlobId" => source_blob.id)
+    end
+
+    def validated_crop_data
+      PairValidator.new(purpose: @purpose).crop_data!(@crop_data)
+    rescue PairValidator::Invalid => error
+      raise InvalidCropDataError, error.message
+    end
+
+    def validate_existing_source_crop!(source_blob, new_crop)
+      stored_data = @record.public_send(@purpose.crop_attribute).to_h
+      stored_crop = PairValidator.new(purpose: @purpose).crop_data!(stored_data)
+      return if stored_data["sourceBlobId"] == source_blob.id && stored_crop["source"] == new_crop["source"]
+
+      raise InvalidCropDataError, "crop data does not match the current editing source"
+    rescue PairValidator::Invalid
+      raise InvalidCropDataError, "stored crop data does not match the current editing source"
+    end
+
+    def attachment_service_name(role)
+      name = attachment_reflection(role).options[:service_name]
+      name = name.call(@record) if name.respond_to?(:call)
+      (name || ActiveStorage::Blob.service.name).to_s
+    end
+
+    def attachment_reflection(role)
+      attachment_name = role == :source ? @purpose.source_attachment : @purpose.display_attachment
+      @record.class.attachment_reflections.fetch(attachment_name.to_s)
+    end
+
+    def cleanup_staged_blobs
+      blobs = @staged_blobs.values.compact.select do |blob|
+        blob.is_a?(ActiveStorage::Blob) && blob.persisted?
       end
-
-      @crop_data.deep_dup.merge("sourceBlobId" => source_blob.id)
-    end
-
-    def purge_replaced_blob_later(blob)
-      blob.reload
-      blob.purge_later unless blob.attachments.exists?
-    rescue ActiveRecord::RecordNotFound
-      nil
-    rescue StandardError => error
-      Rails.logger.error("[ImageAttachments::StagedPairUpdateService] old blob purge enqueue failed blob=#{blob.id} error=#{error.class.name}")
-    end
-
-    def cleanup_pending_blobs
-      @pending_blobs.each do |blob|
-        blob.reload
-        blob.purge unless blob.attachments.exists?
-      rescue ActiveRecord::RecordNotFound
-        nil
+      blobs.uniq(&:id).each do |blob|
+        StagedBlobPurgeService.new(blob:).call
       rescue StandardError => error
-        Rails.logger.error("[ImageAttachments::StagedPairUpdateService] staged blob cleanup failed blob=#{blob.id} error=#{error.class.name}")
+        Rails.logger.error(
+          "[ImageAttachments::StagedPairUpdateService] staged blob cleanup failed " \
+          "blob=#{blob.id} error=#{error.class.name}"
+        )
       end
     end
   end
