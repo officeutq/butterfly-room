@@ -62,10 +62,10 @@ streamはグローバル検索せず、取得済みブースの `stream_sessions
 | descriptionの表示名 | 公開可能な `primary_cast_user` | 公開可能な `started_by_cast_user` |
 | description（表示名あり） | `〇〇のライブ配信をButterflyveで楽しもう` | `〇〇のライブ配信をButterflyveで楽しもう` |
 | description（表示名なし） | `ライブ配信をButterflyveで楽しもう` | `ライブ配信をButterflyveで楽しもう` |
-| image | `Booth.thumbnail_image` のOGP用variant、未設定時は共有コンテキスト固有URLから配信する `booth-share-ogp.jpg` | 同左 |
+| image | 新方式の`Booth.thumbnail_image`、未設定時は共有コンテキスト固有URLから配信する `booth-share-ogp.jpg` | 同左 |
 | `og:url` / canonical | streamなし共有URL | 有効なstream ID付き共有URL |
 
-OGP用variantは1200x630px、JPEG、中央基準の `resize_to_fill`、品質85とする。元の添付画像は変更せず、添付更新後に非同期で事前生成する。事前生成が完了していない場合は、SNSクローラーから最初に要求された時点で生成し、以降はActive Storageが同じvariantを再利用する。共有ボタンを押すたびの画像変換は行わない。
+新方式の表示用`thumbnail_image`は保存時に1200x630pxのJPEGとして検査されるため、OGPでも無変換で利用する。名前付きvariantと添付時の事前生成は行わない。既存画像移行前の旧`thumbnail_image`だけは互換処理として要求時に中央基準の1200x630px JPEGへ変換する。共有ボタンを押すたびの画像変換は行わない。
 
 代替画像は既存ロゴを中央に配置して十分な余白を確保した1200x630pxの専用JPEGとし、画面表示用の `logo.png` は置き換えない。共通JPEGの内容は共有時に再生成せず、`/booths/:id/share/ogp-image.jpg` から配信する。配信共有では有効なstream IDをquery parameter（クエリパラメーター）へ付け、ブース単位・配信セッション単位で安定した画像URLを生成する。画像URLと共有URLは絶対URLで生成し、本番・ステージングではHTTPSの公開URLを使用する。
 
@@ -154,7 +154,7 @@ DB schema、`Booth` / `StreamSession` の状態遷移、視聴・コメント・
 - 公開店舗 / 非公開店舗、active / archivedブースの公開条件
 - streamなし、有効、ended、不存在、不正値、別ブースの解決結果
 - 配信タイトル、サムネイル、表示名の各フォールバック
-- OGP画像variantと専用代替画像が1200x630pxのJPEGとなること、および代替画像URLが共有コンテキストごとに分離されること
+- 新方式の表示用画像を無変換で配信し、旧画像の互換変換と専用代替画像も1200x630pxのJPEGとなること、および代替画像URLが共有コンテキストごとに分離されること
 - OGP、絶対画像URL、`og:url`、canonical、Twitter Card、`noindex`
 - JavaScript遷移先とJavaScript無効時リンク
 - 共有ページにメールアドレス等の非公開情報が含まれない

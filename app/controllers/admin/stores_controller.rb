@@ -117,6 +117,7 @@ module Admin
             .distinct
             .order(:id)
         end
+      @stores = @stores.preload(thumbnail_attachment: :blob)
 
       @current_store_id = session[:current_store_id]
       @return_to = params[:return_to].presence

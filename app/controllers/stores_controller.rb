@@ -13,7 +13,11 @@ class StoresController < ApplicationController
       @store
         .booths
         .active
-        .includes(:cast_users)
+        .includes(
+          :current_stream_session,
+          { booth_casts: :cast_user },
+          { thumbnail_image_attachment: :blob }
+        )
         .order(:id)
 
     if user_signed_in?
@@ -36,7 +40,7 @@ class StoresController < ApplicationController
   private
 
   def set_store
-    @store = Store.published.find(params[:id])
+    @store = Store.published.with_attached_thumbnail.find(params[:id])
   end
 
   def reject_banned_customer_for_store!
@@ -50,7 +54,7 @@ class StoresController < ApplicationController
       if @store.thumbnail.attached?
         url_for(@store.thumbnail)
       else
-        view_context.image_url("logo.png")
+        view_context.image_url("booth-share-ogp.jpg")
       end
 
     set_meta_tags(

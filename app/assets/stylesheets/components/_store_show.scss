@@ -2,19 +2,20 @@
   width: 100%;
   background: var(--bs-light);
   overflow: hidden;
+  display: flex;
+  justify-content: center;
 }
 
 .store-show-hero-image {
   display: block;
-  width: 100%;
-  height: min(36vw, 320px);
-  min-height: 180px;
+  width: min(100%, 1200px);
+  aspect-ratio: 40 / 21;
   object-fit: cover;
 }
 
 .store-show-hero-placeholder {
-  height: min(36vw, 320px);
-  min-height: 180px;
+  width: min(100%, 1200px);
+  aspect-ratio: 40 / 21;
   display: flex;
   align-items: center;
   justify-content: center;

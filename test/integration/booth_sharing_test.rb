@@ -2,9 +2,12 @@
 
 require "test_helper"
 require "mini_magick"
+require "tempfile"
+require "uri"
 
 class BoothSharingTest < ActionDispatch::IntegrationTest
   setup do
+    @tempfiles = []
     @store = Store.create!(name: "共有テスト店舗", published: true)
     @cast = User.create!(
       email: "booth-sharing-cast@example.com",
@@ -22,6 +25,10 @@ class BoothSharingTest < ActionDispatch::IntegrationTest
       started_at: Time.current,
       started_by_cast_user: @cast
     )
+  end
+
+  teardown do
+    @tempfiles.each(&:close!)
   end
 
   test "guest receives booth sharing OGP and immediate booth redirect markup" do
@@ -252,36 +259,46 @@ class BoothSharingTest < ActionDispatch::IntegrationTest
     refute_includes response.body, @cast.display_name
   end
 
-  test "attached booth thumbnail OGP variant is emitted as an absolute URL" do
-    @booth.thumbnail_image.attach(
-      io: File.open(file_fixture("sample.jpg")),
-      filename: "sample.jpg",
-      content_type: "image/jpeg"
-    )
+  test "current booth display image is emitted directly as the 1200x630 JPEG OGP" do
+    attach_current_image_pair
 
     get share_booth_path(@booth)
 
     assert_response :success
     image_url = Nokogiri::HTML(response.body).at_css("meta[property='og:image']")["content"]
     assert_match %r{\Ahttps?://}, image_url
-    assert_includes image_url, "/rails/active_storage/representations/"
+    assert_includes image_url, "/rails/active_storage/blobs/"
+    refute_includes image_url, "/rails/active_storage/representations/"
     refute_includes image_url, share_ogp_image_booth_path(@booth)
+
+    image = fetch_image(image_url)
+    assert_equal 1200, image.width
+    assert_equal 630, image.height
+    assert_equal "JPEG", image.type
+    assert_equal "image/jpeg", response.media_type
+    assert_equal @booth.thumbnail_image.download, response.body.b
+  ensure
+    image&.destroy!
   end
 
-  test "attached booth thumbnail OGP variant is a 1200x630 JPEG under 1 MB" do
+  test "legacy booth thumbnail keeps a 1200x630 JPEG compatibility OGP" do
     @booth.thumbnail_image.attach(
       io: File.open(file_fixture("thumb.png")),
       filename: "thumb.png",
       content_type: "image/png"
     )
 
-    variant_data = @booth.thumbnail_image.variant(:ogp).processed.download
-    image = MiniMagick::Image.read(variant_data)
+    get share_booth_path(@booth)
+
+    image_url = Nokogiri::HTML(response.body).at_css("meta[property='og:image']")["content"]
+    assert_includes image_url, "/rails/active_storage/representations/"
+    image = fetch_image(image_url)
 
     assert_equal 1200, image.width
     assert_equal 630, image.height
     assert_equal "JPEG", image.type
-    assert_operator variant_data.bytesize, :<, 1.megabyte
+    assert_equal "image/jpeg", response.media_type
+    assert_operator response.body.bytesize, :<, 1.megabyte
   ensure
     image&.destroy!
   end
@@ -302,5 +319,62 @@ class BoothSharingTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     refute_includes response.body, share_booth_url(@booth)
+  end
+
+  private
+
+  def attach_current_image_pair
+    source = generated_social_jpeg("navy")
+    display = generated_social_jpeg("purple")
+    @booth.thumbnail_image_source.attach(
+      io: source,
+      filename: "booth-source.jpg",
+      content_type: "image/jpeg",
+      identify: false
+    )
+    @booth.thumbnail_image.attach(
+      io: display,
+      filename: "booth-display.jpg",
+      content_type: "image/jpeg",
+      identify: false
+    )
+    @booth.update!(thumbnail_image_crop_data: {
+      "schemaVersion" => 1,
+      "ratioKey" => "social",
+      "sourceBlobId" => @booth.thumbnail_image_source.blob.id,
+      "source" => { "width" => 1200, "height" => 630 },
+      "crop" => { "x" => 0, "y" => 0, "width" => 1200, "height" => 630 },
+      "zoom" => 1.0,
+      "output" => {
+        "width" => 1200,
+        "height" => 630,
+        "mimeType" => "image/jpeg",
+        "quality" => 0.9
+      }
+    })
+  end
+
+  def generated_social_jpeg(color)
+    tempfile = Tempfile.new([ "booth-ogp", ".jpg" ]).tap { |file| @tempfiles << file }
+    MiniMagick.convert do |command|
+      command.size("1200x630")
+      command << "xc:#{color}"
+      command << "JPEG:#{tempfile.path}"
+    end
+    tempfile.binmode
+    tempfile.rewind
+    tempfile
+  end
+
+  def fetch_image(url)
+    uri = URI.parse(url)
+    get [ uri.path, uri.query ].compact.join("?")
+    3.times do
+      break unless response.redirect?
+
+      follow_redirect!
+    end
+    assert_response :success
+    MiniMagick::Image.read(response.body.b)
   end
 end

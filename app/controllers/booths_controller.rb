@@ -3,6 +3,12 @@
 class BoothsController < ApplicationController
   include StoreBanGuard
 
+  LEGACY_OGP_VARIATION = {
+    resize_to_fill: [ 1200, 630 ],
+    format: :jpg,
+    quality: 85
+  }.freeze
+
   layout "share", only: %i[share]
 
   skip_before_action :authenticate_user!, only: %i[show enter share share_ogp_image]
@@ -196,12 +202,7 @@ class BoothsController < ApplicationController
         @booth.primary_cast_user
       end
     description = view_context.booth_share_og_description(share_user)
-    image =
-      if @booth.thumbnail_image.attached?
-        url_for(@booth.thumbnail_image.variant(:ogp))
-      else
-        share_ogp_image_booth_url(@booth, **share_url_options, format: :jpg)
-      end
+    image = booth_share_image_url
 
     set_meta_tags(
       title: title,
@@ -221,6 +222,32 @@ class BoothsController < ApplicationController
         card: "summary_large_image"
       }
     )
+  end
+
+  def booth_share_image_url
+    return share_ogp_image_booth_url(@booth, **share_url_options, format: :jpg) unless @booth.thumbnail_image.attached?
+
+    image =
+      if current_thumbnail_image_pair?
+        @booth.thumbnail_image
+      else
+        @booth.thumbnail_image.variant(LEGACY_OGP_VARIATION)
+      end
+    url_for(image)
+  end
+
+  def current_thumbnail_image_pair?
+    source = @booth.thumbnail_image_source
+    crop_data = @booth.thumbnail_image_crop_data.to_h
+    output = crop_data["output"].to_h
+
+    source.attached? &&
+      crop_data["sourceBlobId"] == source.blob.id &&
+      crop_data["ratioKey"] == "social" &&
+      output["width"] == 1200 &&
+      output["height"] == 630 &&
+      output["mimeType"] == "image/jpeg" &&
+      @booth.thumbnail_image.content_type == "image/jpeg"
   end
 
   def set_entry_booth

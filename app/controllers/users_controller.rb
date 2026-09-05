@@ -53,7 +53,7 @@ class UsersController < ApplicationController
           .where(membership_role: :admin)
           .joins(:store)
           .merge(Store.published)
-          .includes(:store)
+          .includes(store: { thumbnail_attachment: :blob })
           .map(&:store)
 
       store_ids = @admin_stores.map(&:id)

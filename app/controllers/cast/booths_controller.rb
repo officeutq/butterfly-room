@@ -249,7 +249,7 @@ module Cast
               .distinct
         end
 
-      @booths = @booths.includes(:store, :thumbnail_image_attachment)
+      @booths = @booths.includes(:store, thumbnail_image_attachment: :blob)
       @booths = @booths.active unless @include_archived
       @booths = @booths.order(Arel.sql('"booths"."archived_at" ASC NULLS FIRST'), id: :desc)
 

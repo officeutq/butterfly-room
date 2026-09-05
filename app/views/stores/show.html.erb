@@ -1,7 +1,9 @@
 <div class="store-show">
   <div class="store-show-hero">
     <% if @store.thumbnail.attached? %>
-      <%= image_tag @store.thumbnail, class: "store-show-hero-image", alt: @store.name %>
+      <%= image_tag @store.thumbnail,
+            class: "store-show-hero-image",
+            alt: "#{@store.name}の店舗画像" %>
     <% else %>
       <div class="store-show-hero-placeholder">
         <%= image_tag "no_image_logo.png", class: "no-image-logo", alt: "画像なし" %>
