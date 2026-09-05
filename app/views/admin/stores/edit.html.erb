@@ -1,7 +1,3 @@
-<% content_for :head do %>
-  <%= render "shared/filepond_head" %>
-<% end %>
-
 <% content_for :title, "店舗設定編集" %>
 
 <div
@@ -18,7 +14,12 @@
     <div class="form-text">現在入力中の店舗名で公開情報を検索し、選択した候補だけをフォームへ反映します。</div>
   </div>
 
-  <%= form_with model: [:admin, @store] do |f| %>
+  <%= form_with model: [:admin, @store],
+        html: { multipart: true },
+        data: {
+          controller: "image-pair-form",
+          action: "submit->image-pair-form#submit"
+        } do |f| %>
     <%= render "form",
               f: f,
               store: @store,

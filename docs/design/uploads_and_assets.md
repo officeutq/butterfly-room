@@ -1,10 +1,10 @@
 # Uploads / Assets 設計
 
-> 1〜9節はStore / Boothと移行中の互換処理に残るFilePond経路、10〜14節は検証記録である。Userプロフィールは#1156からCropper.js経路を利用する。検証結果から確定したCropper.js移行仕様は [Cropper.js画像アップロード確定設計](image_upload_cropper_architecture.md) を正とする。
+> 1〜9節はBoothと移行中の互換処理に残るFilePond経路、10〜14節は検証記録である。Userプロフィールは#1156、Store管理フォームは#1158からCropper.js経路を利用する。検証結果から確定したCropper.js移行仕様は [Cropper.js画像アップロード確定設計](image_upload_cropper_architecture.md) を正とする。
 
 ## 1. 概要
 
-Store / Booth画像はFilePond経路を利用する。Userプロフィールのavatar / coverは共通Cropper.js部品で固定比率編集し、HEIC / HEIFを含む入力からブラウザで編集元・表示用JPEGを生成してRails multipartで保存する。どちらの経路もブラウザの申告だけを保存可否の根拠にせず、Rails側で画像実体を再検査する。
+Booth画像はFilePond経路を利用する。Userプロフィールのavatar / coverとStoreのthumbnailは共通Cropper.js部品で固定比率編集し、HEIC / HEIFを含む入力からブラウザで編集元・表示用JPEGを生成してRails multipartで保存する。どちらの経路もブラウザの申告だけを保存可否の根拠にせず、Rails側で画像実体を再検査する。
 
 ---
 
@@ -112,7 +112,7 @@ native file inputの`accept`には各形式の拡張子とMIME typeを併記し�
 
 適用先と保存上限は次のとおりとする。
 
-- `Admin::StoresController#update`: `thumbnail`、1920x1080
+- `Admin::StoresController#update`: 旧方式互換の`thumbnail`、1920x1080。通常Store管理画面は新方式の`image_pair`を利用する
 - `ProfilesController#update`: 旧方式互換の`avatar`、1024x1024。通常プロフィール画面は新方式の`avatar_image_pair` / `cover_image_pair`を利用する
 - `Cast::BoothsController#update`: `thumbnail_image`、1920x1080
 - `Admin::BoothsController#create`: `thumbnail_image`、1920x1080
@@ -188,7 +188,7 @@ FilePond本体と上記4pluginがすべて読み込まれるまで、50ms間隔�
 - FilePondのロードが遅れる可能性があるため、最大40回まで50ms間隔で初期化をリトライする
 - allowProcess: false のため、Railsフォーム送信時にファイルとして送る
 - HEIC/HEIF変換はブラウザ・FilePond plugin の対応状況に依存する
-- ブラウザがHEIC/HEIFをプレビュー・変換できない場合も選択を許可し、サーバー側でJPEGへ正規化する旨をStore / Booth / Userで共通表示する
+- ブラウザがHEIC/HEIFをプレビュー・変換できない場合も選択を許可し、サーバー側でJPEGへ正規化する旨を旧FilePond経路のBoothで表示する
 - 対応外形式はFilePondで送信前にエラー表示する
 - サーバー側では申告された `content_type` ではなく画像実体を検査する
 

@@ -56,22 +56,52 @@ module Admin
       upload = attributes.delete(:thumbnail)
       remove_thumbnail = attributes.delete(:remove_thumbnail)
 
-      ImageAttachments::UpdateService.new(
-        record: @store,
-        attachment_name: :thumbnail,
-        attributes:,
-        upload:,
-        remove_attachment: remove_thumbnail,
-        max_width: 1920,
-        max_height: 1080
-      ).call
+      begin
+        Stores::UpdateService.new(
+          store: @store,
+          attributes:,
+          image_update: image_pair_payload,
+          legacy_thumbnail_upload: upload,
+          remove_legacy_thumbnail: remove_thumbnail
+        ).call
+      rescue Stores::UpdateService::StaleImageError
+        return respond_store_update_error(
+          @store.errors.full_messages,
+          status: :conflict,
+          code: "image_pair_stale"
+        )
+      rescue Stores::UpdateService::ImageUploadError
+        return respond_store_update_error(
+          @store.errors.full_messages,
+          status: :service_unavailable,
+          code: "image_upload_failed",
+          retryable: true
+        )
+      rescue ActiveRecord::RecordInvalid, Stores::UpdateService::Error
+        return respond_store_update_error(@store.errors.full_messages)
+      rescue ActionController::ParameterMissing, ImageAttachments::MultipartPayload::Invalid => error
+        @store.errors.add(:base, error.message)
+        return respond_store_update_error(@store.errors.full_messages)
+      end
 
-      redirect_to dashboard_path, notice: "店舗情報を更新しました"
-    rescue ActiveRecord::RecordInvalid, ImageAttachments::UpdateService::Error
-      respond_store_update_error(@store.errors.full_messages)
+      respond_to do |format|
+        format.html { redirect_to dashboard_path, notice: "店舗情報を更新しました" }
+        format.json do
+          flash[:notice] = "店舗情報を更新しました"
+          render json: { state: "complete", redirect_url: dashboard_path }
+        end
+      end
     end
 
     private
+
+    def image_pair_payload
+      return nil if params.dig(:image_pair, :operation).blank?
+
+      ImageAttachments::MultipartPayload.from_params(params)
+    rescue TypeError
+      raise ImageAttachments::MultipartPayload::Invalid, "画像送信パラメータが不正です。"
+    end
 
     def load_selectable_stores
       @stores =
@@ -187,7 +217,12 @@ module Admin
       head :forbidden
     end
 
-    def respond_store_update_error(messages)
+    def respond_store_update_error(
+      messages,
+      status: :unprocessable_entity,
+      code: "store_update_invalid",
+      retryable: false
+    )
       message = messages.join(" / ")
 
       respond_to do |format|
@@ -203,6 +238,10 @@ module Admin
 
         format.html do
           redirect_to edit_admin_store_path(@store), alert: message
+        end
+
+        format.json do
+          render json: { error: code, message:, retryable: }, status:
         end
       end
     end

@@ -9,10 +9,11 @@ const controllerPath = path.resolve(
   "../../app/javascript/controllers/image_pair_form_controller.js"
 )
 
-function loadController({ response = { redirect_url: "/dashboard" }, error = null } = {}) {
+function loadController({ response = { redirect_url: "/dashboard" }, error = null, confirmResult = true } = {}) {
   const requests = []
   const navigations = []
   const clients = []
+  const confirmations = []
   let source = fs.readFileSync(controllerPath, "utf8")
   source = source
     .replace('import { Controller } from "@hotwired/stimulus"', "class Controller {}")
@@ -54,6 +55,10 @@ function loadController({ response = { redirect_url: "/dashboard" }, error = nul
     URL,
     queueMicrotask,
     window: {
+      confirm(message) {
+        confirmations.push(message)
+        return confirmResult
+      },
       location: {
         origin: "https://example.test",
         assign(value) { navigations.push(value) },
@@ -61,7 +66,7 @@ function loadController({ response = { redirect_url: "/dashboard" }, error = nul
     },
   })
   vm.runInContext(source, context, { filename: controllerPath })
-  return { Controller: context.ImagePairFormController, clients, navigations, requests }
+  return { Controller: context.ImagePairFormController, clients, confirmations, navigations, requests }
 }
 
 function classList() {
@@ -119,10 +124,11 @@ function buildController(Controller, operations) {
   return { button, controller, editors, errorTarget, form }
 }
 
-function submitEvent() {
+function submitEvent(confirmMessage = null) {
   return {
     prevented: false,
     preventDefault() { this.prevented = true },
+    submitter: confirmMessage ? { dataset: { turboConfirm: confirmMessage } } : null,
   }
 }
 
@@ -177,6 +183,20 @@ test("does not send when an editor marks the submit event invalid", async () => 
 
   assert.equal(event.prevented, true)
   assert.equal(environment.requests.length, 0)
+})
+
+test("honors the submit button confirmation before sending an image operation", async () => {
+  const environment = loadController({ confirmResult: false })
+  const { controller } = buildController(environment.Controller, ["replace"])
+  const event = submitEvent("店舗情報を更新しますか？")
+
+  controller.submit(event)
+  await flushPromises()
+
+  assert.equal(event.prevented, true)
+  assert.deepEqual(environment.confirmations, ["店舗情報を更新しますか？"])
+  assert.equal(environment.requests.length, 0)
+  assert.equal(controller.submitting, false)
 })
 
 test("keeps the prepared files for manual retry after a request error", async () => {
