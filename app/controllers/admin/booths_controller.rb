@@ -11,7 +11,7 @@ module Admin
       scope =
         current_store
           .booths
-          .includes(:thumbnail_image_attachment, booth_casts: :cast_user)
+          .includes({ thumbnail_image_attachment: :blob }, booth_casts: :cast_user)
 
       scope = scope.active unless @include_archived
 

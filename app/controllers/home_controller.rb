@@ -99,6 +99,7 @@ class HomeController < ApplicationController
           .joins("LEFT JOIN (#{online_started_at.to_sql}) online ON online.store_id = stores.id")
           .joins("LEFT JOIN (#{last_online.to_sql}) last_online ON last_online.store_id = stores.id")
           .left_joins(:thumbnail_attachment)
+          .preload(thumbnail_attachment: :blob)
           .order(
             Arel.sql("CASE WHEN online.max_started_at IS NOT NULL THEN 1 ELSE 0 END DESC"),
             Arel.sql("online.max_started_at DESC NULLS LAST"),
@@ -135,7 +136,14 @@ class HomeController < ApplicationController
           ON current_ss.id = booths.current_stream_session_id
       SQL
 
-    booths = booths.left_joins(:thumbnail_image_attachment)
+    booths = booths
+      .left_joins(:thumbnail_image_attachment)
+      .preload(
+        :store,
+        :current_stream_session,
+        { booth_casts: :cast_user },
+        { thumbnail_image_attachment: :blob }
+      )
 
     keywords.each do |keyword|
       q_like = "%#{ActiveRecord::Base.sanitize_sql_like(keyword)}%"

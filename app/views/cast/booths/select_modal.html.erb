@@ -29,13 +29,12 @@
                     <div class="flex-shrink-0">
                       <% if booth.thumbnail_image.attached? %>
                         <%= image_tag booth.thumbnail_image,
-                              class: "rounded border",
-                              style: "width: 56px; height: 56px; object-fit: cover;",
-                              alt: (booth.name.presence || "(no name)") %>
+                              class: "rounded border booth-select-thumbnail",
+                              alt: "#{booth.name.presence || "(no name)"}のブース画像" %>
                       <% else %>
                         <div
                           class="rounded border d-flex align-items-center justify-content-center text-muted"
-                          style="width: 56px; height: 56px;">
+                          style="width: 80px; aspect-ratio: 40 / 21;">
                           <i class="bi bi-camera-video"></i>
                         </div>
                       <% end %>

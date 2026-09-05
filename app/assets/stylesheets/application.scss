@@ -26,6 +26,10 @@ html.is-standalone {
   height: auto;
 }
 
+.ratio-social {
+  --bs-aspect-ratio: 52.5%;
+}
+
 @import "components/layout";
 @import "components/header";
 @import "components/broadcast_layout";

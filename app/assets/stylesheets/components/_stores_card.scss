@@ -17,7 +17,15 @@
 
 .stores-card-thumbnail {
   display: block;
-  aspect-ratio: 16 / 9;
+  width: 100%;
+  aspect-ratio: 40 / 21;
+  object-fit: cover;
+}
+
+.store-select-thumbnail {
+  display: block;
+  width: 80px;
+  aspect-ratio: 40 / 21;
   object-fit: cover;
 }
 

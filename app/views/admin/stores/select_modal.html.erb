@@ -24,13 +24,12 @@
                     <div class="flex-shrink-0">
                       <% if store.thumbnail.attached? %>
                         <%= image_tag store.thumbnail,
-                              class: "rounded border",
-                              style: "width: 56px; height: 56px; object-fit: cover;",
-                              alt: (store.name.presence || "(no name)") %>
+                              class: "rounded border store-select-thumbnail",
+                              alt: "#{store.name.presence || "(no name)"}の店舗画像" %>
                       <% else %>
                         <div
                           class="rounded border d-flex align-items-center justify-content-center text-muted"
-                          style="width: 56px; height: 56px;">
+                          style="width: 80px; aspect-ratio: 40 / 21;">
                           <i class="bi bi-shop"></i>
                         </div>
                       <% end %>

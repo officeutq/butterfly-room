@@ -8,13 +8,7 @@ class Booth < ApplicationRecord
   has_many :booth_casts, dependent: :restrict_with_error
   has_many :cast_users, through: :booth_casts, source: :cast_user
   has_many :favorite_booths, dependent: :destroy
-  has_one_attached :thumbnail_image do |attachable|
-    attachable.variant :ogp,
-                       resize_to_fill: [ 1200, 630 ],
-                       format: :jpg,
-                       quality: 85,
-                       preprocessed: true
-  end
+  has_one_attached :thumbnail_image
   has_one_attached :thumbnail_image_source
 
   image_attachment_purpose :thumbnail,

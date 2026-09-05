@@ -25,12 +25,12 @@
 
       <div class="col-12 col-lg-6 col-xxl-4">
         <div class="card h-100 cast-booths-card <%= "is-archived" if archived %>" data-bs-theme="light">
-          <div class="ratio ratio-16x9 border-bottom cast-booths-card-thumbnail-wrap">
+          <div class="ratio ratio-social border-bottom cast-booths-card-thumbnail-wrap">
             <% if booth.thumbnail_image.attached? %>
               <%= image_tag booth.thumbnail_image,
                     class: "w-100 h-100 cast-booths-card-thumbnail",
                     style: "object-fit: cover;",
-                    alt: booth.name.presence || "(no name)" %>
+                    alt: "#{booth.name.presence || "(no name)"}のブース画像" %>
             <% else %>
               <div class="d-flex align-items-center justify-content-center bg-body-tertiary cast-booths-card-thumbnail">
                 <div class="text-center text-muted">

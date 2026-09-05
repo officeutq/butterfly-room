@@ -4,7 +4,9 @@
   <div class="stores-card-thumbnail-wrap">
     <%= link_to store_path(store), class: "d-block stores-card-thumbnail-link" do %>
       <% if store.thumbnail.attached? %>
-        <%= image_tag store.thumbnail, class: "card-img-top stores-card-thumbnail" %>
+        <%= image_tag store.thumbnail,
+              class: "card-img-top stores-card-thumbnail",
+              alt: "#{store.name}の店舗画像" %>
       <% else %>
         <div class="stores-card-thumbnail stores-card-thumbnail-placeholder">
           <%= image_tag "no_image_logo.png", class: "no-image-logo", alt: "画像なし" %>

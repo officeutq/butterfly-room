@@ -21,7 +21,9 @@
             )
           } do %>
       <% if booth.thumbnail_image.attached? %>
-        <%= image_tag booth.thumbnail_image, class: "card-img-top booths-card-thumbnail" %>
+        <%= image_tag booth.thumbnail_image,
+              class: "card-img-top booths-card-thumbnail",
+              alt: "#{booth.name}のブース画像" %>
       <% else %>
         <div class="booths-card-thumbnail booths-card-thumbnail-placeholder">
           <%= image_tag "no_image_logo.png", class: "no-image-logo", alt: "画像なし" %>

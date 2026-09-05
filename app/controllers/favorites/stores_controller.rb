@@ -13,7 +13,7 @@ module Favorites
           .favorite_stores
           .joins(:store)
           .merge(Store.published)
-          .includes(:store)
+          .includes(store: { thumbnail_attachment: :blob })
           .order(created_at: :desc, id: :desc)
 
       if @q.present?

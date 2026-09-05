@@ -45,7 +45,7 @@ Active Storage direct uploadは初期実装に採用しない。iPhone 15 Proの
 | Store | `thumbnail_source` | `thumbnail` | `thumbnail_crop_data` | 40:21、1200×630 |
 | Booth | `thumbnail_image_source` | `thumbnail_image` | `thumbnail_image_crop_data` | 40:21、1200×630 |
 
-表示用添付は既存名を維持し、公開画面の参照変更を抑える。Userカバーだけは新規追加する。カバー未設定時は共通ロゴを表示する。公開カード・ヒーロー・OGPは表示用添付を利用し、編集元を公開表示に使わない。
+表示用添付は既存名を維持し、公開画面の参照変更を抑える。Userカバーだけは新規追加する。公開・管理カード、選択画面、ヒーロー、待機画面、OGPは40:21の表示用添付を利用し、編集元を公開表示に使わない。新方式のBooth OGPは検査済み表示用JPEGを無変換で配信し、旧画像だけ移行完了まで互換variantを利用する。Store / BoothのOGP未設定時は1200×630の共通JPEGへフォールバックする。
 
 crop dataはJSONBで保存し、schema version 1を次の形で扱う。
 

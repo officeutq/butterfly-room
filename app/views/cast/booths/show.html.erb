@@ -8,7 +8,7 @@
     <% if @booth.thumbnail_image.attached? %>
       <%= image_tag @booth.thumbnail_image,
             class: "booth-show-hero-image",
-            alt: @booth.name %>
+            alt: "#{@booth.name}のブース画像" %>
     <% else %>
       <div class="booth-show-hero-placeholder">
         <%= image_tag "no_image_logo.png", class: "no-image-logo", alt: "画像なし" %>

@@ -119,17 +119,16 @@ native file inputの`accept`には各形式の拡張子とMIME typeを併記し�
 
 削除用hidden parameterは各Controllerのstrong parameters（受け付けるパラメータの制限）へ明示し、Controllerからraw `params` を読む共通処理には渡さない。`AttachmentPersistenceChecker` と `RemovableImageAttachment` は上記4経路から外し、現時点ではドリンクアイコン処理だけが利用する。
 
-### 4.3 OGP用画像variant
+### 4.3 OGP用画像
 
-ブース共有・配信共有のOGP画像には、`Booth.thumbnail_image` の名前付き `ogp` variant（Active Storageが元画像から生成・再利用する変換画像）を使用する。
+ブース共有・配信共有のOGP画像には、Cropper.js経路または既存画像移行で検査済みの`Booth.thumbnail_image`を無変換で使用する。
 
-- 1200x630px、JPEG、中央基準の `resize_to_fill`、品質85とする
-- 元画像は変更せず、添付後に非同期で事前生成する
-- 事前生成前に要求された場合は初回アクセス時に生成し、生成済みvariantを以後再利用する
-- 共有操作ごとの再変換、SNS別variant、cache bust parameterは設けない
+- 新方式の表示用画像は1200x630pxのJPEGとして保存時に検査済みのため、名前付き`ogp` variantや事前生成は行わない
+- 編集元`thumbnail_image_source`は公開表示やOGPに使用しない
+- 既存画像移行前の旧`thumbnail_image`だけは、互換処理として要求時に1200x630px・JPEG・中央基準・品質85へ変換する。移行後はこの分岐を通らない
 - サムネイル未設定時は、既存ロゴを中央配置した1200x630pxの `booth-share-ogp.jpg` を、ブース単位・配信セッション単位の共有コンテキスト固有URLから無変換で配信する
 
-User公開プロフィールのOGP画像には、Cropper.jsで生成・保存した1200x630pxの`cover_image`を再変換せず使用する。`cover_image`未設定時はカード・プロフィールのヒーロー領域と同じ共通ロゴ`no_image_logo.png`へフォールバックする。小型アイコン用の`avatar`や再編集用の`cover_image_source`はOGPへ使用しない。
+Store公開ページとUser公開プロフィールのOGP画像には、Cropper.jsで生成・保存した1200x630pxの`thumbnail` / `cover_image`を再変換せず使用する。Store画像未設定時は1200x630pxの`booth-share-ogp.jpg`、Userカバー未設定時はカード・プロフィールのヒーロー領域と同じ共通ロゴ`no_image_logo.png`へフォールバックする。再編集用の編集元添付はOGPへ使用しない。
 
 ### 4.4 実行環境
 
