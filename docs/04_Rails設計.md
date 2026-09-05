@@ -766,5 +766,6 @@ User / Store / Boothの新方式では、1用途につき編集元画像・表�
 * transaction失敗時は旧状態を維持し、新規Blobだけを清掃する。成功後に参照されなくなった旧Blobを非同期清掃する
 * Controllerがモデルごとに画像処理を再実装せず、通常属性を含む関連処理はServiceへblock等で委譲して同じtransactionに含める
 * 既存画像移行は通常更新と同じ保存Serviceを使い、dry-run、ID範囲、途中再開、冪等性、期待ID照合を備えた専用Service / taskから呼び出す
+* `ImageAttachments::LegacyMigrationService`は移行前の表示添付をattachment ID順に処理し、`LegacyPairBuilder`で通常経路と同じ上限・検査を通した一時Blobを生成して`StagedPairUpdateService`へ渡す。Userはcoverを先に確定し、失敗時は共通生成元の移行前avatarを維持する。taskのapplyは件数上限、範囲または期待ID、確認文字列、実行Git SHAを必須とする
 
 添付名、crop schema、ブラウザ正規化、上限、移行順、撤去条件は [Cropper.js画像アップロード確定設計](design/image_upload_cropper_architecture.md) を正とする。現行FilePond経路は通常画面の切替と既存画像移行が完了するまで維持する。

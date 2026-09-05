@@ -173,6 +173,8 @@ ALBの無通信タイムアウト60秒とS3設定は初期実装で変更しな�
 - 欠損、破損、上限超過、競合、アップロード失敗、保存失敗を別statusにし、失敗対象だけ再確認できるようにする。
 - 詳細なJSON Linesはアクセスを制限して本番移行の事後確認完了から90日保持し、未解決対象が個別Issueへ転記済みであることを確認して削除する。件数・status・実行commit・期間の要約は運用記録へ残す。
 
+実装は`ImageAttachments::LegacyMigrationService`と`image_attachments:migrate_legacy_pairs`へ集約する。Userはcoverを先に確定してからavatarを別transactionで確定し、cover失敗時は移行前avatarを維持する。既に新方式avatarへ更新済みでcover未設定のUserにはcoverを自動生成しない。実行変数、guard、JSON Linesの保管と照合は[既存画像を新方式へ移行する運用手順](../ops/legacy_image_pair_migration.md)を正とする。
+
 実行は必ず次の順とし、各段階を別の運用Issueで記録する。
 
 1. ステージングdry-run
