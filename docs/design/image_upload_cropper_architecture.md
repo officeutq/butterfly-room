@@ -79,7 +79,9 @@ crop dataはJSONBで保存し、schema version 1を次の形で扱う。
 5. sRGB Canvasを白で塗り、画像全体を高品質リサイズして品質0.94の編集元JPEGを生成する。
 6. 編集元JPEGをCropper.jsへ渡し、品質0.90の表示用JPEGを生成する。
 
-入力変更、用途変更、処理再試行は最初の入力ファイルから行い、生成JPEGを繰り返し再圧縮しない。処理は世代番号で直列化し、古い非同期結果を反映しない。Turboキャッシュ前とStimulusの`disconnect`でCropper、Worker、ImageBitmap、Object URL、event listenerを解放する。
+1〜5は `image_attachments/source_normalizer.js` の `ImageSourceNormalizer` に集約する。`normalize(file, { ratioKey })` は固定仕様で編集元JPEG、入力・向き補正後・編集元の情報、拡大・縮小警告を返し、失敗時はコード付きエラーを返す。品質や処理上限、検証用の計測modeを呼び出し側から変更させない。
+
+入力変更、用途変更、処理再試行は最初の入力ファイルから行い、生成JPEGを繰り返し再圧縮しない。共通moduleが処理を世代番号で直列化し、古い非同期結果を反映しない。Turboキャッシュ前とStimulusの`disconnect`で `cancel()` / `dispose()` を呼び、Cropper、Worker、ImageBitmap、Object URL、event listenerを解放する。
 
 ### 4.2 HEIC / HEIF
 

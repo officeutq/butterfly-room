@@ -87,9 +87,6 @@ test("real Cropper.js reaches the selection minimum, restores it, and exports wi
       await controller.changeRatio()
       const social = JSON.parse(controller.normalizationReportTarget.value)
       const firstJpeg = Array.from(new Uint8Array(await (await fetch(controller.sourceObjectUrl)).arrayBuffer()))
-      controller.normalizationQualityTarget.value = "0.98"
-      await controller.normalizeSource()
-      controller.normalizationQualityTarget.value = "0.94"
       await controller.normalizeSource()
       const secondJpeg = Array.from(new Uint8Array(await (await fetch(controller.sourceObjectUrl)).arrayBuffer()))
       const unchangedInput = JSON.parse(controller.normalizationReportTarget.value).input
@@ -145,7 +142,7 @@ test("real Cropper.js reaches the selection minimum, restores it, and exports wi
     assert.equal(lifecycle.social.source.width, 1200)
     assert.equal(lifecycle.social.source.height, 675)
     assert.match(lifecycle.warning, /細部の解像感は増えません/)
-    assert.deepEqual(lifecycle.firstJpeg, lifecycle.secondJpeg, "quality comparisons must restart from the original input")
+    assert.deepEqual(lifecycle.firstJpeg, lifecycle.secondJpeg, "reprocessing must restart from the original input")
     assert.deepEqual(lifecycle.unchangedInput, lifecycle.social.input)
     assert.equal(lifecycle.maximumActive, 1)
     assert.equal(lifecycle.latestState.ratioKey, "social")

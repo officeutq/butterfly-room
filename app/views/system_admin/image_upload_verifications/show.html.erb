@@ -44,30 +44,9 @@
             </div>
           </div>
 
-          <div class="row g-3 mt-1">
-            <div class="col-12 col-lg-5">
-              <label for="image-upload-verification-quality" class="form-label">編集元JPEG品質の比較</label>
-              <select id="image-upload-verification-quality" class="form-select"
-                      data-image-upload-verification-target="normalizationQuality"
-                      data-action="change->image-upload-verification#normalizeSource">
-                <option value="0.9">0.90</option>
-                <option value="0.94" selected>0.94（候補）</option>
-                <option value="0.98">0.98</option>
-              </select>
-            </div>
-            <div class="col-12 col-lg-7">
-              <label for="image-upload-verification-mode" class="form-label">大きい編集元の比較</label>
-              <select id="image-upload-verification-mode" class="form-select"
-                      data-image-upload-verification-target="normalizationMode"
-                      data-action="change->image-upload-verification#normalizeSource">
-                <option value="bounded">長辺4096px・800万画素まで縮小（候補）</option>
-                <option value="retain">元寸法を保つ（高メモリ消費・比較専用）</option>
-              </select>
-            </div>
-          </div>
           <p class="form-text mt-2 mb-0">
-            小さい画像は用途の最低寸法まで拡大し、透過部分は白にします。用途・品質・上限設定を変えると、最初の入力画像から再変換しクロップを初期化します。
-            入力の暫定上限は20MiB・3200万画素・長辺8192px・縦横比8:1です。最低寸法と出力上限を両立できない縦長・横長画像もエラーにします。スマホの安全性は未検証です。
+            編集元JPEGは品質0.94、長辺4096px・800万画素以下に固定します。小さい画像は用途の最低寸法まで拡大し、透過部分は白にします。用途を変えると最初の入力画像から再変換し、クロップを初期化します。
+            入力上限は20MiB・3200万画素・長辺8192px・縦横比8:1です。最低寸法と出力上限を両立できない縦長・横長画像もエラーにします。
           </p>
           <p class="alert alert-warning small mt-3 mb-0" role="status" hidden
              data-image-upload-verification-target="normalizationWarning"></p>
@@ -196,16 +175,16 @@
 
       <section class="card shadow-sm mt-4" data-bs-theme="light">
         <div class="card-body">
-          <h2 class="h5">4. 編集元JPEG・変換測定</h2>
+          <h2 class="h5">4. 編集元JPEG・正規化結果</h2>
           <p class="small text-body-secondary">クロップ前の全体画像です。向き・白背景・細部を入力画像と見比べてください。EXIF / GPSは引き継がず、sRGBの描画領域でJPEGを作り直します。</p>
           <img alt="正規化した未クロップの編集元JPEG" class="img-fluid mb-3" hidden
                data-image-upload-verification-target="normalizedPreview">
           <a class="btn btn-outline-primary btn-sm disabled" aria-disabled="true"
              data-image-upload-verification-target="sourceDownload">編集元JPEGをダウンロード</a>
-          <label for="image-upload-verification-normalization-report" class="form-label small mt-3">変換測定JSON（コピーして結果を記録できます）</label>
+          <label for="image-upload-verification-normalization-report" class="form-label small mt-3">正規化結果JSON（コピーして結果を記録できます）</label>
           <textarea id="image-upload-verification-normalization-report" class="form-control font-monospace small"
                     rows="10" readonly data-image-upload-verification-target="normalizationReport"></textarea>
-          <p class="form-text mb-0">入力・向き補正後・編集元の寸法、容量、倍率、処理時間を表示します。HEIC変換では方式・画像数・RGBA（展開後の画素データ）容量も記録します。ライブラリヒープと全体のピークメモリは未取得（null）であり、RGBA容量はその代用ではありません。時間は単発測定で端末や負荷に依存します。表示用JPEGの品質は0.90固定です。</p>
+          <p class="form-text mb-0">入力・向き補正後・編集元の寸法、容量、倍率を表示します。HEIC変換では方式・画像数・RGBA（展開後の画素データ）容量も記録します。ライブラリヒープと全体のピークメモリは未取得（null）であり、RGBA容量はその代用ではありません。表示用JPEGの品質は0.90固定です。</p>
         </div>
       </section>
 

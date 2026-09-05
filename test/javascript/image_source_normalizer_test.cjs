@@ -5,10 +5,23 @@ const test = require("node:test")
 const vm = require("node:vm")
 
 function loadNormalizer(overrides = {}) {
-  const source = fs.readFileSync(path.resolve(__dirname, "../../app/javascript/controllers/image_upload_verification/source_normalizer.js"), "utf8")
+  const source = fs.readFileSync(path.resolve(__dirname, "../../app/javascript/image_attachments/source_normalizer.js"), "utf8")
     .replaceAll("export ", "")
-  const context = vm.createContext({ performance, DOMException, navigator: { userAgent: "unit-test" }, ...overrides })
-  vm.runInContext(`${source}\nglobalThis.api = { planSourceSize, inspectImageHeader, normalizeEditingSource }`, context)
+  const context = vm.createContext({
+    performance,
+    DOMException,
+    AbortController,
+    Blob,
+    File,
+    ...overrides,
+  })
+  vm.runInContext(`${source}\nglobalThis.api = {
+    IMAGE_SOURCE_LIMITS,
+    ImageSourceNormalizer,
+    inspectImageSourceHeader,
+    planEditingSourceSize,
+    validateImageSourceDimensions,
+  }`, context)
   return context.api
 }
 
@@ -19,44 +32,88 @@ function pngHeader(width, height) {
   buffer.write("IHDR", 12)
   buffer.writeUInt32BE(width, 16)
   buffer.writeUInt32BE(height, 20)
+  return buffer
+}
+
+function pngFile(width = 320, height = 180, options = {}) {
+  return new File([pngHeader(width, height)], options.name || "fixture.png", {
+    type: options.type || "image/png",
+  })
+}
+
+function arrayBuffer(buffer) {
   return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
 }
 
-test("small images satisfy each purpose without cropping; large sources have two comparison modes", () => {
-  const { planSourceSize } = loadNormalizer()
-  for (const [minimumWidth, minimumHeight] of [[1024, 1024], [1200, 630]]) {
+function canvasFactory({ canvases = [] } = {}) {
+  return () => {
+    const canvas = {
+      width: 0,
+      height: 0,
+      getContext: () => ({
+        fillRect() {},
+        drawImage() {},
+        getContextAttributes: () => ({ colorSpace: "srgb" }),
+      }),
+      toBlob: (callback) => callback(new Blob(["jpeg"], { type: "image/jpeg" })),
+    }
+    canvases.push(canvas)
+    return canvas
+  }
+}
+
+function errorCode(error) {
+  return error?.code
+}
+
+test("small images are enlarged for each purpose and large images use the fixed output limits", () => {
+  const { IMAGE_SOURCE_LIMITS, planEditingSourceSize } = loadNormalizer()
+  for (const ratioKey of ["square", "social"]) {
     for (const [width, height] of [[320, 180], [180, 320], [100, 100], [1421, 800]]) {
-      const actual = planSourceSize({ width, height, minimumWidth, minimumHeight })
-      const scale = Math.max(1, minimumWidth / width, minimumHeight / height)
+      const actual = planEditingSourceSize({ width, height, ratioKey })
+      const minimum = ratioKey === "square" ? [1024, 1024] : [1200, 630]
+      const scale = Math.max(1, minimum[0] / width, minimum[1] / height)
       assert.equal(actual.scale, scale)
-      assert.ok(actual.width >= minimumWidth && actual.height >= minimumHeight)
+      assert.ok(actual.width >= minimum[0] && actual.height >= minimum[1])
       assert.ok(Math.abs(actual.width - width * scale) <= 1)
       assert.ok(Math.abs(actual.height - height * scale) <= 1)
     }
   }
-  const input = { width: 6000, height: 4000, minimumWidth: 1200, minimumHeight: 630 }
-  const bounded = planSourceSize(input)
-  assert.ok(bounded.reduced && bounded.width <= 4096 && bounded.width * bounded.height <= 8_000_000)
-  const retained = planSourceSize({ ...input, mode: "retain" })
-  assert.equal(retained.width, 6000)
-  assert.equal(retained.height, 4000)
+
+  const large = planEditingSourceSize({ width: 6000, height: 4000, ratioKey: "social" })
+  assert.equal(large.reduced, true)
+  assert.ok(large.width <= IMAGE_SOURCE_LIMITS.outputEdge)
+  assert.ok(large.width * large.height <= IMAGE_SOURCE_LIMITS.outputPixels)
+  assert.equal(IMAGE_SOURCE_LIMITS.quality, 0.94)
 })
 
-test("rejects unsafe, extreme and incompatible dimensions before canvas creation", () => {
-  const { planSourceSize } = loadNormalizer()
-  for (const [width, height] of [[0, 10], [NaN, 10], [10.5, 20], [8193, 3000], [6000, 6000], [1000, 10]]) {
-    assert.throws(() => planSourceSize({ width, height, minimumWidth: 1024, minimumHeight: 1024 }))
+test("unsafe, extreme, incompatible and unknown-purpose dimensions have stable error codes", () => {
+  const { planEditingSourceSize, validateImageSourceDimensions } = loadNormalizer()
+  for (const [width, height, code] of [
+    [0, 10, "dimensions_unreadable"],
+    [NaN, 10, "dimensions_unreadable"],
+    [10.5, 20, "dimensions_unreadable"],
+    [8193, 3000, "dimensions_too_large"],
+    [6000, 6000, "dimensions_too_large"],
+    [1000, 10, "aspect_ratio_too_large"],
+  ]) {
+    assert.throws(() => validateImageSourceDimensions(width, height), (error) => errorCode(error) === code)
   }
-  assert.throws(() => planSourceSize({ width: 100, height: 800, minimumWidth: 1200, minimumHeight: 630, mode: "retain" }), /両立/)
-  assert.throws(() => planSourceSize({ width: 800, height: 100, minimumWidth: 1024, minimumHeight: 1024 }), /両立/)
-  assert.throws(() => planSourceSize({ width: 100, height: 100, minimumWidth: 1024, minimumHeight: 1024, mode: "invalid" }), /設定/)
+  assert.throws(
+    () => planEditingSourceSize({ width: 100, height: 800, ratioKey: "social" }),
+    (error) => errorCode(error) === "incompatible_dimensions"
+  )
+  assert.throws(
+    () => planEditingSourceSize({ width: 320, height: 180, ratioKey: "unknown" }),
+    (error) => errorCode(error) === "invalid_purpose"
+  )
 })
 
 test("PNG, JPEG SOF and all WebP header variants are recognized; corrupt headers are rejected", () => {
-  const { inspectImageHeader } = loadNormalizer()
-  assert.equal(inspectImageHeader(pngHeader(320, 180)).mimeType, "image/png")
+  const { inspectImageSourceHeader } = loadNormalizer()
+  assert.equal(inspectImageSourceHeader(arrayBuffer(pngHeader(320, 180))).mimeType, "image/png")
   const jpeg = new Uint8Array([255, 216, 255, 224, 0, 2, 255, 194, 0, 8, 8, 0, 180, 1, 64, 1])
-  assert.equal(inspectImageHeader(jpeg.buffer).width, 320)
+  assert.equal(inspectImageSourceHeader(jpeg.buffer).width, 320)
   for (const type of ["VP8X", "VP8 ", "VP8L"]) {
     const buffer = Buffer.alloc(32)
     buffer.write("RIFF", 0)
@@ -65,40 +122,69 @@ test("PNG, JPEG SOF and all WebP header variants are recognized; corrupt headers
     if (type === "VP8X") { buffer.writeUIntLE(319, 24, 3); buffer.writeUIntLE(179, 27, 3) }
     if (type === "VP8 ") { Buffer.from([157, 1, 42]).copy(buffer, 23); buffer.writeUInt16LE(320, 26); buffer.writeUInt16LE(180, 28) }
     if (type === "VP8L") { buffer[20] = 47; buffer.writeUInt32LE(319 + (179 << 14), 21) }
-    const header = inspectImageHeader(buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength))
+    const header = inspectImageSourceHeader(arrayBuffer(buffer))
     assert.equal(header.width, 320)
     assert.equal(header.height, 180)
   }
-  for (const buffer of [new ArrayBuffer(0), new Uint8Array([255, 216, 255, 224, 255, 255]).buffer, new TextEncoder().encode("not a jpg").buffer]) {
-    assert.throws(() => inspectImageHeader(buffer), /画像実体/)
+  for (const buffer of [Buffer.alloc(0), Buffer.from([255, 216, 255, 224, 255, 255]), Buffer.from("not a jpg")]) {
+    assert.throws(
+      () => inspectImageSourceHeader(arrayBuffer(buffer)),
+      (error) => errorCode(error) === "unsupported_image"
+    )
   }
 })
 
-test("oversized byte/pixel inputs are rejected without decoding", async () => {
+test("oversized byte and pixel inputs are rejected before decoding", async () => {
   let decodeCount = 0
-  const { normalizeEditingSource } = loadNormalizer({ createImageBitmap: () => { decodeCount += 1 } })
-  const config = { minimumWidth: 1024, minimumHeight: 1024 }
-  await assert.rejects(normalizeEditingSource({ size: 21 * 1024 ** 2 }, config), /20MiB/)
-  await assert.rejects(normalizeEditingSource({ size: 33, arrayBuffer: async () => pngHeader(6000, 6000) }, config), /3200万画素/)
+  const { ImageSourceNormalizer } = loadNormalizer({
+    createImageBitmap: () => { decodeCount += 1 },
+  })
+  const normalizer = new ImageSourceNormalizer()
+  const oversized = new File([new Uint8Array(20 * 1024 ** 2 + 1)], "large.png", { type: "image/png" })
+  await assert.rejects(
+    normalizer.normalize(oversized, { ratioKey: "square" }),
+    (error) => errorCode(error) === "file_too_large"
+  )
+  await assert.rejects(
+    normalizer.normalize(pngFile(6000, 6000), { ratioKey: "square" }),
+    (error) => errorCode(error) === "dimensions_too_large"
+  )
   assert.equal(decodeCount, 0)
 })
 
-test("failed canvas allocation, null JPEG, and cancelled decoding close the bitmap", async () => {
-  for (const failure of ["context", "blob", "cancel"]) {
+test("canvas failures and null JPEG results close decoded resources and allow retry", async () => {
+  for (const failure of ["context", "blob"]) {
     let closed = 0
-    let current = true
-    const canvas = { getContext: () => failure === "context" ? null : { fillRect() {}, drawImage() {} }, toBlob: (callback) => callback(null) }
-    const { normalizeEditingSource } = loadNormalizer({
-      createImageBitmap: async () => {
-        if (failure === "cancel") current = false
-        return { width: 320, height: 180, close: () => { closed += 1 } }
+    let attempt = 0
+    const canvases = []
+    const createCanvas = canvasFactory({ canvases })
+    const { ImageSourceNormalizer } = loadNormalizer({
+      createImageBitmap: async () => ({
+        width: 320,
+        height: 180,
+        close: () => { closed += 1 },
+      }),
+      document: {
+        createElement: () => {
+          attempt += 1
+          const canvas = createCanvas()
+          if (attempt === 1 && failure === "context") canvas.getContext = () => null
+          if (attempt === 1 && failure === "blob") canvas.toBlob = (callback) => callback(null)
+          return canvas
+        },
       },
-      document: { createElement: () => canvas },
     })
-    const file = { size: 33, type: "image/png", arrayBuffer: async () => pngHeader(320, 180) }
-    await assert.rejects(normalizeEditingSource(file, { minimumWidth: 1200, minimumHeight: 630, isCurrent: () => current }), /確保|生成|中止/)
-    assert.equal(closed, 1)
-    if (failure !== "cancel") assert.equal(canvas.width, 0)
+    const normalizer = new ImageSourceNormalizer()
+    await assert.rejects(
+      normalizer.normalize(pngFile(), { ratioKey: "social" }),
+      (error) => errorCode(error) === (failure === "context" ? "canvas_unavailable" : "encode_failed")
+    )
+    const result = await normalizer.normalize(pngFile(), { ratioKey: "social" })
+    assert.equal(result.file.name, "source.jpg")
+    assert.equal(result.file.type, "image/jpeg")
+    assert.equal(result.warning.code, "source_enlarged")
+    assert.equal(closed, 2)
+    assert.ok(canvases.every((canvas) => canvas.width === 0 && canvas.height === 0))
   }
 })
 
@@ -106,31 +192,93 @@ test("decoder uses the inspected MIME and EXIF fallback releases its object URL"
   const revoked = []
   let cleared = false
   let decodedType
-  const { normalizeEditingSource } = loadNormalizer({
-    createImageBitmap: async (blob) => { decodedType = blob.type; throw new DOMException("decode", "InvalidStateError") },
+  const canvases = []
+  const { ImageSourceNormalizer } = loadNormalizer({
+    createImageBitmap: async (blob) => {
+      decodedType = blob.type
+      throw new DOMException("decode", "InvalidStateError")
+    },
     Image: class {
       naturalWidth = 320
       naturalHeight = 180
       async decode() {}
       removeAttribute() { cleared = true }
     },
-    URL: { createObjectURL: () => "blob:fallback", revokeObjectURL: (url) => revoked.push(url) },
-    document: { createElement: () => ({
-      getContext: () => ({ fillRect() {}, drawImage() {} }),
-      toBlob: (callback) => callback({ type: "image/jpeg", size: 1000 }),
-    }) },
+    URL: {
+      createObjectURL: () => "blob:fallback",
+      revokeObjectURL: (url) => revoked.push(url),
+    },
+    document: { createElement: canvasFactory({ canvases }) },
   })
-  const file = { size: 33, type: "wrong/type", arrayBuffer: async () => pngHeader(320, 180), slice: (_start, _end, type) => ({ type }) }
-  const result = await normalizeEditingSource(file, { minimumWidth: 1200, minimumHeight: 630 })
+  const normalizer = new ImageSourceNormalizer()
+  const result = await normalizer.normalize(
+    pngFile(320, 180, { type: "wrong/type" }),
+    { ratioKey: "social" }
+  )
   assert.equal(decodedType, "image/png")
-  assert.equal(result.report.decoded.method, "HTMLImageElement")
+  assert.equal(result.decoded.method, "HTMLImageElement")
+  assert.equal(result.source.width, 1200)
+  assert.equal(result.source.height, 675)
+  assert.equal(result.source.quality, 0.94)
   assert.equal(cleared, true)
   assert.deepEqual(revoked, ["blob:fallback"])
 })
 
-test("animated images are explicitly excluded from this verification", () => {
-  const { inspectImageHeader } = loadNormalizer()
-  const png = Buffer.concat([Buffer.from(pngHeader(320, 180)), Buffer.alloc(20)])
+test("new generations are serialized, superseded results are rejected, and disposal releases resources", async () => {
+  let finishFirstDecode
+  let finishThirdDecode
+  let markFirstStarted
+  let markThirdStarted
+  const firstStarted = new Promise((resolve) => { markFirstStarted = resolve })
+  const thirdStarted = new Promise((resolve) => { markThirdStarted = resolve })
+  let activeDecodes = 0
+  let maximumActiveDecodes = 0
+  let decodeCount = 0
+  let closed = 0
+  const canvases = []
+  const { ImageSourceNormalizer } = loadNormalizer({
+    createImageBitmap: async () => {
+      decodeCount += 1
+      activeDecodes += 1
+      maximumActiveDecodes = Math.max(maximumActiveDecodes, activeDecodes)
+      if (decodeCount === 1) {
+        markFirstStarted()
+        await new Promise((resolve) => { finishFirstDecode = resolve })
+      }
+      if (decodeCount === 3) {
+        markThirdStarted()
+        await new Promise((resolve) => { finishThirdDecode = resolve })
+      }
+      activeDecodes -= 1
+      return { width: 320, height: 180, close: () => { closed += 1 } }
+    },
+    document: { createElement: canvasFactory({ canvases }) },
+  })
+  const normalizer = new ImageSourceNormalizer()
+  const first = normalizer.normalize(pngFile(), { ratioKey: "square" })
+  await firstStarted
+  const second = normalizer.normalize(pngFile(), { ratioKey: "social" })
+  finishFirstDecode()
+
+  await assert.rejects(first, (error) => errorCode(error) === "aborted")
+  const latest = await second
+  assert.equal(latest.source.width, 1200)
+  assert.equal(maximumActiveDecodes, 1)
+  assert.equal(closed, 2)
+
+  const third = normalizer.normalize(pngFile(), { ratioKey: "square" })
+  await thirdStarted
+  normalizer.dispose()
+  finishThirdDecode()
+  await assert.rejects(third, (error) => errorCode(error) === "aborted")
+  assert.equal(maximumActiveDecodes, 1)
+  assert.equal(closed, 3)
+  assert.ok(canvases.every((canvas) => canvas.width === 0 && canvas.height === 0))
+})
+
+test("animated PNG and WebP are explicitly rejected", () => {
+  const { inspectImageSourceHeader } = loadNormalizer()
+  const png = Buffer.concat([pngHeader(320, 180), Buffer.alloc(20)])
   png.writeUInt32BE(8, 33)
   png.write("acTL", 37)
   const webp = Buffer.alloc(30)
@@ -139,6 +287,9 @@ test("animated images are explicitly excluded from this verification", () => {
   webp.write("VP8X", 12)
   webp[20] = 2
   for (const buffer of [png, webp]) {
-    assert.throws(() => inspectImageHeader(buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)), /アニメーション/)
+    assert.throws(
+      () => inspectImageSourceHeader(arrayBuffer(buffer)),
+      (error) => errorCode(error) === "animated_image"
+    )
   }
 })
