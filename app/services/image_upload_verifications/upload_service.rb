@@ -68,7 +68,7 @@ module ImageUploadVerifications
           upload = uploads[role]
           raise ImageValidator::Invalid, "編集元・表示用の2画像が必要です。" unless upload.respond_to?(:tempfile)
 
-          inspected[role] = ImageValidator.call(upload.tempfile, role: role, crop_data: run.crop_data)
+          inspected[role] = ImageValidator.call(upload, role: role, crop_data: run.crop_data)
           [ role, upload.tempfile ]
         end
         files.each do |role, file|

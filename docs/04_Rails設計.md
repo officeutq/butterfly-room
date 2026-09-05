@@ -749,7 +749,8 @@ end
 
 User / Store / Boothの新方式では、1用途につき編集元画像・表示用画像・crop dataを一つの画像組として扱う。Controller（リクエストを受ける層）は認可、strong parameters、Service（業務処理を集約するクラス）呼出し、レスポンスに留める。
 
-* 共通ServiceがRails multipartで受けた2個のJPEG実体、寸法、容量、crop dataを検査し、Active Storageへ事前保存する
+* `ImageAttachments::PairValidator`がRails multipartまたは移行処理から受けた2個のJPEG実体、寸法、容量、crop dataを共通検査する。クライアント由来の`sourceBlobId`は保存せず、更新Serviceが確定したBlob IDで付与する
+* 共通Serviceが検査済みの2画像をActive Storageへ事前保存する
 * レコードロック下で編集開始時のattachment ID・blob IDを照合し、古い画面による上書きを拒否する
 * 新規・差し替えは編集元・表示用・crop data、再編集は表示用・crop data、削除は3点すべてを一つのDB transactionで更新する
 * transaction失敗時は旧状態を維持し、新規Blobだけを清掃する。成功後に参照されなくなった旧Blobを非同期清掃する
