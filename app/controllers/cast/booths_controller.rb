@@ -133,20 +133,34 @@ module Cast
       remove_thumbnail_image = attributes.delete(:remove_thumbnail_image)
 
       begin
-        ImageAttachments::UpdateService.new(
-          record: @booth,
-          attachment_name: :thumbnail_image,
+        ::Booths::UpdateService.new(
+          booth: @booth,
           attributes:,
-          upload:,
-          remove_attachment: remove_thumbnail_image,
-          max_width: 1920,
-          max_height: 1080
+          image_update: image_pair_payload,
+          legacy_thumbnail_upload: upload,
+          remove_legacy_thumbnail: remove_thumbnail_image
         ).call do |booth|
           next if create_initial_booth_cast_if_requested(booth)
 
           raise ActiveRecord::RecordInvalid, booth
         end
-      rescue ActiveRecord::RecordInvalid, ImageAttachments::UpdateService::Error
+      rescue ::Booths::UpdateService::StaleImageError
+        return respond_booth_update_error(
+          @booth.errors.full_messages,
+          status: :conflict,
+          code: "image_pair_stale"
+        )
+      rescue ::Booths::UpdateService::ImageUploadError
+        return respond_booth_update_error(
+          @booth.errors.full_messages,
+          status: :service_unavailable,
+          code: "image_upload_failed",
+          retryable: true
+        )
+      rescue ActiveRecord::RecordInvalid, ::Booths::UpdateService::Error
+        return respond_booth_update_error(@booth.errors.full_messages)
+      rescue ActionController::ParameterMissing, ImageAttachments::MultipartPayload::Invalid => error
+        @booth.errors.add(:base, error.message)
         return respond_booth_update_error(@booth.errors.full_messages)
       end
 
@@ -157,7 +171,13 @@ module Cast
           helpers.dashboard_path_for(current_user)
         end
 
-      redirect_to redirect_path, notice: "ブースを更新しました"
+      respond_to do |format|
+        format.html { redirect_to redirect_path, notice: "ブースを更新しました" }
+        format.json do
+          flash[:notice] = "ブースを更新しました"
+          render json: { state: "complete", redirect_url: redirect_path }
+        end
+      end
     end
 
     def status
@@ -204,6 +224,14 @@ module Cast
     end
 
     private
+
+    def image_pair_payload
+      return nil if params.dig(:image_pair, :operation).blank?
+
+      ImageAttachments::MultipartPayload.from_params(params)
+    rescue TypeError
+      raise ImageAttachments::MultipartPayload::Invalid, "画像送信パラメータが不正です。"
+    end
 
     def load_selectable_booths
       @include_archived = ActiveModel::Type::Boolean.new.cast(params[:archived])
@@ -320,7 +348,12 @@ module Cast
       params.require(:booth).permit(:name, :description, :thumbnail_image, :remove_thumbnail_image)
     end
 
-    def respond_booth_update_error(messages)
+    def respond_booth_update_error(
+      messages,
+      status: :unprocessable_entity,
+      code: "booth_update_invalid",
+      retryable: false
+    )
       message = messages.join(" / ")
 
       respond_to do |format|
@@ -336,6 +369,10 @@ module Cast
 
         format.html do
           redirect_to edit_cast_booth_path(@booth), alert: message
+        end
+
+        format.json do
+          render json: { error: code, message:, retryable: }, status:
         end
       end
     end

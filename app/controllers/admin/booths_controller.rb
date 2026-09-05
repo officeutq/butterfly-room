@@ -33,30 +33,47 @@ module Admin
       upload = attributes.delete(:thumbnail_image)
       remove_thumbnail_image = attributes.delete(:remove_thumbnail_image)
 
-      ImageAttachments::UpdateService.new(
-        record: @booth,
-        attachment_name: :thumbnail_image,
+      ::Booths::UpdateService.new(
+        booth: @booth,
         attributes:,
-        upload:,
-        remove_attachment: remove_thumbnail_image,
-        max_width: 1920,
-        max_height: 1080
+        image_update: image_pair_payload,
+        legacy_thumbnail_upload: upload,
+        remove_legacy_thumbnail: remove_thumbnail_image
       ).call do |booth|
         create_initial_booth_cast_if_requested!(booth)
       end
 
       Booths::ProvisionIvsStageService.new(booth: @booth).call!
 
-      redirect_to helpers.dashboard_path_for(current_user), notice: "ブースを作成しました"
+      destination = helpers.dashboard_path_for(current_user)
+      respond_to do |format|
+        format.html { redirect_to destination, notice: "ブースを作成しました" }
+        format.json do
+          flash[:notice] = "ブースを作成しました"
+          render json: { state: "complete", redirect_url: destination }
+        end
+      end
 
-    rescue ActiveRecord::RecordInvalid, ImageAttachments::UpdateService::Error
-      load_cast_memberships
-      render :new, status: :unprocessable_entity
+    rescue ::Booths::UpdateService::StaleImageError
+      respond_booth_create_error(status: :conflict, code: "image_pair_stale")
+
+    rescue ::Booths::UpdateService::ImageUploadError
+      respond_booth_create_error(
+        status: :service_unavailable,
+        code: "image_upload_failed",
+        retryable: true
+      )
+
+    rescue ActiveRecord::RecordInvalid, ::Booths::UpdateService::Error
+      respond_booth_create_error
+
+    rescue ActionController::ParameterMissing, ImageAttachments::MultipartPayload::Invalid => error
+      @booth.errors.add(:base, error.message)
+      respond_booth_create_error
 
     rescue Booths::ProvisionIvsStageService::StageProvisionFailed => e
       @booth.errors.add(:base, "IVS Stage の作成に失敗しました: #{e.message}")
-      load_cast_memberships
-      render :new, status: :unprocessable_entity
+      respond_booth_create_error(code: "ivs_stage_provision_failed", retryable: true)
 
     rescue => e
       Rails.logger.error("[BoothCreate] #{e.class}: #{e.message}")
@@ -64,8 +81,7 @@ module Admin
       @booth ||= current_store.booths.new
       @booth.errors.add(:base, "ブースの作成に失敗しました")
 
-      load_cast_memberships
-      render :new, status: :unprocessable_entity
+      respond_booth_create_error
     end
 
     def force_end
@@ -154,6 +170,31 @@ module Admin
     end
 
     private
+
+    def image_pair_payload
+      return nil if params.dig(:image_pair, :operation).blank?
+
+      ImageAttachments::MultipartPayload.from_params(params)
+    rescue TypeError
+      raise ImageAttachments::MultipartPayload::Invalid, "画像送信パラメータが不正です。"
+    end
+
+    def respond_booth_create_error(
+      status: :unprocessable_entity,
+      code: "booth_create_invalid",
+      retryable: false
+    )
+      load_cast_memberships
+      message = @booth.errors.full_messages.join(" / ")
+
+      respond_to do |format|
+        format.html { render :new, status: :unprocessable_entity }
+        format.turbo_stream { render :new, status: :unprocessable_entity }
+        format.json do
+          render json: { error: code, message:, retryable: }, status:
+        end
+      end
+    end
 
     def set_booth
       scope =
