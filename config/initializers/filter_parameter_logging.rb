@@ -11,6 +11,7 @@ Rails.application.config.filter_parameters += [
 Rails.application.config.filter_parameters += [
   :verification,
   :blob,
+  :image_pair,
   :lp_analytics_event,
   :lp_analytics_visit_id,
   :store_registration,

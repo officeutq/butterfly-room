@@ -103,6 +103,23 @@ Controller（リクエストを受ける層）は認可、strong parameters、�
 
 事前保存するBlobのmetadataには`image_attachment_staging`を付け、`schemaVersion`、用途、`source` / `display`の役割、`cleanupAfter`を記録する。既定の清掃期限は作成から1時間とし、画像組のcommit時に同じtransaction内で印を外す。5分ごとの定期Jobは、期限を過ぎ、専用metadataが正しく、どこにも添付されていないBlobだけを清掃する。保存先の削除後にBlob行を削除し、保存先削除に失敗した場合は行とmetadataを残して次回再試行できるようにする。
 
+通常フォームは1用途につき、既定では`image_pair`を次のmultipart parameter契約で送る。Userのavatar / coverのように同じフォームで複数用途を扱う場合は、用途別のroot名をControllerから`MultipartPayload.from_params`へ指定し、配下は同じ契約を使う。`crop_data`はJSON文字列、`expected`は編集画面を開いた時点のIDとし、画像未設定時は4項目を空文字で送る。Controllerはstrong parametersと値検査を共通化した結果を`ImageAttachments::MultipartUpdateService`へ渡す。
+
+```text
+image_pair[operation] = replace | reedit | delete
+image_pair[source] = 編集元JPEG（replaceだけ）
+image_pair[display] = 表示用JPEG（replace / reedit）
+image_pair[crop_data] = schema version 1のJSON文字列（replace / reedit）
+image_pair[expected][source_attachment_id]
+image_pair[expected][source_blob_id]
+image_pair[expected][display_attachment_id]
+image_pair[expected][display_blob_id]
+```
+
+multipart全体の26MiB上限はPumaでRails到達前に適用し、同じ上限のRack middlewareでも`Content-Length`の超過・欠落・虚偽を検知する。middlewareはmultipartだけを対象とし、413では`image_pair_request_too_large`と`retryable: true`を返す。Pumaの上限はサーバー全体のbodyに作用するため、新方式以外も26MiBを超える必要がないことを維持する。個別画像は`PairValidator`でsource 20MiB、display 5MiBをBlob作成前に検査する。
+
+ブラウザ送信には`ImagePairMultipartClient`を使い、待ち時間を45秒で打ち切って手動再送可能に戻す。自動再送は行わない。通信中断・タイムアウト後もサーバー側が完了する可能性があるため、再送時も元の`expected`を使う。先行送信が完了済みなら後着送信を競合として拒否し、後着側の一時Blobだけを清掃する。
+
 ALBの無通信タイムアウト60秒とS3設定は初期実装で変更しない。クライアント側の画像送信待ちは45秒を上限とし、超過時は再送可能な状態へ戻す。ステージングで20MiB境界と低速条件を確認し、既存60秒内に収まらない場合だけインフラ変更を別途判断する。
 
 既存 `ImageAttachments::UpdateService` は移行期間中のFilePond経路と、単一添付をサーバー正規化する経路のために維持する。新方式はブラウザ生成済みの2画像を再圧縮しないため、試作した `StagedPairUpdateService` を本番契約へ仕上げ、責務を混在させない。
