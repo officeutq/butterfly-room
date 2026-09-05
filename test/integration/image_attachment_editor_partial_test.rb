@@ -19,13 +19,16 @@ class ImageAttachmentEditorPartialTest < ActionDispatch::IntegrationTest
     section = document.at_css("section[data-controller='image-attachment-editor']")
 
     assert_equal "square", section["data-image-attachment-editor-ratio-key-value"]
+    assert_match(/image_attachments\/heic_worker/, section["data-image-attachment-editor-heic-worker-url-value"])
+    assert_match(/libheif-without-unsafe-eval/, section["data-image-attachment-editor-heic-decoder-url-value"])
     assert_equal "turbo:before-cache@document->image-attachment-editor#beforeCache", section["data-action"]
     assert_equal "アバター画像", document.at_css("h2").text
     assert_match(/1:1（1024×1024）/, document.at_css(".form-text").text)
 
     picker = document.at_css("input[data-image-attachment-editor-target='fileInput']")
     assert_nil picker["name"]
-    assert_equal ".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp", picker["accept"]
+    assert_equal ".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif", picker["accept"]
+    assert_equal "/licenses/heic-verification.txt", document.at_css("a[href*='licenses']")["href"]
     assert_equal picker["id"], document.at_css("label.form-label")["for"]
 
     assert_payload_input(document, "avatar_image[operation]", "hidden")

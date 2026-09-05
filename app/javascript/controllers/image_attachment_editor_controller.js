@@ -12,9 +12,10 @@ import {
   validateCropState,
 } from "image_attachments/cropper_editor"
 import { ImageSourceNormalizer } from "image_attachments/source_normalizer"
+import { ImageHeicConverter } from "image_attachments/heic_converter"
 
-const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "image/webp"]
-const ACCEPTED_FILE_EXTENSION = /\.(?:jpe?g|png|webp)$/i
+const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "image/heic-sequence", "image/heif-sequence"]
+const ACCEPTED_FILE_EXTENSION = /\.(?:jpe?g|png|webp|hei[cf])$/i
 
 export default class extends Controller {
   static targets = [
@@ -43,6 +44,8 @@ export default class extends Controller {
     currentDisplayUrl: String,
     currentSourceBlobId: Number,
     currentSourceUrl: String,
+    heicDecoderUrl: String,
+    heicWorkerUrl: String,
     ratioKey: String,
   }
 
@@ -51,6 +54,10 @@ export default class extends Controller {
     this.generation = (this.generation || 0) + 1
     this.previewGeneration = (this.previewGeneration || 0) + 1
     this.sourceNormalizer ||= new ImageSourceNormalizer()
+    this.heicConverter ||= new ImageHeicConverter({
+      workerUrl: this.heicWorkerUrlValue,
+      decoderUrl: this.heicDecoderUrlValue,
+    })
     this.sourceLoadCleanup = null
     this.cropper = null
     this.cropperCanvas = null
@@ -92,7 +99,7 @@ export default class extends Controller {
     if (!file) return
     if (!this.supportedFile(file)) {
       this.resetToBaseline({ announce: false })
-      this.renderError("JPEG / PNG / WebPを選択してください。HEIC / HEIF対応は準備中です。")
+      this.renderError("JPEG / PNG / WebP / HEIC / HEIFを選択してください。")
       return
     }
 
@@ -100,9 +107,12 @@ export default class extends Controller {
     const generation = this.generation
     this.phase = "processing"
     this.setEditorControlsDisabled(true)
-    this.renderStatus("編集元JPEGを準備しています…")
+    this.renderStatus("画像を確認し、編集元JPEGを準備しています…")
     try {
-      const normalized = await this.sourceNormalizer.normalize(file, { ratioKey: this.ratioKeyValue })
+      const prepared = await this.heicConverter.prepare(file)
+      if (!this.isCurrent(generation)) return
+
+      const normalized = await this.sourceNormalizer.normalize(prepared.file, { ratioKey: this.ratioKeyValue })
       if (!this.isCurrent(generation)) return
 
       this.workingSourceFile = normalized.file
@@ -562,6 +572,7 @@ export default class extends Controller {
     this.generation += 1
     this.previewGeneration += 1
     this.sourceNormalizer?.cancel()
+    this.heicConverter?.cancel()
     this.releaseEditor()
     this.revokeWorkingSourceObjectUrl()
     this.revokePreviewObjectUrl()

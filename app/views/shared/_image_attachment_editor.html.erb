@@ -32,13 +32,16 @@
   data-controller="image-attachment-editor"
   data-action="turbo:before-cache@document->image-attachment-editor#beforeCache"
   data-image-attachment-editor-ratio-key-value="<%= ratio_key %>"
+  data-image-attachment-editor-heic-worker-url-value="<%= asset_path('image_attachments/heic_worker.js') %>"
+  data-image-attachment-editor-heic-decoder-url-value="<%= asset_path('heic-to/src/lib/libheif-without-unsafe-eval.js') %>"
   <% if current_source_url.present? %>data-image-attachment-editor-current-source-url-value="<%= current_source_url %>"<% end %>
   <% if current_display_url.present? %>data-image-attachment-editor-current-display-url-value="<%= current_display_url %>"<% end %>
   <% if current_crop_json.present? %>data-image-attachment-editor-current-crop-data-value="<%= current_crop_json %>"<% end %>
   <% if source_blob_id.present? %>data-image-attachment-editor-current-source-blob-id-value="<%= source_blob_id %>"<% end %>>
   <h2 id="<%= dom_id %>-label" class="h6 mb-2"><%= label %></h2>
   <p id="<%= dom_id %>-help" class="form-text mt-0">
-    JPEG / PNG / WebPを選択できます。出力は<%= output_label %>です。画像を選んだだけでは保存されません。
+    JPEG / PNG / WebP / HEIC / HEIFを選択できます。HEIC / HEIFはブラウザ内でJPEGへ変換します。出力は<%= output_label %>です。画像を選んだだけでは保存されません。
+    <a href="/licenses/heic-verification.txt" target="_blank" rel="noopener">変換ソフトウェアのライセンス・ソース情報</a>
   </p>
 
   <div class="image-attachment-editor__picker mb-3">
@@ -47,7 +50,7 @@
       id="<%= dom_id %>-picker"
       type="file"
       class="form-control"
-      accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+      accept=".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif"
       aria-describedby="<%= dom_id %>-help <%= dom_id %>-status"
       data-image-attachment-editor-target="fileInput"
       data-action="change->image-attachment-editor#selectFile">

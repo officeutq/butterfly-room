@@ -5,8 +5,8 @@ const test = require("node:test")
 
 const moduleUrl = (source) => `data:text/javascript;base64,${Buffer.from(source).toString("base64")}`
 const load = (file) => import(moduleUrl(fs.readFileSync(path.resolve(__dirname, "../../app/javascript", file), "utf8")))
-const converter = load("controllers/image_upload_verification/heic_converter.js")
-const worker = load("image_upload_verification/heic_worker.js")
+const converter = load("image_attachments/heic_converter.js")
+const worker = load("image_attachments/heic_worker.js")
 
 function header(major, compatible = []) {
   const buffer = new ArrayBuffer(16 + compatible.length * 4)
@@ -43,6 +43,64 @@ test("ordinary files are passed through; empty, oversized, mislabeled and aborte
   await assert.rejects(prepareHeicInput(jpeg, { ...options, signal: AbortSignal.abort() }), { name: "AbortError" })
   await assert.rejects(prepareHeicInput(jpeg, { ...options, mode: "invalid" }), /方式/)
   await assert.rejects(prepareHeicInput(jpeg, { ...options, limitMode: "invalid" }), /上限設定/)
+})
+
+test("production converter stays lazy, always uses the 32MP Worker path, and cancels cleanly", async (t) => {
+  const { ImageHeicConverter } = await converter
+  const original = global.Worker
+  t.after(() => { global.Worker = original })
+
+  let created = 0
+  let lastMessage
+  global.Worker = class {
+    constructor(url, options) {
+      created += 1
+      this.terminated = false
+      assert.equal(url, "/worker")
+      assert.deepEqual(options, { type: "module" })
+    }
+    terminate() { this.terminated = true }
+    postMessage(message) {
+      lastMessage = message
+      queueMicrotask(() => this.onmessage({ data: {
+        ok: true,
+        blob: new Blob(["jpeg"], { type: "image/jpeg" }),
+        report: { limitMode: message.limitMode, pixelLimit: 32_000_000 },
+      } }))
+    }
+  }
+
+  const instance = new ImageHeicConverter({ workerUrl: "/worker", decoderUrl: "/decoder" })
+  const jpeg = new File(["jpeg"], "photo.jpg", { type: "image/jpeg" })
+  assert.equal((await instance.prepare(jpeg)).file, jpeg)
+  assert.equal(created, 0, "ordinary images must not start the HEIC Worker")
+
+  const converted = await instance.prepare(new File([header("heic")], "photo.heic", { type: "image/heic" }))
+  assert.equal(converted.file.type, "image/jpeg")
+  assert.equal(converted.conversion.limitMode, "large")
+  assert.equal(lastMessage.limitMode, "large")
+  assert.equal(lastMessage.mode, "worker")
+  assert.equal(lastMessage.decoderUrl, "/decoder")
+
+  await assert.rejects(
+    new ImageHeicConverter().prepare(new File([header("heic")], "photo.heic")),
+    /モジュールのURL/
+  )
+
+  let pendingWorker
+  global.Worker = class {
+    constructor() { pendingWorker = this; this.terminated = false }
+    terminate() { this.terminated = true }
+    postMessage() {}
+  }
+  const pending = instance.prepare(new File([header("heic")], "pending.heic"))
+  for (let attempt = 0; !pendingWorker && attempt < 20; attempt += 1) {
+    await new Promise((resolve) => setImmediate(resolve))
+  }
+  assert.ok(pendingWorker)
+  instance.cancel()
+  await assert.rejects(pending, { name: "AbortError" })
+  assert.equal(pendingWorker.terminated, true)
 })
 
 test("Worker is terminated on success, decode failure, worker error, transfer failure, abort and timeout", async (t) => {

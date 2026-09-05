@@ -46,7 +46,7 @@ class SystemAdminImageUploadVerificationTest < ActionDispatch::IntegrationTest
       assert_select "[data-controller~=image-upload-verification]"
       assert_select "input[type=file][accept*='image/webp']"
       assert_select "input[type=file][accept*='image/heic'][accept*='.heif']"
-      assert_select "[data-image-upload-verification-heic-worker-url-value*='image_upload_verification/heic_worker']"
+      assert_select "[data-image-upload-verification-heic-worker-url-value*='image_attachments/heic_worker']"
       assert_select "[data-image-upload-verification-heic-decoder-url-value*='libheif-without-unsafe-eval']"
       assert_select "select[data-image-upload-verification-target=heicMode] option[value=worker]"
       assert_select "select[data-image-upload-verification-target=heicLimit] option[selected][value=standard]", text: /1600万/

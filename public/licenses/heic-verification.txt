@@ -1,10 +1,14 @@
-画像アップロード検証で利用するソフトウェア（2026-09-03）
+画像アップロードで利用するHEIC / HEIF変換ソフトウェア（2026-09-05）
 
 heic-to 1.5.2 (Hopper Gee)
 License: GNU LGPL version 3 or later. MITではありません。
 利用ファイル: src/lib/libheif-without-unsafe-eval.js（無改変・別モジュールで配信）
 Source / build instructions: https://github.com/hoppergee/heic-to/tree/v1.5.2
 Exact published package: https://registry.npmjs.org/heic-to/-/heic-to-1.5.2.tgz
+npm shasum (SHA-1): a512b9564bcfe4729071c7eb621643855f826465
+npm integrity: sha512-8Fns+lZHAWmz5U5IUxDeXKwIf3foBoKNPLxxFY4B0MkLjNuomEIHCoDbDE+x/llFK3NCEO1cu4+n3iUKY+Svmw==
+配布decoderのSHA-256: 356068bb64947a76f1490ee139b2cab52f62e5e60d1945413aed9ab94c09e754
+同梱LICENSEのSHA-256: dbd7222d8026e5d6ca6991d1e6a205de927f300840433c2e90a60644a9980c75
 License copy: /licenses/heic-to-LGPL-3.txt
 GNU GPL v3 (incorporated by LGPL): /licenses/GPL-3.txt
 Original: https://www.gnu.org/licenses/gpl-3.0.txt
@@ -21,7 +25,8 @@ heic-toのREADMEのbuild-emscripten.sh手順と次の設定によるビルドで
 LIBDE265_VERSION=1.0.16 USE_UNSAFE_EVAL=0 USE_WASM=0
 上記ソースとビルド手順からライブラリを再ビルド・置換できます。
 アプリケーション本体へ結合・難読化せず、ライブラリは独立したJavaScriptモジュールとして読み込みます。
+通常の画像編集UIはアプリ側の変換APIを介して利用するため、同じ入出力を満たすdecoderへ置換できます。
 ソースにある著作権表示・ライセンス条件を保持してください。
 
 各ライブラリは無保証です。詳細な権利・条件はそれぞれのライセンスを参照してください。
-この画面への組み込みは検証用です。本番配布に伴うライセンス条件の最終確認は別途行います。
+本記載は採用版・配布物・対応ソースを識別する技術情報であり、法的適合性や特許上の問題がないことを保証するものではありません。

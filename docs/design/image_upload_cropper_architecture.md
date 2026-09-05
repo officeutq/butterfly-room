@@ -93,7 +93,9 @@ crop dataはJSONBで保存し、schema version 1を次の形で扱う。
 
 24MPのiPhone写真を受け付けるため、Workerは3200万画素までとする。入力20MiB、長辺8192px、縦横比8:1、静止画像20個、処理30秒を上限とする。48MP等の上限超過、破損、対応外codec、Worker起動失敗、メモリ不足は保存へ進めず、再選択できるエラーを表示する。
 
-本番公開前にLGPL-3.0-or-laterの告知、対応ソース・ビルド情報、置換可能性等の配布条件を確認する。検証ページのライセンス表示だけで法的適合を保証しない。条件を満たせない場合は、同じブラウザ変換インターフェースを保ったままdecoderを差し替える。
+`image_attachments/heic_converter.js` の `ImageHeicConverter` を通常UIとdecoderの境界とし、通常UIは低水準APIや配布ファイルの内部パスに依存させない。通常経路はWorker・3200万画素上限に固定し、検証画面だけが16MP / 32MPとメインスレッド比較を選べる。JPEG / PNG / WebP選択時はWorkerとdecoderを読み込まない。
+
+LGPL-3.0-or-laterの告知、対応ソース・ビルド情報、配布物checksum、置換可能性は `/licenses/heic-verification.txt` に記録し、通常の画像編集UIから到達可能にする。これは採用版と対応ソースを識別する技術対応であり、法的適合を保証しない。条件を満たせない場合は、同じブラウザ変換インターフェースを保ったままdecoderを差し替える。
 
 ## 5. Rails・Active Storage処理
 

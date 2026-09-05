@@ -87,6 +87,67 @@ test("shared editor creates fixed-size replacement files without blank borders",
   }
 })
 
+test("shared editor lazily converts HEIC in a Worker before normalizing and cropping", { timeout: 120_000 }, async () => {
+  const browser = await browsers[process.env.IMAGE_VERIFICATION_BROWSER || "chromium"].launch({ headless: true })
+  let environment
+  try {
+    environment = await openImageAttachmentEditorPage(browser, { strictCsp: true })
+    assert.equal(environment.requests.includes("/worker.js"), false)
+    assert.equal(environment.requests.includes("/decoder.js"), false)
+
+    const result = await environment.page.evaluate(async () => {
+      const invalidController = window.mountEditor({ ratioKey: "square" })
+      await invalidController.selectFile({ currentTarget: { files: [new File(["broken"], "broken.heic", { type: "image/heic" })] } })
+      const invalid = {
+        phase: invalidController.phase,
+        sourceCount: invalidController.sourceInputTarget.files.length,
+        status: invalidController.statusTarget.textContent,
+      }
+
+      const controller = window.mountEditor({ ratioKey: "social" })
+      const input = await (await fetch("/heic/medium.heic")).blob()
+      await controller.selectFile({ currentTarget: { files: [new File([input], "medium.heic", { type: "image/heic" })] } })
+      if (!controller.cropper) throw new Error(controller.statusTarget.textContent)
+      const sourceBeforeCrop = {
+        type: controller.workingSourceFile.type,
+        name: controller.workingSourceFile.name,
+      }
+      await controller.applyCrop()
+      const source = controller.sourceInputTarget.files[0]
+      const display = controller.displayInputTarget.files[0]
+      const state = JSON.parse(controller.cropDataInputTarget.value)
+      return {
+        invalid,
+        sourceBeforeCrop,
+        operation: controller.operationInputTarget.value,
+        source: { type: source.type, name: source.name, bytes: source.size },
+        display: { type: display.type, name: display.name, bytes: display.size },
+        state,
+      }
+    })
+
+    assert.equal(result.invalid.phase, "idle")
+    assert.equal(result.invalid.sourceCount, 0)
+    assert.match(result.invalid.status, /実体/)
+    assert.deepEqual(result.sourceBeforeCrop, { type: "image/jpeg", name: "source.jpg" })
+    assert.equal(result.operation, "replace")
+    assert.equal(result.source.type, "image/jpeg")
+    assert.equal(result.source.name, "source.jpg")
+    assert.ok(result.source.bytes > 0)
+    assert.equal(result.display.type, "image/jpeg")
+    assert.equal(result.display.name, "display.jpg")
+    assert.ok(result.display.bytes > 0)
+    assert.equal(result.state.ratioKey, "social")
+    assert.deepEqual(result.state.output, { width: 1200, height: 630, mimeType: "image/jpeg", quality: 0.9 })
+    assert.ok(environment.requests.includes("/worker.js"))
+    assert.ok(environment.requests.includes("/decoder.js"))
+    assert.deepEqual(environment.errors, [])
+  } finally {
+    await environment?.close()
+    await browser.close()
+  }
+})
+
 test("shared editor restores, stages re-edit/delete, cancels, and reconnects safely", async () => {
   const browser = await browsers[process.env.IMAGE_VERIFICATION_BROWSER || "chromium"].launch({ headless: true })
   let environment

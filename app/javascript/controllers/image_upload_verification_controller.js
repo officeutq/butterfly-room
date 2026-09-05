@@ -12,7 +12,7 @@ import {
   validateCropState,
 } from "image_attachments/cropper_editor"
 import { ImageSourceNormalizer } from "image_attachments/source_normalizer"
-import { prepareHeicInput } from "controllers/image_upload_verification/heic_converter"
+import { prepareHeicInput } from "image_attachments/heic_converter"
 import { UploadVerificationClient } from "controllers/image_upload_verification/upload_client"
 
 function roundForDisplay(value, precision = 4) {
