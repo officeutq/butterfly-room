@@ -47,28 +47,25 @@
   </div>
 <% end %>
 
-<div
-  class="mb-3 image-upload-field"
-  data-controller="image-upload"
-  data-image-upload-width-value="1920"
-  data-image-upload-height-value="1080"
-  <% if booth.thumbnail_image.attached? %>
-    data-image-upload-initial-url-value="<%= url_for(booth.thumbnail_image) %>"
-  <% end %>>
-  <%= f.label :thumbnail_image, "サムネ画像", class: "form-label" %>
-
-  <%= f.hidden_field :remove_thumbnail_image,
-        value: "0",
-        data: { "image-upload-target": "removeFlag" } %>
-
-  <%= f.file_field :thumbnail_image,
-        accept: ".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif",
-        data: { "image-upload-target": "input" } %>
-
-  <%= render "shared/image_upload_help" %>
+<div class="card mb-3">
+  <div class="card-body">
+    <%= render "shared/image_attachment_editor",
+          **image_attachment_editor_state(booth, :thumbnail),
+          param_root: :image_pair,
+          ratio_key: :social,
+          label: "ブース画像" %>
+    <p class="form-text mb-0">ブースカードや配信待機画面に使う1200×630の画像です。</p>
+  </div>
 </div>
 
+<p class="alert alert-danger" role="alert" tabindex="-1" hidden data-image-pair-form-target="error"></p>
+
 <div class="d-flex gap-2">
-  <%= f.submit submit_label, class: "btn btn-primary" %>
+  <%= f.submit submit_label,
+        class: "btn btn-primary",
+        data: {
+          "image-pair-form-target": "submitButton",
+          turbo_submits_with: "保存中…"
+        } %>
   <%= link_to "戻る", back_path, class: "btn btn-outline-secondary" %>
 </div>

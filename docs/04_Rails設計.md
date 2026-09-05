@@ -756,7 +756,8 @@ User / Store / Boothの新方式では、1用途につき編集元画像・表�
 * `ImageAttachments::MultipartUpdateService`が全画像の検査後、`StagedBlobUploadService`で用途別Active Storageへ事前保存し、保存先の存在確認後に`StagedPairUpdateService`へ一体更新を委譲する。1レコードの複数用途を受けた場合も全用途と通常属性を一つのtransactionで更新する
 * `Profiles::UpdateService`がUserのavatar / coverを用途別rootから受け取り、通常属性と一体更新する。サーバー互換として既存FilePondのavatar parameterも撤去Issueまでは受け付けるが、通常プロフィールViewは送信しない。新旧parameterが同時なら二重更新せず拒否する
 * `Stores::UpdateService`がStoreの`thumbnail`画像組と通常属性を一体更新する。通常Store管理Viewは既存FilePond parameterを送信せず、新方式の`image_pair`と旧`store[thumbnail]` / `store[remove_thumbnail]`が同時なら二重更新せず拒否する
-* UserプロフィールとStore管理フォームの画像変更時は`image_pair_form_controller`が`ImagePairMultipartClient`で画像組と通常属性を一回だけ送信し、45秒超過・通信失敗時は自動再送せず入力を保持する。成功レスポンスの同一origin遷移先だけを採用する
+* `Booths::UpdateService`がBoothの`thumbnail_image`画像組、通常属性、初回キャスト紐づけを一つのtransactionで更新する。通常Booth作成・編集Viewは既存FilePond parameterを送信せず、新方式の`image_pair`と旧`booth[thumbnail_image]` / `booth[remove_thumbnail_image]`が同時なら二重更新せず拒否する
+* Userプロフィール、Store管理、Booth作成・編集フォームの画像変更時は`image_pair_form_controller`が`ImagePairMultipartClient`で画像組と通常属性を一回だけ送信し、45秒超過・通信失敗時は自動再送せず入力を保持する。成功レスポンスの同一origin遷移先だけを採用する
 * multipart全体はPumaと`MultipartBodyLimit`で26MiBに制限し、`Content-Length`欠落・虚偽も実読込量で拒否する。ブラウザは`ImagePairMultipartClient`で45秒を上限とし、自動再送しない
 * レコードロック下で編集開始時のattachment ID・blob IDを照合し、古い画面による上書きを拒否する
 * 新規・差し替えは編集元・表示用・crop data、再編集は表示用・crop data、削除は3点すべてを一つのDB transactionで更新する

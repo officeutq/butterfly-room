@@ -1,9 +1,11 @@
-<% content_for :head do %>
-  <%= render "shared/filepond_head" %>
-<% end %>
 <% content_for :title, "ブース編集" %>
 
-<%= form_with model: [:cast, @booth] do |f| %>
+<%= form_with model: [:cast, @booth],
+      html: { multipart: true },
+      data: {
+        controller: "image-pair-form",
+        action: "submit->image-pair-form#submit"
+      } do |f| %>
   <%= render "booths/form",
             f: f,
             booth: @booth,
