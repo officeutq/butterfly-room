@@ -24,23 +24,24 @@ module Stores
       @form.lp_analytics_visit = store_registration_lp_analytics_visit
 
       if @form.save
-        completion_payload = completion_tracking_payload(from: @store_registration_from)
+        pending_payload = completion_tracking_payload(from: @store_registration_from)
 
         sign_in(@form.user) # Devise
         session[:current_store_id] = @form.store.id
         session.delete(:current_booth_id)
-        session[:store_registration_completion] =
-          completion_payload
+        session[STORE_REGISTRATION_PENDING_SESSION_KEY] =
+          pending_payload
             .merge("store_id" => @form.store.id)
+        session.delete(STORE_REGISTRATION_COMPLETION_SESSION_KEY)
 
-        redirect_to store_registration_thanks_path(@store_registration_from)
+        redirect_to edit_admin_store_registration_setup_path(@form.store)
       else
         render :new, status: :unprocessable_entity
       end
     end
 
     def thanks
-      @store_registration_completion = session.delete(:store_registration_completion)
+      @store_registration_completion = session.delete(STORE_REGISTRATION_COMPLETION_SESSION_KEY)
       @store = store_from_registration_completion(@store_registration_completion)
 
       unless valid_registration_completion_store?(@store)

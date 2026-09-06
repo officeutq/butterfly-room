@@ -8,6 +8,8 @@ class ApplicationController < ActionController::Base
   STORE_LP_202609_REF_SESSION_KEY = :store_lp_202609_ref
   PRESERVE_STORE_LP_202609_ATTRIBUTION_ONCE_SESSION_KEY = :preserve_store_lp_202609_attribution_once
   STORE_LP_202609_FROM = "stores_lp_202609"
+  STORE_REGISTRATION_PENDING_SESSION_KEY = :store_registration_pending
+  STORE_REGISTRATION_COMPLETION_SESSION_KEY = :store_registration_completion
   LP_ANALYTICS_VISIT_PUBLIC_ID_SESSION_KEY = :lp_analytics_visit_public_id
   LP_ANALYTICS_VISIT_PUBLIC_IDS_SESSION_KEY = :lp_analytics_visit_public_ids
   LP_ANALYTICS_MAX_SESSION_VISITS = 10

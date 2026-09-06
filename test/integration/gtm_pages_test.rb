@@ -52,6 +52,12 @@ class GtmPagesTest < ActionDispatch::IntegrationTest
     post stores_registrations_path, params: {
       store_registration: registration_params(referral_code: referral_code.code)
     }
+    store = Store.order(:id).last
+    assert_redirected_to edit_admin_store_registration_setup_path(store)
+
+    patch admin_store_registration_setup_path(store), params: {
+      store: { name: store.name }
+    }
     follow_redirect!
 
     assert_response :success

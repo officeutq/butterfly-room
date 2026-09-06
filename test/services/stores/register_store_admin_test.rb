@@ -60,7 +60,7 @@ module Stores
       assert_equal default_referral_code, result.store.referral_code
     end
 
-    test "records an LP analytics completion after the registration transaction commits" do
+    test "links the LP analytics visit without recording completion" do
       rc = ReferralCode.create!(
         code: "STORE-REG-ANALYTICS",
         enabled: true,
@@ -69,7 +69,7 @@ module Stores
       visit = create_lp_analytics_visit
       result = nil
 
-      assert_difference -> { LpAnalytics::Event.where(event_type: "store_registration_complete").count }, 1 do
+      assert_no_difference -> { LpAnalytics::Event.where(event_type: "store_registration_complete").count } do
         result = RegisterStoreAdmin.call!(
           store_name: "行動分析対象店舗",
           email: "store-registration-analytics@example.com",
@@ -80,7 +80,6 @@ module Stores
       end
 
       assert_equal visit, result.store.lp_analytics_visit
-      assert_equal result.store, LpAnalytics::Event.order(:id).last.completion_record
     end
 
     test "rolls back store, user, membership, and drink_items when default drink_item creation fails" do

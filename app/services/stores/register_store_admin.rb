@@ -49,20 +49,7 @@ module Stores
         )
       end
 
-      record_lp_analytics_completion(store)
       Result.new(store: store, user: user)
-    end
-
-    private
-
-    def record_lp_analytics_completion(store)
-      return if @lp_analytics_visit.blank?
-
-      LpAnalytics::Completions::RecordService.new(
-        visit: @lp_analytics_visit,
-        event_type: "store_registration_complete",
-        completion_record: store
-      ).call
     end
   end
 end

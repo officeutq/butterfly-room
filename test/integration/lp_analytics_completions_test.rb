@@ -23,7 +23,7 @@ class LpAnalyticsCompletionsTest < ActionDispatch::IntegrationTest
     visit = LpAnalytics::Visit.order(:id).last
 
     assert_difference -> { Store.count }, 1 do
-      assert_difference -> { completion_events("store_registration_complete").count }, 1 do
+      assert_no_difference -> { completion_events("store_registration_complete").count } do
         post stores_registrations_path(from: "stores_lp_202607"), params: {
           store_registration: registration_params(referral_code: referral_code.code)
         }
@@ -31,8 +31,14 @@ class LpAnalyticsCompletionsTest < ActionDispatch::IntegrationTest
     end
 
     store = Store.order(:id).last
+    assert_redirected_to edit_admin_store_registration_setup_path(store)
+
+    assert_difference -> { completion_events("store_registration_complete").count }, 1 do
+      complete_registration_setup(store)
+    end
+
     event = completion_events("store_registration_complete").last
-    assert_redirected_to stores_registration_thanks_path(from: "stores_lp_202607")
+    assert_redirected_to stores_registration_thanks_path
     assert_equal visit, store.lp_analytics_visit
     assert_equal visit, event.visit
     assert_equal store, event.completion_record
@@ -47,7 +53,7 @@ class LpAnalyticsCompletionsTest < ActionDispatch::IntegrationTest
     visit = LpAnalytics::Visit.order(:id).last
 
     assert_difference -> { Store.count }, 1 do
-      assert_difference -> { completion_events("store_registration_complete").count }, 1 do
+      assert_no_difference -> { completion_events("store_registration_complete").count } do
         post stores_registrations_path(from: "stores_lp_202609"), params: {
           store_registration: registration_params(referral_code: referral_code.code)
         }
@@ -55,8 +61,14 @@ class LpAnalyticsCompletionsTest < ActionDispatch::IntegrationTest
     end
 
     store = Store.order(:id).last
+    assert_redirected_to edit_admin_store_registration_setup_path(store)
+
+    assert_difference -> { completion_events("store_registration_complete").count }, 1 do
+      complete_registration_setup(store)
+    end
+
     event = completion_events("store_registration_complete").last
-    assert_redirected_to stores_registration_thanks_path(from: "stores_lp_202609")
+    assert_redirected_to stores_registration_thanks_path
     assert_equal LpAnalytics::Configuration::STORE_LP_202609, visit.lp_identifier
     assert_equal visit, store.lp_analytics_visit
     assert_equal visit, event.visit
@@ -85,8 +97,15 @@ class LpAnalyticsCompletionsTest < ActionDispatch::IntegrationTest
       }
     end
 
-    assert_redirected_to stores_registration_thanks_path(from: "stores_lp_202607")
-    assert_nil Store.order(:id).last.lp_analytics_visit
+    store = Store.order(:id).last
+    assert_redirected_to edit_admin_store_registration_setup_path(store)
+    assert_nil store.lp_analytics_visit
+
+    assert_no_difference -> { completion_events("store_registration_complete").count } do
+      complete_registration_setup(store)
+    end
+
+    assert_redirected_to stores_registration_thanks_path
   end
 
   test "LPを経由しない通常店舗登録では匿名訪問を作らない" do
@@ -101,8 +120,15 @@ class LpAnalyticsCompletionsTest < ActionDispatch::IntegrationTest
       }
     end
 
+    store = Store.order(:id).last
+    assert_redirected_to edit_admin_store_registration_setup_path(store)
+    assert_nil store.lp_analytics_visit
+
+    assert_no_difference -> { completion_events("store_registration_complete").count } do
+      complete_registration_setup(store)
+    end
+
     assert_redirected_to stores_registration_thanks_path
-    assert_nil Store.order(:id).last.lp_analytics_visit
   end
 
   test "JavaScriptに依存せずLP経由の正常問い合わせを匿名訪問へ記録する" do
@@ -215,6 +241,12 @@ class LpAnalyticsCompletionsTest < ActionDispatch::IntegrationTest
       password_confirmation: "password",
       referral_code: ""
     }.merge(overrides)
+  end
+
+  def complete_registration_setup(store)
+    patch admin_store_registration_setup_path(store), params: {
+      store: { name: store.name }
+    }
   end
 
   def contact_params(overrides = {})

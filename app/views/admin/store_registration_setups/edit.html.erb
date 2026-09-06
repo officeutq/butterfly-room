@@ -1,0 +1,73 @@
+<% content_for :title, "初回店舗設定" %>
+
+<div
+  class="store-edit-shell"
+  data-controller="store-ai-autofill"
+  data-store-ai-autofill-url-value="<%= admin_store_ai_autofill_path(@store) %>">
+  <%= form_with model: @store,
+        url: admin_store_registration_setup_path(@store),
+        method: :patch,
+        id: "store-registration-setup-form",
+        class: "store-edit",
+        html: { multipart: true },
+        data: {
+          controller: "image-pair-form",
+          action: "submit->image-pair-form#submit"
+        } do |f| %>
+    <div class="store-edit__action-bar">
+      <div class="container store-edit__action-bar-inner">
+        <%= link_to dashboard_path,
+              class: "btn btn-sm btn-link text-body text-decoration-none store-edit__back" do %>
+          <i class="bi bi-arrow-left" aria-hidden="true"></i>
+          <span>戻る</span>
+        <% end %>
+
+        <%= f.submit "保存して公開",
+              class: "btn btn-primary btn-sm rounded-pill px-3 store-edit__save",
+              data: {
+                "image-pair-form-target": "submitButton",
+                turbo_submits_with: "保存中…",
+                submitting_label: "保存中…"
+              } %>
+      </div>
+    </div>
+
+    <div class="store-edit__fields">
+      <div class="mb-4">
+        <h1 class="h4 mb-2">店舗情報を入力しましょう</h1>
+        <p class="text-body-secondary mb-0">あと1ステップで店舗登録が完了します。</p>
+      </div>
+
+      <% if @store.errors.any? %>
+        <div class="alert alert-danger" role="alert">
+          <ul class="mb-0">
+            <% @store.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <%= render "stores/information_fields", f:, store: @store %>
+
+      <p class="form-text mb-3">
+        保存すると店舗を公開します。公開後も店舗設定から内容を変更できます。
+      </p>
+
+      <p class="alert alert-danger" role="alert" tabindex="-1" hidden
+         data-image-pair-form-target="error"></p>
+
+      <div class="store-edit__bottom-actions">
+        <%= f.submit "店舗情報を保存して公開する",
+              class: "btn btn-primary btn-lg w-100 store-edit__bottom-save",
+              data: {
+                "image-pair-form-target": "submitButton",
+                turbo_submits_with: "保存中…",
+                submitting_label: "保存中…"
+              } %>
+      </div>
+    </div>
+  <% end %>
+
+  <%= render "admin/stores/ai_autofill_modal" %>
+</div>

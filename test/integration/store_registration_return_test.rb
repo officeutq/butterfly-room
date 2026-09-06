@@ -118,8 +118,11 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
 
     store = Store.order(:id).last
 
-    assert_redirected_to stores_registration_thanks_path(from: "stores_lp_202607")
+    assert_redirected_to edit_admin_store_registration_setup_path(store)
     assert_equal referral_code, store.referral_code
+
+    complete_registration_setup(store)
+    assert_redirected_to stores_registration_thanks_path
 
     follow_redirect!
 
@@ -183,6 +186,10 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
       end
     end
 
+    store = Store.order(:id).last
+    assert_redirected_to edit_admin_store_registration_setup_path(store)
+
+    complete_registration_setup(store)
     follow_redirect!
 
     assert_equal(
@@ -248,6 +255,8 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
     store = Store.order(:id).last
     assert_equal referral_code, store.referral_code
 
+    assert_redirected_to edit_admin_store_registration_setup_path(store)
+    complete_registration_setup(store)
     follow_redirect!
 
     assert_equal(
@@ -318,7 +327,7 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
     assert_no_match(/utm_source/, response.body)
   end
 
-  test "successful registration redirects to thanks and keeps existing admin edit destination" do
+  test "successful registration completes after initial setup and keeps existing admin edit destination" do
     referral_code = create_referral_code!("STORE-REG-RETURN-OK")
     get stores_lp_202607_path, params: {
       utm_source: "meta",
@@ -337,13 +346,33 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
     end
 
     store = Store.order(:id).last
-    thanks_path = URI(response.location).request_uri
 
-    assert_redirected_to stores_registration_thanks_path(from: "stores_lp_202607")
+    assert_redirected_to edit_admin_store_registration_setup_path(store)
     assert_no_match(/ref=/, response.location)
     assert_no_match(/utm_/, response.location)
     assert_equal referral_code, store.referral_code
+    assert_not store.published?
     assert_equal store.id, @request.session[:current_store_id].to_i
+    assert_equal(
+      {
+        "from" => "stores_lp_202607",
+        "utm" => {
+          "utm_source" => "meta",
+          "utm_medium" => "paid_social",
+          "utm_campaign" => "store_recruit_202607"
+        },
+        "store_id" => store.id
+      },
+      @request.session[:store_registration_pending]
+    )
+    assert_nil @request.session[:store_registration_completion]
+
+    complete_registration_setup(store)
+    thanks_path = URI(response.location).request_uri
+
+    assert_redirected_to stores_registration_thanks_path
+    assert_predicate store.reload, :published?
+    assert_nil @request.session[:store_registration_pending]
     assert_equal(
       {
         "from" => "stores_lp_202607",
@@ -403,10 +432,13 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
 
     store = Store.order(:id).last
 
-    assert_redirected_to stores_registration_thanks_path(from: "stores_lp_202607")
+    assert_redirected_to edit_admin_store_registration_setup_path(store)
     assert_no_match(/ref=/, response.location)
     assert_equal default_referral_code, store.referral_code
     assert_equal store.id, @request.session[:current_store_id].to_i
+
+    complete_registration_setup(store)
+    assert_redirected_to stores_registration_thanks_path
 
     follow_redirect!
 
@@ -444,6 +476,10 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
         referral_code: referral_code.code
       )
     }
+    store = Store.order(:id).last
+    assert_redirected_to edit_admin_store_registration_setup_path(store)
+
+    complete_registration_setup(store)
     thanks_path = URI(response.location).request_uri
 
     registered_user = User.find_by!(email: "store-registration-mismatch@example.com")
@@ -474,6 +510,12 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
       password_confirmation: "password",
       referral_code: "STORE-REG-RETURN"
     }.merge(overrides)
+  end
+
+  def complete_registration_setup(store)
+    patch admin_store_registration_setup_path(store), params: {
+      store: { name: store.name }
+    }
   end
 
   def contact_submission_params
