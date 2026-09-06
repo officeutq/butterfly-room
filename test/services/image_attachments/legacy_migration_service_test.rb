@@ -191,7 +191,10 @@ class ImageAttachments::LegacyMigrationServiceTest < ActiveSupport::TestCase
     assert_equal 1, first.selected_count
     assert_equal 1, second.selected_count
     assert_operator second.last_attachment_id, :>, first.last_attachment_id
-    assert_not_equal first.entries.first.record_id, second.entries.first.record_id
+    assert_not_equal(
+      [ first.entries.first.record_type, first.entries.first.record_id ],
+      [ second.entries.first.record_type, second.entries.first.record_id ]
+    )
 
     only_store = described_class.new(
       min_attachment_id: @store.thumbnail.attachment.id,
