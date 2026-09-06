@@ -1,15 +1,27 @@
 <% content_for :title, "ブース編集" %>
 
 <%= form_with model: [:cast, @booth],
+      id: "booth-form",
+      class: "booth-form",
       html: { multipart: true },
       data: {
-        controller: "image-pair-form",
-        action: "submit->image-pair-form#submit"
+        controller: "image-pair-form booth-form",
+        action: [
+          "submit->image-pair-form#submit",
+          "submit->booth-form#prepareSubmit",
+          "input->booth-form#refresh",
+          "change->booth-form#refresh",
+          "image-attachment-editor:change->booth-form#refresh",
+          "image-pair-form:submit-start->booth-form#imageSubmitStarted",
+          "image-pair-form:submit-error->booth-form#imageSubmitFailed",
+          "turbo:submit-end->booth-form#turboSubmitEnd"
+        ].join(" "),
+        "booth-form-initial-dirty-value": @booth.errors.any?
       } do |f| %>
   <%= render "booths/form",
             f: f,
             booth: @booth,
-            submit_label: "更新する",
+            submit_label: "保存",
             back_path: dashboard_path_for(current_user),
             cast_memberships: @cast_memberships,
             show_cast_assignment: current_user.at_least?(:store_admin) %>

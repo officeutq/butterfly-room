@@ -1,25 +1,26 @@
 .booth-show-hero {
-  width: 100%;
+  aspect-ratio: 40 / 21;
   background: var(--bs-light);
+  margin-inline: auto;
+  max-width: 1200px;
   overflow: hidden;
-  display: flex;
-  justify-content: center;
+  width: 100%;
 }
 
 .booth-show-hero-image {
   display: block;
-  width: min(100%, 1200px);
-  aspect-ratio: 40 / 21;
+  height: 100%;
   object-fit: cover;
+  width: 100%;
 }
 
 .booth-show-hero-placeholder {
-  width: min(100%, 1200px);
-  aspect-ratio: 40 / 21;
-  display: flex;
   align-items: center;
-  justify-content: center;
   background: var(--bs-gray-300);
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  width: 100%;
 }
 
 .booth-show-container {

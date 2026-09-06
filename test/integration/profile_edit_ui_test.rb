@@ -35,6 +35,11 @@ class ProfileEditUiTest < ActionDispatch::IntegrationTest
       assert_select "input[type='submit'][value='更新する']", count: 0
       assert_select ".profile-edit__account", text: /profile-edit-ui@example.com/, count: 1
       assert_select ".profile-edit__withdrawal a", text: "退会する", count: 1
+      assert_select ".profile-edit__bottom-actions", count: 1 do
+        assert_select "input.profile-edit__bottom-save[type='submit'][value='保存'][disabled]" \
+                      "[data-image-pair-form-target='submitButton'][data-profile-edit-target='saveButton']",
+                      count: 1
+      end
     end
   end
 

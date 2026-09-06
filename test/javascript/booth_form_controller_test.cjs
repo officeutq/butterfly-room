@@ -6,7 +6,7 @@ const vm = require("node:vm")
 
 const controllerPath = path.resolve(
   __dirname,
-  "../../app/javascript/controllers/store_edit_controller.js"
+  "../../app/javascript/controllers/booth_form_controller.js"
 )
 
 function loadController({ confirmResult = true } = {}) {
@@ -16,7 +16,7 @@ function loadController({ confirmResult = true } = {}) {
     .replace('import { Controller } from "@hotwired/stimulus"', "class Controller {}")
     .replace(
       "export default class extends Controller",
-      "globalThis.StoreEditController = class extends Controller"
+      "globalThis.BoothFormController = class extends Controller"
     )
 
   const context = vm.createContext({
@@ -33,7 +33,7 @@ function loadController({ confirmResult = true } = {}) {
     },
   })
   vm.runInContext(source, context, { filename: controllerPath })
-  return { Controller: context.StoreEditController, confirmations }
+  return { Controller: context.BoothFormController, confirmations }
 }
 
 function classList() {
@@ -47,19 +47,19 @@ function classList() {
   }
 }
 
-function buildController(Controller) {
-  const saveButtons = [
+function buildController(Controller, { initialDirty = false } = {}) {
+  const submitButtons = [
     { name: "commit", type: "submit", value: "保存", disabled: true, dataset: { submittingLabel: "保存中…" } },
     { name: "commit", type: "submit", value: "保存", disabled: true, dataset: { submittingLabel: "保存中…" } },
   ]
   const controls = [
     { name: "authenticity_token", type: "hidden", value: "token", disabled: false },
-    { name: "store[name]", type: "text", value: "現在の店舗名", disabled: false },
-    { name: "store[published]", type: "select-one", value: "true", disabled: false },
-    { name: "store[sales_support_company]", type: "checkbox", value: "1", checked: false, disabled: false },
+    { name: "booth[name]", type: "text", value: "現在のブース名", disabled: false },
+    { name: "booth_cast[cast_user_id]", type: "select-one", value: "", disabled: false },
+    { name: "booth[description]", type: "textarea", value: "現在の説明", disabled: false },
     { name: "image_pair[operation]", type: "hidden", value: "", disabled: false },
     { name: "image_pair[source]", type: "file", value: "", disabled: false },
-    ...saveButtons,
+    ...submitButtons,
   ]
   const backLink = {
     attributes: {},
@@ -75,48 +75,58 @@ function buildController(Controller) {
   }
   const controller = Object.assign(new Controller(), {
     element,
-    saveButtonTargets: saveButtons,
+    submitButtonTargets: submitButtons,
     backLinkTarget: backLink,
+    initialDirtyValue: initialDirty,
   })
   controller.connect()
-  return { backLink, controller, controls, element, saveButtons }
+  return { backLink, controller, controls, element, submitButtons }
 }
 
-test("starts clean and enables save after any store field changes", () => {
+test("starts clean and enables submit after any booth field changes", () => {
   const { Controller } = loadController()
-  const { controller, controls, element, saveButtons } = buildController(Controller)
+  const { controller, controls, element, submitButtons } = buildController(Controller)
 
   assert.equal(element.dataset.dirty, "false")
-  assert.equal(saveButtons.every((button) => button.disabled), true)
+  assert.equal(submitButtons.every((button) => button.disabled), true)
 
-  controls[1].value = "変更後の店舗名"
+  controls[1].value = "変更後のブース名"
   controller.refresh()
 
   assert.equal(element.dataset.dirty, "true")
-  assert.equal(saveButtons.every((button) => !button.disabled), true)
+  assert.equal(submitButtons.every((button) => !button.disabled), true)
 })
 
-test("tracks image operations and checkbox changes", () => {
+test("tracks image operations and cast assignment", () => {
   const { Controller } = loadController()
-  const { controller, controls, saveButtons } = buildController(Controller)
+  const { controller, controls, submitButtons } = buildController(Controller)
 
   controls[4].value = "replace"
   controller.refresh()
-  assert.equal(saveButtons.every((button) => !button.disabled), true)
+  assert.equal(submitButtons.every((button) => !button.disabled), true)
 
   controls[4].value = ""
   controller.refresh()
-  assert.equal(saveButtons.every((button) => button.disabled), true)
+  assert.equal(submitButtons.every((button) => button.disabled), true)
 
-  controls[3].checked = true
+  controls[2].value = "42"
   controller.refresh()
-  assert.equal(saveButtons.every((button) => !button.disabled), true)
+  assert.equal(submitButtons.every((button) => !button.disabled), true)
+})
+
+test("keeps a server-rejected creation retryable on reconnect", () => {
+  const { Controller } = loadController()
+  const { controller, element, submitButtons } = buildController(Controller, { initialDirty: true })
+
+  assert.equal(element.dataset.dirty, "true")
+  assert.equal(controller.dirty, true)
+  assert.equal(submitButtons.every((button) => !button.disabled), true)
 })
 
 test("keeps the user on the page when discarding changes is rejected", () => {
   const { Controller, confirmations } = loadController({ confirmResult: false })
   const { controller, controls } = buildController(Controller)
-  controls[2].value = "false"
+  controls[3].value = "変更後の説明"
   controller.refresh()
   const event = {
     prevented: false,
@@ -131,15 +141,15 @@ test("keeps the user on the page when discarding changes is rejected", () => {
 
 test("marks a normal form submission as saving", async () => {
   const { Controller } = loadController()
-  const { backLink, controller, controls, element, saveButtons } = buildController(Controller)
-  controls[1].value = "変更後の店舗名"
+  const { backLink, controller, controls, element, submitButtons } = buildController(Controller)
+  controls[1].value = "変更後のブース名"
   controller.refresh()
 
   controller.prepareSubmit({ defaultPrevented: false, imageAttachmentEditorInvalid: false })
   await new Promise((resolve) => setImmediate(resolve))
 
-  assert.equal(saveButtons.every((button) => button.disabled), true)
-  assert.deepEqual(saveButtons.map((button) => button.value), ["保存中…", "保存中…"])
+  assert.equal(submitButtons.every((button) => button.disabled), true)
+  assert.deepEqual(submitButtons.map((button) => button.value), ["保存中…", "保存中…"])
   assert.equal(element.attributes["aria-busy"], "true")
   assert.equal(backLink.classList.contains("disabled"), true)
   assert.equal(backLink.attributes["aria-disabled"], "true")

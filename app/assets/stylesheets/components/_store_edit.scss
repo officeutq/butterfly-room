@@ -48,6 +48,14 @@
   gap: 0.35rem;
 }
 
+.store-information-fields__description {
+  height: 9rem !important;
+}
+
+.store-edit__bottom-actions {
+  margin-block: 1.5rem 1rem;
+}
+
 @media (max-width: 767.98px) {
   .store-edit__action-bar {
     top: 56px;
