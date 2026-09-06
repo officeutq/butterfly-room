@@ -50,6 +50,7 @@ export default class extends Controller {
     currentSourceUrl: String,
     heicDecoderUrl: String,
     heicWorkerUrl: String,
+    keepStagedActions: Boolean,
     ratioKey: String,
   }
 
@@ -76,6 +77,7 @@ export default class extends Controller {
     this.boundActionEnd = this.updateDraftStatus.bind(this)
     this.boundFormSubmit = this.validateFormSubmit.bind(this)
     this.returnFocusTarget = null
+    this.cancelPhase = null
     this.form = this.element.closest("form")
     this.form?.addEventListener("submit", this.boundFormSubmit)
 
@@ -151,6 +153,10 @@ export default class extends Controller {
   }
 
   async editExisting(event) {
+    if (this.keepStagedActionsValue && this.phase.startsWith("staged-")) {
+      await this.editStaged(event)
+      return
+    }
     if (!this.canEditCurrentImage()) return
 
     this.returnFocusTarget = event?.currentTarget || document.activeElement
@@ -177,6 +183,46 @@ export default class extends Controller {
       this.hideWorkspace()
       this.phase = "idle"
       this.renderError(error.message || "現在の画像を再編集できませんでした。")
+    }
+  }
+
+  async editStaged(event) {
+    if (!["staged-replace", "staged-reedit"].includes(this.phase)) return
+
+    this.returnFocusTarget = event?.currentTarget || document.activeElement
+    this.cancelPhase = this.phase
+    const generation = this.generation
+    const replacement = this.phase === "staged-replace"
+    this.phase = "processing"
+    this.setEditorControlsDisabled(true)
+    this.renderStatus("未保存の構図を読み込んでいます…")
+    try {
+      const state = JSON.parse(this.cropDataInputTarget.value)
+      if (!replacement) state.sourceBlobId = this.currentSourceBlobIdValue
+
+      let sourceUrl = this.currentSourceUrlValue
+      if (replacement) {
+        const sourceFile = this.sourceInputTarget.files?.[0]
+        if (!sourceFile) throw new Error("編集元画像が見つかりません。画像の変更をやり直してください。")
+
+        this.workingSourceFile = sourceFile
+        this.workingSourceObjectUrl = URL.createObjectURL(sourceFile)
+        sourceUrl = this.workingSourceObjectUrl
+      }
+      await this.initializeEditor({
+        sourceUrl,
+        state,
+        kind: replacement ? "replacement" : "existing",
+        generation,
+      })
+      if (!this.isCurrent(generation)) return
+
+      this.renderStatus("未保存の構図を復元しました。画像を移動・拡大縮小できます。")
+    } catch (error) {
+      if (!this.isCurrent(generation)) return
+
+      this.restoreStagedState()
+      this.renderError(error.message || "未保存の画像を再編集できませんでした。")
     }
   }
 
@@ -261,12 +307,13 @@ export default class extends Controller {
       this.previewEmptyTarget.hidden = true
       this.deletionNoticeTarget.hidden = true
       this.phase = replacement ? "staged-replace" : "staged-reedit"
+      this.cancelPhase = null
       this.releaseEditor()
       this.revokeWorkingSourceObjectUrl()
       this.workingSourceFile = null
       this.hideWorkspace()
-      this.editButtonTarget.hidden = true
-      this.deleteButtonTarget.hidden = true
+      this.editButtonTarget.hidden = !this.keepStagedActionsValue
+      this.deleteButtonTarget.hidden = !this.keepStagedActionsValue || !this.hasCurrentDisplayImage()
       this.undoButtonTarget.hidden = false
       this.renderWarning("")
       this.renderStatus("画像の変更を反映しました。最後にフォームの保存ボタンを押してください。")
@@ -287,7 +334,8 @@ export default class extends Controller {
   cancelEdit(event) {
     event?.preventDefault()
     const returnFocusTarget = this.returnFocusTarget
-    this.resetToBaseline()
+    if (this.cancelPhase?.startsWith("staged-")) this.restoreStagedState()
+    else this.resetToBaseline()
     if (returnFocusTarget?.isConnected) returnFocusTarget.focus({ preventScroll: true })
   }
 
@@ -368,7 +416,7 @@ export default class extends Controller {
         ratioKey: this.ratioKeyValue,
         sourceWidth: this.sourceTarget.naturalWidth,
         sourceHeight: this.sourceTarget.naturalHeight,
-        sourceBlobId: this.currentSourceBlobIdValue,
+        sourceBlobId: kind === "existing" ? this.currentSourceBlobIdValue : null,
       })
       this.applyStateToImage(validated)
     } else {
@@ -507,6 +555,7 @@ export default class extends Controller {
 
   resetToBaseline({ announce = true, preservePicker = false } = {}) {
     this.releaseWorkingResources()
+    this.cancelPhase = null
     this.clearPayloadInputs()
     if (!preservePicker) this.fileInputTarget.value = ""
     this.deletionNoticeTarget.hidden = true
@@ -529,6 +578,22 @@ export default class extends Controller {
     if (announce) this.renderStatus(hasCurrent ? "画像の変更を取り消しました。" : "画像未選択です。")
     else this.renderStatus(hasCurrent ? "現在の画像です。" : "画像未選択です。")
     this.dispatch("change", { detail: { operation: "" } })
+  }
+
+  restoreStagedState() {
+    const stagedPhase = this.cancelPhase
+    this.releaseEditor()
+    this.revokeWorkingSourceObjectUrl()
+    this.workingSourceFile = null
+    this.hideWorkspace({ restoreFocus: false })
+    this.phase = stagedPhase
+    this.cancelPhase = null
+    this.editButtonTarget.hidden = false
+    this.deleteButtonTarget.hidden = !this.hasCurrentDisplayImage()
+    this.undoButtonTarget.hidden = false
+    this.renderWarning("")
+    this.renderStatus("画像の変更を反映しました。最後にフォームの保存ボタンを押してください。")
+    this.dispatch("change", { detail: { operation: this.operationInputTarget.value } })
   }
 
   clearPayloadInputs() {

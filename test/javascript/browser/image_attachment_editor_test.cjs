@@ -263,6 +263,91 @@ test("shared editor restores, stages re-edit/delete, cancels, and reconnects saf
   }
 })
 
+test("profile editor keeps image actions and preserves staged crops when re-edit is cancelled", async () => {
+  const browser = await browsers[process.env.IMAGE_VERIFICATION_BROWSER || "chromium"].launch({ headless: true })
+  let environment
+  try {
+    environment = await openImageAttachmentEditorPage(browser)
+    const result = await environment.page.evaluate(async () => {
+      const current = await window.currentImage({ ratioKey: "square" })
+      const controller = window.mountEditor({ ...current, keepStagedActions: true })
+
+      await controller.editExisting()
+      await controller.applyCrop()
+      const stagedReeditPreview = controller.currentPreviewTarget.src
+      const stagedReedit = {
+        phase: controller.phase,
+        operation: controller.operationInputTarget.value,
+        editVisible: !controller.editButtonTarget.hidden,
+        deleteVisible: !controller.deleteButtonTarget.hidden,
+        undoVisible: !controller.undoButtonTarget.hidden,
+      }
+      await controller.editExisting({ currentTarget: controller.editButtonTarget })
+      const reopenedReeditPhase = controller.phase
+      controller.cancelEdit()
+      const cancelledReedit = {
+        phase: controller.phase,
+        operation: controller.operationInputTarget.value,
+        displayCount: controller.displayInputTarget.files.length,
+        previewPreserved: controller.currentPreviewTarget.src === stagedReeditPreview,
+      }
+
+      controller.undoChange()
+      const replacement = await window.imageFile({ width: 1200, height: 1200, name: "replacement.png" })
+      await controller.selectFile({ currentTarget: { files: [replacement] } })
+      await controller.applyCrop()
+      const stagedReplacementPreview = controller.currentPreviewTarget.src
+      const stagedReplacementSource = controller.sourceInputTarget.files[0]
+      await controller.editExisting({ currentTarget: controller.editButtonTarget })
+      const reopenedReplacementPhase = controller.phase
+      controller.cancelEdit()
+      const cancelledReplacement = {
+        phase: controller.phase,
+        operation: controller.operationInputTarget.value,
+        sourceCount: controller.sourceInputTarget.files.length,
+        sourcePreserved: controller.sourceInputTarget.files[0] === stagedReplacementSource,
+        displayCount: controller.displayInputTarget.files.length,
+        previewPreserved: controller.currentPreviewTarget.src === stagedReplacementPreview,
+        editVisible: !controller.editButtonTarget.hidden,
+        deleteVisible: !controller.deleteButtonTarget.hidden,
+        undoVisible: !controller.undoButtonTarget.hidden,
+      }
+
+      return {
+        stagedReedit,
+        reopenedReeditPhase,
+        cancelledReedit,
+        reopenedReplacementPhase,
+        cancelledReplacement,
+      }
+    })
+
+    assert.deepEqual(result.stagedReedit, {
+      phase: "staged-reedit", operation: "reedit", editVisible: true, deleteVisible: true, undoVisible: true,
+    })
+    assert.equal(result.reopenedReeditPhase, "editing-existing")
+    assert.deepEqual(result.cancelledReedit, {
+      phase: "staged-reedit", operation: "reedit", displayCount: 1, previewPreserved: true,
+    })
+    assert.equal(result.reopenedReplacementPhase, "editing-replacement")
+    assert.deepEqual(result.cancelledReplacement, {
+      phase: "staged-replace",
+      operation: "replace",
+      sourceCount: 1,
+      sourcePreserved: true,
+      displayCount: 1,
+      previewPreserved: true,
+      editVisible: true,
+      deleteVisible: true,
+      undoVisible: true,
+    })
+    assert.deepEqual(environment.errors, [])
+  } finally {
+    await environment?.close()
+    await browser.close()
+  }
+})
+
 test("two profile editors stay independent at smartphone width and source load failure is non-destructive", async () => {
   const browser = await browsers[process.env.IMAGE_VERIFICATION_BROWSER || "chromium"].launch({ headless: true })
   let environment

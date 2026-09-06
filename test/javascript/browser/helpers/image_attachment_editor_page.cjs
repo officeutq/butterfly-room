@@ -55,12 +55,14 @@ async function openImageAttachmentEditorPage(browser, { strictCsp = false } = {}
         controller.currentDisplayUrlValue = options.currentDisplayUrl || ""
         controller.currentCropDataValue = options.currentCropData || ""
         controller.currentSourceBlobIdValue = options.currentSourceBlobId || 0
+        controller.keepStagedActionsValue = options.keepStagedActions || false
         controller.heicWorkerUrlValue = new URL("/worker.js", location).href
         controller.heicDecoderUrlValue = new URL("/decoder.js", location).href
         controller.hasCurrentSourceUrlValue = !!options.currentSourceUrl
         controller.hasCurrentDisplayUrlValue = !!options.currentDisplayUrl
         controller.hasCurrentCropDataValue = !!options.currentCropData
         controller.hasCurrentSourceBlobIdValue = Number.isSafeInteger(options.currentSourceBlobId) && options.currentSourceBlobId > 0
+        controller.hasKeepStagedActionsValue = options.keepStagedActions === true
         controller.connect()
         return controller
       }

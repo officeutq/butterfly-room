@@ -56,6 +56,7 @@ class ProfileEditUiTest < ActionDispatch::IntegrationTest
     assert_select(
       "section#image-attachment-editor-#{param_root.dasherize}" \
       "[data-controller='image-attachment-editor']" \
+      "[data-image-attachment-editor-keep-staged-actions-value='true']" \
       "[data-image-attachment-editor-ratio-key-value='#{ratio_key}']" \
       ".profile-image-editor--#{presentation}",
       count: 1
@@ -67,6 +68,17 @@ class ProfileEditUiTest < ActionDispatch::IntegrationTest
       assert_select "input[name='#{param_root}[source]']", count: 1
       assert_select "input[name='#{param_root}[display]']", count: 1
       assert_select "input[name='#{param_root}[crop_data]']", count: 1
+      if presentation == "cover"
+        assert_select ".profile-image-editor__actions [data-image-attachment-editor-target='editButton']", count: 1
+        assert_select ".profile-image-editor__actions [data-image-attachment-editor-target='deleteButton']", count: 1
+        assert_select ".profile-image-editor__reset-change[data-image-attachment-editor-target='undoButton']",
+                      text: /画像変更をリセット/, count: 1
+      else
+        assert_select ".profile-image-editor__avatar-menu .dropdown-menu", count: 1 do
+          assert_select "[data-image-attachment-editor-target='editButton']", text: /構図を編集/, count: 1
+          assert_select "[data-image-attachment-editor-target='deleteButton']", text: /画像を削除/, count: 1
+        end
+      end
     end
   end
 end

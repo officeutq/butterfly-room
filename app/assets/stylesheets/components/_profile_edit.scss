@@ -63,6 +63,7 @@
   border: 4px solid var(--bs-body-bg);
   border-radius: 50%;
   box-shadow: 0 0 0 1px var(--bs-border-color);
+  overflow: visible;
 }
 
 .profile-image-editor__preview-image,
@@ -94,6 +95,11 @@
   font-size: calc(var(--profile-avatar-size) * 0.42);
 }
 
+.profile-image-editor__preview--avatar .profile-image-editor__preview-image,
+.profile-image-editor__preview--avatar .profile-image-editor__placeholder {
+  border-radius: inherit;
+}
+
 .profile-image-editor__actions {
   display: flex;
   gap: 0.65rem;
@@ -110,6 +116,10 @@
   top: 50%;
   transform: translate(-50%, -50%);
   z-index: 3;
+}
+
+.profile-image-editor__avatar-menu .dropdown-menu {
+  z-index: 5;
 }
 
 .profile-image-editor__icon-button {
@@ -158,6 +168,17 @@
   bottom: 2.65rem;
 }
 
+.profile-image-editor--cover .profile-image-editor__deletion-notice,
+.profile-image-editor--cover .profile-image-editor__status {
+  bottom: auto;
+  top: 0.5rem;
+}
+
+.profile-image-editor--cover .profile-image-editor__deletion-notice:not([hidden]) ~ .profile-image-editor__status {
+  bottom: auto;
+  top: 2.65rem;
+}
+
 .profile-image-editor--avatar .profile-image-editor__status,
 .profile-image-editor--avatar .profile-image-editor__deletion-notice {
   bottom: auto;
@@ -166,6 +187,19 @@
   top: calc(100% + 0.4rem);
   transform: translateX(-50%);
   width: max-content;
+}
+
+.profile-image-editor__reset-change {
+  align-items: center;
+  gap: 0.25rem;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  z-index: 3;
+}
+
+.profile-image-editor__reset-change:not([hidden]) {
+  display: inline-flex;
 }
 
 .profile-image-editor__dialog {

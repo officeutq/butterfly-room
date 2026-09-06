@@ -32,6 +32,7 @@
   aria-labelledby="<%= dom_id %>-label"
   data-controller="image-attachment-editor"
   data-action="turbo:before-cache@document->image-attachment-editor#beforeCache"
+  data-image-attachment-editor-keep-staged-actions-value="true"
   data-image-attachment-editor-ratio-key-value="<%= ratio_key %>"
   data-image-attachment-editor-heic-worker-url-value="<%= asset_path('image_attachments/heic_worker.js') %>"
   data-image-attachment-editor-heic-decoder-url-value="<%= asset_path('heic-to/src/lib/libheif-without-unsafe-eval.js') %>"
@@ -80,13 +81,6 @@
                 data-action="image-attachment-editor#removeImage">
           <i class="bi bi-x-lg" aria-hidden="true"></i>
         </button>
-        <button type="button" class="profile-image-editor__icon-button" hidden
-                title="カバー画像の変更を取り消す"
-                aria-label="カバー画像の変更を取り消す"
-                data-image-attachment-editor-target="undoButton"
-                data-action="image-attachment-editor#undoChange">
-          <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
-        </button>
       </div>
     <% else %>
       <div class="dropdown profile-image-editor__avatar-menu">
@@ -130,6 +124,15 @@
     <p class="profile-image-editor__status mb-0" role="status" aria-live="polite" tabindex="-1" hidden
        data-compact-status data-image-attachment-editor-target="status"></p>
   </div>
+
+  <% if presentation == "cover" %>
+    <button type="button" class="btn btn-sm btn-outline-secondary profile-image-editor__reset-change" hidden
+            data-image-attachment-editor-target="undoButton"
+            data-action="image-attachment-editor#undoChange">
+      <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+      画像変更をリセット
+    </button>
+  <% end %>
 
   <input
     id="<%= dom_id %>-picker"
