@@ -167,7 +167,10 @@
 特にスクリーンショットが必要な画面:
 
 - `/stores/new_registration?ref=...` 店舗登録
-- `/admin/stores/:id/edit` 店舗設定編集
+- `/admin/stores/:store_id/registration_setup/edit` 初回店舗設定・公開
+- `/stores/registration/thanks` 店舗登録完了
+- `/dashboard` 登録後のオンボーディング開始
+- `/admin/stores/:id/edit` 通常の店舗設定編集
 - `/dashboard` store_admin 表示
 - `/admin/stores` 店舗選択
 - `/admin/booths` ブース管理

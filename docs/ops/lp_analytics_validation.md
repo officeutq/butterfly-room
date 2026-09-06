@@ -4,7 +4,7 @@
 
 ## 1. 目的と安全境界
 
-`stores/lp_202607`と`stores/lp_202609`のLP表示から店舗登録・お問い合わせ完了、system_admin分析、Googleスプレッドシート日次出力までを横断確認する。分析の正本はRails DBであり、Googleスプレッドシートは匿名の日次集計の共有先である。
+`stores/lp_202607`と`stores/lp_202609`のLP表示から、初回店舗設定の保存・公開による店舗登録完了、お問い合わせ完了、system_admin分析、Googleスプレッドシート日次出力までを横断確認する。分析の正本はRails DBであり、Googleスプレッドシートは匿名の日次集計の共有先である。
 
 2026年8月9日の#1033検証はstagingだけで実施した。production containerの再起動・再作成、production Spreadsheetへの書込み、production Secret値の取得、自動出力の起動は行っていない。
 
@@ -19,6 +19,8 @@
 - reloadは同じ訪問の`lp_view`を追加する
 - browserが同じ公開訪問IDを引き継いだ複数tabは同じ訪問とする
 - LPを経由しない通常の登録・お問い合わせフォーム流入は分析対象にしない
+- 店舗アカウントと非公開Storeの作成だけでは店舗登録完了にしない。初回店舗設定で店舗情報・画像・公開状態の保存に成功した時点で完了にする
+- 初回店舗設定を離脱・迂回した場合や、通常店舗編集から公開した場合は店舗登録完了として補完しない
 - 日次・管理画面の期間はAsia/Tokyoの訪問開始日時で判定する
 - 前日に開始して翌日に完了した場合、完了は訪問開始日の実績へ含める
 - 自動日次Jobは前日を終端とする直近7日を古い順に再集計し、遅延完了を取り込む
@@ -26,6 +28,8 @@
 - 週間CV率は日別CV率の単純平均ではなく、週間完了訪問数合計 ÷ 週間LP訪問数合計で求める
 
 ## 3. 2026年8月9日 staging検証結果
+
+> この節は初回店舗設定フロー導入前の履歴である。2026-09-06以降は、Store作成時点ではなく初回店舗設定の保存・公開成功時点を店舗登録完了として、後述の手順で再検証する。
 
 ### 基盤と安全設定
 
@@ -51,7 +55,7 @@
 - スクロール25%・50%・75%・90%、主要セクション、FAQ、複数CTAを操作した
 - Rails DB、system_adminのKPI・ファネル・CTA分析・匿名訪問詳細、業務完了レコードを突合した
 - 店舗登録完了とお問い合わせ完了が、それぞれLPから引き継いだ同じ匿名訪問へ関連付くことを確認した
-- validation errorでは完了eventを作らず、正常保存時だけ完了件数へ反映する既存integration testも通過した
+- 当時の登録フォームvalidation errorでは完了eventを作らず、正常保存時だけ完了件数へ反映するintegration testが通過した。現行フローでは、登録フォームの正常保存でも完了eventを作らず、初回店舗設定の正常保存後だけ作成する
 
 ### 訪問切替
 
@@ -108,8 +112,8 @@ https://staging.butterflyve.jp/stores/lp_202607?from=staging_validation&utm_sour
 | event | browser event IDの再送、訪問内到達eventの重複、CTA・FAQ複数回、LP別keyの混在拒否、許可外値・metadata拒否 |
 | browser | API失敗を画面へ伝播しない、Turbo preview / prerender除外、CSRF、匿名payload限定 |
 | Sheets | 初回・同日更新・消滅行、duplicate key、header不一致、部分行、429・5xx・timeout retry、401・403非retry |
-| 業務分離 | Sheets失敗時にDB transactionを保持しない、登録・お問い合わせ完了を業務保存成功後に記録 |
-| 回帰 | GTM表示と完了event、UTM・referral code引継ぎ、登録・お問い合わせ、system_admin認可、Solid Queue recurring設定、精算画面・処理 |
+| 業務分離 | Sheets失敗時にDB transactionを保持しない、店舗登録完了を初回店舗設定・公開成功後に記録、分析記録失敗で店舗保存・公開をrollbackしない |
+| 回帰 | Store作成時は非公開・完了eventなし、初回設定成功時の公開・完了event、通常店舗編集からの公開は完了eventなし、GTM表示と一度限りのCV、UTM・referral code引継ぎ、登録・お問い合わせ、system_admin認可、Solid Queue recurring設定、精算画面・処理 |
 | 性能 | 分析対象を50訪問増やしてもSELECT query数が増えないこと、日次SQLの訪問単位CTE、最近の完了20件ページング（最大100件）、Sheets batch update |
 
 主な確認コマンド:
@@ -125,6 +129,9 @@ docker compose exec -T app bin/rails test \
   test/integration/lp_analytics_events_test.rb \
   test/integration/lp_analytics_completions_test.rb \
   test/integration/lp_analytics_browser_tracking_test.rb \
+  test/integration/admin/store_registration_setup_test.rb \
+  test/integration/store_registration_return_test.rb \
+  test/integration/gtm_pages_test.rb \
   test/integration/system_admin_lp_analytics_test.rb
 
 npm run test:js
@@ -138,11 +145,18 @@ npm run build:css
 3. appを起動し、staging Host header付き`/up`が200になってからworkerを起動する。
 4. migration、recurring task、staging自動出力`false`を確認する。
 5. private windowをすべて閉じてから新しく開き、空白のないUTM・referral code付きURLでシナリオを開始する。
-6. system_adminで同じ条件を指定し、匿名訪問詳細と業務完了を確認する。
-7. Rails日次集計を先に確認してから、staging専用出力先へ対象日を手動出力する。
-8. 同じ対象日を再出力し、aggregation key重複なし・行数不変を確認する。
-9. 自動出力が`false`、出力状態が予期せず増えていないことを再確認する。
-10. ID・Secret・フォーム入力値を表示せず、成功／失敗と匿名集計値だけを記録する。
+6. 店舗登録フォームを正常送信し、初回店舗設定へ遷移することを確認する。この時点でStoreは`published = false`、`onboarding_step = invite_cast`、Railsの`store_registration_complete`は0件であることを確認する。
+7. 初回店舗設定でvalidation errorを1回確認し、非公開、完了eventなし、再入力可能な状態が維持されることを確認する。画像を使う場合は画像処理失敗でも同じ境界を確認する。
+8. 初回店舗設定を正常保存し、Storeが公開され、同じ匿名訪問にRailsの`store_registration_complete`が1件だけ作られることを確認する。
+9. サンクスのdataLayerに`store_registration_complete`、許可済み`from`、UTMだけが含まれ、Store ID、User ID、紹介コード、フォーム入力値を含まないことを確認する。再読み込み・戻る・URL直接アクセスではCVが再発火しないことも確認する。
+10. 「ダッシュボードへ進む」から遷移し、既存オンボーディングが`invite_cast`から始まることを確認する。
+11. 別の検証Storeを通常の店舗設定から公開し、Railsの登録完了eventが増えないことを確認する。初回設定を離脱・迂回したStoreは、公開状態にかかわらず初回フローのCV未達成として扱う。
+12. `stores/lp_202607`、`stores/lp_202609`、UTMなしの`stores/lp`について、初回設定前までattribution / refが維持され、サンクス表示後に削除されることを確認する。
+13. system_adminで同じ条件を指定し、匿名訪問詳細と業務完了を確認する。
+14. Rails日次集計を先に確認してから、staging専用出力先へ対象日を手動出力する。
+15. 同じ対象日を再出力し、aggregation key重複なし・行数不変を確認する。
+16. 自動出力が`false`、出力状態が予期せず増えていないことを再確認する。
+17. ID・Secret・フォーム入力値を表示せず、成功／失敗と匿名集計値だけを記録する。
 
 手動出力・復旧コマンドは[Google Sheets連携運用手順](lp_analytics_google_sheets.md)を使用する。
 

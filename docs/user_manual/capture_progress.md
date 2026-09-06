@@ -29,7 +29,10 @@
 | --- | --- | --- |
 | `docs/user_manual/images/account_creation/store_admin_registration/01_registration_form.png` | `/stores/new_registration?ref=...` 登録フォーム | 取得済み |
 | `docs/user_manual/images/account_creation/store_admin_registration/02_registration_filled.png` | 入力済み登録フォーム | 取得済み |
-| `docs/user_manual/images/account_creation/store_admin_registration/03_after_registration_store_edit.png` | 登録後 `/admin/stores/:id/edit` | 取得済み |
+| `docs/user_manual/images/account_creation/store_admin_registration/03_after_registration_store_edit.png` | 旧フローの登録後 `/admin/stores/:id/edit` | 参照停止・次回撮影時に削除 |
+| `docs/user_manual/images/account_creation/store_admin_registration/03_after_registration_initial_setup.png` | 登録後の初回店舗設定 | 要再撮影（spec更新済み） |
+| `docs/user_manual/images/account_creation/store_admin_registration/04_after_initial_setup_thanks.png` | 保存・公開後の登録完了 | 要再撮影（spec更新済み） |
+| `docs/user_manual/images/account_creation/store_admin_registration/05_after_registration_dashboard.png` | 完了後のダッシュボード | 要再撮影（spec更新済み） |
 
 ### cast（配信者）招待登録
 

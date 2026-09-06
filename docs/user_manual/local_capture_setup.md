@@ -88,7 +88,7 @@ npm run manual:capture:accounts
 このコマンドは次のフローを撮影します。
 
 - customer（視聴者）の自己登録。
-- store_admin（店舗管理者）の店舗登録。
+- store_admin（店舗管理者）の店舗登録、初回店舗設定・公開、登録完了、ダッシュボード。
 - cast（配信者）の invitation（招待）登録。
 - 追加 store_admin（店舗管理者）の invitation（招待）登録。
 

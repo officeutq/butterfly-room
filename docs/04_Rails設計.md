@@ -725,6 +725,20 @@ end
 * 店舗登録完了とお問い合わせ完了は、業務保存成功後に`LpAnalytics::Completions::RecordService`から記録し、ブラウザやGTMの成功に依存させない
 * 分析記録失敗は業務保存をrollbackせず、安全なerror classだけをlogへ残す
 
+### 7.3.1 店舗登録の完了地点
+
+店舗登録は、アカウントとStoreを作る段階、初回店舗設定で情報を保存・公開する段階、サンクスを表示する段階を分ける。
+
+1. `Stores::RegisterStoreAdmin`はStore、store_admin、管理者所属、初期ドリンクを作る。Storeは`published = false`、`onboarding_step = invite_cast`とし、この時点では`store_registration_complete`を記録しない。
+2. 登録成功後は新しいstore_adminでログインし、作成したStoreを`current_store`に設定する。許可済みの`from`、UTM、Store IDを`store_registration_pending` sessionへ保存し、`/admin/stores/:store_id/registration_setup/edit`へ遷移する。
+3. 初回店舗設定は、pendingのStore ID、`current_store`、管理権限がすべて一致する場合だけ表示・更新できる。通常の店舗情報フォーム、AI店舗情報入力、Cropper.js画像組、`Stores::UpdateService`を再利用する。
+4. `Stores::CompleteRegistrationSetup`が店舗情報と画像を保存し、request由来の公開状態を受け付けずサーバー側で`published = true`にする。保存に失敗した場合は非公開状態、pending、旧画像を維持する。
+5. 保存・公開成功後だけ、Storeに匿名LP訪問が紐づいていれば`store_registration_complete`を記録する。その後pendingを削除し、Store ID、許可済み`from`、UTMだけを`store_registration_completion` sessionへ移してサンクスへ遷移する。
+6. サンクスはcompletionのStore ID、`current_store`、管理権限を検証し、初回表示時にcompletionを消費する。GTMのdataLayerへは完了event、許可済み`from`、UTMだけを渡し、Store ID、User ID、紹介コードは渡さない。
+7. サンクス表示後にLP attribution / referral code sessionを削除し、ダッシュボードへ案内する。ダッシュボードでは既存オンボーディングが`invite_cast`から始まる。
+
+初回設定を離脱しても通常管理画面への移動は強制的に禁止しない。通常店舗編集から公開した場合や、pending sessionを失った場合は登録完了イベントを補完しない。初回設定の再開状態を表すDBカラムも追加しないため、このようなStoreは公開状態にかかわらず初回フローのCV未達成として扱う。
+
 ## 7.4 集計と管理画面
 
 * system_adminだけが`/system_admin/lp_analytics`と匿名訪問詳細を閲覧できる
