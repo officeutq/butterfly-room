@@ -16,6 +16,10 @@ import { ImageHeicConverter } from "image_attachments/heic_converter"
 
 const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "image/heic-sequence", "image/heif-sequence"]
 const ACCEPTED_FILE_EXTENSION = /\.(?:jpe?g|png|webp|hei[cf])$/i
+const COMPACT_STATUS_MESSAGES = {
+  "画像の変更を反映しました。最後にフォームの保存ボタンを押してください。": "画像の変更は未保存です。",
+  "画像を削除対象にしました。最後にフォームの保存ボタンを押してください。": "画像の削除は未保存です。",
+}
 
 export default class extends Controller {
   static targets = [
@@ -71,6 +75,7 @@ export default class extends Controller {
     this.boundTransformGuard = this.constrainTransform.bind(this)
     this.boundActionEnd = this.updateDraftStatus.bind(this)
     this.boundFormSubmit = this.validateFormSubmit.bind(this)
+    this.returnFocusTarget = null
     this.form = this.element.closest("form")
     this.form?.addEventListener("submit", this.boundFormSubmit)
 
@@ -87,6 +92,7 @@ export default class extends Controller {
     this.isDisconnected = true
     this.form?.removeEventListener("submit", this.boundFormSubmit)
     this.form = null
+    this.hideWorkspace({ restoreFocus: false })
     this.releaseWorkingResources()
   }
 
@@ -130,7 +136,7 @@ export default class extends Controller {
       if (!this.isCurrent(generation)) return
 
       this.releaseEditor()
-      this.workspaceTarget.hidden = true
+      this.hideWorkspace()
       this.revokeWorkingSourceObjectUrl()
       this.workingSourceFile = null
       this.fileInputTarget.value = ""
@@ -139,9 +145,15 @@ export default class extends Controller {
     }
   }
 
-  async editExisting() {
+  chooseFile(event) {
+    this.returnFocusTarget = event.currentTarget
+    this.fileInputTarget.click()
+  }
+
+  async editExisting(event) {
     if (!this.canEditCurrentImage()) return
 
+    this.returnFocusTarget = event?.currentTarget || document.activeElement
     this.resetToBaseline({ announce: false })
     const generation = this.generation
     this.phase = "processing"
@@ -162,7 +174,7 @@ export default class extends Controller {
       if (!this.isCurrent(generation)) return
 
       this.releaseEditor()
-      this.workspaceTarget.hidden = true
+      this.hideWorkspace()
       this.phase = "idle"
       this.renderError(error.message || "現在の画像を再編集できませんでした。")
     }
@@ -252,7 +264,7 @@ export default class extends Controller {
       this.releaseEditor()
       this.revokeWorkingSourceObjectUrl()
       this.workingSourceFile = null
-      this.workspaceTarget.hidden = true
+      this.hideWorkspace()
       this.editButtonTarget.hidden = true
       this.deleteButtonTarget.hidden = true
       this.undoButtonTarget.hidden = false
@@ -272,8 +284,11 @@ export default class extends Controller {
     }
   }
 
-  cancelEdit() {
+  cancelEdit(event) {
+    event?.preventDefault()
+    const returnFocusTarget = this.returnFocusTarget
     this.resetToBaseline()
+    if (returnFocusTarget?.isConnected) returnFocusTarget.focus({ preventScroll: true })
   }
 
   removeImage() {
@@ -302,7 +317,7 @@ export default class extends Controller {
       event.preventDefault()
       event.imageAttachmentEditorInvalid = true
       this.renderError("画像の構図を確定するか、画像編集をキャンセルしてから保存してください。")
-      this.statusTarget.focus()
+      this.focusStatus()
       return
     }
 
@@ -319,12 +334,12 @@ export default class extends Controller {
     event.preventDefault()
     event.imageAttachmentEditorInvalid = true
     this.renderError("画像の送信準備が完了していません。画像の変更をやり直してください。")
-    this.statusTarget.focus()
+    this.focusStatus()
   }
 
   async initializeEditor({ sourceUrl, state = null, kind, generation }) {
     this.releaseEditor()
-    this.workspaceTarget.hidden = false
+    this.showWorkspace()
     this.sourceTarget.src = sourceUrl
     await this.waitForSourceImage()
     if (!this.isCurrent(generation)) return
@@ -496,7 +511,7 @@ export default class extends Controller {
     if (!preservePicker) this.fileInputTarget.value = ""
     this.deletionNoticeTarget.hidden = true
     this.undoButtonTarget.hidden = true
-    this.workspaceTarget.hidden = true
+    this.hideWorkspace({ restoreFocus: false })
     const hasCurrent = this.hasCurrentDisplayImage()
     if (hasCurrent) {
       this.currentPreviewTarget.src = this.currentDisplayUrlValue
@@ -548,18 +563,53 @@ export default class extends Controller {
   }
 
   renderStatus(message) {
-    this.statusTarget.textContent = message
-    this.statusTarget.classList.remove("text-danger")
+    const baseline = ["現在の画像です。", "画像未選択です。"].includes(message)
+    this.statusTargets.forEach((target) => {
+      target.textContent = target.hasAttribute("data-compact-status")
+        ? (COMPACT_STATUS_MESSAGES[message] || message)
+        : message
+      target.classList.remove("text-danger")
+      if (target.hasAttribute("data-compact-status")) target.hidden = baseline
+    })
   }
 
   renderError(message) {
-    this.statusTarget.textContent = message
-    this.statusTarget.classList.add("text-danger")
+    this.statusTargets.forEach((target) => {
+      target.textContent = message
+      target.classList.add("text-danger")
+      target.hidden = false
+    })
   }
 
   renderWarning(message) {
     this.warningTarget.textContent = message
     this.warningTarget.hidden = message.length === 0
+  }
+
+  showWorkspace() {
+    this.workspaceTarget.hidden = false
+    if (this.workspaceTarget.tagName !== "DIALOG" || this.workspaceTarget.open) return
+
+    this.workspaceTarget.showModal()
+  }
+
+  hideWorkspace({ restoreFocus = true } = {}) {
+    if (!this.hasWorkspaceTarget) return
+
+    if (this.workspaceTarget.tagName === "DIALOG" && this.workspaceTarget.open) {
+      this.workspaceTarget.close()
+    }
+    this.workspaceTarget.hidden = true
+
+    if (restoreFocus && this.returnFocusTarget?.isConnected) {
+      this.returnFocusTarget.focus({ preventScroll: true })
+    }
+  }
+
+  focusStatus() {
+    const visible = this.statusTargets.find((target) => !target.hidden && target.offsetParent !== null)
+    const target = visible || this.statusTarget
+    target.focus()
   }
 
   releaseEditor() {

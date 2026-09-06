@@ -16,7 +16,10 @@ function loadController({ response = { redirect_url: "/dashboard" }, error = nul
   const confirmations = []
   let source = fs.readFileSync(controllerPath, "utf8")
   source = source
-    .replace('import { Controller } from "@hotwired/stimulus"', "class Controller {}")
+    .replace(
+      'import { Controller } from "@hotwired/stimulus"',
+      "class Controller { dispatch() {} }"
+    )
     .replace(
       'import { ImagePairMultipartClient } from "image_attachments/multipart_client"',
       "const ImagePairMultipartClient = globalThis.FakeClient"

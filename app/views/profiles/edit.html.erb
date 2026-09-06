@@ -1,73 +1,102 @@
 <% content_for :title, "プロフィール編集" %>
 
-<div class="card mb-3">
-  <div class="card-body">
-    <div class="form-label mb-1">メールアドレス</div>
-    <div class="mb-3"><%= @user.email %></div>
-
-    <%= link_to "メールアドレスを変更",
-          edit_email_change_path,
-          class: "btn btn-outline-secondary btn-sm" %>
-  </div>
-</div>
-
 <%= form_with model: @user,
       url: profile_path,
+      id: "profile-edit-form",
+      class: "profile-edit",
       html: { multipart: true },
       data: {
-        controller: "image-pair-form",
-        action: "submit->image-pair-form#submit"
+        controller: "image-pair-form profile-edit",
+        action: [
+          "submit->image-pair-form#submit",
+          "submit->profile-edit#prepareSubmit",
+          "input->profile-edit#refresh",
+          "change->profile-edit#refresh",
+          "image-attachment-editor:change->profile-edit#refresh",
+          "image-pair-form:submit-start->profile-edit#imageSubmitStarted",
+          "image-pair-form:submit-error->profile-edit#imageSubmitFailed",
+          "turbo:submit-end->profile-edit#turboSubmitEnd"
+        ].join(" ")
       } do |f| %>
-  <div class="mb-3">
-    <%= f.label :display_name, "表示名", class: "form-label" %>
-    <%= f.text_field :display_name, class: "form-control" %>
-    <div class="form-text">未入力の場合は email が表示されます（将来変更の可能性あり）</div>
-  </div>
+  <div class="profile-edit__action-bar">
+    <%= link_to dashboard_path,
+          class: "btn btn-sm btn-link text-body text-decoration-none profile-edit__back",
+          data: {
+            action: "profile-edit#back",
+            "profile-edit-target": "backLink"
+          } do %>
+      <i class="bi bi-arrow-left" aria-hidden="true"></i>
+      <span>戻る</span>
+    <% end %>
 
-  <div class="mb-3">
-    <%= f.label :bio, "自己紹介（bio）", class: "form-label" %>
-    <%= f.text_area :bio, class: "form-control", rows: 6 %>
-    <div class="form-text">最大500文字</div>
-  </div>
-
-  <div class="card mb-3">
-    <div class="card-body">
-      <%= render "shared/image_attachment_editor",
-            **image_attachment_editor_state(@user, :avatar),
-            param_root: :avatar_image_pair,
-            ratio_key: :square,
-            label: "アバター画像" %>
-      <p class="form-text mb-0">小型アイコンなどに使われる正方形の画像です。</p>
-    </div>
-  </div>
-
-  <div class="card mb-3">
-    <div class="card-body">
-      <%= render "shared/image_attachment_editor",
-            **image_attachment_editor_state(@user, :cover),
-            param_root: :cover_image_pair,
-            ratio_key: :social,
-            label: "カバー画像" %>
-      <p class="form-text mb-0">ユーザーカードやプロフィール上部に使う1200×630の画像です。</p>
-    </div>
-  </div>
-
-  <p class="alert alert-danger" role="alert" tabindex="-1" hidden data-image-pair-form-target="error"></p>
-
-  <div class="d-flex gap-2">
-    <%= f.submit "更新する",
-          class: "btn btn-primary",
+    <%= f.submit "保存",
+          class: "btn btn-primary btn-sm rounded-pill px-3 profile-edit__save",
+          disabled: true,
           data: {
             "image-pair-form-target": "submitButton",
-            turbo_submits_with: "保存中…"
+            "profile-edit-target": "saveButton",
+            turbo_submits_with: "保存中…",
+            submitting_label: "保存中…"
           } %>
-    <%= link_to "戻る", dashboard_path, class: "btn btn-outline-secondary" %>
+  </div>
 
-    <% unless current_user.system_admin? %>
+  <div class="profile-edit__media" aria-label="プロフィール画像">
+    <%= render "profiles/image_attachment_editor",
+          **image_attachment_editor_state(@user, :cover),
+          param_root: :cover_image_pair,
+          ratio_key: :social,
+          presentation: :cover,
+          label: "カバー画像" %>
+
+    <%= render "profiles/image_attachment_editor",
+          **image_attachment_editor_state(@user, :avatar),
+          param_root: :avatar_image_pair,
+          ratio_key: :square,
+          presentation: :avatar,
+          label: "アバター画像" %>
+  </div>
+
+  <div class="profile-edit__fields">
+    <div class="form-floating mb-3">
+      <%= f.text_field :display_name,
+            class: "form-control",
+            placeholder: "表示名",
+            data: { "profile-edit-target": "displayName" } %>
+      <%= f.label :display_name, "表示名" %>
+      <div class="form-text">未入力の場合は「ななしさん」と表示されます。</div>
+    </div>
+
+    <div class="form-floating mb-3">
+      <%= f.text_area :bio,
+            class: "form-control profile-edit__bio",
+            placeholder: "自己紹介",
+            maxlength: 500,
+            data: { "profile-edit-target": "bio" } %>
+      <%= f.label :bio, "自己紹介" %>
+      <div class="form-text">最大500文字</div>
+    </div>
+  </div>
+
+  <p class="alert alert-danger" role="alert" tabindex="-1" hidden
+     data-image-pair-form-target="error"></p>
+
+  <section class="card profile-edit__account mb-3" aria-labelledby="profile-account-heading">
+    <div class="card-body">
+      <h2 id="profile-account-heading" class="h6">アカウント</h2>
+      <div class="small text-body-secondary mb-2">メールアドレス</div>
+      <div class="text-break mb-3"><%= @user.email %></div>
+      <%= link_to "メールアドレスを変更",
+            edit_email_change_path,
+            class: "btn btn-outline-secondary btn-sm" %>
+    </div>
+  </section>
+
+  <% unless current_user.system_admin? %>
+    <div class="profile-edit__withdrawal text-center">
       <%= link_to "退会する",
             account_withdrawal_path,
             data: { turbo_frame: "modal" },
-            class: "btn btn-link btn-sm text-danger text-decoration-none align-self-center" %>
-    <% end %>
-  </div>
+            class: "btn btn-link btn-sm text-danger text-decoration-none" %>
+    </div>
+  <% end %>
 <% end %>
