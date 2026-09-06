@@ -2,6 +2,8 @@
 
 この文書は、操作マニュアルに載せるアカウント作成フローを Playwright（ブラウザ自動操作）で撮影した記録です。撮影は development（開発環境）で実施し、production（本番環境）向けの挙動は変更していません。
 
+> 2026-09-06追記: この記録の店舗登録部分は旧フローです。現在は登録後に初回店舗設定へ進み、保存・公開後にサンクス、ダッシュボードへ遷移します。撮影specは新フローへ更新済みで、画像は再撮影待ちです。`03_after_registration_store_edit.png`は現行マニュアルから参照しません。
+
 ## 撮影コマンド
 
 ```bash
@@ -27,7 +29,7 @@ npm run manual:capture:accounts
 | フロー | 開始画面 | 登録後の遷移 |
 | --- | --- | --- |
 | customer（視聴者）自己登録 | `/sign_up` | `/profile/edit` |
-| store_admin（店舗管理者）店舗登録 | `/stores/new_registration?ref=MANUAL-CAPTURE-LOCAL` | `/admin/stores/:id/edit` |
+| store_admin（店舗管理者）店舗登録 | `/stores/new_registration?ref=MANUAL-CAPTURE-LOCAL` | 撮影時点は`/admin/stores/:id/edit`。現行は初回店舗設定 → 登録完了 → `/dashboard` |
 | cast（配信者）招待登録 | `/admin/cast_invitations` で招待 URL 発行後、`/cast_invitations/:token` | `/cast_invitations/:token` → 承認後 `/profile/edit` → 更新後 `/cast/booths/:id/edit` → ブース更新後 `/` |
 | 追加 store_admin（店舗管理者）招待登録 | `/admin/store_admin_invitations` で招待 URL 発行後、`/store_admin_invitations/:token` | `/store_admin_invitations/:token` → 承認後 `/dashboard` |
 
@@ -55,7 +57,13 @@ npm run manual:capture:accounts
 
 - `images/account_creation/store_admin_registration/01_registration_form.png`
 - `images/account_creation/store_admin_registration/02_registration_filled.png`
-- `images/account_creation/store_admin_registration/03_after_registration_store_edit.png`
+- `images/account_creation/store_admin_registration/03_after_registration_store_edit.png`（旧フロー・現行マニュアルでは参照しない）
+
+新フローで再撮影するファイル:
+
+- `images/account_creation/store_admin_registration/03_after_registration_initial_setup.png`
+- `images/account_creation/store_admin_registration/04_after_initial_setup_thanks.png`
+- `images/account_creation/store_admin_registration/05_after_registration_dashboard.png`
 
 ### cast（配信者）招待登録
 

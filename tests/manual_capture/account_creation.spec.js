@@ -151,11 +151,17 @@ test("store admin store registration", async ({ page }) => {
   await page.locator('input[name="store_registration[referral_code]"]').fill("MANUAL-CAPTURE-LOCAL");
   await capture(page, "store_admin_registration", "02_registration_filled.png");
 
-  await submitFirstFormAndWait(page, /\/stores\/registration\/thanks/);
-  await page.getByRole("link", { name: "管理画面へ進む" }).click();
-  await page.waitForURL(/\/admin\/stores\/\d+\/edit/);
+  await submitFirstFormAndWait(page, /\/admin\/stores\/\d+\/registration_setup\/edit/);
   await expect(page.locator('input[name="store[name]"]')).toBeVisible();
-  await capture(page, "store_admin_registration", "03_after_registration_store_edit.png");
+  await capture(page, "store_admin_registration", "03_after_registration_initial_setup.png");
+
+  await submitFirstFormAndWait(page, /\/stores\/registration\/thanks/);
+  await expect(page.getByRole("heading", { name: "店舗情報の登録・公開が完了しました" })).toBeVisible();
+  await capture(page, "store_admin_registration", "04_after_initial_setup_thanks.png");
+
+  await page.getByRole("link", { name: "ダッシュボードへ進む" }).click();
+  await page.waitForURL(/\/dashboard/);
+  await capture(page, "store_admin_registration", "05_after_registration_dashboard.png");
 });
 
 test("cast invitation registration", async ({ page, browser }) => {

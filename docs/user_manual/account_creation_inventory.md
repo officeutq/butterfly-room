@@ -145,14 +145,27 @@
 - service: `app/services/stores/register_store_admin.rb`
 - view: `app/views/stores/registrations/new.html.erb`
 
+初回店舗設定・公開:
+
+- route: `GET /admin/stores/:store_id/registration_setup/edit`, `PATCH /admin/stores/:store_id/registration_setup`
+- controller: `app/controllers/admin/store_registration_setups_controller.rb`
+- service: `app/services/stores/complete_registration_setup.rb`
+- shared service: `app/services/stores/update_service.rb`
+- view: `app/views/admin/store_registration_setups/edit.html.erb`
+- shared fields: `app/views/stores/_information_fields.html.erb`
+
 作成内容:
 
 - `ReferralCode` が使用可能である必要があります。紹介コード未入力時は `0000` を使用します。
-- `Store` を作成します。
+- `Store` を`published: false`、`onboarding_step: invite_cast`で作成します。
 - 初期 `DrinkItem` を作成します。
 - `User` を `role: :store_admin` で作成します。
 - `StoreMembership` を `membership_role: :admin` で作成します。
-- 作成後は自動ログインし、`session[:current_store_id]` を設定して `edit_admin_store_path(@form.store)` へ遷移します。
+- 作成後は自動ログインし、`session[:current_store_id]`と店舗登録pending sessionを設定して初回店舗設定へ遷移します。
+- Store作成だけでは店舗登録完了にせず、初回店舗設定で店舗情報・画像・`published: true`の保存に成功した時点を完了とします。
+- 初回店舗設定はpending、path、current StoreのIDと管理権限を検証します。公開状態はrequestから受け付けず、Service（業務処理を集約するクラス）が有効にします。
+- 保存成功後は一度限りの登録完了sessionを作ってサンクスへ進み、サンクスからダッシュボードへ案内します。
+- 通常の店舗設定から公開しても初回店舗登録の完了として扱いません。pending sessionを失った場合の初回フロー復元も行いません。
 
 店舗管理者招待による作成:
 

@@ -2,6 +2,8 @@
 
 このファイルは、`docs/user_manual/manual.md` から Google Docs（Google ドキュメント）へ取り込むための `docs/user_manual/build/manual.docx` を作成した手順を記録するものです。
 
+> 2026-09-06時点では、店舗登録の初回店舗設定・公開フローを`manual.md`へ反映済みですが、新画面の再撮影前のため`manual.docx`は再生成していません。次回は新しい3画像を取得してからDOCXを再生成・検証します。
+
 ## 入力ファイル
 
 - `docs/user_manual/manual.md`
