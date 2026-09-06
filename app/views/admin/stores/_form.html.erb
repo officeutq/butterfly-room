@@ -1,113 +1,54 @@
 <%# locals: f:, store:, submit_label:, back_path: %>
 
-<div class="mb-3">
-  <%= f.label :published, "公開状態", class: "form-label" %>
-  <%= f.select :published,
-        options_for_select([[ "公開", true ], [ "非公開", false ]], store.published?),
-        {},
-        class: "form-select" %>
-  <div class="form-text">非公開の店舗と所属ブースは一般ユーザー向け画面に表示されません。</div>
+<div class="store-edit__action-bar">
+  <div class="container store-edit__action-bar-inner">
+    <%= link_to back_path,
+          class: "btn btn-sm btn-link text-body text-decoration-none store-edit__back",
+          data: {
+            action: "store-edit#back",
+            "store-edit-target": "backLink"
+          } do %>
+      <i class="bi bi-arrow-left" aria-hidden="true"></i>
+      <span>戻る</span>
+    <% end %>
+
+    <%= f.submit submit_label,
+          class: "btn btn-primary btn-sm rounded-pill px-3 store-edit__save",
+          disabled: true,
+          data: {
+            "image-pair-form-target": "submitButton",
+            "store-edit-target": "saveButton",
+            turbo_confirm: "店舗情報と公開状態を更新します。よろしいですか？",
+            turbo_submits_with: "保存中…",
+            submitting_label: "保存中…"
+          } %>
+  </div>
 </div>
 
-<% if current_user.system_admin? %>
+<div class="store-edit__fields">
+  <%= render "stores/information_fields", f: f, store: store %>
+
   <div class="mb-3">
-    <div class="form-label">営業支援会社</div>
-    <div class="form-check">
-      <%= f.check_box :sales_support_company, class: "form-check-input" %>
-      <%= f.label :sales_support_company,
-            "この店舗を営業支援会社として扱う",
-            class: "form-check-label" %>
+    <%= f.label :published, "公開状態", class: "form-label" %>
+    <%= f.select :published,
+          options_for_select([[ "公開", true ], [ "非公開", false ]], store.published?),
+          {},
+          class: "form-select",
+          data: { bs_theme: "light" } %>
+    <div class="form-text">非公開の店舗と所属ブースは一般ユーザー向け画面に表示されません。</div>
+  </div>
+  <% if current_user.system_admin? %>
+    <div class="mb-3">
+      <div class="form-label">営業支援会社</div>
+      <div class="form-check" data-bs-theme="light">
+        <%= f.check_box :sales_support_company, class: "form-check-input" %>
+        <%= f.label :sales_support_company,
+              "この店舗を営業支援会社として扱う",
+              class: "form-check-label" %>
+      </div>
     </div>
-  </div>
-<% end %>
+  <% end %>
 
-<div class="mb-3">
-  <%= f.label :name, "店舗名（必須）", class: "form-label" %>
-  <%= f.text_field :name, class: "form-control", required: true %>
-</div>
-
-<div class="mb-3">
-  <%= f.label :description, "概要", class: "form-label" %>
-  <%= f.text_area :description, class: "form-control", rows: 6 %>
-  <div class="form-text">最大1000文字</div>
-</div>
-
-<div class="mb-3">
-  <%= f.label :area, "地域", class: "form-label" %>
-  <%= f.text_field :area, class: "form-control" %>
-  <div class="form-text">最大50文字（例：渋谷 / 福岡市中央区 など）</div>
-</div>
-
-<div class="mb-3">
-  <%= f.label :business_type, "業態", class: "form-label" %>
-  <%= f.select :business_type,
-        options_for_select(Store.business_type_select_options, store.business_type),
-        { include_blank: true },
-        class: "form-select" %>
-</div>
-
-<div class="mb-3">
-  <%= f.label :address, "住所", class: "form-label" %>
-  <%= f.text_field :address, class: "form-control" %>
-  <div class="form-text">保存時に住所から座標を自動取得します</div>
-</div>
-
-<div class="mb-3">
-  <%= f.label :phone_number, "電話番号", class: "form-label" %>
-  <%= f.text_field :phone_number, class: "form-control" %>
-</div>
-
-<div class="mb-3">
-  <%= f.label :business_hours, "営業時間", class: "form-label" %>
-  <%= f.text_field :business_hours, class: "form-control" %>
-  <div class="form-text">例：20:00〜LAST / 平日 19:00〜1:00 など</div>
-</div>
-
-<div class="mb-3">
-  <%= f.label :website_url, "ホームページURL", class: "form-label" %>
-  <%= f.text_field :website_url, class: "form-control", placeholder: "https://example.com" %>
-</div>
-
-<div class="mb-3">
-  <%= f.label :x_url, "X URL", class: "form-label" %>
-  <%= f.text_field :x_url, class: "form-control", placeholder: "https://x.com/..." %>
-</div>
-
-<div class="mb-3">
-  <%= f.label :instagram_url, "Instagram URL", class: "form-label" %>
-  <%= f.text_field :instagram_url, class: "form-control", placeholder: "https://www.instagram.com/..." %>
-</div>
-
-<div class="mb-3">
-  <%= f.label :tiktok_url, "TikTok URL", class: "form-label" %>
-  <%= f.text_field :tiktok_url, class: "form-control", placeholder: "https://www.tiktok.com/..." %>
-</div>
-
-<div class="mb-3">
-  <%= f.label :youtube_url, "YouTube URL", class: "form-label" %>
-  <%= f.text_field :youtube_url, class: "form-control", placeholder: "https://www.youtube.com/..." %>
-</div>
-
-<div class="card mb-3">
-  <div class="card-body">
-    <%= render "shared/image_attachment_editor",
-          **image_attachment_editor_state(store, :thumbnail),
-          param_root: :image_pair,
-          ratio_key: :social,
-          label: "店舗画像" %>
-    <p class="form-text mb-0">店舗カードや店舗詳細に使う1200×630の画像です。</p>
-  </div>
-</div>
-
-<p class="alert alert-danger" role="alert" tabindex="-1" hidden data-image-pair-form-target="error"></p>
-
-<div class="d-flex gap-2">
-  <%= f.submit submit_label,
-        class: "btn btn-primary",
-        data: {
-          "image-pair-form-target": "submitButton",
-          turbo_confirm: "店舗情報と公開状態を更新します。よろしいですか？",
-          turbo_submits_with: "保存中…"
-        } %>
-  <%= link_to "戻る", back_path, class: "btn btn-outline-secondary" %>
+  <p class="alert alert-danger" role="alert" tabindex="-1" hidden
+     data-image-pair-form-target="error"></p>
 </div>

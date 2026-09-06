@@ -14,7 +14,8 @@ class ImageUploadUiTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "script[src^='/vendor/filepond/']", count: 0
     assert_select(
-      "form[data-controller='image-pair-form'][data-action*='image-pair-form#submit']" \
+      "form[data-controller~='image-pair-form'][data-controller~='store-edit']" \
+      "[data-action*='image-pair-form#submit']" \
       "[enctype='multipart/form-data']",
       count: 1
     )

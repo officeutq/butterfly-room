@@ -87,6 +87,39 @@ test("shared editor creates fixed-size replacement files without blank borders",
   }
 })
 
+test("shared editor keeps fixed output dimensions at smartphone width", async () => {
+  const browser = await browsers[process.env.IMAGE_VERIFICATION_BROWSER || "chromium"].launch({ headless: true })
+  let environment
+  try {
+    environment = await openImageAttachmentEditorPage(browser)
+    await environment.page.setViewportSize({ width: 390, height: 844 })
+    const results = await environment.page.evaluate(async () => {
+      const outputs = []
+      for (const [ratioKey, width, height] of [["square", 1024, 1024], ["social", 1200, 630]]) {
+        const controller = window.mountEditor({ ratioKey })
+        const file = await window.imageFile({ width: 1200, height: 1499 })
+        await controller.selectFile({ currentTarget: { files: [file] } })
+        await controller.applyCrop()
+        const display = controller.displayInputTarget.files[0]
+        const bitmap = await createImageBitmap(display)
+        outputs.push({
+          ratioKey,
+          expected: { width, height },
+          actual: { width: bitmap.width, height: bitmap.height },
+        })
+        bitmap.close()
+      }
+      return outputs
+    })
+
+    for (const result of results) assert.deepEqual(result.actual, result.expected, result.ratioKey)
+    assert.deepEqual(environment.errors, [])
+  } finally {
+    await environment?.close()
+    await browser.close()
+  }
+})
+
 test("shared editor lazily converts HEIC in a Worker before normalizing and cropping", { timeout: 120_000 }, async () => {
   const browser = await browsers[process.env.IMAGE_VERIFICATION_BROWSER || "chromium"].launch({ headless: true })
   let environment

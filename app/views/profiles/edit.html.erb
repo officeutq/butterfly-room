@@ -43,14 +43,14 @@
   </div>
 
   <div class="profile-edit__media" aria-label="プロフィール画像">
-    <%= render "profiles/image_attachment_editor",
+    <%= render "shared/integrated_image_attachment_editor",
           **image_attachment_editor_state(@user, :cover),
           param_root: :cover_image_pair,
           ratio_key: :social,
           presentation: :cover,
           label: "カバー画像" %>
 
-    <%= render "profiles/image_attachment_editor",
+    <%= render "shared/integrated_image_attachment_editor",
           **image_attachment_editor_state(@user, :avatar),
           param_root: :avatar_image_pair,
           ratio_key: :square,
