@@ -5,17 +5,22 @@
 }
 
 .profile-edit__action-bar {
-  align-items: center;
   backdrop-filter: blur(12px);
   background: rgba(var(--bs-body-bg-rgb), 0.94);
   border-bottom: 1px solid var(--bs-border-color);
-  display: flex;
-  justify-content: space-between;
   margin-bottom: 0.75rem;
-  padding: 0.5rem 0.25rem;
+  margin-inline: calc(50% - 50vw);
+  padding-block: 0.5rem;
   position: sticky;
   top: 64px;
+  width: 100vw;
   z-index: 1010;
+}
+
+.profile-edit__action-bar-inner {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
 }
 
 .profile-edit__back {
@@ -56,6 +61,7 @@
   aspect-ratio: 40 / 21;
   border: 1px solid var(--bs-border-color);
   border-radius: 0.75rem;
+  overflow: visible;
 }
 
 .profile-image-editor__preview--avatar {
@@ -95,14 +101,14 @@
   font-size: calc(var(--profile-avatar-size) * 0.42);
 }
 
+.profile-image-editor__preview--cover .profile-image-editor__preview-image,
+.profile-image-editor__preview--cover .profile-image-editor__placeholder,
 .profile-image-editor__preview--avatar .profile-image-editor__preview-image,
 .profile-image-editor__preview--avatar .profile-image-editor__placeholder {
   border-radius: inherit;
 }
 
-.profile-image-editor__actions {
-  display: flex;
-  gap: 0.65rem;
+.profile-image-editor__image-menu {
   left: 50%;
   position: absolute;
   top: 50%;
@@ -110,15 +116,7 @@
   z-index: 3;
 }
 
-.profile-image-editor__avatar-menu {
-  left: 50%;
-  position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 3;
-}
-
-.profile-image-editor__avatar-menu .dropdown-menu {
+.profile-image-editor__image-menu .dropdown-menu {
   z-index: 5;
 }
 
@@ -187,19 +185,6 @@
   top: calc(100% + 0.4rem);
   transform: translateX(-50%);
   width: max-content;
-}
-
-.profile-image-editor__reset-change {
-  align-items: center;
-  gap: 0.25rem;
-  position: absolute;
-  right: 0;
-  top: calc(100% + 0.5rem);
-  z-index: 3;
-}
-
-.profile-image-editor__reset-change:not([hidden]) {
-  display: inline-flex;
 }
 
 .profile-image-editor__dialog {
@@ -288,7 +273,6 @@
     margin-inline: -0.75rem;
   }
 
-  .profile-edit__action-bar,
   .profile-edit__fields,
   .profile-edit__account,
   .profile-edit__withdrawal {

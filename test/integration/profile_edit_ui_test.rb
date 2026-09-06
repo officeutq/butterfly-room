@@ -20,14 +20,18 @@ class ProfileEditUiTest < ActionDispatch::IntegrationTest
     assert_select "header#app_header .header-title", text: "プロフィール編集", count: 1
     assert_select "form#profile-edit-form[data-controller~='image-pair-form'][data-controller~='profile-edit']", count: 1 do
       assert_select ".profile-edit__action-bar", count: 1 do
-        assert_select "a.profile-edit__back[href='#{dashboard_path}']", text: /戻る/, count: 1
-        assert_select "input.profile-edit__save[type='submit'][value='保存'][disabled]", count: 1
+        assert_select ".container.profile-edit__action-bar-inner", count: 1 do
+          assert_select "a.profile-edit__back[href='#{dashboard_path}']", text: /戻る/, count: 1
+          assert_select "input.profile-edit__save[type='submit'][value='保存'][disabled]", count: 1
+        end
       end
       assert_select ".profile-edit__media", count: 1
       assert_profile_image_editor("cover_image_pair", "social", "cover")
       assert_profile_image_editor("avatar_image_pair", "square", "avatar")
       assert_select "input[data-profile-edit-target='displayName'][value='プロフィール表示名']", count: 1
       assert_select "textarea[data-profile-edit-target='bio']", text: "プロフィール自己紹介", count: 1
+      assert_select ".profile-edit__fields .form-floating[data-bs-theme='light']", count: 2
+      assert_select ".profile-edit__fields .form-text[data-bs-theme]", count: 0
       assert_select "input[type='submit'][value='更新する']", count: 0
       assert_select ".profile-edit__account", text: /profile-edit-ui@example.com/, count: 1
       assert_select ".profile-edit__withdrawal a", text: "退会する", count: 1
@@ -68,17 +72,17 @@ class ProfileEditUiTest < ActionDispatch::IntegrationTest
       assert_select "input[name='#{param_root}[source]']", count: 1
       assert_select "input[name='#{param_root}[display]']", count: 1
       assert_select "input[name='#{param_root}[crop_data]']", count: 1
-      if presentation == "cover"
-        assert_select ".profile-image-editor__actions [data-image-attachment-editor-target='editButton']", count: 1
-        assert_select ".profile-image-editor__actions [data-image-attachment-editor-target='deleteButton']", count: 1
-        assert_select ".profile-image-editor__reset-change[data-image-attachment-editor-target='undoButton']",
-                      text: /画像変更をリセット/, count: 1
-      else
-        assert_select ".profile-image-editor__avatar-menu .dropdown-menu", count: 1 do
+      assert_select ".profile-image-editor__image-menu", count: 1 do
+        assert_select "button[data-bs-toggle='dropdown'][aria-label='#{presentation == 'cover' ? 'カバー画像' : 'アバター画像'}の操作を開く']",
+                      count: 1
+        assert_select ".dropdown-menu", count: 1 do
+          assert_select "[data-action='image-attachment-editor#chooseFile']", text: /追加・差し替え/, count: 1
           assert_select "[data-image-attachment-editor-target='editButton']", text: /構図を編集/, count: 1
           assert_select "[data-image-attachment-editor-target='deleteButton']", text: /画像を削除/, count: 1
+          assert_select "[data-image-attachment-editor-target='undoButton']", text: /変更を取り消す/, count: 1
         end
       end
+      assert_select ".profile-image-editor__status[data-errors-only-status]", count: 1
     end
   end
 end

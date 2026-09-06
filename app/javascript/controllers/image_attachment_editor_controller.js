@@ -16,10 +16,6 @@ import { ImageHeicConverter } from "image_attachments/heic_converter"
 
 const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "image/heic-sequence", "image/heif-sequence"]
 const ACCEPTED_FILE_EXTENSION = /\.(?:jpe?g|png|webp|hei[cf])$/i
-const COMPACT_STATUS_MESSAGES = {
-  "画像の変更を反映しました。最後にフォームの保存ボタンを押してください。": "画像の変更は未保存です。",
-  "画像を削除対象にしました。最後にフォームの保存ボタンを押してください。": "画像の削除は未保存です。",
-}
 
 export default class extends Controller {
   static targets = [
@@ -628,13 +624,10 @@ export default class extends Controller {
   }
 
   renderStatus(message) {
-    const baseline = ["現在の画像です。", "画像未選択です。"].includes(message)
     this.statusTargets.forEach((target) => {
-      target.textContent = target.hasAttribute("data-compact-status")
-        ? (COMPACT_STATUS_MESSAGES[message] || message)
-        : message
+      target.textContent = message
       target.classList.remove("text-danger")
-      if (target.hasAttribute("data-compact-status")) target.hidden = baseline
+      if (target.hasAttribute("data-errors-only-status")) target.hidden = true
     })
   }
 

@@ -19,25 +19,27 @@
         ].join(" ")
       } do |f| %>
   <div class="profile-edit__action-bar">
-    <%= link_to dashboard_path,
-          class: "btn btn-sm btn-link text-body text-decoration-none profile-edit__back",
-          data: {
-            action: "profile-edit#back",
-            "profile-edit-target": "backLink"
-          } do %>
-      <i class="bi bi-arrow-left" aria-hidden="true"></i>
-      <span>戻る</span>
-    <% end %>
+    <div class="container profile-edit__action-bar-inner">
+      <%= link_to dashboard_path,
+            class: "btn btn-sm btn-link text-body text-decoration-none profile-edit__back",
+            data: {
+              action: "profile-edit#back",
+              "profile-edit-target": "backLink"
+            } do %>
+        <i class="bi bi-arrow-left" aria-hidden="true"></i>
+        <span>戻る</span>
+      <% end %>
 
-    <%= f.submit "保存",
-          class: "btn btn-primary btn-sm rounded-pill px-3 profile-edit__save",
-          disabled: true,
-          data: {
-            "image-pair-form-target": "submitButton",
-            "profile-edit-target": "saveButton",
-            turbo_submits_with: "保存中…",
-            submitting_label: "保存中…"
-          } %>
+      <%= f.submit "保存",
+            class: "btn btn-primary btn-sm rounded-pill px-3 profile-edit__save",
+            disabled: true,
+            data: {
+              "image-pair-form-target": "submitButton",
+              "profile-edit-target": "saveButton",
+              turbo_submits_with: "保存中…",
+              submitting_label: "保存中…"
+            } %>
+    </div>
   </div>
 
   <div class="profile-edit__media" aria-label="プロフィール画像">
@@ -57,22 +59,26 @@
   </div>
 
   <div class="profile-edit__fields">
-    <div class="form-floating mb-3">
-      <%= f.text_field :display_name,
-            class: "form-control",
-            placeholder: "表示名",
-            data: { "profile-edit-target": "displayName" } %>
-      <%= f.label :display_name, "表示名" %>
+    <div class="mb-3">
+      <div class="form-floating" data-bs-theme="light">
+        <%= f.text_field :display_name,
+              class: "form-control",
+              placeholder: "表示名",
+              data: { "profile-edit-target": "displayName" } %>
+        <%= f.label :display_name, "表示名" %>
+      </div>
       <div class="form-text">未入力の場合は「ななしさん」と表示されます。</div>
     </div>
 
-    <div class="form-floating mb-3">
-      <%= f.text_area :bio,
-            class: "form-control profile-edit__bio",
-            placeholder: "自己紹介",
-            maxlength: 500,
-            data: { "profile-edit-target": "bio" } %>
-      <%= f.label :bio, "自己紹介" %>
+    <div class="mb-3">
+      <div class="form-floating" data-bs-theme="light">
+        <%= f.text_area :bio,
+              class: "form-control profile-edit__bio",
+              placeholder: "自己紹介",
+              maxlength: 500,
+              data: { "profile-edit-target": "bio" } %>
+        <%= f.label :bio, "自己紹介" %>
+      </div>
       <div class="form-text">最大500文字</div>
     </div>
   </div>

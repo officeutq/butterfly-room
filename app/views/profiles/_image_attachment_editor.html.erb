@@ -59,80 +59,46 @@
       保存すると削除されます
     </p>
 
-    <% if presentation == "cover" %>
-      <div class="profile-image-editor__actions" role="group" aria-label="カバー画像の操作">
-        <button type="button" class="profile-image-editor__icon-button"
-                title="カバー画像を追加・差し替え"
-                aria-label="カバー画像を追加・差し替え"
-                data-action="image-attachment-editor#chooseFile">
-          <i class="bi bi-camera-fill" aria-hidden="true"></i>
-        </button>
-        <button type="button" class="profile-image-editor__icon-button" hidden
-                title="現在のカバー画像の構図を編集"
-                aria-label="現在のカバー画像の構図を編集"
-                data-image-attachment-editor-target="editButton"
-                data-action="image-attachment-editor#editExisting">
-          <i class="bi bi-crop" aria-hidden="true"></i>
-        </button>
-        <button type="button" class="profile-image-editor__icon-button" hidden
-                title="現在のカバー画像を削除"
-                aria-label="現在のカバー画像を削除"
-                data-image-attachment-editor-target="deleteButton"
-                data-action="image-attachment-editor#removeImage">
-          <i class="bi bi-x-lg" aria-hidden="true"></i>
-        </button>
-      </div>
-    <% else %>
-      <div class="dropdown profile-image-editor__avatar-menu">
-        <button type="button" class="profile-image-editor__icon-button"
-                data-bs-toggle="dropdown" aria-expanded="false"
-                aria-label="アバター画像の操作を開く">
-          <i class="bi bi-camera-fill" aria-hidden="true"></i>
-        </button>
-        <ul class="dropdown-menu">
-          <li>
-            <button type="button" class="dropdown-item"
-                    data-action="image-attachment-editor#chooseFile">
-              画像を追加・差し替え
-            </button>
-          </li>
-          <li>
-            <button type="button" class="dropdown-item" hidden
-                    data-image-attachment-editor-target="editButton"
-                    data-action="image-attachment-editor#editExisting">
-              現在の構図を編集
-            </button>
-          </li>
-          <li>
-            <button type="button" class="dropdown-item text-danger" hidden
-                    data-image-attachment-editor-target="deleteButton"
-                    data-action="image-attachment-editor#removeImage">
-              画像を削除
-            </button>
-          </li>
-          <li>
-            <button type="button" class="dropdown-item" hidden
-                    data-image-attachment-editor-target="undoButton"
-                    data-action="image-attachment-editor#undoChange">
-              画像の変更を取り消す
-            </button>
-          </li>
-        </ul>
-      </div>
-    <% end %>
+    <div class="dropdown profile-image-editor__image-menu">
+      <button type="button" class="profile-image-editor__icon-button"
+              data-bs-toggle="dropdown" aria-expanded="false"
+              aria-label="<%= label %>の操作を開く">
+        <i class="bi bi-camera-fill" aria-hidden="true"></i>
+      </button>
+      <ul class="dropdown-menu">
+        <li>
+          <button type="button" class="dropdown-item"
+                  data-action="image-attachment-editor#chooseFile">
+            画像を追加・差し替え
+          </button>
+        </li>
+        <li>
+          <button type="button" class="dropdown-item" hidden
+                  data-image-attachment-editor-target="editButton"
+                  data-action="image-attachment-editor#editExisting">
+            現在の構図を編集
+          </button>
+        </li>
+        <li>
+          <button type="button" class="dropdown-item text-danger" hidden
+                  data-image-attachment-editor-target="deleteButton"
+                  data-action="image-attachment-editor#removeImage">
+            画像を削除
+          </button>
+        </li>
+        <li>
+          <button type="button" class="dropdown-item" hidden
+                  data-image-attachment-editor-target="undoButton"
+                  data-action="image-attachment-editor#undoChange">
+            画像の変更を取り消す
+          </button>
+        </li>
+      </ul>
+    </div>
 
     <p class="profile-image-editor__status mb-0" role="status" aria-live="polite" tabindex="-1" hidden
-       data-compact-status data-image-attachment-editor-target="status"></p>
+       data-errors-only-status data-image-attachment-editor-target="status"></p>
   </div>
-
-  <% if presentation == "cover" %>
-    <button type="button" class="btn btn-sm btn-outline-secondary profile-image-editor__reset-change" hidden
-            data-image-attachment-editor-target="undoButton"
-            data-action="image-attachment-editor#undoChange">
-      <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
-      画像変更をリセット
-    </button>
-  <% end %>
 
   <input
     id="<%= dom_id %>-picker"
