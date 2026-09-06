@@ -1,29 +1,30 @@
 <% content_for :title, "店舗設定編集" %>
 
 <div
+  class="store-edit-shell"
   data-controller="store-ai-autofill"
   data-store-ai-autofill-url-value="<%= admin_store_ai_autofill_path(@store) %>">
-  <div class="mb-3">
-    <button
-      type="button"
-      class="btn btn-outline-primary"
-      data-store-ai-autofill-target="searchButton"
-      data-action="store-ai-autofill#search">
-      AIで店舗情報を自動入力
-    </button>
-    <div class="form-text">現在入力中の店舗名で公開情報を検索し、選択した候補だけをフォームへ反映します。</div>
-  </div>
-
   <%= form_with model: [:admin, @store],
+        id: "store-edit-form",
+        class: "store-edit",
         html: { multipart: true },
         data: {
-          controller: "image-pair-form",
-          action: "submit->image-pair-form#submit"
+          controller: "image-pair-form store-edit",
+          action: [
+            "submit->image-pair-form#submit",
+            "submit->store-edit#prepareSubmit",
+            "input->store-edit#refresh",
+            "change->store-edit#refresh",
+            "image-attachment-editor:change->store-edit#refresh",
+            "image-pair-form:submit-start->store-edit#imageSubmitStarted",
+            "image-pair-form:submit-error->store-edit#imageSubmitFailed",
+            "turbo:submit-end->store-edit#turboSubmitEnd"
+          ].join(" ")
         } do |f| %>
     <%= render "form",
               f: f,
               store: @store,
-              submit_label: "更新する",
+              submit_label: "保存",
               back_path: dashboard_path %>
   <% end %>
 

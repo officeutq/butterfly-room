@@ -62,17 +62,17 @@ class ProfileEditUiTest < ActionDispatch::IntegrationTest
       "[data-controller='image-attachment-editor']" \
       "[data-image-attachment-editor-keep-staged-actions-value='true']" \
       "[data-image-attachment-editor-ratio-key-value='#{ratio_key}']" \
-      ".profile-image-editor--#{presentation}",
+      ".integrated-image-editor--#{presentation}",
       count: 1
     ) do
-      assert_select ".profile-image-editor__preview--#{presentation}", count: 1
+      assert_select ".integrated-image-editor__preview--#{presentation}", count: 1
       assert_select "dialog[data-image-attachment-editor-target='workspace'][hidden]", count: 1
       assert_select "input[data-image-attachment-editor-target='fileInput'][hidden]", count: 1
       assert_select "input[name='#{param_root}[operation]']", count: 1
       assert_select "input[name='#{param_root}[source]']", count: 1
       assert_select "input[name='#{param_root}[display]']", count: 1
       assert_select "input[name='#{param_root}[crop_data]']", count: 1
-      assert_select ".profile-image-editor__image-menu", count: 1 do
+      assert_select ".integrated-image-editor__image-menu", count: 1 do
         assert_select "button[data-bs-toggle='dropdown'][aria-label='#{presentation == 'cover' ? 'カバー画像' : 'アバター画像'}の操作を開く']",
                       count: 1
         assert_select ".dropdown-menu", count: 1 do
@@ -82,7 +82,7 @@ class ProfileEditUiTest < ActionDispatch::IntegrationTest
           assert_select "[data-image-attachment-editor-target='undoButton']", text: /変更を取り消す/, count: 1
         end
       end
-      assert_select ".profile-image-editor__status[data-errors-only-status]", count: 1
+      assert_select ".integrated-image-editor__status[data-errors-only-status]", count: 1
     end
   end
 end

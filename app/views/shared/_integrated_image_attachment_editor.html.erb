@@ -1,4 +1,6 @@
 <%#
+  プロフィール・店舗などの編集画面で使う統合画像エディタ。
+
   locals:
     param_root:, ratio_key:, label:, presentation:,
     current_source_url: nil, current_display_url: nil, current_crop_data: nil,
@@ -28,7 +30,7 @@
 
 <section
   id="<%= dom_id %>"
-  class="profile-image-editor profile-image-editor--<%= presentation %>"
+  class="integrated-image-editor integrated-image-editor--<%= presentation %>"
   aria-labelledby="<%= dom_id %>-label"
   data-controller="image-attachment-editor"
   data-action="turbo:before-cache@document->image-attachment-editor#beforeCache"
@@ -42,25 +44,25 @@
   <% if source_blob_id.present? %>data-image-attachment-editor-current-source-blob-id-value="<%= source_blob_id %>"<% end %>>
   <h2 id="<%= dom_id %>-label" class="visually-hidden"><%= label %></h2>
 
-  <div class="profile-image-editor__preview profile-image-editor__preview--<%= presentation %>">
+  <div class="integrated-image-editor__preview integrated-image-editor__preview--<%= presentation %>">
     <img
       alt="<%= label %>の現在の表示"
-      class="profile-image-editor__preview-image"
+      class="integrated-image-editor__preview-image"
       hidden
       data-image-attachment-editor-target="currentPreview">
 
-    <div class="profile-image-editor__placeholder" data-image-attachment-editor-target="previewEmpty">
+    <div class="integrated-image-editor__placeholder" data-image-attachment-editor-target="previewEmpty">
       <i class="bi <%= presentation == 'avatar' ? 'bi-person-fill' : 'bi-image' %>" aria-hidden="true"></i>
       <span class="visually-hidden"><%= label %>は設定されていません</span>
     </div>
 
-    <p class="profile-image-editor__deletion-notice" role="status" hidden
+    <p class="integrated-image-editor__deletion-notice" role="status" hidden
        data-image-attachment-editor-target="deletionNotice">
       保存すると削除されます
     </p>
 
-    <div class="dropdown profile-image-editor__image-menu">
-      <button type="button" class="profile-image-editor__icon-button"
+    <div class="dropdown integrated-image-editor__image-menu">
+      <button type="button" class="integrated-image-editor__icon-button"
               data-bs-toggle="dropdown" aria-expanded="false"
               aria-label="<%= label %>の操作を開く">
         <i class="bi bi-camera-fill" aria-hidden="true"></i>
@@ -96,7 +98,7 @@
       </ul>
     </div>
 
-    <p class="profile-image-editor__status mb-0" role="status" aria-live="polite" tabindex="-1" hidden
+    <p class="integrated-image-editor__status mb-0" role="status" aria-live="polite" tabindex="-1" hidden
        data-errors-only-status data-image-attachment-editor-target="status"></p>
   </div>
 
@@ -108,12 +110,12 @@
     data-image-attachment-editor-target="fileInput"
     data-action="change->image-attachment-editor#selectFile">
 
-  <dialog class="profile-image-editor__dialog" hidden
+  <dialog class="integrated-image-editor__dialog" hidden
           aria-labelledby="<%= dom_id %>-dialog-title"
           data-image-attachment-editor-target="workspace"
           data-action="cancel->image-attachment-editor#cancelEdit">
-    <div class="profile-image-editor__dialog-shell">
-      <div class="profile-image-editor__dialog-header">
+    <div class="integrated-image-editor__dialog-shell">
+      <div class="integrated-image-editor__dialog-header">
         <button type="button" class="btn btn-sm btn-link text-body"
                 aria-label="画像編集をキャンセル"
                 data-action="image-attachment-editor#cancelEdit">
@@ -127,11 +129,11 @@
         </button>
       </div>
 
-      <p id="<%= dom_id %>-instructions" class="form-text profile-image-editor__instructions">
+      <p id="<%= dom_id %>-instructions" class="form-text integrated-image-editor__instructions">
         画像を移動し、ピンチ・ホイール・ボタンで拡大縮小してください。出力は<%= output_label %>です。
       </p>
 
-      <div class="image-attachment-editor__canvas profile-image-editor__canvas"
+      <div class="image-attachment-editor__canvas integrated-image-editor__canvas"
            role="group" tabindex="0"
            aria-label="<%= label %>のクロップ編集"
            aria-describedby="<%= dom_id %>-instructions"
@@ -141,7 +143,7 @@
              data-image-attachment-editor-target="source">
       </div>
 
-      <div class="profile-image-editor__dialog-controls" role="group" aria-label="画像編集操作">
+      <div class="integrated-image-editor__dialog-controls" role="group" aria-label="画像編集操作">
         <button type="button" class="btn btn-outline-secondary btn-sm" disabled
                 data-image-attachment-editor-target="editorControl"
                 data-action="image-attachment-editor#zoomOut">

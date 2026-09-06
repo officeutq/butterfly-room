@@ -1,0 +1,114 @@
+<%# locals: f:, store: %>
+
+<div class="store-information-fields">
+  <div class="store-information-fields__image mb-4">
+    <%= render "shared/integrated_image_attachment_editor",
+          **image_attachment_editor_state(store, :thumbnail),
+          param_root: :image_pair,
+          ratio_key: :social,
+          presentation: :cover,
+          label: "店舗画像" %>
+    <p class="form-text mb-0 mt-2">店舗カードや店舗詳細に使う1200×630の画像です。</p>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :name, "店舗名（必須）", class: "form-label" %>
+    <%= f.text_field :name,
+          class: "form-control",
+          required: true,
+          data: { bs_theme: "light" } %>
+  </div>
+
+  <div class="store-information-fields__ai mb-4">
+    <button
+      type="button"
+      class="btn btn-outline-primary"
+      data-store-ai-autofill-target="searchButton"
+      data-action="store-ai-autofill#search">
+      <i class="bi bi-stars" aria-hidden="true"></i>
+      AIで店舗情報を自動入力
+    </button>
+    <div class="form-text">現在入力中の店舗名で公開情報を検索し、選択した候補だけをフォームへ反映します。</div>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :description, "概要", class: "form-label" %>
+    <%= f.text_area :description,
+          class: "form-control",
+          rows: 6,
+          data: { bs_theme: "light" } %>
+    <div class="form-text">最大1000文字</div>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :area, "地域", class: "form-label" %>
+    <%= f.text_field :area, class: "form-control", data: { bs_theme: "light" } %>
+    <div class="form-text">最大50文字（例：渋谷 / 福岡市中央区 など）</div>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :business_type, "業態", class: "form-label" %>
+    <%= f.select :business_type,
+          options_for_select(Store.business_type_select_options, store.business_type),
+          { include_blank: true },
+          class: "form-select",
+          data: { bs_theme: "light" } %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :address, "住所", class: "form-label" %>
+    <%= f.text_field :address, class: "form-control", data: { bs_theme: "light" } %>
+    <div class="form-text">保存時に住所から座標を自動取得します</div>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :phone_number, "電話番号", class: "form-label" %>
+    <%= f.text_field :phone_number, class: "form-control", data: { bs_theme: "light" } %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :business_hours, "営業時間", class: "form-label" %>
+    <%= f.text_field :business_hours, class: "form-control", data: { bs_theme: "light" } %>
+    <div class="form-text">例：20:00〜LAST / 平日 19:00〜1:00 など</div>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :website_url, "ホームページURL", class: "form-label" %>
+    <%= f.text_field :website_url,
+          class: "form-control",
+          placeholder: "https://example.com",
+          data: { bs_theme: "light" } %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :x_url, "X URL", class: "form-label" %>
+    <%= f.text_field :x_url,
+          class: "form-control",
+          placeholder: "https://x.com/...",
+          data: { bs_theme: "light" } %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :instagram_url, "Instagram URL", class: "form-label" %>
+    <%= f.text_field :instagram_url,
+          class: "form-control",
+          placeholder: "https://www.instagram.com/...",
+          data: { bs_theme: "light" } %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :tiktok_url, "TikTok URL", class: "form-label" %>
+    <%= f.text_field :tiktok_url,
+          class: "form-control",
+          placeholder: "https://www.tiktok.com/...",
+          data: { bs_theme: "light" } %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :youtube_url, "YouTube URL", class: "form-label" %>
+    <%= f.text_field :youtube_url,
+          class: "form-control",
+          placeholder: "https://www.youtube.com/...",
+          data: { bs_theme: "light" } %>
+  </div>
+</div>

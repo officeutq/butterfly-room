@@ -272,11 +272,12 @@ export default class extends Controller {
     this.previewGeneration = previewGeneration
     this.applyButtonTarget.disabled = true
     this.renderStatus("表示用JPEGを生成しています…")
-    let canvas
+    let cropperCanvas
+    let outputCanvas
     try {
       const state = this.buildState()
       const { width, height } = cropConfigFor(this.ratioKeyValue)
-      canvas = await this.cropperSelection.$toCanvas({
+      cropperCanvas = await this.cropperSelection.$toCanvas({
         width,
         height,
         beforeDraw(context, outputCanvas) {
@@ -284,7 +285,8 @@ export default class extends Controller {
           context.fillRect(0, 0, outputCanvas.width, outputCanvas.height)
         },
       })
-      const blob = await this.canvasToJpeg(canvas)
+      outputCanvas = this.exactOutputCanvas(cropperCanvas, { width, height })
+      const blob = await this.canvasToJpeg(outputCanvas)
       if (!this.isCurrent(generation) || previewGeneration !== this.previewGeneration) return
       if (JSON.stringify(state) !== JSON.stringify(this.buildState())) {
         throw new Error("生成中に構図が変わりました。操作を止めて再度確定してください。")
@@ -320,10 +322,8 @@ export default class extends Controller {
       this.renderError(error.message || "表示用JPEGを生成できませんでした。")
       this.applyButtonTarget.disabled = false
     } finally {
-      if (canvas) {
-        canvas.width = 0
-        canvas.height = 0
-      }
+      this.releaseCanvas(outputCanvas)
+      if (cropperCanvas !== outputCanvas) this.releaseCanvas(cropperCanvas)
     }
   }
 
@@ -536,6 +536,31 @@ export default class extends Controller {
         else reject(new Error("表示用JPEGを生成できませんでした。"))
       }, "image/jpeg", IMAGE_CROP_JPEG_QUALITY)
     })
+  }
+
+  exactOutputCanvas(canvas, { width, height }) {
+    if (canvas.width === width && canvas.height === height) return canvas
+
+    const outputCanvas = document.createElement("canvas")
+    outputCanvas.width = width
+    outputCanvas.height = height
+    const context = outputCanvas.getContext("2d")
+    if (!context) {
+      this.releaseCanvas(outputCanvas)
+      throw new Error("表示用JPEGの描画領域を確保できませんでした。")
+    }
+
+    context.fillStyle = "#ffffff"
+    context.fillRect(0, 0, width, height)
+    context.drawImage(canvas, 0, 0, width, height)
+    return outputCanvas
+  }
+
+  releaseCanvas(canvas) {
+    if (!canvas) return
+
+    canvas.width = 0
+    canvas.height = 0
   }
 
   setInputFile(input, file) {

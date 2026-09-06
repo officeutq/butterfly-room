@@ -39,11 +39,11 @@
   position: relative;
 }
 
-.profile-image-editor--cover {
+.integrated-image-editor--cover {
   position: relative;
 }
 
-.profile-image-editor--avatar {
+.profile-edit__media > .integrated-image-editor--avatar {
   bottom: calc(var(--profile-avatar-size) * -0.5);
   left: clamp(1rem, 4vw, 2rem);
   position: absolute;
@@ -51,20 +51,20 @@
   z-index: 2;
 }
 
-.profile-image-editor__preview {
+.integrated-image-editor__preview {
   background: var(--bs-tertiary-bg);
   overflow: hidden;
   position: relative;
 }
 
-.profile-image-editor__preview--cover {
+.integrated-image-editor__preview--cover {
   aspect-ratio: 40 / 21;
   border: 1px solid var(--bs-border-color);
   border-radius: 0.75rem;
   overflow: visible;
 }
 
-.profile-image-editor__preview--avatar {
+.integrated-image-editor__preview--avatar {
   aspect-ratio: 1;
   border: 4px solid var(--bs-body-bg);
   border-radius: 50%;
@@ -72,23 +72,23 @@
   overflow: visible;
 }
 
-.profile-image-editor__preview-image,
-.profile-image-editor__placeholder {
+.integrated-image-editor__preview-image,
+.integrated-image-editor__placeholder {
   height: 100%;
   inset: 0;
   position: absolute;
   width: 100%;
 }
 
-.profile-image-editor__placeholder i {
+.integrated-image-editor__placeholder i {
   opacity: 0.18;
 }
 
-.profile-image-editor__preview-image {
+.integrated-image-editor__preview-image {
   object-fit: cover;
 }
 
-.profile-image-editor__placeholder {
+.integrated-image-editor__placeholder {
   align-items: center;
   background: var(--bs-secondary-bg);
   color: var(--bs-secondary-color);
@@ -97,18 +97,18 @@
   justify-content: center;
 }
 
-.profile-image-editor__preview--avatar .profile-image-editor__placeholder {
+.integrated-image-editor__preview--avatar .integrated-image-editor__placeholder {
   font-size: calc(var(--profile-avatar-size) * 0.42);
 }
 
-.profile-image-editor__preview--cover .profile-image-editor__preview-image,
-.profile-image-editor__preview--cover .profile-image-editor__placeholder,
-.profile-image-editor__preview--avatar .profile-image-editor__preview-image,
-.profile-image-editor__preview--avatar .profile-image-editor__placeholder {
+.integrated-image-editor__preview--cover .integrated-image-editor__preview-image,
+.integrated-image-editor__preview--cover .integrated-image-editor__placeholder,
+.integrated-image-editor__preview--avatar .integrated-image-editor__preview-image,
+.integrated-image-editor__preview--avatar .integrated-image-editor__placeholder {
   border-radius: inherit;
 }
 
-.profile-image-editor__image-menu {
+.integrated-image-editor__image-menu {
   left: 50%;
   position: absolute;
   top: 50%;
@@ -116,11 +116,11 @@
   z-index: 3;
 }
 
-.profile-image-editor__image-menu .dropdown-menu {
+.integrated-image-editor__image-menu .dropdown-menu {
   z-index: 5;
 }
 
-.profile-image-editor__icon-button {
+.integrated-image-editor__icon-button {
   align-items: center;
   backdrop-filter: blur(4px);
   background: rgba(15, 23, 42, 0.72);
@@ -136,15 +136,15 @@
   width: 44px;
 }
 
-.profile-image-editor__icon-button:hover,
-.profile-image-editor__icon-button:focus-visible {
+.integrated-image-editor__icon-button:hover,
+.integrated-image-editor__icon-button:focus-visible {
   background: rgba(15, 23, 42, 0.9);
   color: #fff;
   transform: scale(1.04);
 }
 
-.profile-image-editor__deletion-notice,
-.profile-image-editor__status {
+.integrated-image-editor__deletion-notice,
+.integrated-image-editor__status {
   background: rgba(15, 23, 42, 0.86);
   border-radius: 0.4rem;
   color: #fff;
@@ -157,28 +157,28 @@
   z-index: 4;
 }
 
-.profile-image-editor__deletion-notice,
-.profile-image-editor__status {
+.integrated-image-editor__deletion-notice,
+.integrated-image-editor__status {
   bottom: 0.5rem;
 }
 
-.profile-image-editor__deletion-notice:not([hidden]) ~ .profile-image-editor__status {
+.integrated-image-editor__deletion-notice:not([hidden]) ~ .integrated-image-editor__status {
   bottom: 2.65rem;
 }
 
-.profile-image-editor--cover .profile-image-editor__deletion-notice,
-.profile-image-editor--cover .profile-image-editor__status {
+.integrated-image-editor--cover .integrated-image-editor__deletion-notice,
+.integrated-image-editor--cover .integrated-image-editor__status {
   bottom: auto;
   top: 0.5rem;
 }
 
-.profile-image-editor--cover .profile-image-editor__deletion-notice:not([hidden]) ~ .profile-image-editor__status {
+.integrated-image-editor--cover .integrated-image-editor__deletion-notice:not([hidden]) ~ .integrated-image-editor__status {
   bottom: auto;
   top: 2.65rem;
 }
 
-.profile-image-editor--avatar .profile-image-editor__status,
-.profile-image-editor--avatar .profile-image-editor__deletion-notice {
+.integrated-image-editor--avatar .integrated-image-editor__status,
+.integrated-image-editor--avatar .integrated-image-editor__deletion-notice {
   bottom: auto;
   left: 50%;
   max-width: 220px;
@@ -187,7 +187,7 @@
   width: max-content;
 }
 
-.profile-image-editor__dialog {
+.integrated-image-editor__dialog {
   background: var(--bs-body-bg);
   border: 1px solid var(--bs-border-color);
   border-radius: 1rem;
@@ -200,12 +200,12 @@
   width: min(94vw, 960px);
 }
 
-.profile-image-editor__dialog::backdrop {
+.integrated-image-editor__dialog::backdrop {
   backdrop-filter: blur(2px);
   background: rgba(0, 0, 0, 0.72);
 }
 
-.profile-image-editor__dialog-shell {
+.integrated-image-editor__dialog-shell {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -213,32 +213,32 @@
   padding: 1rem;
 }
 
-.profile-image-editor__dialog-header {
+.integrated-image-editor__dialog-header {
   align-items: center;
   display: grid;
   gap: 0.75rem;
   grid-template-columns: auto 1fr auto;
 }
 
-.profile-image-editor__instructions {
+.integrated-image-editor__instructions {
   margin: 0;
   text-align: center;
 }
 
-.profile-image-editor__canvas {
+.integrated-image-editor__canvas {
   flex: 1 1 auto;
   height: auto;
   min-height: 280px;
 }
 
-.profile-image-editor__dialog-controls {
+.integrated-image-editor__dialog-controls {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   justify-content: center;
 }
 
-.profile-image-editor__dialog-controls .btn {
+.integrated-image-editor__dialog-controls .btn {
   align-items: center;
   display: inline-flex;
   gap: 0.25rem;
@@ -279,13 +279,13 @@
     margin-inline: 0.75rem;
   }
 
-  .profile-image-editor__preview--cover {
+  .integrated-image-editor__preview--cover {
     border-left: 0;
     border-radius: 0;
     border-right: 0;
   }
 
-  .profile-image-editor__dialog {
+  .integrated-image-editor__dialog {
     border: 0;
     border-radius: 0;
     height: 100dvh;
@@ -295,14 +295,14 @@
     width: 100vw;
   }
 
-  .profile-image-editor__dialog-shell {
+  .integrated-image-editor__dialog-shell {
     padding:
       max(0.75rem, env(safe-area-inset-top))
       0.75rem
       max(0.75rem, env(safe-area-inset-bottom));
   }
 
-  .profile-image-editor__canvas {
+  .integrated-image-editor__canvas {
     border-radius: 0.5rem;
     min-height: 0;
   }
