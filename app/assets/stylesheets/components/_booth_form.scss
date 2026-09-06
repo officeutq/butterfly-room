@@ -1,0 +1,119 @@
+.booth-form {
+  margin-inline: auto;
+  max-width: 760px;
+}
+
+.booth-form__action-bar {
+  backdrop-filter: blur(12px);
+  background: rgba(var(--bs-body-bg-rgb), 0.94);
+  border-bottom: 1px solid var(--bs-border-color);
+  margin-bottom: 0.75rem;
+  margin-inline: calc(50% - 50vw);
+  padding-block: 0.5rem;
+  position: sticky;
+  top: 64px;
+  width: 100vw;
+  z-index: 1010;
+}
+
+.booth-form__action-bar-inner {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.booth-form__back {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.booth-form__back.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.booth-form__fields {
+  margin-inline: auto;
+  max-width: 680px;
+}
+
+.booth-form__image .integrated-image-editor__preview--cover {
+  border-radius: 0.75rem;
+}
+
+.booth-form__readonly-card {
+  background: var(--bs-tertiary-bg);
+  border-color: var(--bs-border-color);
+  color: var(--bs-body-color);
+}
+
+.booth-form__readonly-section + .booth-form__readonly-section {
+  margin-top: 0.85rem;
+}
+
+.booth-form__readonly-label {
+  color: var(--bs-secondary-color);
+  font-size: 0.875rem;
+  margin-bottom: 0.35rem;
+}
+
+.booth-form__readonly-value {
+  word-break: break-word;
+}
+
+.booth-form__cast-value {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+}
+
+.booth-form__cast-identity {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.booth-form__readonly-note {
+  white-space: nowrap;
+}
+
+.booth-form__description {
+  height: 9rem !important;
+}
+
+.booth-form__bottom-actions {
+  margin-block: 1.5rem 1rem;
+}
+
+@media (max-width: 767.98px) {
+  .booth-form__action-bar {
+    top: 56px;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .booth-form {
+    margin-inline: -0.75rem;
+  }
+
+  .booth-form__fields {
+    margin-inline: 0.75rem;
+  }
+
+  .booth-form__image {
+    margin-inline: -0.75rem;
+  }
+
+  .booth-form__image > .form-text {
+    margin-inline: 0.75rem;
+  }
+
+  .booth-form__image .integrated-image-editor__preview--cover {
+    border-left: 0;
+    border-radius: 0;
+    border-right: 0;
+  }
+}

@@ -32,21 +32,40 @@ class Admin::StoreEditUiTest < ActionDispatch::IntegrationTest
           "[data-image-attachment-editor-keep-staged-actions-value='true']",
           count: 1
         )
-        assert_select "input#store_name[required][data-bs-theme='light']", count: 1
-        assert_select "button[data-store-ai-autofill-target='searchButton']", text: /AIで店舗情報を自動入力/, count: 1
-        assert_select ".form-control[data-bs-theme='light']", minimum: 10
-        assert_select ".form-select[data-bs-theme='light']", minimum: 1
+        assert_select ".form-floating[data-bs-theme='light'] input#store_name[required][placeholder='店舗名']", count: 1
+        assert_select ".store-information-fields__ai.pt-3 button.btn-warning[data-store-ai-autofill-target='searchButton']",
+                      text: /AIで店舗情報を自動入力/,
+                      count: 1
+        assert_select ".form-floating[data-bs-theme='light']", count: 12
+        assert_select ".form-floating[data-bs-theme='light'] .form-control", count: 11
+        assert_select ".form-floating[data-bs-theme='light'] select#store_business_type.form-select", count: 1
+        assert_select ".form-floating label", text: "概要", count: 1
       end
 
-      assert_select "select#store_published[data-bs-theme='light']", count: 1
+      assert_select ".form-floating[data-bs-theme='light'] select#store_published.form-select", count: 1
       assert_select "input#store_sales_support_company", count: 0
       assert_select "[data-image-pair-form-target='error'][role='alert'][hidden]", count: 1
+      assert_select ".store-edit__bottom-actions", count: 1 do
+        assert_select "input.store-edit__bottom-save[type='submit'][value='保存'][disabled]" \
+                      "[data-image-pair-form-target='submitButton'][data-store-edit-target='saveButton']",
+                      count: 1
+      end
     end
 
     assert_appears_before("image-attachment-editor-image-pair", 'id="store_name"')
     assert_appears_before('id="store_name"', 'data-store-ai-autofill-target="searchButton"')
-    assert_appears_before('data-store-ai-autofill-target="searchButton"', 'id="store_description"')
-    assert_appears_before('id="store_youtube_url"', 'id="store_published"')
+    assert_appears_before('data-store-ai-autofill-target="searchButton"', 'id="store_area"')
+    assert_appears_before('id="store_area"', 'id="store_business_type"')
+    assert_appears_before('id="store_business_type"', 'id="store_address"')
+    assert_appears_before('id="store_address"', 'id="store_phone_number"')
+    assert_appears_before('id="store_phone_number"', 'id="store_business_hours"')
+    assert_appears_before('id="store_business_hours"', 'id="store_website_url"')
+    assert_appears_before('id="store_website_url"', 'id="store_x_url"')
+    assert_appears_before('id="store_x_url"', 'id="store_instagram_url"')
+    assert_appears_before('id="store_instagram_url"', 'id="store_tiktok_url"')
+    assert_appears_before('id="store_tiktok_url"', 'id="store_youtube_url"')
+    assert_appears_before('id="store_youtube_url"', 'id="store_description"')
+    assert_appears_before('id="store_description"', 'id="store_published"')
   end
 
   test "system admin sees sales support company after published" do

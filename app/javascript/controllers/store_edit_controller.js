@@ -5,6 +5,10 @@ export default class extends Controller {
 
   connect() {
     this.saving = false
+    this.originalSaveLabels = new WeakMap()
+    this.saveButtonTargets.forEach((button) => {
+      this.originalSaveLabels.set(button, button.value)
+    })
     this.initialSnapshot = this.snapshot()
     this.boundBeforeUnload = this.beforeUnload.bind(this)
     window.addEventListener("beforeunload", this.boundBeforeUnload)
@@ -18,7 +22,9 @@ export default class extends Controller {
   refresh() {
     this.dirty = this.snapshot() !== this.initialSnapshot
     this.element.dataset.dirty = String(this.dirty)
-    this.saveButtonTarget.disabled = !this.dirty || this.saving
+    this.saveButtonTargets.forEach((button) => {
+      button.disabled = !this.dirty || this.saving
+    })
   }
 
   back(event) {
@@ -99,7 +105,12 @@ export default class extends Controller {
     this.saving = saving
     if (saving) this.element.setAttribute("aria-busy", "true")
     else this.element.removeAttribute("aria-busy")
-    this.saveButtonTarget.disabled = saving || !this.dirty
+    this.saveButtonTargets.forEach((button) => {
+      button.disabled = saving || !this.dirty
+      button.value = saving
+        ? (button.dataset.submittingLabel || "保存中…")
+        : this.originalSaveLabels.get(button)
+    })
     this.backLinkTarget.classList.toggle("disabled", saving)
     this.backLinkTarget.setAttribute("aria-disabled", String(saving))
   }

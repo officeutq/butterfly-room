@@ -29,12 +29,13 @@
   <%= render "stores/information_fields", f: f, store: store %>
 
   <div class="mb-3">
-    <%= f.label :published, "公開状態", class: "form-label" %>
-    <%= f.select :published,
-          options_for_select([[ "公開", true ], [ "非公開", false ]], store.published?),
-          {},
-          class: "form-select",
-          data: { bs_theme: "light" } %>
+    <div class="form-floating" data-bs-theme="light">
+      <%= f.select :published,
+            options_for_select([[ "公開", true ], [ "非公開", false ]], store.published?),
+            {},
+            class: "form-select" %>
+      <%= f.label :published, "公開状態" %>
+    </div>
     <div class="form-text">非公開の店舗と所属ブースは一般ユーザー向け画面に表示されません。</div>
   </div>
   <% if current_user.system_admin? %>
@@ -51,4 +52,17 @@
 
   <p class="alert alert-danger" role="alert" tabindex="-1" hidden
      data-image-pair-form-target="error"></p>
+
+  <div class="store-edit__bottom-actions">
+    <%= f.submit submit_label,
+          class: "btn btn-primary btn-lg w-100 store-edit__bottom-save",
+          disabled: true,
+          data: {
+            "image-pair-form-target": "submitButton",
+            "store-edit-target": "saveButton",
+            turbo_confirm: "店舗情報と公開状態を更新します。よろしいですか？",
+            turbo_submits_with: "保存中…",
+            submitting_label: "保存中…"
+          } %>
+  </div>
 </div>

@@ -1,13 +1,14 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["backLink", "bio", "displayName", "saveButton"]
+  static targets = ["backLink", "submitButton"]
+  static values = { initialDirty: Boolean }
 
   connect() {
     this.saving = false
-    this.originalSaveLabels = new WeakMap()
-    this.saveButtonTargets.forEach((button) => {
-      this.originalSaveLabels.set(button, button.value)
+    this.originalSubmitLabels = new WeakMap()
+    this.submitButtonTargets.forEach((button) => {
+      this.originalSubmitLabels.set(button, button.value)
     })
     this.initialSnapshot = this.snapshot()
     this.boundBeforeUnload = this.beforeUnload.bind(this)
@@ -20,9 +21,9 @@ export default class extends Controller {
   }
 
   refresh() {
-    this.dirty = this.snapshot() !== this.initialSnapshot
+    this.dirty = this.initialDirtyValue || this.snapshot() !== this.initialSnapshot
     this.element.dataset.dirty = String(this.dirty)
-    this.saveButtonTargets.forEach((button) => {
+    this.submitButtonTargets.forEach((button) => {
       button.disabled = !this.dirty || this.saving
     })
   }
@@ -74,24 +75,42 @@ export default class extends Controller {
   }
 
   snapshot() {
-    return JSON.stringify({
-      displayName: this.displayNameTarget.value,
-      bio: this.bioTarget.value,
-      imageOperations: Array.from(this.element.querySelectorAll(
-        "input[data-image-attachment-editor-target~='operationInput']"
-      )).map((input) => input.value),
-    })
+    const controls = Array.from(this.element.elements)
+      .filter((control) => this.snapshotControl(control))
+      .map((control) => {
+        if (control.type === "checkbox" || control.type === "radio") {
+          return [control.name, control.type, control.value, control.checked]
+        }
+
+        if (control.type === "select-multiple") {
+          return [
+            control.name,
+            control.type,
+            Array.from(control.selectedOptions).map((option) => option.value),
+          ]
+        }
+
+        return [control.name, control.type, control.value]
+      })
+
+    return JSON.stringify(controls)
+  }
+
+  snapshotControl(control) {
+    if (!control.name || control.disabled) return false
+
+    return !["button", "file", "reset", "submit"].includes(control.type)
   }
 
   setSaving(saving) {
     this.saving = saving
     if (saving) this.element.setAttribute("aria-busy", "true")
     else this.element.removeAttribute("aria-busy")
-    this.saveButtonTargets.forEach((button) => {
+    this.submitButtonTargets.forEach((button) => {
       button.disabled = saving || !this.dirty
       button.value = saving
         ? (button.dataset.submittingLabel || "保存中…")
-        : this.originalSaveLabels.get(button)
+        : this.originalSubmitLabels.get(button)
     })
     this.backLinkTarget.classList.toggle("disabled", saving)
     this.backLinkTarget.setAttribute("aria-disabled", String(saving))

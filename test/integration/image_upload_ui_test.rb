@@ -23,7 +23,7 @@ class ImageUploadUiTest < ActionDispatch::IntegrationTest
     assert_select "input[name='store[remove_thumbnail]']", count: 0
     assert_cropper_editor(param_root: "image_pair", ratio_key: "social", label: "店舗画像")
     assert_select "[data-image-pair-form-target='error'][role='alert'][hidden]", count: 1
-    assert_select "[data-image-pair-form-target='submitButton'][data-turbo-submits-with='保存中…']", count: 1
+    assert_select "[data-image-pair-form-target='submitButton'][data-turbo-submits-with='保存中…']", count: 2
   end
 
   test "store Cropper editor exposes a complete current pair for re-editing" do
@@ -175,7 +175,7 @@ class ImageUploadUiTest < ActionDispatch::IntegrationTest
       label: "カバー画像"
     )
     assert_select "[data-image-pair-form-target='error'][role='alert'][hidden]", count: 1
-    assert_select "[data-image-pair-form-target='submitButton'][data-turbo-submits-with='保存中…']", count: 1
+    assert_select "[data-image-pair-form-target='submitButton'][data-turbo-submits-with='保存中…']", count: 2
   end
 
   test "profile keeps a legacy avatar visible and exposes a complete cover for re-editing" do
@@ -238,7 +238,7 @@ class ImageUploadUiTest < ActionDispatch::IntegrationTest
   def assert_booth_cropper_form
     assert_select "script[src^='/vendor/filepond/']", count: 0
     assert_select(
-      "form[data-controller='image-pair-form'][data-action*='image-pair-form#submit']" \
+      "form[data-controller~='image-pair-form'][data-action*='image-pair-form#submit']" \
       "[enctype='multipart/form-data']",
       count: 1
     )
@@ -246,7 +246,7 @@ class ImageUploadUiTest < ActionDispatch::IntegrationTest
     assert_select "input[name='booth[remove_thumbnail_image]']", count: 0
     assert_cropper_editor(param_root: "image_pair", ratio_key: "social", label: "ブース画像")
     assert_select "[data-image-pair-form-target='error'][role='alert'][hidden]", count: 1
-    assert_select "[data-image-pair-form-target='submitButton'][data-turbo-submits-with='保存中…']", count: 1
+    assert_select "[data-image-pair-form-target='submitButton'][data-turbo-submits-with='保存中…']", count: 2
   end
 
   def assert_cropper_editor(param_root:, ratio_key:, label:)

@@ -50,7 +50,10 @@ function classList() {
 
 function buildController(Controller) {
   const operationInputs = [{ value: "" }, { value: "" }]
-  const saveButton = { disabled: false }
+  const saveButtons = [
+    { disabled: false, value: "保存", dataset: { submittingLabel: "保存中…" } },
+    { disabled: false, value: "保存", dataset: { submittingLabel: "保存中…" } },
+  ]
   const backLink = {
     attributes: {},
     classList: classList(),
@@ -67,38 +70,38 @@ function buildController(Controller) {
     element,
     displayNameTarget: { value: "現在の名前" },
     bioTarget: { value: "現在の自己紹介" },
-    saveButtonTarget: saveButton,
+    saveButtonTargets: saveButtons,
     backLinkTarget: backLink,
   })
   controller.connect()
-  return { backLink, controller, element, operationInputs, saveButton }
+  return { backLink, controller, element, operationInputs, saveButtons }
 }
 
 test("starts clean and enables save after a field changes", () => {
   const { Controller } = loadController()
-  const { controller, element, saveButton } = buildController(Controller)
+  const { controller, element, saveButtons } = buildController(Controller)
 
   assert.equal(element.dataset.dirty, "false")
-  assert.equal(saveButton.disabled, true)
+  assert.equal(saveButtons.every((button) => button.disabled), true)
 
   controller.displayNameTarget.value = "変更後の名前"
   controller.refresh()
 
   assert.equal(element.dataset.dirty, "true")
-  assert.equal(saveButton.disabled, false)
+  assert.equal(saveButtons.every((button) => !button.disabled), true)
 })
 
 test("tracks staged and reverted image operations", () => {
   const { Controller } = loadController()
-  const { controller, operationInputs, saveButton } = buildController(Controller)
+  const { controller, operationInputs, saveButtons } = buildController(Controller)
 
   operationInputs[0].value = "replace"
   controller.refresh()
-  assert.equal(saveButton.disabled, false)
+  assert.equal(saveButtons.every((button) => !button.disabled), true)
 
   operationInputs[0].value = ""
   controller.refresh()
-  assert.equal(saveButton.disabled, true)
+  assert.equal(saveButtons.every((button) => button.disabled), true)
 })
 
 test("keeps the user on the page when discarding changes is rejected", () => {
@@ -119,7 +122,7 @@ test("keeps the user on the page when discarding changes is rejected", () => {
 
 test("marks a normal form submission as saving", async () => {
   const { Controller } = loadController()
-  const { backLink, controller, element, saveButton } = buildController(Controller)
+  const { backLink, controller, element, saveButtons } = buildController(Controller)
   controller.bioTarget.value = "変更後"
   controller.refresh()
   const event = { defaultPrevented: false, imageAttachmentEditorInvalid: false }
@@ -127,7 +130,8 @@ test("marks a normal form submission as saving", async () => {
   controller.prepareSubmit(event)
   await new Promise((resolve) => setImmediate(resolve))
 
-  assert.equal(saveButton.disabled, true)
+  assert.equal(saveButtons.every((button) => button.disabled), true)
+  assert.deepEqual(saveButtons.map((button) => button.value), ["保存中…", "保存中…"])
   assert.equal(element.attributes["aria-busy"], "true")
   assert.equal(backLink.classList.contains("disabled"), true)
   assert.equal(backLink.attributes["aria-disabled"], "true")

@@ -3,69 +3,130 @@
 <% show_cast_assignment = local_assigns.fetch(:show_cast_assignment, false) %>
 <% primary_cast_user = booth.primary_cast_user %>
 
-<% if booth.errors.any? %>
-  <div class="alert alert-danger">
-    <ul class="mb-0">
-      <% booth.errors.full_messages.each do |message| %>
-        <li><%= message %></li>
-      <% end %>
-    </ul>
-  </div>
-<% end %>
-
-<div class="mb-3">
-  <%= f.label :name, "ブース名", class: "form-label" %>
-  <%= f.text_field :name, class: "form-control", required: true %>
-</div>
-
-<div class="mb-3">
-  <%= f.label :description, "説明文", class: "form-label" %>
-  <%= f.text_area :description, class: "form-control", rows: 6 %>
-</div>
-
-<% if show_cast_assignment || primary_cast_user.present? %>
-  <div class="mb-3">
-    <label class="form-label">所属キャスト</label>
-
-    <% if primary_cast_user.present? %>
-      <div class="form-control-plaintext">
-        <%= user_avatar_badge(primary_cast_user, size: 28) %>
-        <%= display_name_or_anonymous(primary_cast_user) %>
-        <span class="form-text small">
-          ( 変更不可 )
-        </span>
-      </div>
-    <% else %>
-      <%= select_tag "booth_cast[cast_user_id]",
-            options_for_select(cast_memberships.map { |m| [ display_name_or_anonymous(m.user), m.user.id ] }),
-            include_blank: "未設定",
-            class: "form-select" %>
-      <div class="form-text small">
-        キャストは未設定ブースにのみ紐づけできます。紐づけ後は変更できません。
-      </div>
+<div class="booth-form__action-bar">
+  <div class="container booth-form__action-bar-inner">
+    <%= link_to back_path,
+          class: "btn btn-sm btn-link text-body text-decoration-none booth-form__back",
+          data: {
+            action: "booth-form#back",
+            "booth-form-target": "backLink"
+          } do %>
+      <i class="bi bi-arrow-left" aria-hidden="true"></i>
+      <span>戻る</span>
     <% end %>
-  </div>
-<% end %>
 
-<div class="card mb-3">
-  <div class="card-body">
-    <%= render "shared/image_attachment_editor",
+    <%= f.submit submit_label,
+          class: "btn btn-primary btn-sm rounded-pill px-3 booth-form__submit",
+          disabled: !booth.errors.any?,
+          data: {
+            "image-pair-form-target": "submitButton",
+            "booth-form-target": "submitButton",
+            turbo_submits_with: "保存中…",
+            submitting_label: "保存中…"
+          } %>
+  </div>
+</div>
+
+<div class="booth-form__fields">
+  <% if booth.errors.any? %>
+    <div class="alert alert-danger">
+      <ul class="mb-0">
+        <% booth.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="booth-form__image mb-4">
+    <%= render "shared/integrated_image_attachment_editor",
           **image_attachment_editor_state(booth, :thumbnail),
           param_root: :image_pair,
           ratio_key: :social,
+          presentation: :cover,
           label: "ブース画像" %>
-    <p class="form-text mb-0">ブースカードや配信待機画面に使う1200×630の画像です。</p>
+    <p class="form-text mb-0 mt-2">ブースカードや配信待機画面に使う1200×630の画像です。</p>
   </div>
-</div>
 
-<p class="alert alert-danger" role="alert" tabindex="-1" hidden data-image-pair-form-target="error"></p>
+  <div class="mb-3">
+    <div class="form-floating" data-bs-theme="light">
+      <%= f.text_field :name,
+            class: "form-control",
+            placeholder: "ブース名",
+            required: true %>
+      <%= f.label :name, "ブース名" %>
+    </div>
+  </div>
 
-<div class="d-flex gap-2">
-  <%= f.submit submit_label,
-        class: "btn btn-primary",
-        data: {
-          "image-pair-form-target": "submitButton",
-          turbo_submits_with: "保存中…"
-        } %>
-  <%= link_to "戻る", back_path, class: "btn btn-outline-secondary" %>
+  <% if show_cast_assignment || primary_cast_user.present? %>
+    <% if primary_cast_user.present? %>
+      <div class="card booth-form__readonly-card mb-3">
+        <div class="card-body">
+          <div class="booth-form__readonly-section">
+            <div class="booth-form__readonly-label">所属キャスト</div>
+            <div class="booth-form__cast-value">
+              <span class="booth-form__cast-identity">
+                <%= user_avatar_badge(primary_cast_user, size: 28) %>
+                <span><%= display_name_or_anonymous(primary_cast_user) %></span>
+              </span>
+              <span class="booth-form__readonly-note text-body-secondary small">（変更不可）</span>
+            </div>
+          </div>
+          <div class="booth-form__readonly-section">
+            <div class="booth-form__readonly-label">所属店舗</div>
+            <div class="booth-form__readonly-value"><%= booth.store.name %></div>
+          </div>
+        </div>
+      </div>
+    <% else %>
+      <div class="mb-3">
+        <div class="form-floating" data-bs-theme="light">
+          <%= select_tag "booth_cast[cast_user_id]",
+                options_for_select(cast_memberships.map { |membership| [ display_name_or_anonymous(membership.user), membership.user.id ] }),
+                include_blank: "未設定",
+                id: "booth_cast_cast_user_id",
+                class: "form-select" %>
+          <%= label_tag "booth_cast_cast_user_id", "所属キャスト" %>
+        </div>
+        <div class="form-text small">
+          キャストは未設定ブースにのみ紐づけできます。紐づけ後は変更できません。
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+
+  <% if primary_cast_user.blank? && booth.persisted? %>
+    <div class="card booth-form__readonly-card mb-3">
+      <div class="card-body">
+        <div class="booth-form__readonly-label">所属店舗</div>
+        <div class="booth-form__readonly-value"><%= booth.store.name %></div>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="mb-3">
+    <div class="form-floating" data-bs-theme="light">
+      <%= f.text_area :description,
+            class: "form-control booth-form__description",
+            placeholder: "説明文",
+            rows: 6 %>
+      <%= f.label :description, "説明文" %>
+    </div>
+    <div class="form-text">最大1000文字</div>
+  </div>
+
+  <p class="alert alert-danger" role="alert" tabindex="-1" hidden
+     data-image-pair-form-target="error"></p>
+
+  <div class="booth-form__bottom-actions">
+    <%= f.submit submit_label,
+          class: "btn btn-primary btn-lg w-100 booth-form__bottom-submit",
+          disabled: !booth.errors.any?,
+          data: {
+            "image-pair-form-target": "submitButton",
+            "booth-form-target": "submitButton",
+            turbo_submits_with: "保存中…",
+            submitting_label: "保存中…"
+          } %>
+  </div>
 </div>
