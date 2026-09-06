@@ -389,8 +389,8 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
     follow_redirect!
 
     assert_response :success
-    assert_select "h1", text: "店舗登録が完了しました"
-    assert_select "a[href=?]", edit_admin_store_path(store), text: "管理画面へ進む"
+    assert_select "h1", text: "店舗情報の登録・公開が完了しました"
+    assert_select "a[href=?]", dashboard_path, text: "ダッシュボードへ進む"
     assert_equal(
       [
         {
@@ -410,11 +410,65 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
     refute_includes data_layer_events.first.keys, "ref"
     refute_includes data_layer_events.first.keys, "referral_code"
 
-    get edit_admin_store_path(store)
+    get dashboard_path
     assert_response :success
+    assert_select "[data-controller='onboarding'][data-onboarding-step-value='invite_cast']", count: 1
 
     get thanks_path
     assert_redirected_to edit_admin_store_path(store)
+    assert_no_match(/window\.dataLayer\.push/, response.body)
+  end
+
+  test "store LP 202609 completion keeps attribution until thanks and then removes it" do
+    referral_code = create_referral_code!("STORE-REG-202609-THANKS")
+    get stores_lp_202609_path, params: {
+      ref: referral_code.code,
+      utm_source: "meta_202609",
+      utm_campaign: "store_recruit_202609"
+    }
+
+    post stores_registrations_path(from: "stores_lp_202609"), params: {
+      store_registration: valid_registration_params(referral_code: referral_code.code)
+    }
+    store = Store.order(:id).last
+    assert_redirected_to edit_admin_store_registration_setup_path(store)
+    assert_equal "meta_202609",
+                 @request.session[ApplicationController::STORE_LP_202609_ATTRIBUTION_SESSION_KEY]["utm_source"]
+
+    complete_registration_setup(store)
+    follow_redirect!
+
+    assert_equal(
+      [
+        {
+          "event" => "store_registration_complete",
+          "from" => "stores_lp_202609",
+          "utm_source" => "meta_202609",
+          "utm_campaign" => "store_recruit_202609"
+        }
+      ],
+      data_layer_events
+    )
+    assert_nil @request.session[ApplicationController::STORE_LP_202609_ATTRIBUTION_SESSION_KEY]
+    assert_nil @request.session[ApplicationController::STORE_LP_202609_REF_SESSION_KEY]
+  end
+
+  test "current store LP completion emits only the allowed source without UTM" do
+    referral_code = create_referral_code!("STORE-REG-CURRENT-LP-THANKS")
+
+    post stores_registrations_path(from: "stores_lp"), params: {
+      store_registration: valid_registration_params(referral_code: referral_code.code)
+    }
+    store = Store.order(:id).last
+    assert_redirected_to edit_admin_store_registration_setup_path(store)
+
+    complete_registration_setup(store)
+    follow_redirect!
+
+    assert_equal(
+      [ { "event" => "store_registration_complete", "from" => "stores_lp" } ],
+      data_layer_events
+    )
   end
 
   test "blank referral code defaults to 0000 on successful registration" do
@@ -490,6 +544,27 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
     get thanks_path
 
     assert_redirected_to edit_admin_store_path(other_store)
+  end
+
+  test "registration thanks rejects completion after store administrator access is revoked" do
+    referral_code = create_referral_code!("STORE-REG-THANKS-REVOKED")
+    email = "store-registration-thanks-revoked@example.com"
+
+    post stores_registrations_path, params: {
+      store_registration: valid_registration_params(
+        email:,
+        referral_code: referral_code.code
+      )
+    }
+    store = Store.order(:id).last
+    complete_registration_setup(store)
+    StoreMembership.where(store:, user: User.find_by!(email:)).delete_all
+
+    get stores_registration_thanks_path
+
+    assert_redirected_to dashboard_path
+    assert_nil @request.session[ApplicationController::STORE_REGISTRATION_COMPLETION_SESSION_KEY]
+    assert_no_match(/window\.dataLayer\.push/, response.body)
   end
 
   private

@@ -2,17 +2,17 @@
 
 <%= render "layouts/gtm_conversion_event", event_payload: @store_registration_gtm_event %>
 
-<h1 class="container mt-4">店舗登録が完了しました</h1>
+<h1 class="container mt-4">店舗情報の登録・公開が完了しました</h1>
 
 <div class="container mt-3" style="max-width: 720px;">
   <div class="card">
     <div class="card-body">
       <p>
         Butterflyveへの店舗登録ありがとうございます。<br>
-        続けて管理画面から店舗情報をご確認ください。
+        店舗情報を公開しました。続けてダッシュボードからキャスト招待などの初期設定を進めてください。
       </p>
 
-      <%= link_to "管理画面へ進む", edit_admin_store_path(@store), class: "btn btn-primary" %>
+      <%= link_to "ダッシュボードへ進む", dashboard_path, class: "btn btn-primary" %>
     </div>
   </div>
 </div>
