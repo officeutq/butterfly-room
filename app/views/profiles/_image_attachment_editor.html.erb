@@ -1,0 +1,184 @@
+<%#
+  locals:
+    param_root:, ratio_key:, label:, presentation:,
+    current_source_url: nil, current_display_url: nil, current_crop_data: nil,
+    expected: {}, id: nil
+%>
+<%
+  param_root = local_assigns.fetch(:param_root).to_s
+  ratio_key = local_assigns.fetch(:ratio_key).to_s
+  label = local_assigns.fetch(:label)
+  presentation = local_assigns.fetch(:presentation).to_s
+  current_source_url = local_assigns[:current_source_url].to_s
+  current_display_url = local_assigns[:current_display_url].to_s
+  current_crop_data = local_assigns[:current_crop_data]
+  current_crop_json = if current_crop_data.present?
+    current_crop_data.is_a?(String) ? current_crop_data : current_crop_data.to_h.to_json
+  else
+    ""
+  end
+  expected = local_assigns.fetch(:expected, {}).to_h.with_indifferent_access
+  source_blob_id = expected[:source_blob_id]
+  dom_id = local_assigns[:id].presence || "image-attachment-editor-#{param_root.dasherize}"
+  output_label = {
+    "square" => "1:1（1024×1024）",
+    "social" => "40:21（1200×630）"
+  }.fetch(ratio_key)
+%>
+
+<section
+  id="<%= dom_id %>"
+  class="profile-image-editor profile-image-editor--<%= presentation %>"
+  aria-labelledby="<%= dom_id %>-label"
+  data-controller="image-attachment-editor"
+  data-action="turbo:before-cache@document->image-attachment-editor#beforeCache"
+  data-image-attachment-editor-keep-staged-actions-value="true"
+  data-image-attachment-editor-ratio-key-value="<%= ratio_key %>"
+  data-image-attachment-editor-heic-worker-url-value="<%= asset_path('image_attachments/heic_worker.js') %>"
+  data-image-attachment-editor-heic-decoder-url-value="<%= asset_path('heic-to/src/lib/libheif-without-unsafe-eval.js') %>"
+  <% if current_source_url.present? %>data-image-attachment-editor-current-source-url-value="<%= current_source_url %>"<% end %>
+  <% if current_display_url.present? %>data-image-attachment-editor-current-display-url-value="<%= current_display_url %>"<% end %>
+  <% if current_crop_json.present? %>data-image-attachment-editor-current-crop-data-value="<%= current_crop_json %>"<% end %>
+  <% if source_blob_id.present? %>data-image-attachment-editor-current-source-blob-id-value="<%= source_blob_id %>"<% end %>>
+  <h2 id="<%= dom_id %>-label" class="visually-hidden"><%= label %></h2>
+
+  <div class="profile-image-editor__preview profile-image-editor__preview--<%= presentation %>">
+    <img
+      alt="<%= label %>の現在の表示"
+      class="profile-image-editor__preview-image"
+      hidden
+      data-image-attachment-editor-target="currentPreview">
+
+    <div class="profile-image-editor__placeholder" data-image-attachment-editor-target="previewEmpty">
+      <i class="bi <%= presentation == 'avatar' ? 'bi-person-fill' : 'bi-image' %>" aria-hidden="true"></i>
+      <span class="visually-hidden"><%= label %>は設定されていません</span>
+    </div>
+
+    <p class="profile-image-editor__deletion-notice" role="status" hidden
+       data-image-attachment-editor-target="deletionNotice">
+      保存すると削除されます
+    </p>
+
+    <div class="dropdown profile-image-editor__image-menu">
+      <button type="button" class="profile-image-editor__icon-button"
+              data-bs-toggle="dropdown" aria-expanded="false"
+              aria-label="<%= label %>の操作を開く">
+        <i class="bi bi-camera-fill" aria-hidden="true"></i>
+      </button>
+      <ul class="dropdown-menu">
+        <li>
+          <button type="button" class="dropdown-item"
+                  data-action="image-attachment-editor#chooseFile">
+            画像を追加・差し替え
+          </button>
+        </li>
+        <li>
+          <button type="button" class="dropdown-item" hidden
+                  data-image-attachment-editor-target="editButton"
+                  data-action="image-attachment-editor#editExisting">
+            現在の構図を編集
+          </button>
+        </li>
+        <li>
+          <button type="button" class="dropdown-item text-danger" hidden
+                  data-image-attachment-editor-target="deleteButton"
+                  data-action="image-attachment-editor#removeImage">
+            画像を削除
+          </button>
+        </li>
+        <li>
+          <button type="button" class="dropdown-item" hidden
+                  data-image-attachment-editor-target="undoButton"
+                  data-action="image-attachment-editor#undoChange">
+            画像の変更を取り消す
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <p class="profile-image-editor__status mb-0" role="status" aria-live="polite" tabindex="-1" hidden
+       data-errors-only-status data-image-attachment-editor-target="status"></p>
+  </div>
+
+  <input
+    id="<%= dom_id %>-picker"
+    type="file"
+    hidden
+    accept=".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif"
+    data-image-attachment-editor-target="fileInput"
+    data-action="change->image-attachment-editor#selectFile">
+
+  <dialog class="profile-image-editor__dialog" hidden
+          aria-labelledby="<%= dom_id %>-dialog-title"
+          data-image-attachment-editor-target="workspace"
+          data-action="cancel->image-attachment-editor#cancelEdit">
+    <div class="profile-image-editor__dialog-shell">
+      <div class="profile-image-editor__dialog-header">
+        <button type="button" class="btn btn-sm btn-link text-body"
+                aria-label="画像編集をキャンセル"
+                data-action="image-attachment-editor#cancelEdit">
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
+        </button>
+        <h3 id="<%= dom_id %>-dialog-title" class="h6 mb-0"><%= label %>を編集</h3>
+        <button type="button" class="btn btn-primary btn-sm" disabled
+                data-image-attachment-editor-target="editorControl applyButton"
+                data-action="image-attachment-editor#applyCrop">
+          適用
+        </button>
+      </div>
+
+      <p id="<%= dom_id %>-instructions" class="form-text profile-image-editor__instructions">
+        画像を移動し、ピンチ・ホイール・ボタンで拡大縮小してください。出力は<%= output_label %>です。
+      </p>
+
+      <div class="image-attachment-editor__canvas profile-image-editor__canvas"
+           role="group" tabindex="0"
+           aria-label="<%= label %>のクロップ編集"
+           aria-describedby="<%= dom_id %>-instructions"
+           data-image-attachment-editor-target="editor"
+           data-action="keydown->image-attachment-editor#moveWithKeyboard">
+        <img alt="<%= label %>の編集元画像" crossorigin="anonymous"
+             data-image-attachment-editor-target="source">
+      </div>
+
+      <div class="profile-image-editor__dialog-controls" role="group" aria-label="画像編集操作">
+        <button type="button" class="btn btn-outline-secondary btn-sm" disabled
+                data-image-attachment-editor-target="editorControl"
+                data-action="image-attachment-editor#zoomOut">
+          <i class="bi bi-dash-lg" aria-hidden="true"></i><span>縮小</span>
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" disabled
+                data-image-attachment-editor-target="editorControl"
+                data-action="image-attachment-editor#zoomIn">
+          <i class="bi bi-plus-lg" aria-hidden="true"></i><span>拡大</span>
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" disabled
+                data-image-attachment-editor-target="editorControl"
+                data-action="image-attachment-editor#resetImage">
+          リセット
+        </button>
+      </div>
+
+      <p class="alert alert-warning py-2 mb-0" role="status" hidden
+         data-image-attachment-editor-target="warning"></p>
+      <p class="small mb-0" role="status" aria-live="polite" tabindex="-1"
+         data-image-attachment-editor-target="status"></p>
+      <p class="form-text small mb-0">
+        JPEG / PNG / WebP / HEIC / HEIFに対応しています。
+        <a href="/licenses/heic-verification.txt" target="_blank" rel="noopener">変換ソフトウェア情報</a>
+      </p>
+    </div>
+  </dialog>
+
+  <input type="hidden" name="<%= param_root %>[operation]" value=""
+         data-image-attachment-editor-target="operationInput">
+  <input type="file" name="<%= param_root %>[source]" hidden
+         data-image-attachment-editor-target="sourceInput">
+  <input type="file" name="<%= param_root %>[display]" hidden
+         data-image-attachment-editor-target="displayInput">
+  <input type="hidden" name="<%= param_root %>[crop_data]" value=""
+         data-image-attachment-editor-target="cropDataInput">
+  <% ImageAttachments::MultipartPayload::EXPECTED_ID_KEYS.each do |key| %>
+    <input type="hidden" name="<%= param_root %>[expected][<%= key %>]" value="<%= expected[key] %>">
+  <% end %>
+</section>

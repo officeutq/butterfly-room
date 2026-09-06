@@ -46,6 +46,7 @@ export default class extends Controller {
     currentSourceUrl: String,
     heicDecoderUrl: String,
     heicWorkerUrl: String,
+    keepStagedActions: Boolean,
     ratioKey: String,
   }
 
@@ -71,6 +72,8 @@ export default class extends Controller {
     this.boundTransformGuard = this.constrainTransform.bind(this)
     this.boundActionEnd = this.updateDraftStatus.bind(this)
     this.boundFormSubmit = this.validateFormSubmit.bind(this)
+    this.returnFocusTarget = null
+    this.cancelPhase = null
     this.form = this.element.closest("form")
     this.form?.addEventListener("submit", this.boundFormSubmit)
 
@@ -87,6 +90,7 @@ export default class extends Controller {
     this.isDisconnected = true
     this.form?.removeEventListener("submit", this.boundFormSubmit)
     this.form = null
+    this.hideWorkspace({ restoreFocus: false })
     this.releaseWorkingResources()
   }
 
@@ -130,7 +134,7 @@ export default class extends Controller {
       if (!this.isCurrent(generation)) return
 
       this.releaseEditor()
-      this.workspaceTarget.hidden = true
+      this.hideWorkspace()
       this.revokeWorkingSourceObjectUrl()
       this.workingSourceFile = null
       this.fileInputTarget.value = ""
@@ -139,9 +143,19 @@ export default class extends Controller {
     }
   }
 
-  async editExisting() {
+  chooseFile(event) {
+    this.returnFocusTarget = event.currentTarget
+    this.fileInputTarget.click()
+  }
+
+  async editExisting(event) {
+    if (this.keepStagedActionsValue && this.phase.startsWith("staged-")) {
+      await this.editStaged(event)
+      return
+    }
     if (!this.canEditCurrentImage()) return
 
+    this.returnFocusTarget = event?.currentTarget || document.activeElement
     this.resetToBaseline({ announce: false })
     const generation = this.generation
     this.phase = "processing"
@@ -162,9 +176,49 @@ export default class extends Controller {
       if (!this.isCurrent(generation)) return
 
       this.releaseEditor()
-      this.workspaceTarget.hidden = true
+      this.hideWorkspace()
       this.phase = "idle"
       this.renderError(error.message || "現在の画像を再編集できませんでした。")
+    }
+  }
+
+  async editStaged(event) {
+    if (!["staged-replace", "staged-reedit"].includes(this.phase)) return
+
+    this.returnFocusTarget = event?.currentTarget || document.activeElement
+    this.cancelPhase = this.phase
+    const generation = this.generation
+    const replacement = this.phase === "staged-replace"
+    this.phase = "processing"
+    this.setEditorControlsDisabled(true)
+    this.renderStatus("未保存の構図を読み込んでいます…")
+    try {
+      const state = JSON.parse(this.cropDataInputTarget.value)
+      if (!replacement) state.sourceBlobId = this.currentSourceBlobIdValue
+
+      let sourceUrl = this.currentSourceUrlValue
+      if (replacement) {
+        const sourceFile = this.sourceInputTarget.files?.[0]
+        if (!sourceFile) throw new Error("編集元画像が見つかりません。画像の変更をやり直してください。")
+
+        this.workingSourceFile = sourceFile
+        this.workingSourceObjectUrl = URL.createObjectURL(sourceFile)
+        sourceUrl = this.workingSourceObjectUrl
+      }
+      await this.initializeEditor({
+        sourceUrl,
+        state,
+        kind: replacement ? "replacement" : "existing",
+        generation,
+      })
+      if (!this.isCurrent(generation)) return
+
+      this.renderStatus("未保存の構図を復元しました。画像を移動・拡大縮小できます。")
+    } catch (error) {
+      if (!this.isCurrent(generation)) return
+
+      this.restoreStagedState()
+      this.renderError(error.message || "未保存の画像を再編集できませんでした。")
     }
   }
 
@@ -249,12 +303,13 @@ export default class extends Controller {
       this.previewEmptyTarget.hidden = true
       this.deletionNoticeTarget.hidden = true
       this.phase = replacement ? "staged-replace" : "staged-reedit"
+      this.cancelPhase = null
       this.releaseEditor()
       this.revokeWorkingSourceObjectUrl()
       this.workingSourceFile = null
-      this.workspaceTarget.hidden = true
-      this.editButtonTarget.hidden = true
-      this.deleteButtonTarget.hidden = true
+      this.hideWorkspace()
+      this.editButtonTarget.hidden = !this.keepStagedActionsValue
+      this.deleteButtonTarget.hidden = !this.keepStagedActionsValue || !this.hasCurrentDisplayImage()
       this.undoButtonTarget.hidden = false
       this.renderWarning("")
       this.renderStatus("画像の変更を反映しました。最後にフォームの保存ボタンを押してください。")
@@ -272,8 +327,12 @@ export default class extends Controller {
     }
   }
 
-  cancelEdit() {
-    this.resetToBaseline()
+  cancelEdit(event) {
+    event?.preventDefault()
+    const returnFocusTarget = this.returnFocusTarget
+    if (this.cancelPhase?.startsWith("staged-")) this.restoreStagedState()
+    else this.resetToBaseline()
+    if (returnFocusTarget?.isConnected) returnFocusTarget.focus({ preventScroll: true })
   }
 
   removeImage() {
@@ -302,7 +361,7 @@ export default class extends Controller {
       event.preventDefault()
       event.imageAttachmentEditorInvalid = true
       this.renderError("画像の構図を確定するか、画像編集をキャンセルしてから保存してください。")
-      this.statusTarget.focus()
+      this.focusStatus()
       return
     }
 
@@ -319,12 +378,12 @@ export default class extends Controller {
     event.preventDefault()
     event.imageAttachmentEditorInvalid = true
     this.renderError("画像の送信準備が完了していません。画像の変更をやり直してください。")
-    this.statusTarget.focus()
+    this.focusStatus()
   }
 
   async initializeEditor({ sourceUrl, state = null, kind, generation }) {
     this.releaseEditor()
-    this.workspaceTarget.hidden = false
+    this.showWorkspace()
     this.sourceTarget.src = sourceUrl
     await this.waitForSourceImage()
     if (!this.isCurrent(generation)) return
@@ -353,7 +412,7 @@ export default class extends Controller {
         ratioKey: this.ratioKeyValue,
         sourceWidth: this.sourceTarget.naturalWidth,
         sourceHeight: this.sourceTarget.naturalHeight,
-        sourceBlobId: this.currentSourceBlobIdValue,
+        sourceBlobId: kind === "existing" ? this.currentSourceBlobIdValue : null,
       })
       this.applyStateToImage(validated)
     } else {
@@ -492,11 +551,12 @@ export default class extends Controller {
 
   resetToBaseline({ announce = true, preservePicker = false } = {}) {
     this.releaseWorkingResources()
+    this.cancelPhase = null
     this.clearPayloadInputs()
     if (!preservePicker) this.fileInputTarget.value = ""
     this.deletionNoticeTarget.hidden = true
     this.undoButtonTarget.hidden = true
-    this.workspaceTarget.hidden = true
+    this.hideWorkspace({ restoreFocus: false })
     const hasCurrent = this.hasCurrentDisplayImage()
     if (hasCurrent) {
       this.currentPreviewTarget.src = this.currentDisplayUrlValue
@@ -514,6 +574,22 @@ export default class extends Controller {
     if (announce) this.renderStatus(hasCurrent ? "画像の変更を取り消しました。" : "画像未選択です。")
     else this.renderStatus(hasCurrent ? "現在の画像です。" : "画像未選択です。")
     this.dispatch("change", { detail: { operation: "" } })
+  }
+
+  restoreStagedState() {
+    const stagedPhase = this.cancelPhase
+    this.releaseEditor()
+    this.revokeWorkingSourceObjectUrl()
+    this.workingSourceFile = null
+    this.hideWorkspace({ restoreFocus: false })
+    this.phase = stagedPhase
+    this.cancelPhase = null
+    this.editButtonTarget.hidden = false
+    this.deleteButtonTarget.hidden = !this.hasCurrentDisplayImage()
+    this.undoButtonTarget.hidden = false
+    this.renderWarning("")
+    this.renderStatus("画像の変更を反映しました。最後にフォームの保存ボタンを押してください。")
+    this.dispatch("change", { detail: { operation: this.operationInputTarget.value } })
   }
 
   clearPayloadInputs() {
@@ -548,18 +624,50 @@ export default class extends Controller {
   }
 
   renderStatus(message) {
-    this.statusTarget.textContent = message
-    this.statusTarget.classList.remove("text-danger")
+    this.statusTargets.forEach((target) => {
+      target.textContent = message
+      target.classList.remove("text-danger")
+      if (target.hasAttribute("data-errors-only-status")) target.hidden = true
+    })
   }
 
   renderError(message) {
-    this.statusTarget.textContent = message
-    this.statusTarget.classList.add("text-danger")
+    this.statusTargets.forEach((target) => {
+      target.textContent = message
+      target.classList.add("text-danger")
+      target.hidden = false
+    })
   }
 
   renderWarning(message) {
     this.warningTarget.textContent = message
     this.warningTarget.hidden = message.length === 0
+  }
+
+  showWorkspace() {
+    this.workspaceTarget.hidden = false
+    if (this.workspaceTarget.tagName !== "DIALOG" || this.workspaceTarget.open) return
+
+    this.workspaceTarget.showModal()
+  }
+
+  hideWorkspace({ restoreFocus = true } = {}) {
+    if (!this.hasWorkspaceTarget) return
+
+    if (this.workspaceTarget.tagName === "DIALOG" && this.workspaceTarget.open) {
+      this.workspaceTarget.close()
+    }
+    this.workspaceTarget.hidden = true
+
+    if (restoreFocus && this.returnFocusTarget?.isConnected) {
+      this.returnFocusTarget.focus({ preventScroll: true })
+    }
+  }
+
+  focusStatus() {
+    const visible = this.statusTargets.find((target) => !target.hidden && target.offsetParent !== null)
+    const target = visible || this.statusTarget
+    target.focus()
   }
 
   releaseEditor() {

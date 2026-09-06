@@ -159,7 +159,8 @@ class ImageUploadUiTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "script[src^='/vendor/filepond/']", count: 0
-    assert_select "form[data-controller='image-pair-form'][data-action*='image-pair-form#submit'][enctype='multipart/form-data']", count: 1
+    assert_select "form[data-controller~='image-pair-form'][data-controller~='profile-edit']" \
+                  "[data-action*='image-pair-form#submit'][enctype='multipart/form-data']", count: 1
     assert_select "input[type='file'][name='user[avatar]']", count: 0
     assert_select "input[name='user[remove_avatar]']", count: 0
     assert_cropper_editor(

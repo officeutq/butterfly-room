@@ -8,6 +8,10 @@ export default class extends Controller {
     this.client = new ImagePairMultipartClient()
     this.submitting = false
     this.isDisconnected = false
+    this.originalSubmitLabels = new WeakMap()
+    this.submitButtonTargets.forEach((button) => {
+      this.originalSubmitLabels.set(button, this.buttonLabel(button))
+    })
   }
 
   disconnect() {
@@ -35,6 +39,7 @@ export default class extends Controller {
   async submitMultipartForm() {
     this.submitting = true
     this.setSubmitting(true)
+    this.dispatch("submit-start")
     this.clearError()
     this.renderEditorStatuses("画像と入力内容を保存しています…")
 
@@ -55,6 +60,7 @@ export default class extends Controller {
       this.renderEditorStatuses("保存できませんでした。内容を確認して再度保存してください。", true)
       this.setSubmitting(false)
       this.submitting = false
+      this.dispatch("submit-error", { detail: { message: error.message } })
     }
   }
 
@@ -96,7 +102,20 @@ export default class extends Controller {
 
     this.submitButtonTargets.forEach((button) => {
       button.disabled = submitting
+      this.setButtonLabel(button, submitting
+        ? (button.dataset?.submittingLabel || button.dataset?.turboSubmitsWith || "保存中…")
+        : (this.originalSubmitLabels.get(button) || this.buttonLabel(button)))
     })
+  }
+
+  buttonLabel(button) {
+    const text = typeof button.textContent === "string" ? button.textContent.trim() : ""
+    return text || (typeof button.value === "string" ? button.value : "")
+  }
+
+  setButtonLabel(button, label) {
+    if (String(button.tagName).toUpperCase() === "INPUT") button.value = label
+    else button.textContent = label
   }
 
   clearError() {
