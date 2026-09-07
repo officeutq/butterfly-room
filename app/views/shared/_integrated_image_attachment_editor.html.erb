@@ -13,6 +13,7 @@
   presentation = local_assigns.fetch(:presentation).to_s
   current_source_url = local_assigns[:current_source_url].to_s
   current_display_url = local_assigns[:current_display_url].to_s
+  initial_has_current_image = current_display_url.present?
   current_crop_data = local_assigns[:current_crop_data]
   current_crop_json = if current_crop_data.present?
     current_crop_data.is_a?(String) ? current_crop_data : current_crop_data.to_h.to_json
@@ -63,8 +64,12 @@
 
     <div class="dropdown integrated-image-editor__image-menu">
       <button type="button" class="integrated-image-editor__icon-button"
-              data-bs-toggle="dropdown" aria-expanded="false"
-              aria-label="<%= label %>の操作を開く">
+              data-image-attachment-editor-target="imageMenuButton"
+              data-action="image-attachment-editor#activateImageMenu"
+              data-direct-select-label="<%= label %>を選択"
+              data-menu-label="<%= label %>の操作を開く"
+              <% if initial_has_current_image %>data-bs-toggle="dropdown" aria-expanded="false"<% end %>
+              aria-label="<%= initial_has_current_image ? "#{label}の操作を開く" : "#{label}を選択" %>">
         <i class="bi bi-camera-fill" aria-hidden="true"></i>
       </button>
       <ul class="dropdown-menu">
