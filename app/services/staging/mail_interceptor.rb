@@ -26,6 +26,9 @@ module Staging
         return
       end
 
+      # 各Mailerが指定した宛先をそのまま使用する。
+      return if value("MAIL_DELIVERY_MODE") == "direct"
+
       case value("MAIL_DELIVERY_MODE")
       when "redirect"
         redirect_message(message)

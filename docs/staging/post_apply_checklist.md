@@ -53,7 +53,7 @@
 - [ ] `Twitterbot/1.0`等でも共有専用URLが200となり、OGPを取得できる
 - [ ] HTMLに`noindex`、response headerに`noindex, nofollow`
 - [ ] GTM script、noscript、conversion eventが出力されない
-- [ ] mailのTo/Cc/Bccが承認済みredirect先へ置換され、subjectに`[STAGING]`
+- [ ] app・workerが`MAIL_DELIVERY_MODE=direct`で稼働し、テスト用メールのTo/Cc/Bccが本来の宛先のまま、subjectに`[STAGING]`が付く（redirect/allowlistを選ぶ環境では、その方式どおりの宛先制御を確認）
 - [ ] SMSはmockでAWS SNSへ送信されない
 - [ ] Stripe test keyとstaging Webhook secretだけを使用
 - [ ] S3 uploadがstaging bucketだけへ保存
