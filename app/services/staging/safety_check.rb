@@ -7,7 +7,7 @@ module Staging
     PRODUCTION_DATABASE_NAME = "butterfly_room_production"
     PRODUCTION_S3_BUCKET = "butterfly-room-production"
     PRODUCTION_GTM_CONTAINER_ID = "GTM-KNT7H4CG"
-    SAFE_MAIL_MODES = %w[redirect allowlist].freeze
+    SAFE_MAIL_MODES = %w[direct redirect allowlist].freeze
 
     def self.call!(env: ENV)
       new(env: env).call!
@@ -71,7 +71,7 @@ module Staging
       return unless Runtime.enabled?("MAIL_DELIVERY_ENABLED", default: true, env: @env)
 
       mode = value("MAIL_DELIVERY_MODE")
-      fail_configuration!("MAIL_DELIVERY_MODE must restrict staging recipients") unless SAFE_MAIL_MODES.include?(mode)
+      fail_configuration!("MAIL_DELIVERY_MODE must be direct, redirect or allowlist") unless SAFE_MAIL_MODES.include?(mode)
 
       if mode == "redirect" && value("MAIL_REDIRECT_RECIPIENT").empty?
         fail_configuration!("MAIL_REDIRECT_RECIPIENT is required in redirect mode")

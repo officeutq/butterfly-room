@@ -108,7 +108,7 @@ chmod 600 .env.staging
 - `RAILS_MASTER_KEY`、`SECRET_KEY_BASE`
 - `AWS_S3_BUCKET=butterfly-room-staging`
 - `SES_SMTP_USERNAME`、`SES_SMTP_PASSWORD`
-- `MAIL_DELIVERY_MODE=redirect`、`MAIL_REDIRECT_RECIPIENT`
+- `MAIL_DELIVERY_MODE=direct`（各メール本来の宛先へ送信）
 - `SMS_DELIVERY_MODE=mock`
 - Stripe test keyとstaging用Webhook secret
 - `IVS_STAGE_ENV=staging`、`IVS_STAGE_NAME_PREFIX=br-staging`
@@ -117,6 +117,37 @@ chmod 600 .env.staging
 - 必要なBanuba、DeepAR、Google Mapsのstaging用値
 
 実値はGit、Terraform、User Data、systemd unitへ記載しません。
+
+### メールの送信方式
+
+| 環境 | 設定・動作 |
+| --- | --- |
+| ローカル | `RAILS_ENV=development`。`letter_opener_web`で保存・確認し、実メールを送信しない |
+| 本番 | `RAILS_ENV=production`。`APP_ENV`が`staging`以外なら宛先制御を適用せずSESで送信 |
+| ステージング | `RAILS_ENV=production`、`APP_ENV=staging`。SES送信直前に`MAIL_DELIVERY_MODE`を適用 |
+
+ステージングの方式は次の3つです。
+
+- `direct`: 各Mailer（メール生成を担当するクラス）のTo/Cc/Bccを維持する。許可リストへの登録は不要
+- `redirect`: `MAIL_REDIRECT_RECIPIENT`へ宛先を差し替え、Cc/Bccを除去する
+- `allowlist`: `MAIL_ALLOWED_RECIPIENTS`に含まれる宛先だけを残し、宛先がなくなったメールは送信しない
+
+どの方式でも`MAIL_DELIVERY_ENABLED=false`なら送信せず、`MAIL_SUBJECT_PREFIX`の件名接頭辞を維持します。未対応の方式は起動時に拒否します。
+
+複数の外部テスト参加者が利用する環境では`direct`を使用します。`redirect`は宛先だけを変え、本文・再設定リンクの対象は変えません。差し替え先の受信者が元の対象者用リンクを操作できるため、共用テスト環境で再設定メールを管理者へ集約しません。
+
+この設定はパスワード再設定、店舗管理者の代行登録・追加案内、お問い合わせ受付・返信・管理者通知など、アプリから送るメール全体に適用されます。管理者通知やお問い合わせ返信は、その機能が指定した宛先へ送ります。店舗管理者招待URL・キャスト招待URLをコピー・共有する操作は、自動メール送信を行いません。
+
+### 既存環境をdirectへ切り替える手順
+
+1. app・worker（バックグラウンド処理）の現在のイメージID、Composeプロジェクト名、設定ファイル、`STAGING_ENV_FILE`の実パスを確認する。既存の作業中変更を保持し、稼働イメージに復旧用タグを付ける。
+2. direct対応コードを反映したイメージを用意する。DB変更は不要。旧コードのまま環境変数だけを変えると次回起動時に設定エラーになる。
+3. サーバーの`.env.staging`を権限600の控えに保存し、`MAIL_DELIVERY_MODE=redirect`の1行だけを`MAIL_DELIVERY_MODE=direct`へ変更する。他の設定、認証情報、`APP_ENV=staging`は維持する。変更箇所を秘密値を出力せず確認する。
+4. 確認したComposeプロジェクトと環境ファイルを使い、appを新イメージで再作成する。例えば`docker compose -p <既存プロジェクト名> -f docker-compose.staging.yml up -d --no-deps --no-build --force-recreate app`。`/up`が200になった後、同じ指定でworkerを再作成する。通常の`restart`だけでは環境変数は反映されない。
+5. 両プロセスの`APP_ENV`、`MAIL_DELIVERY_MODE`、イメージと稼働状態を確認する。承認済みのテスト用宛先A・Bで、パスワード再設定と店舗管理者案内の宛先・本文・リンク対象が一致することを確認する。他業者のパスワードやアカウントを変更しない。
+6. 復旧が必要な場合は、変更した設定行だけを元に戻し、元のイメージを指定してapp、正常性確認、workerの順に再作成する。控え取得後の他の設定変更を上書きしない。誤送信を止める必要がある場合は`MAIL_DELIVERY_ENABLED=false`を反映する。
+
+`.env.staging`全体、メール本文、再設定トークン、SMTP認証情報をログやIssueへ貼り付けません。SESのサンドボックス状態はAWSアカウント・リージョン単位であり、アプリの`direct`設定とは別です。対象SESに受信者制限がある場合は、権限のある管理者が送信可否を確認します。
 
 ## 5. appを先に起動して確認
 
@@ -189,7 +220,7 @@ sudo systemctl disable --now butterflyve-monthly-settlement-staging.timer
 
 ## 9. 外形確認
 
-[post_apply_checklist.md](post_apply_checklist.md)に従い、ALB health、HTTPS、未認証公開、SNSクローラーのOGP取得、mail redirect、SMS mock、Stripe test、GTM無効、noindex、staging S3、IVS Stage tagを確認します。
+[post_apply_checklist.md](post_apply_checklist.md)に従い、ALB health、HTTPS、未認証公開、SNSクローラーのOGP取得、メール送信方式と宛先、SMS mock、Stripe test、GTM無効、noindex、staging S3、IVS Stage tagを確認します。
 
 ## 10. EC2停止
 

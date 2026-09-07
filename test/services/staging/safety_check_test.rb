@@ -24,6 +24,12 @@ class StagingSafetyCheckTest < ActiveSupport::TestCase
     assert_nil Staging::SafetyCheck.call!(env: SAFE_ENV)
   end
 
+  test "accepts direct mail without redirect or allowlist recipients" do
+    env = SAFE_ENV.except("MAIL_REDIRECT_RECIPIENT").merge("MAIL_DELIVERY_MODE" => "direct")
+
+    assert_nil Staging::SafetyCheck.call!(env: env)
+  end
+
   test "accepts disabled Basic authentication without credentials" do
     env = SAFE_ENV.merge(
       "BASIC_AUTH_ENABLED" => "false",
@@ -69,8 +75,9 @@ class StagingSafetyCheckTest < ActiveSupport::TestCase
     end
   end
 
-  test "rejects unrestricted or incomplete mail configuration" do
+  test "rejects unsupported or incomplete mail configuration" do
     assert_rejected("MAIL_DELIVERY_MODE", "live")
+    assert_rejected("MAIL_DELIVERY_MODE", "")
     assert_rejected("MAIL_REDIRECT_RECIPIENT", "")
 
     env = SAFE_ENV.merge("MAIL_DELIVERY_MODE" => "allowlist", "MAIL_ALLOWED_RECIPIENTS" => "")
