@@ -78,7 +78,10 @@ class ProfileEditUiTest < ActionDispatch::IntegrationTest
       assert_select "input[name='#{param_root}[display]']", count: 1
       assert_select "input[name='#{param_root}[crop_data]']", count: 1
       assert_select ".integrated-image-editor__image-menu", count: 1 do
-        assert_select "button[data-bs-toggle='dropdown'][aria-label='#{presentation == 'cover' ? 'カバー画像' : 'アバター画像'}の操作を開く']",
+        label = presentation == "cover" ? "カバー画像" : "アバター画像"
+        assert_select "button[data-image-attachment-editor-target='imageMenuButton']" \
+                      "[data-action='image-attachment-editor#activateImageMenu']" \
+                      "[aria-label='#{label}を選択']:not([data-bs-toggle])",
                       count: 1
         assert_select ".dropdown-menu", count: 1 do
           assert_select "[data-action='image-attachment-editor#chooseFile']", text: /追加・差し替え/, count: 1

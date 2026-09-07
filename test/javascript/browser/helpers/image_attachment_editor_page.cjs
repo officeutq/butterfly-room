@@ -24,9 +24,18 @@ async function openImageAttachmentEditorPage(browser, { strictCsp = false } = {}
             <img hidden data-image-attachment-editor-target="currentPreview">
             <p data-image-attachment-editor-target="previewEmpty"></p>
             <p hidden data-image-attachment-editor-target="deletionNotice"></p>
-            <button type="button" hidden data-image-attachment-editor-target="editButton"></button>
-            <button type="button" hidden data-image-attachment-editor-target="deleteButton"></button>
-            <button type="button" hidden data-image-attachment-editor-target="undoButton"></button>
+            <div class="dropdown">
+              <button type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                data-image-attachment-editor-target="imageMenuButton"
+                data-direct-select-label="画像を選択"
+                data-menu-label="画像の操作を開く"></button>
+              <div class="dropdown-menu">
+                <button type="button" data-action="image-attachment-editor#chooseFile"></button>
+                <button type="button" hidden data-image-attachment-editor-target="editButton"></button>
+                <button type="button" hidden data-image-attachment-editor-target="deleteButton"></button>
+                <button type="button" hidden data-image-attachment-editor-target="undoButton"></button>
+              </div>
+            </div>
             <div hidden data-image-attachment-editor-target="workspace">
               <div class="editor" data-image-attachment-editor-target="editor"><img data-image-attachment-editor-target="source"></div>
               <button type="button" disabled data-image-attachment-editor-target="editorControl"></button>

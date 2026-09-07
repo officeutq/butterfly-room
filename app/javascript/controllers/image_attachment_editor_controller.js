@@ -29,6 +29,7 @@ export default class extends Controller {
     "editor",
     "editorControl",
     "fileInput",
+    "imageMenuButton",
     "operationInput",
     "previewEmpty",
     "source",
@@ -146,6 +147,14 @@ export default class extends Controller {
   chooseFile(event) {
     this.returnFocusTarget = event.currentTarget
     this.fileInputTarget.click()
+  }
+
+  activateImageMenu(event) {
+    if (!this.hasOnlyFileSelectionAction()) return
+
+    event.preventDefault()
+    event.stopPropagation()
+    this.chooseFile(event)
   }
 
   async editExisting(event) {
@@ -313,6 +322,7 @@ export default class extends Controller {
       this.editButtonTarget.hidden = !this.keepStagedActionsValue
       this.deleteButtonTarget.hidden = !this.keepStagedActionsValue || !this.hasCurrentDisplayImage()
       this.undoButtonTarget.hidden = false
+      this.syncImageMenuButton()
       this.renderWarning("")
       this.renderStatus("画像の変更を反映しました。最後にフォームの保存ボタンを押してください。")
       this.dispatch("change", { detail: { operation: this.operationInputTarget.value } })
@@ -347,6 +357,7 @@ export default class extends Controller {
     this.editButtonTarget.hidden = true
     this.deleteButtonTarget.hidden = true
     this.undoButtonTarget.hidden = false
+    this.syncImageMenuButton()
     this.phase = "staged-delete"
     this.renderStatus("画像を削除対象にしました。最後にフォームの保存ボタンを押してください。")
     this.dispatch("change", { detail: { operation: "delete" } })
@@ -594,6 +605,7 @@ export default class extends Controller {
     }
     this.editButtonTarget.hidden = !this.canEditCurrentImage()
     this.deleteButtonTarget.hidden = !hasCurrent
+    this.syncImageMenuButton()
     this.phase = "idle"
     this.renderWarning("")
     if (announce) this.renderStatus(hasCurrent ? "画像の変更を取り消しました。" : "画像未選択です。")
@@ -612,6 +624,7 @@ export default class extends Controller {
     this.editButtonTarget.hidden = false
     this.deleteButtonTarget.hidden = !this.hasCurrentDisplayImage()
     this.undoButtonTarget.hidden = false
+    this.syncImageMenuButton()
     this.renderWarning("")
     this.renderStatus("画像の変更を反映しました。最後にフォームの保存ボタンを押してください。")
     this.dispatch("change", { detail: { operation: this.operationInputTarget.value } })
@@ -634,6 +647,27 @@ export default class extends Controller {
       this.hasCurrentCropDataValue && this.currentCropDataValue.length > 0 &&
       this.hasCurrentSourceBlobIdValue && Number.isSafeInteger(this.currentSourceBlobIdValue) &&
       this.currentSourceBlobIdValue > 0
+  }
+
+  hasOnlyFileSelectionAction() {
+    return this.editButtonTarget.hidden &&
+      this.deleteButtonTarget.hidden &&
+      this.undoButtonTarget.hidden
+  }
+
+  syncImageMenuButton() {
+    if (!this.hasImageMenuButtonTarget) return
+
+    const button = this.imageMenuButtonTarget
+    if (this.hasOnlyFileSelectionAction()) {
+      button.removeAttribute("data-bs-toggle")
+      button.removeAttribute("aria-expanded")
+      button.setAttribute("aria-label", button.dataset.directSelectLabel)
+    } else {
+      button.setAttribute("data-bs-toggle", "dropdown")
+      button.setAttribute("aria-expanded", "false")
+      button.setAttribute("aria-label", button.dataset.menuLabel)
+    }
   }
 
   supportedFile(file) {

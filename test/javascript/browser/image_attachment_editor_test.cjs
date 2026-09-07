@@ -120,6 +120,112 @@ test("shared editor keeps fixed output dimensions at smartphone width", async ()
   }
 })
 
+test("camera button opens the picker directly only while file selection is the sole action", async () => {
+  const browser = await browsers[process.env.IMAGE_VERIFICATION_BROWSER || "chromium"].launch({ headless: true })
+  let environment
+  try {
+    environment = await openImageAttachmentEditorPage(browser)
+    const result = await environment.page.evaluate(async () => {
+      const eventFor = (button) => ({
+        currentTarget: button,
+        prevented: false,
+        stopped: false,
+        preventDefault() { this.prevented = true },
+        stopPropagation() { this.stopped = true },
+      })
+      const buttonState = (button) => ({
+        toggle: button.getAttribute("data-bs-toggle"),
+        expanded: button.getAttribute("aria-expanded"),
+        label: button.getAttribute("aria-label"),
+      })
+
+      const controller = window.mountEditor({ ratioKey: "square", keepStagedActions: true })
+      let emptyPickerClicks = 0
+      controller.fileInputTarget.click = () => { emptyPickerClicks += 1 }
+      const emptyEvent = eventFor(controller.imageMenuButtonTarget)
+      controller.activateImageMenu(emptyEvent)
+      const empty = {
+        ...buttonState(controller.imageMenuButtonTarget),
+        pickerClicks: emptyPickerClicks,
+        prevented: emptyEvent.prevented,
+        stopped: emptyEvent.stopped,
+      }
+
+      const replacement = await window.imageFile({ width: 1200, height: 1200 })
+      await controller.selectFile({ currentTarget: { files: [replacement] } })
+      await controller.applyCrop()
+      const stagedEvent = eventFor(controller.imageMenuButtonTarget)
+      controller.activateImageMenu(stagedEvent)
+      const staged = {
+        ...buttonState(controller.imageMenuButtonTarget),
+        pickerClicks: emptyPickerClicks,
+        prevented: stagedEvent.prevented,
+        stopped: stagedEvent.stopped,
+        editVisible: !controller.editButtonTarget.hidden,
+        undoVisible: !controller.undoButtonTarget.hidden,
+      }
+
+      controller.undoChange()
+      const undone = buttonState(controller.imageMenuButtonTarget)
+
+      const current = await window.currentImage({ ratioKey: "square" })
+      const existingController = window.mountEditor({ ...current, keepStagedActions: true })
+      let existingPickerClicks = 0
+      existingController.fileInputTarget.click = () => { existingPickerClicks += 1 }
+      const existingEvent = eventFor(existingController.imageMenuButtonTarget)
+      existingController.activateImageMenu(existingEvent)
+      const existing = {
+        ...buttonState(existingController.imageMenuButtonTarget),
+        pickerClicks: existingPickerClicks,
+        prevented: existingEvent.prevented,
+        stopped: existingEvent.stopped,
+        editVisible: !existingController.editButtonTarget.hidden,
+        deleteVisible: !existingController.deleteButtonTarget.hidden,
+      }
+
+      return { empty, staged, undone, existing }
+    })
+
+    assert.deepEqual(result.empty, {
+      toggle: null,
+      expanded: null,
+      label: "画像を選択",
+      pickerClicks: 1,
+      prevented: true,
+      stopped: true,
+    })
+    assert.deepEqual(result.staged, {
+      toggle: "dropdown",
+      expanded: "false",
+      label: "画像の操作を開く",
+      pickerClicks: 1,
+      prevented: false,
+      stopped: false,
+      editVisible: true,
+      undoVisible: true,
+    })
+    assert.deepEqual(result.undone, {
+      toggle: null,
+      expanded: null,
+      label: "画像を選択",
+    })
+    assert.deepEqual(result.existing, {
+      toggle: "dropdown",
+      expanded: "false",
+      label: "画像の操作を開く",
+      pickerClicks: 0,
+      prevented: false,
+      stopped: false,
+      editVisible: true,
+      deleteVisible: true,
+    })
+    assert.deepEqual(environment.errors, [])
+  } finally {
+    await environment?.close()
+    await browser.close()
+  }
+})
+
 test("shared editor lazily converts HEIC in a Worker before normalizing and cropping", { timeout: 120_000 }, async () => {
   const browser = await browsers[process.env.IMAGE_VERIFICATION_BROWSER || "chromium"].launch({ headless: true })
   let environment

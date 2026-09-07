@@ -55,6 +55,9 @@ class ImageUploadUiTest < ActionDispatch::IntegrationTest
       assert_select "[data-image-attachment-editor-current-display-url-value]", count: 1
       assert_select "[data-image-attachment-editor-current-source-url-value]", count: 1
       assert_select "[data-image-attachment-editor-current-crop-data-value]", count: 1
+      assert_select "button[data-image-attachment-editor-target='imageMenuButton']" \
+                    "[data-bs-toggle='dropdown'][aria-label='店舗画像の操作を開く']",
+                    count: 1
       assert_select(
         "[data-image-attachment-editor-current-source-blob-id-value='#{store.thumbnail_source.blob.id}']",
         count: 1
@@ -260,6 +263,10 @@ class ImageUploadUiTest < ActionDispatch::IntegrationTest
       assert_select "input[type='file'][name='#{param_root}[source]']", count: 1
       assert_select "input[type='file'][name='#{param_root}[display]']", count: 1
       assert_select "input[name='#{param_root}[crop_data]']", count: 1
+      assert_select "button[data-image-attachment-editor-target='imageMenuButton']" \
+                    "[data-action='image-attachment-editor#activateImageMenu']" \
+                    "[aria-label='#{label}を選択']:not([data-bs-toggle])",
+                    count: 1
       ImageAttachments::MultipartPayload::EXPECTED_ID_KEYS.each do |key|
         assert_select "input[name='#{param_root}[expected][#{key}]']", count: 1
       end
