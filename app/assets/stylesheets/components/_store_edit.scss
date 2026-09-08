@@ -56,6 +56,89 @@
   margin-block: 1.5rem 1rem;
 }
 
+.store-registration-setup {
+  padding-bottom: 2rem;
+
+  [hidden] { display: none !important; }
+
+  &__mark {
+    align-items: center;
+    background: rgba(var(--bs-primary-rgb), 0.12);
+    border-radius: 1rem;
+    color: var(--bs-primary);
+    display: flex;
+    font-size: 1.7rem;
+    height: 3.5rem;
+    justify-content: center;
+    width: 3.5rem;
+  }
+
+  &__loading {
+    align-items: center;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.75rem;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    margin: 1rem;
+    padding: 1.25rem;
+    position: sticky;
+    top: 70px;
+    z-index: 1020;
+  }
+
+  [inert] { opacity: 0.5; }
+
+  &__field {
+    position: relative;
+
+    .form-control, .form-select { padding-right: 4.5rem; }
+    .form-floating > label { max-width: calc(100% - 3.5rem); }
+    .form-select { background-position: right 3.25rem center; }
+  }
+
+  &__badge {
+    position: absolute;
+    right: 0.6rem;
+    top: 0.65rem;
+    z-index: 5;
+
+    summary {
+      background: var(--bs-tertiary-bg);
+      border: 1px solid var(--bs-border-color);
+      border-radius: 2rem;
+      color: var(--bs-secondary-color);
+      cursor: pointer;
+      font-size: 0.7rem;
+      line-height: 1.5rem;
+      list-style: none;
+      min-width: 2rem;
+      padding-inline: 0.35rem;
+      text-align: center;
+
+      &::-webkit-details-marker { display: none; }
+    }
+
+    p {
+      background: var(--bs-body-bg);
+      border: 1px solid var(--bs-border-color);
+      border-radius: 0.5rem;
+      box-shadow: var(--bs-box-shadow-sm);
+      font-size: 0.8rem;
+      margin-top: 0.4rem;
+      padding: 0.75rem;
+      position: absolute;
+      right: 0;
+      width: min(18rem, 75vw);
+    }
+
+    &[open] { z-index: 6; }
+  }
+
+  &__sources { overflow-wrap: anywhere; }
+}
+
 @media (max-width: 767.98px) {
   .store-edit__action-bar {
     top: 56px;

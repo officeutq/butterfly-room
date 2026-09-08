@@ -151,6 +151,24 @@ test("leaves a normal profile update to Turbo when no image operation exists", a
   assert.equal(environment.requests.length, 0)
 })
 
+test("initial registration opts into JSON without an image and keeps the form on failure", async () => {
+  const environment = loadController({ error: new Error("地域は50文字以内で入力してください") })
+  const { controller, form, errorTarget, button } = buildController(environment.Controller, [""])
+  controller.alwaysSubmitValue = true
+  const event = submitEvent()
+
+  controller.submit(event)
+  await flushPromises()
+
+  assert.equal(event.prevented, true)
+  assert.equal(environment.requests.length, 1)
+  assert.equal(environment.requests[0].body.form, form)
+  assert.equal(environment.navigations.length, 0)
+  assert.equal(errorTarget.hidden, false)
+  assert.match(errorTarget.textContent, /50文字/)
+  assert.equal(button.disabled, false)
+})
+
 test("sends both image sections once and shows the saving state", async () => {
   const environment = loadController()
   const { button, controller, editors, errorTarget, form } = buildController(

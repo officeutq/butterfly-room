@@ -8,7 +8,7 @@ module Admin
     before_action :authorize_store_edit!
 
     rate_limit(
-      to: 3,
+      to: 10,
       within: 10.minutes,
       by: -> { current_user.id },
       with: :render_rate_limited,
