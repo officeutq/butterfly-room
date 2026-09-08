@@ -511,7 +511,7 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Alpha Store"
   end
 
-  test "mode=users: 営業支援会社所属の store_admin を除外する" do
+  test "mode=users: 所属にかかわらず有効なcastだけを表示する" do
     regular_store = create_store!(name: "Regular User Search Store")
     sales_support_company = create_store!(name: "Sales Support Company")
     sales_support_company.update!(sales_support_company: true)
@@ -564,8 +564,8 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     guest_body = @response.body
 
     assert_includes guest_body, "Cast Search User"
-    assert_includes guest_body, "Store Admin Search User"
-    assert_includes guest_body, "Support Company Cast Member"
+    refute_includes guest_body, "Store Admin Search User"
+    refute_includes guest_body, "Support Company Cast Member"
     refute_includes guest_body, "Sales Support Company Admin"
     refute_includes guest_body, "Dual Store Admin"
 
@@ -583,8 +583,8 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     refute_includes body, ">ユーザー<"
 
     assert_includes body, "Cast Search User"
-    assert_includes body, "Store Admin Search User"
-    assert_includes body, "Support Company Cast Member"
+    refute_includes body, "Store Admin Search User"
+    refute_includes body, "Support Company Cast Member"
 
     refute_includes body, "Sales Support Company Admin"
     refute_includes body, "Dual Store Admin"
@@ -593,7 +593,7 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     refute_includes body, "Deleted Cast Search User"
   end
 
-  test "mode=users: store_admin は公開店舗に active ブースがある場合のみ表示する" do
+  test "mode=users: 公開店舗にactiveブースがあるstore_adminも表示しない" do
     public_active_store = create_store!(name: "Public Active Admin Store")
     create_booth!(store: public_active_store, name: "Public Offline Admin Booth", status: :offline)
 
@@ -641,7 +641,7 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     guest_body = @response.body
-    assert_includes guest_body, "Visible Public Booth Admin"
+    refute_includes guest_body, "Visible Public Booth Admin"
     assert_includes guest_body, "Visible Cast Without Membership"
     refute_includes guest_body, "Hidden Unpublished Only Admin"
     refute_includes guest_body, "Hidden Archived Only Admin"
@@ -656,7 +656,7 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     body = @response.body
-    assert_includes body, "Visible Public Booth Admin"
+    refute_includes body, "Visible Public Booth Admin"
     assert_includes body, "Visible Cast Without Membership"
     refute_includes body, "Hidden Unpublished Only Admin"
     refute_includes body, "Hidden Archived Only Admin"
@@ -752,7 +752,7 @@ class HomeSearchTest < ActionDispatch::IntegrationTest
     body = @response.body
 
     assert_includes body, "Rose User"
-    assert_includes body, "Rose Public Admin"
+    refute_includes body, "Rose Public Admin"
     refute_includes body, "Tulip User"
     refute_includes body, "Rose Support Admin"
     refute_includes body, "Rose Unpublished Admin"

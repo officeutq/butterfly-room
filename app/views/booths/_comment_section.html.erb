@@ -4,7 +4,8 @@
       <%= render partial: "comments/comment",
             collection: (comments || []),
             as: :comment,
-            locals: { guest_viewer: !authenticated_viewer } %>
+            locals: { guest_viewer: !authenticated_viewer,
+                      member_profile_ids: authenticated_viewer ? comment_member_profile_ids(comments || []) : Set.new } %>
     </div>
 
     <div class="viewer-comment-form">

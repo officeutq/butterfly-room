@@ -70,9 +70,7 @@ class UsersController < ApplicationController
   private
 
   def visible_users
-    return User.active if user_signed_in?
-
-    User.public_profiles
+    User.profiles_visible_to(current_user)
   end
 
   def set_user_meta_tags

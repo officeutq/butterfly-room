@@ -1334,10 +1334,10 @@ Phase1の認可・売上・配信状態の不変条件を維持したまま、�
 
 - `HomeController#show` は認証を必須とせず、ブース・店舗・配信者の3タブを提供する
 - mode未指定時は、未ログインでは店舗、ログイン済みでは従来どおりブースを初期表示する
-- 配信者タブは有効なcastを対象とする。store_adminは、管理者所属する同一店舗について `stores.published = true` かつ `booths.archived_at IS NULL` を満たすブースが1件以上ある場合だけ対象とし、`sales_support_company = true` の店舗へ管理者所属するstore_adminは除外する。ブースの現在のstatusと`booth_casts`の有無は判定に使用しない
+- 配信者タブは `User.active.cast` で有効なcastだけを対象とする。店舗所属、店舗公開状況、ブースの有無・配信状態は判定しない。検索・並び順・30件上限は維持する
 - `StoresController#show` は `Store.published` の店舗だけを公開し、表示ブースは `Booth.active` に限定する
 - `BoothsController#show` は `Booth.active.in_published_stores` のブースを未ログインにも公開し、live / away中はviewer tokenを購読専用で発行する。standby、Stage未紐づけ、current stream_session不一致では視聴させない
-- `UsersController#show` は配信者タブと同じ公開条件を満たすcast・store_adminのプロフィールを未ログインにも公開し、関連する店舗・ブースは既存の公開条件を満たすものだけ表示する
+- `UsersController#show` は `User.profiles_visible_to(current_user)` で閲覧対象を取得する。未ログインは有効なcast、ログイン済みは有効なcast・customer・通常store_adminと本人を許可する。営業支援会社の管理者とsystem_adminは本人のみ。削除・退会済みは常に除外する。関連する店舗・ブースは既存の公開条件を維持する
 - 未ログインのコメントは初期表示と署名付きTurbo Streamによる更新を読み取り専用で表示する。共有broadcast用パーシャルではリクエスト利用者固有の認可判定を行わない
 - 未ログインでは在室ping・視聴者数summaryを呼び出さず、Presenceを作成せず、視聴者数へ加算・表示しない
 - 未ログインのお気に入り表示は状態を作成・更新せず、共通ログイン要求モーダルを開くGETリンクとして扱う
@@ -1349,3 +1349,10 @@ Phase1の認可・売上・配信状態の不変条件を維持したまま、�
 - BAN対象customerの店舗・ブース・viewer token・コメント・ドリンク・在室等の既存制限は変更しない
 - 公開ページはページ単位の title、description、canonical、OGPを設定する。`/` の既存の非表示H1は公式タグラインを示し、サイトを表す `WebSite` 構造化データはドメインルートの `/` だけに配置する。店舗詳細のdescriptionとOGP descriptionは、登録済みの店舗名・エリア・業態の日本語表示名・営業時間・空白を正規化した店舗説明から同じ文章を160文字以内で生成し、住所全文は含めない。業態の「その他」はdescriptionでは未入力として扱う。画面表示と既存導線は変更せず、sitemapには公開店舗だけを含める
 - ブース共有と配信共有は `docs/design/booth_sharing.md` を正とする共有専用URLを使用する。共有ページは通常ブースと同じ公開条件を適用し、公開情報だけの専用layout、動的OGP、通常ブースへのJavaScript遷移を提供する。`noindex` とし、sitemapへ追加しない
+
+### プロフィール関連の共通閲覧条件（#1213）
+
+- 対象別の表は `11_画面アクセス権限マトリクス.md` を参照する。
+- `User.member_profiles` は有効なcast・customer・通常store_adminを取得し、営業支援会社へ管理者所属するstore_adminを除外する。`profiles_visible_to` は有効な本人を追加する。
+- お気に入りユーザーの一覧・検索・登録は共通条件を使用する。登録を保持したまま非公開対象を非表示にし、自分の登録は閲覧不可になっても解除可能とする。
+- 未ログインのコメント名は全員文字表示。ログイン済みの共有描画は他人が閲覧可能な対象だけリンク化し、本人だけの例外はブラウザーで補う。詳細URLはサーバー側で再認可する。

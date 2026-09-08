@@ -3,7 +3,8 @@
     <%# standbyでも Turbo append の target が必要なので、#comments は常に置く %>
     <div id="comments" class="live-comment-list" data-comment-panel-target="list">
       <% if booth.live? || booth.away? %>
-        <%= render partial: "comments/comment", collection: comments, as: :comment %>
+        <%= render partial: "comments/comment", collection: comments, as: :comment,
+              locals: { member_profile_ids: comment_member_profile_ids(comments) } %>
       <% end %>
     </div>
 
