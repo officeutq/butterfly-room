@@ -25,7 +25,7 @@ class HomeController < ApplicationController
 
     if @mode == "users"
       users =
-        User.public_profiles
+        User.active.cast
           .left_joins(:cover_image_attachment)
           .includes(cover_image_attachment: :blob)
 

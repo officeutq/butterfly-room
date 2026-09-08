@@ -27,25 +27,21 @@ class User < ApplicationRecord
             if: -> { deleted_at.nil? }
 
   scope :active, -> { where(deleted_at: nil) }
-  scope :public_profiles, lambda {
-    public_active_booth_admin_user_ids =
-      StoreMembership
-        .admin_only
-        .joins(store: :booths)
-        .where(stores: { published: true }, booths: { archived_at: nil })
-        .select(:user_id)
-
+  scope :public_profiles, -> { active.cast }
+  scope :member_profiles, lambda {
     sales_support_company_admin_user_ids =
-      StoreMembership
-        .admin_only
-        .joins(:store)
-        .where(stores: { sales_support_company: true })
-        .select(:user_id)
+      StoreMembership.admin_only.joins(:store)
+        .where(stores: { sales_support_company: true }).select(:user_id)
 
-    active.where(role: :cast)
-      .or(active.where(role: :store_admin, id: public_active_booth_admin_user_ids))
+    active.where(role: %i[cast customer store_admin])
       .where.not(role: :store_admin, id: sales_support_company_admin_user_ids)
   }
+
+  def self.profiles_visible_to(viewer)
+    return public_profiles if viewer.nil? || viewer.deleted?
+
+    member_profiles.or(active.where(id: viewer.id))
+  end
 
   ROLE_LEVELS = {
     customer: 0,

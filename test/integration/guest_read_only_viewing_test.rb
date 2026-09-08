@@ -101,7 +101,7 @@ class GuestReadOnlyViewingTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_user_session_path
   end
 
-  test "guest profile access is limited to active cast and store admin" do
+  test "guest profile access is limited to active cast" do
     get user_path(@cast)
     assert_response :success
     assert_select "h1", text: @cast.display_name
@@ -124,9 +124,7 @@ class GuestReadOnlyViewingTest < ActionDispatch::IntegrationTest
     StoreMembership.create!(store: @store, user: store_admin, membership_role: :admin)
 
     get user_path(store_admin)
-    assert_response :success
-    assert_includes response.body, @store.name
-    refute_includes response.body, store_admin.email
+    assert_response :not_found
 
     get user_path(@customer)
     assert_response :not_found

@@ -391,7 +391,7 @@ end
 
 * `home#show`、`home#welcome`、`stores#show`、`booths#show`、`booths#share`、`users#show`、`guest_auth_prompts#show` は `authenticate_user!` の対象外とする
 * `stores#show` は `Store.published.find` で公開状態を必ず検証し、配下のブースは `active` のみ取得する
-* `booths#show` は `Booth.active.in_published_stores.find`、未ログインの `users#show` はホームの配信者タブと共通の `User.public_profiles` に限定する。`booths#enter` は引き続き未ログインを `/welcome` へリダイレクトする
+* `booths#show` は `Booth.active.in_published_stores.find`、`users#show` は `User.profiles_visible_to(current_user)` に限定する（未ログインは `User.public_profiles` の有効なcastのみ）。`booths#enter` は引き続き未ログインを `/welcome` へリダイレクトする
 * `booths#share` も `Booth.active.in_published_stores.find` を再利用し、streamは対象ブースの関連から解決する。不正値・不存在・別ブースのstreamはブース共有へフォールバックし、ended済みでも対象ブースに属するstreamは配信共有に使用する
 * 共有ページは公開情報だけの専用layoutを使用し、動的OGPと通常ブースへのJavaScript遷移を提供する。表示名は論理削除されておらず空欄でない `display_name` だけを利用し、メールアドレス等で代用しない。詳細は `docs/design/booth_sharing.md` を正とする
 * お気に入りの作成・解除Controllerは従来どおり認証必須とし、未ログイン表示ではPOST/DELETE formを生成しない
@@ -783,3 +783,12 @@ User / Store / Boothの新方式では、1用途につき編集元画像・表�
 * `ImageAttachments::LegacyMigrationService`は移行前の表示添付をattachment ID順に処理し、`LegacyPairBuilder`で通常経路と同じ上限・検査を通した一時Blobを生成して`StagedPairUpdateService`へ渡す。Userはcoverを先に確定し、失敗時は共通生成元の移行前avatarを維持する。taskのapplyは件数上限、範囲または期待ID、確認文字列、実行Git SHAを必須とする
 
 添付名、crop schema、ブラウザ正規化、上限、移行順、撤去条件は [Cropper.js画像アップロード確定設計](design/image_upload_cropper_architecture.md) を正とする。現行FilePond経路は通常画面の切替と既存画像移行が完了するまで維持する。
+
+### プロフィール閲覧条件の共通化（#1213）
+
+* `User.public_profiles` は有効なcast、`User.member_profiles` は有効なcast・customer・通常store_admin、`User.profiles_visible_to(viewer)` はログイン済みの場合に有効な本人を追加した集合を返す。退会済みを本人例外で許可しない。対象別の表は `11_画面アクセス権限マトリクス.md` を参照する。
+* `UsersController#show` と `Favorites::UsersController#index/create` は同じ閲覧条件を使用する。お気に入りの登録・解除は `Favorites::UsersService` に集約する。解除は自分の登録だけを対象とし、閲覧不可の相手にはプロフィールを描画せず、Turbo Stream要求には204、HTML要求にはお気に入り一覧への転送を返す。
+* `CommentsHelper#comment_member_profile_ids` は一覧の投稿者IDをまとめて判定し、コメント数に比例して所属判定のDB問い合わせを増やさない。単体のNotifier描画は同じ `User.member_profiles` を参照する。
+* `comment_author_link` は未ログイン・退会済みを名前だけ表示する。ログイン済みの共有描画は他人向けのリンク、または本人用の文字要素だけを生成し、current_userを参照しない。
+* `self-profile-link` は通常layoutの `data-current-user-id` と投稿者IDが一致する場合だけ文字をリンクへ置き換える。初期・追加・置換に同じ処理を適用し、切断・Turboキャッシュ保存前は文字へ戻す。共有HTMLに本人の非公開プロフィール内容を含めず、詳細取得はサーバー側で再認可する。
+* プロフィール編集・運営用アカウント管理、関連Store/Booth公開条件、BAN、配信・金銭処理の権限は変更しない。

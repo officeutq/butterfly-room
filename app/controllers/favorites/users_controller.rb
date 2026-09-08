@@ -1,7 +1,7 @@
 module Favorites
   class UsersController < ApplicationController
     before_action -> { require_at_least!(:customer) }
-    before_action :set_user, only: %i[create destroy]
+    before_action :set_user, only: %i[create]
 
     def index
       @q = params[:q].to_s.strip
@@ -10,6 +10,7 @@ module Favorites
         current_user
           .favorite_users
           .joins(:target_user)
+          .merge(User.profiles_visible_to(current_user))
           .includes(target_user: [ { cover_image_attachment: :blob } ])
           .order(created_at: :desc, id: :desc)
 
@@ -23,21 +24,27 @@ module Favorites
     end
 
     def create
-      current_user.favorite_users.find_or_create_by!(target_user: @user)
-      render_favorite_button(favorited: true)
-    rescue ActiveRecord::RecordNotUnique
+      Favorites::UsersService.new(user: current_user).add!(target_user: @user)
       render_favorite_button(favorited: true)
     end
 
     def destroy
-      current_user.favorite_users.where(target_user: @user).destroy_all
-      render_favorite_button(favorited: false)
+      Favorites::UsersService.new(user: current_user).remove!(target_user_id: params[:user_id])
+      @user = User.profiles_visible_to(current_user).find_by(id: params[:user_id])
+      if @user
+        render_favorite_button(favorited: false)
+      else
+        respond_to do |format|
+          format.turbo_stream { head :no_content }
+          format.html { redirect_to favorites_users_path }
+        end
+      end
     end
 
     private
 
     def set_user
-      @user = User.find(params[:user_id])
+      @user = User.profiles_visible_to(current_user).find(params[:user_id])
     end
 
     def render_favorite_button(favorited:)

@@ -1,7 +1,5 @@
 <% guest_viewer = local_assigns.fetch(:guest_viewer, false) %>
-<% author_profile_visible =
-     !guest_viewer ||
-       (!comment.user.deleted? && (comment.user.cast? || comment.user.store_admin?)) %>
+<% member_profile_ids = local_assigns[:member_profile_ids] %>
 
 <div
   id="comment_<%= comment.id %>"
@@ -32,10 +30,7 @@
       <div class="comment-main"> 
         <div class="comment-text">
             <span class="comment-author">
-              <%= link_to_if author_profile_visible,
-                    display_name_or_anonymous(comment.user),
-                    user_path(comment.user),
-                    class: "text-decoration-none text-reset" %>
+              <%= comment_author_link(comment.user, guest_viewer: guest_viewer, member_profile_ids: member_profile_ids) %>
             </span>
             <span class="comment-body"><%= comment.body %></span>
         </div>
@@ -103,10 +98,7 @@
       <div class="comment-text">
         <div class="comment-line">
           <span class="comment-author">
-            <%= link_to_if author_profile_visible,
-                  display_name_or_anonymous(comment.user),
-                  user_path(comment.user),
-                  class: "text-decoration-none text-reset" %>
+            <%= comment_author_link(comment.user, guest_viewer: guest_viewer, member_profile_ids: member_profile_ids) %>
           </span>
 
           <% if drink_item.present? %>
@@ -134,10 +126,7 @@
       <div class="comment-text">
         <div class="comment-line">
           <span class="comment-author">
-            <%= link_to_if author_profile_visible,
-                  display_name_or_anonymous(comment.user),
-                  user_path(comment.user),
-                  class: "text-decoration-none text-reset" %>
+            <%= comment_author_link(comment.user, guest_viewer: guest_viewer, member_profile_ids: member_profile_ids) %>
           </span>
 
           <% if drink_item.present? %>
@@ -160,10 +149,7 @@
     <div class="comment-main">
       <div class="comment-text">
         <span class="comment-author">
-          <%= link_to_if author_profile_visible,
-                display_name_or_anonymous(comment.user),
-                user_path(comment.user),
-                class: "text-decoration-none text-reset" %>
+          <%= comment_author_link(comment.user, guest_viewer: guest_viewer, member_profile_ids: member_profile_ids) %>
         </span>
         <span class="comment-body">
           <%= comment.body.presence || "イベントが発生しました" %>
