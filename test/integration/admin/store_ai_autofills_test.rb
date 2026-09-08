@@ -86,23 +86,32 @@ class Admin::StoreAiAutofillsTest < ActionDispatch::IntegrationTest
     assert_select ".modal[data-store-ai-autofill-target='modal']"
   end
 
-  test "rate limits the fourth search in ten minutes" do
+  test "rate limits the eleventh search across stores and resets after ten minutes" do
     sign_in @store_admin, scope: :user
+    StoreMembership.create!(store: @other_store, user: @store_admin, membership_role: :admin)
+    calls = []
 
-    with_search_result(partial_result) do
-      3.times do
+    with_search_result(partial_result, initialization_calls: calls) do
+      10.times do
         post admin_store_ai_autofill_path(@store), as: :json
         assert_response :ok
       end
 
-      post admin_store_ai_autofill_path(@store), as: :json
-    end
+      post admin_store_ai_autofill_path(@other_store), as: :json
+      assert_response :too_many_requests
+      assert_equal 10, calls.length
+      assert_equal "rate_limited", response.parsed_body.fetch("error_code")
 
-    assert_response :too_many_requests
-    assert_equal(
-      { "status" => "error", "error_code" => "rate_limited" },
-      response.parsed_body
-    )
+      sign_in @system_admin, scope: :user
+      post admin_store_ai_autofill_path(@store), as: :json
+      assert_response :ok
+
+      sign_in @store_admin, scope: :user
+      travel 10.minutes + 1.second do
+        post admin_store_ai_autofill_path(@store), as: :json
+        assert_response :ok
+      end
+    end
   end
 
   {

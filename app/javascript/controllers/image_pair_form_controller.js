@@ -3,6 +3,7 @@ import { ImagePairMultipartClient } from "image_attachments/multipart_client"
 
 export default class extends Controller {
   static targets = ["error", "submitButton"]
+  static values = { alwaysSubmit: Boolean }
 
   connect() {
     this.client = new ImagePairMultipartClient()
@@ -21,7 +22,9 @@ export default class extends Controller {
   }
 
   submit(event) {
-    if (!this.hasImageOperation()) return
+    // Initial store setup keeps its AI/editing state in the live form, even
+    // when no image changed. Other forms continue using Turbo as before.
+    if (!this.alwaysSubmitValue && !this.hasImageOperation()) return
 
     event.preventDefault()
     if (this.submitting) return

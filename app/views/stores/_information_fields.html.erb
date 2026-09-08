@@ -1,4 +1,5 @@
-<%# locals: f:, store: %>
+<%# locals: f:, store:, registration_setup: false %>
+<% registration_setup = local_assigns.fetch(:registration_setup, false) %>
 
 <div class="store-information-fields">
   <div class="store-information-fields__image mb-4">
@@ -9,29 +10,34 @@
           presentation: :cover,
           label: "店舗画像" %>
     <p class="form-text mb-0 mt-2">店舗カードや店舗詳細に使う1200×630の画像です。</p>
+    <% if registration_setup %>
+      <p class="form-text mb-0 mt-1">画像はあとから追加することもできます。</p>
+    <% end %>
   </div>
 
-  <div class="mb-3">
-    <div class="form-floating" data-bs-theme="light">
-      <%= f.text_field :name,
-            class: "form-control",
-            placeholder: "店舗名",
-            required: true %>
-      <%= f.label :name, "店舗名（必須）" %>
+  <% unless registration_setup %>
+    <div class="mb-3">
+      <div class="form-floating" data-bs-theme="light">
+        <%= f.text_field :name,
+              class: "form-control",
+              placeholder: "店舗名",
+              required: true %>
+        <%= f.label :name, "店舗名（必須）" %>
+      </div>
     </div>
-  </div>
 
-  <div class="store-information-fields__ai mb-4 pt-3">
-    <button
-      type="button"
-      class="btn btn-warning"
-      data-store-ai-autofill-target="searchButton"
-      data-action="store-ai-autofill#search">
-      <i class="bi bi-stars" aria-hidden="true"></i>
-      AIで店舗情報を自動入力
-    </button>
-    <div class="form-text">現在入力中の店舗名で公開情報を検索し、選択した候補だけをフォームへ反映します。</div>
-  </div>
+    <div class="store-information-fields__ai mb-4 pt-3">
+      <button
+        type="button"
+        class="btn btn-warning"
+        data-store-ai-autofill-target="searchButton"
+        data-action="store-ai-autofill#search">
+        <i class="bi bi-stars" aria-hidden="true"></i>
+        AIで店舗情報を自動入力
+      </button>
+      <div class="form-text">現在入力中の店舗名で公開情報を検索し、選択した候補だけをフォームへ反映します。</div>
+    </div>
+  <% end %>
 
   <div class="mb-3">
     <div class="form-floating" data-bs-theme="light">

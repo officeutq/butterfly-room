@@ -61,17 +61,24 @@ class Admin::StoreRegistrationSetupTest < ActionDispatch::IntegrationTest
     get edit_admin_store_registration_setup_path(store)
 
     assert_response :success
-    assert_select "h1", text: "店舗情報を入力しましょう"
+    assert_select "h1", text: "お店の紹介ページを公開しましょう"
     assert_select "form[action=?]", admin_store_registration_setup_path(store)
-    assert_select "[data-controller='store-ai-autofill']" \
-                  "[data-store-ai-autofill-url-value=?]", admin_store_ai_autofill_path(store)
-    assert_select "button[data-action='store-ai-autofill#search']", count: 1
+    assert_select "form[data-controller~='store-registration-setup']" \
+                  "[data-store-registration-setup-url-value=?]", admin_store_ai_autofill_path(store)
+    assert_select "form[data-image-pair-form-always-submit-value='true']"
+    assert_select "button[data-action='store-registration-setup#search']", count: 2
+    assert_select "[data-store-ai-autofill-target='modal']", count: 0
+    assert_select "input[name='store[name]'][value=?]", store.name, count: 1
+    assert_select "fieldset[hidden][disabled]" do
+      assert_select "input[type=submit][value='店舗情報を保存して公開する']", count: 1
+    end
+    assert_select "a, button", text: "自分で入力する", count: 0
     assert_select "section[data-controller='image-attachment-editor']" \
                   "[data-image-attachment-editor-ratio-key-value='social']", count: 1
     assert_select "select[name='store[published]']", count: 0
     assert_select "input[name='store[published]']", count: 0
     assert_select "input[name='store[sales_support_company]']", count: 0
-    assert_select "input[type=submit][value='保存して公開']", count: 1
+    assert_select "input[type=submit][value='保存して公開']", count: 0
     assert_select "input[type=submit][value='店舗情報を保存して公開する']", count: 1
   end
 
@@ -154,11 +161,45 @@ class Admin::StoreRegistrationSetupTest < ActionDispatch::IntegrationTest
 
     assert_response :unprocessable_entity
     assert_select ".alert-danger", text: /店舗名/
+    assert_select "form[data-store-registration-setup-ready-value='true']"
+    assert_select "fieldset[hidden]", count: 0
+    assert_select "textarea[name='store[description]']", text: "保存されない"
     store.reload
     assert_not store.published?
     assert_not_equal "保存されない", store.description
     assert_equal pending, @request.session[ApplicationController::STORE_REGISTRATION_PENDING_SESSION_KEY]
     assert_nil @request.session[ApplicationController::STORE_REGISTRATION_COMPLETION_SESSION_KEY]
+  end
+
+  test "JSON validation failure without an image leaves the live form in control" do
+    store = register_store
+
+    patch admin_store_registration_setup_path(store),
+          params: { store: { name: store.name, area: "長" * 51 } },
+          headers: { "ACCEPT" => "application/json" }
+
+    assert_response :unprocessable_entity
+    assert_equal "store_registration_setup_invalid", response.parsed_body.fetch("error")
+    assert response.parsed_body.fetch("message").present?
+    assert_not store.reload.published?
+    assert @request.session[ApplicationController::STORE_REGISTRATION_PENDING_SESSION_KEY].present?
+  end
+
+  test "JSON setup without an image publishes only on save and returns thanks" do
+    get stores_lp_202607_path
+    store = register_store(from: "stores_lp_202607")
+    assert_not store.published?
+    assert_equal 0, completion_events.count
+
+    assert_difference -> { completion_events.count }, 1 do
+      patch admin_store_registration_setup_path(store),
+            params: { store: { name: store.name } },
+            headers: { "ACCEPT" => "application/json" }
+    end
+
+    assert_response :success
+    assert_equal stores_registration_thanks_path, response.parsed_body.fetch("redirect_url")
+    assert store.reload.published?
   end
 
   test "invalid image keeps information images publication and pending unchanged" do
