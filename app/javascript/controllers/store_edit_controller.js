@@ -41,6 +41,7 @@ export default class extends Controller {
   prepareSubmit(event) {
     if (!this.dirty || this.saving) {
       event.preventDefault()
+      event.stopImmediatePropagation()
       return
     }
 

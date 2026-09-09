@@ -22,8 +22,8 @@ export default class extends Controller {
   }
 
   submit(event) {
-    // Initial store setup keeps its AI/editing state in the live form, even
-    // when no image changed. Other forms continue using Turbo as before.
+    // Store forms keep AI/editing state in the live form even without an image.
+    // Other forms continue using Turbo when no image changed.
     if (!this.alwaysSubmitValue && !this.hasImageOperation()) return
 
     event.preventDefault()
@@ -59,11 +59,14 @@ export default class extends Controller {
     } catch (error) {
       if (this.isDisconnected) return
 
-      this.renderError(error.message || "画像を保存できませんでした。再度保存してください。")
+      const message = this.alwaysSubmitValue && [401, 403].includes(error.status)
+        ? "ログイン状態または店舗の管理権限を確認できませんでした。再ログインまたは権限の確認が必要です。"
+        : (error.message || "画像を保存できませんでした。再度保存してください。")
+      this.renderError(message)
       this.renderEditorStatuses("保存できませんでした。内容を確認して再度保存してください。", true)
       this.setSubmitting(false)
       this.submitting = false
-      this.dispatch("submit-error", { detail: { message: error.message } })
+      this.dispatch("submit-error", { detail: { message } })
     }
   }
 

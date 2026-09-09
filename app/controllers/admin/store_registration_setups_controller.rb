@@ -4,26 +4,7 @@ module Admin
   class StoreRegistrationSetupsController < Admin::BaseController
     before_action :load_and_authorize_registration_store!
 
-    IMAGE_RATE_LIMIT_STORE = Rails.env.test? ? ActiveSupport::Cache::MemoryStore.new : Rails.cache
-    rate_limit to: 10, within: 10.minutes, by: -> { current_user.id },
-               store: IMAGE_RATE_LIMIT_STORE, only: :image,
-               with: -> { head :too_many_requests }
-
     def edit; end
-
-    def image
-      response.headers["Cache-Control"] = "private, no-store"
-      result = Stores::AiAutofill::ImageImportService.new(
-        store: @store, actor: current_user, token: params[:image_token]
-      ).call
-      return head :no_content unless result
-
-      response.headers["X-Image-Source-Url"] = result.source.fetch("url")
-      response.headers["X-Image-Source-Kind"] = result.source.fetch("kind")
-      send_data result.bytes, type: result.content_type, disposition: "attachment", filename: "store-image"
-    rescue Stores::AiAutofill::ImageImportService::InvalidToken
-      head :unprocessable_entity
-    end
 
     def update
       Stores::CompleteRegistrationSetup.new(

@@ -33,7 +33,7 @@ class Admin::StoreEditUiTest < ActionDispatch::IntegrationTest
           count: 1
         )
         assert_select ".form-floating[data-bs-theme='light'] input#store_name[required][placeholder='店舗名']", count: 1
-        assert_select ".store-information-fields__ai.pt-3 button.btn-warning[data-store-ai-autofill-target='searchButton']",
+        assert_select ".store-information-fields__ai.pt-3 button.btn-warning[data-action='store-ai-autofill#search']",
                       text: /AIで店舗情報を自動入力/,
                       count: 1
         assert_select ".form-floating[data-bs-theme='light']", count: 12
@@ -53,8 +53,8 @@ class Admin::StoreEditUiTest < ActionDispatch::IntegrationTest
     end
 
     assert_appears_before("image-attachment-editor-image-pair", 'id="store_name"')
-    assert_appears_before('id="store_name"', 'data-store-ai-autofill-target="searchButton"')
-    assert_appears_before('data-store-ai-autofill-target="searchButton"', 'id="store_area"')
+    assert_appears_before('id="store_name"', 'data-store-ai-autofill-target="searchLabel"')
+    assert_appears_before('data-store-ai-autofill-target="searchLabel"', 'id="store_area"')
     assert_appears_before('id="store_area"', 'id="store_business_type"')
     assert_appears_before('id="store_business_type"', 'id="store_address"')
     assert_appears_before('id="store_address"', 'id="store_phone_number"')

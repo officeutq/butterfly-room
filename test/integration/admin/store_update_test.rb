@@ -137,6 +137,29 @@ class Admin::StoreUpdateTest < ActionDispatch::IntegrationTest
     assert_equal "初期概要", store.description
   end
 
+  test "JSON updates without an image preserve publication and never record initial completion" do
+    admin, store = create_store_admin_and_store("store_ai_regular_json")
+    store.update!(published: false)
+    sign_in admin, scope: :user
+
+    assert_no_difference -> { LpAnalytics::Event.where(event_type: "store_registration_complete").count } do
+      patch admin_store_path(store), params: {
+        store: { name: store.name, description: "AI入力後に確認した概要", published: false }
+      }, as: :json
+    end
+    assert_response :success
+    assert_equal dashboard_path, response.parsed_body.fetch("redirect_url")
+    assert_equal "AI入力後に確認した概要", store.reload.description
+    assert_not store.published?
+    assert_nil @request.session[ApplicationController::STORE_REGISTRATION_COMPLETION_SESSION_KEY]
+
+    patch admin_store_path(store), params: { store: { area: "長" * 51, published: true } }, as: :json
+    assert_response :unprocessable_entity
+    assert response.parsed_body.fetch("message").present?
+    assert_not store.reload.published?
+    assert_nil store.area
+  end
+
   test "store update creates an image pair with normal attributes and returns JSON" do
     admin, store = create_store_admin_and_store("store_image_pair_create")
     sign_in admin, scope: :user

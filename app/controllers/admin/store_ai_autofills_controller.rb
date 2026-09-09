@@ -6,7 +6,6 @@ module Admin
 
     before_action :set_store
     before_action :authorize_store_edit!
-    before_action :authorize_registration_images!
 
     rate_limit(
       to: 10,
@@ -17,20 +16,22 @@ module Admin
       only: :create
     )
 
+    rate_limit to: 10, within: 10.minutes, by: -> { current_user.id },
+               name: "image", store: RATE_LIMIT_STORE, only: :image,
+               with: -> { head :too_many_requests }
+
     def create
       result = Stores::AiAutofill::SearchService.new(
         store: @store,
         actor: current_user,
         store_name: ai_autofill_params[:store_name],
-        image_search: registration_images?
+        image_search: true
       ).call
 
       body = result.as_json
-      if registration_images?
-        body[:image_token] = Stores::AiAutofill::ImageSources.token_for(
-          result.image_sources, store: @store, actor: current_user
-        )
-      end
+      body[:image_token] = Stores::AiAutofill::ImageSources.token_for(
+        result.image_sources, store: @store, actor: current_user
+      )
       render json: body, status: :ok
     rescue Stores::AiAutofill::SearchService::InvalidStoreNameError
       render_feature_error(:unprocessable_entity, "invalid_store_name")
@@ -44,6 +45,20 @@ module Admin
       render_feature_error(:bad_gateway, "openai_unavailable", error:)
     rescue Stores::AiAutofill::ResponsesClient::InvalidResponseError => error
       render_feature_error(:bad_gateway, "invalid_response", error:)
+    end
+
+    def image
+      response.headers["Cache-Control"] = "private, no-store"
+      result = Stores::AiAutofill::ImageImportService.new(
+        store: @store, actor: current_user, token: params[:image_token]
+      ).call
+      return head :no_content unless result
+
+      response.headers["X-Image-Source-Url"] = result.source.fetch("url")
+      response.headers["X-Image-Source-Kind"] = result.source.fetch("kind")
+      send_data result.bytes, type: result.content_type, disposition: "attachment", filename: "store-image"
+    rescue Stores::AiAutofill::ImageImportService::InvalidToken
+      head :unprocessable_entity
     end
 
     private
@@ -64,21 +79,6 @@ module Admin
       return ActionController::Parameters.new unless search_params.respond_to?(:permit)
 
       search_params.permit(:store_name)
-    end
-
-    def registration_images?
-      params[:registration_images] == "1"
-    end
-
-    def authorize_registration_images!
-      return unless registration_images?
-
-      pending = session[STORE_REGISTRATION_PENDING_SESSION_KEY]
-      pending_id = pending.respond_to?(:[]) ? pending["store_id"] : nil
-      return if Integer(pending_id, exception: false) == @store.id &&
-        Integer(session[:current_store_id], exception: false) == @store.id
-
-      head :forbidden
     end
 
     def render_feature_error(status, error_code, error: nil)
