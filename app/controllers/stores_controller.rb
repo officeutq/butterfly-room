@@ -21,6 +21,8 @@ class StoresController < ApplicationController
         .order(:id)
 
     if user_signed_in?
+      @can_edit_store = current_user.system_admin? ||
+        (current_user.store_admin? && current_user.admin_of_store?(@store.id))
       @store_favorited = current_user.favorite_stores.exists?(store_id: @store.id)
       @favorite_booth_ids =
         current_user.favorite_booths.where(booth_id: @booths.map(&:id)).pluck(:booth_id).to_set

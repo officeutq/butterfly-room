@@ -5,6 +5,7 @@ module Admin
     before_action :set_store, only: %i[edit update]
     before_action :authorize_store_edit!, only: %i[edit update]
     before_action :require_store_registration_proxy!, only: %i[new create]
+    helper_method :store_edit_return_path
 
     def index
       load_selectable_stores
@@ -85,10 +86,10 @@ module Admin
       end
 
       respond_to do |format|
-        format.html { redirect_to dashboard_path, notice: "店舗情報を更新しました" }
+        format.html { redirect_to store_edit_return_path, notice: "店舗情報を更新しました" }
         format.json do
           flash[:notice] = "店舗情報を更新しました"
-          render json: { state: "complete", redirect_url: dashboard_path }
+          render json: { state: "complete", redirect_url: store_edit_return_path }
         end
       end
     end
@@ -176,6 +177,13 @@ module Admin
 
     def set_store
       @store = Store.find(params[:id])
+      @edit_return_to = "store_detail" if params[:return_to] == "store_detail"
+    end
+
+    def store_edit_return_path
+      return store_path(@store) if @edit_return_to == "store_detail" && @store.published?
+
+      dashboard_path
     end
 
     def authorize_store_edit!
@@ -238,7 +246,7 @@ module Admin
         end
 
         format.html do
-          redirect_to edit_admin_store_path(@store), alert: message
+          redirect_to edit_admin_store_path(@store, return_to: @edit_return_to), alert: message
         end
 
         format.json do
