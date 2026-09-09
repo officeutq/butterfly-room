@@ -27,7 +27,7 @@ module Casts
     def require_token!
       @token = params[:token].to_s
       invitation = StoreCastInvitation.find_by_token(@token)
-      head :not_found if invitation.blank?
+      head :not_found if invitation.blank? || invitation.cancelled?
     end
 
     def registration_params

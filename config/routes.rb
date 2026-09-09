@@ -222,7 +222,9 @@ Rails.application.routes.draw do
     end
 
     resources :casts, only: %i[index destroy]
-    resources :cast_invitations, only: %i[index create]
+    resources :cast_invitations, only: %i[index new create update destroy] do
+      post :shared, on: :member
+    end
     resources :store_admin_invitations, only: %i[index create]
     resource :store_admin_proxy_registration,
              path: "store_admin_invitations/proxy_registration",

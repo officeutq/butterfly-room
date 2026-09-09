@@ -1,0 +1,23 @@
+<% if @store_cast_invitations.empty? %>
+  <p class="alert alert-info">表示できる招待はありません。<% if current_user.store_admin? %>フッターの「キャスト招待」から招待できます。<% end %></p>
+<% else %>
+  <div class="row g-3">
+    <% @store_cast_invitations.each do |invitation| %>
+      <div class="col-12 col-lg-6">
+        <article class="card h-100" data-bs-theme="light">
+          <div class="card-body">
+            <span class="badge <%= invitation.usable? ? 'text-bg-success' : 'text-bg-secondary' %> mb-3"><%= invitation.status_label %></span>
+            <dl class="mb-0">
+              <dt>管理者用メモ</dt>
+              <dd class="text-break text-pre-wrap"><%= invitation.note.presence || "未設定" %></dd>
+              <dt>発行日時</dt><dd><%= l(invitation.created_at) %></dd>
+              <dt>有効期限</dt><dd><%= l(invitation.expires_at) %></dd>
+              <dt>発行者</dt><dd><%= display_name_or_anonymous(invitation.invited_by_user) %></dd>
+              <dt>承認者</dt><dd class="mb-0"><%= invitation.accepted_by_user ? display_name_or_anonymous(invitation.accepted_by_user) : "未承認" %></dd>
+            </dl>
+          </div>
+        </article>
+      </div>
+    <% end %>
+  </div>
+<% end %>

@@ -4,6 +4,7 @@ import * as bootstrap from "bootstrap"
 export default class extends Controller {
   static values = {
     step: String,
+    storeId: Number,
     skipUrl: String,
     inviteCastImageUrl: String,
     createInviteImageUrl: String,
@@ -12,15 +13,20 @@ export default class extends Controller {
   }
 
   connect() {
+    this.modalOpen = false
     this.highlightedElement = null
     this.popoverTarget = null
     this.popover = null
 
     this.handleUpdate = this.update.bind(this)
     this.handleBeforeCache = this.beforeCache.bind(this)
+    this.handleModalOpening = () => { this.modalOpen = true; this.beforeCache() }
+    this.handleModalClosed = () => { this.modalOpen = false; this.render() }
 
     window.addEventListener("onboarding:update", this.handleUpdate)
     document.addEventListener("turbo:before-cache", this.handleBeforeCache)
+    window.addEventListener("app-modal:opening", this.handleModalOpening)
+    window.addEventListener("app-modal:closed", this.handleModalClosed)
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -32,12 +38,16 @@ export default class extends Controller {
   disconnect() {
     window.removeEventListener("onboarding:update", this.handleUpdate)
     document.removeEventListener("turbo:before-cache", this.handleBeforeCache)
+    window.removeEventListener("app-modal:opening", this.handleModalOpening)
+    window.removeEventListener("app-modal:closed", this.handleModalClosed)
+    window.clearTimeout(this.popoverTimeout)
 
     this.removeHighlight()
     this.disposePopover()
   }
 
   beforeCache() {
+    window.clearTimeout(this.popoverTimeout)
     this.removeHighlight()
     this.disposePopover()
   }
@@ -47,12 +57,13 @@ export default class extends Controller {
     if (!step) return
 
     this.stepValue = step
-    this.removeHighlight()
-    this.disposePopover()
+    if (event.detail?.storeId) this.storeIdValue = event.detail.storeId
+    this.beforeCache()
     this.render()
   }
 
   render() {
+    if (this.modalOpen || document.querySelector(".modal.show")) return
     const config = this.stepConfig()
     if (!config) return
 
@@ -66,8 +77,8 @@ export default class extends Controller {
     if (this.shouldAutoScroll(config.target)) {
       this.scrollTargetIntoView(target)
 
-      window.setTimeout(() => {
-        if (!document.body.contains(target)) return
+      this.popoverTimeout = window.setTimeout(() => {
+        if (this.modalOpen || !document.body.contains(target)) return
         this.showPopover(target, config.message, config.imageUrl, config.showSkip !== false)
       }, 400)
 
@@ -80,38 +91,17 @@ export default class extends Controller {
   stepConfig() {
     switch (this.stepValue) {
       case "invite_cast":
-        return {
-          target: "invite-cast-card",
-          message: "店舗に所属する「キャスト」を招待しましょう。このボタンを押してください。",
-          imageUrl: this.inviteCastImageUrlValue
-        }
       case "create_invite":
-        if (document.querySelector('[data-onboarding-target-element="copy-invite-button"]')) {
-          return {
-            target: "copy-invite-button",
-            message: "このボタンで 招待URL を共有できます。",
-            imageUrl: this.createInviteImageUrlValue
-          }
-        }
-
-        if (document.querySelector('[data-onboarding-target-element="issue-invite-button"]')) {
-          return {
-            target: "issue-invite-button",
-            message: "招待URLを発行しましょう。",
-            imageUrl: this.createInviteImageUrlValue
-          }
-        }
-
         return {
-          target: "invite-note-field",
-          message: "招待を区別しやすいようにメモを入力できます（任意）。",
-          imageUrl: this.createInviteImageUrlValue
+          target: "footer-cast-invite",
+          message: "まずはキャストを招待しましょう。下の『キャスト招待』を押してください。",
+          imageUrl: this.inviteCastImageUrlValue
         }
 
       case "go_dashboard_for_drinks":
         return {
           target: "footer-dashboard",
-          message: "招待する「キャスト」に共有したら、次はダッシュボードに戻って、ドリンク設定を確認しましょう。",
+          message: "次はドリンク設定です。ダッシュボードを開いてください。",
           imageUrl: this.goDashboardImageUrlValue
         }
 
@@ -145,10 +135,10 @@ export default class extends Controller {
 
   shouldAutoScroll(targetName) {
     return [
-      "invite-cast-card",
+      "footer-cast-invite",
       "setup-drinks-card",
       "create-drink-card",
-      "copy-invite-button"
+      "footer-dashboard"
     ].includes(targetName)
   }
 
@@ -251,14 +241,19 @@ export default class extends Controller {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content
     if (!csrfToken) return
 
-    await fetch(this.skipUrlValue, {
+    const response = await fetch(this.skipUrlValue, {
       method: "POST",
       headers: {
         "X-CSRF-Token": csrfToken,
+        "Content-Type": "application/json",
         "Accept": "text/plain"
       },
+      body: JSON.stringify({ store_id: this.storeIdValue || undefined }),
       credentials: "same-origin"
     })
+
+    if (!response.ok) return
+    this.stepValue = "skipped"
 
     this.removeHighlight()
     this.disposePopover()

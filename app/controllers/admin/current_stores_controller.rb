@@ -59,6 +59,8 @@ module Admin
       return nil if store.blank?
 
       case key.to_s
+      when "cast_invitation"
+        new_admin_cast_invitation_path
       when "payout_account_edit"
         edit_admin_payout_account_path
       when "store_edit"

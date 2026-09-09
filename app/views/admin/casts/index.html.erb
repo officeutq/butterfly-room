@@ -1,8 +1,14 @@
 <% content_for :title, "キャスト一覧" %>
 
-<div class="mb-4 d-flex gap-2 align-items-center flex-wrap">
-  <%= link_to "キャスト招待", admin_cast_invitations_path, class: "btn btn-primary" %>
-</div>
+<p class="text-body-secondary"><i class="bi bi-shop me-1" aria-hidden="true"></i><%= current_store.name %></p>
+<nav class="nav nav-tabs mb-4" aria-label="キャスト一覧の切り替え">
+  <%= link_to "所属キャスト", admin_casts_path, class: "nav-link #{'active' if @tab == 'casts'}", aria: { current: @tab == 'casts' ? 'page' : nil } %>
+  <%= link_to "キャスト招待一覧", admin_casts_path(tab: "invitations"), class: "nav-link #{'active' if @tab == 'invitations'}", aria: { current: @tab == 'invitations' ? 'page' : nil } %>
+</nav>
+
+<% if @tab == "invitations" %>
+  <%= render "invitations" %>
+<% else %>
 
 <% if @cast_memberships.blank? %>
   <div class="alert alert-warning" role="alert">
@@ -60,4 +66,5 @@
       </div>
     <% end %>
   </div>
+<% end %>
 <% end %>

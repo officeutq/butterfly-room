@@ -18,7 +18,14 @@
 
         <% unless guest_footer %>
           <div class="app-footer-nav-slot app-footer-nav-slot--center">
-            <% if current_user.at_least?(:cast) %>
+            <% if current_user.store_admin? %>
+              <%= link_to new_admin_cast_invitation_path,
+                    data: { turbo_frame: "modal", onboarding_target_element: "footer-cast-invite" },
+                    class: "app-footer-nav-item app-footer-nav-item--live app-footer-nav-item--invite" do %>
+                <i class="bi bi-person-plus-fill app-footer-nav-icon" aria-hidden="true"></i>
+                <span class="app-footer-nav-label">キャスト招待</span>
+              <% end %>
+            <% elsif current_user.at_least?(:cast) %>
               <% booth = layout_current_booth %>
 
               <% if booth.present? && current_user.cast? %>

@@ -10,22 +10,20 @@ class AdminCastsInvitationIssuedUrlTest < ActionDispatch::IntegrationTest
     sign_in @store_admin, scope: :user
   end
 
-  test "issuing cast invitation saves issued_url and shows url + copy button in list" do
-    post admin_cast_invitations_path, params: {
-      store_cast_invitation: { note: "note" }
-    }
-    assert_response :redirect
-    follow_redirect!
+  test "issuing cast invitation returns URL while list stays read only" do
+    post admin_cast_invitations_path, params: { store_id: @store.id, request_key: SecureRandom.uuid }, as: :json
     assert_response :ok
 
     invitation = StoreCastInvitation.order(:id).last
     assert invitation.present?
     assert invitation.issued_url.present?
 
-    assert_includes response.body, invitation.issued_url
-    assert_includes response.body, 'data-controller="clipboard"'
-    assert_includes response.body, 'data-action="click->clipboard#copy"'
-    assert_includes response.body, "data-clipboard-text=\"#{invitation.issued_url}\""
+    assert_equal invitation.issued_url, response.parsed_body["url"]
+    get admin_casts_path(tab: "invitations")
+    assert_response :ok
+    refute_includes response.body, invitation.issued_url
+    assert_select "main [data-controller='clipboard']", count: 0
+    assert_select "main [data-controller='share']", count: 0
   end
 
   test "issuing store_admin invitation saves issued_url and shows url + copy button in list" do
@@ -44,7 +42,7 @@ class AdminCastsInvitationIssuedUrlTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "data-clipboard-text=\"#{invitation.issued_url}\""
   end
 
-  test "legacy cast invitation record with nil issued_url does not error and shows placeholder" do
+  test "legacy cast invitation record is visible without a URL" do
     StoreCastInvitation.create!(
       store: @store,
       invited_by_user: @store_admin,
@@ -54,10 +52,10 @@ class AdminCastsInvitationIssuedUrlTest < ActionDispatch::IntegrationTest
       issued_url: nil
     )
 
-    get admin_cast_invitations_path
+    get admin_casts_path(tab: "invitations")
     assert_response :ok
 
-    assert_includes response.body, "（発行時に控えてください）"
+    assert_includes response.body, "未承認"
   end
 
   test "legacy store_admin invitation record with nil issued_url does not error and shows placeholder" do

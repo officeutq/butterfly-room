@@ -20,6 +20,7 @@ module Admin
       # 選択画面 / 選択POST では保存しない
       return if request.path == "/admin/stores"
       return if request.path == "/admin/current_store"
+      return if turbo_frame_request?
 
       fullpath = request.fullpath.to_s
 

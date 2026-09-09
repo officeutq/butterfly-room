@@ -5,6 +5,10 @@ module Admin
     before_action :require_current_store!
 
     def index
+      @tab = params[:tab] == "invitations" ? "invitations" : "casts"
+      @store_cast_invitations = current_store.store_cast_invitations
+        .visible_in_list.includes(:invited_by_user, :accepted_by_user).recent_first if @tab == "invitations"
+      return if @tab == "invitations"
       @cast_memberships =
         StoreMembership
           .includes(user: { booth_casts: :booth })
