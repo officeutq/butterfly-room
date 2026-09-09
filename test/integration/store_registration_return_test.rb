@@ -15,7 +15,7 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "label[for='store_registration_email']",
-      text: "店舗管理者のメールアドレス",
+      text: "店舗管理者のメールアドレス（必須）",
       count: 1
     assert_select "input#store_registration_email[name='store_registration[email]'][type='email']", count: 1
   end
@@ -302,7 +302,7 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?][data-turbo-prefetch=?][data-turbo=?]", stores_lp_202607_return_path, "false", "false"
   end
 
-  test "validation errors keep ref and 202607 attribution session" do
+  test "validation errors keep entered values and 202607 attribution session" do
     referral_code = create_referral_code!("STORE-REG-RETURN-ERROR")
     get stores_lp_202607_path, params: {
       utm_source: "meta",
@@ -313,7 +313,9 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
     assert_no_difference -> { Store.count } do
       post stores_registrations_path(from: "stores_lp_202607"), params: {
         store_registration: valid_registration_params(
-          store_name: "",
+          store_name: "入力済みの店舗",
+          email: "registration-retry@example.com",
+          password_confirmation: "does-not-match",
           referral_code: referral_code.code
         )
       }
@@ -322,6 +324,9 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_entity
     assert_select "form[action=?]",
       stores_registrations_path(from: "stores_lp_202607")
+    assert_select "input[name='store_registration[store_name]'][value=?]", "入力済みの店舗"
+    assert_select "input[name='store_registration[email]'][value=?]", "registration-retry@example.com"
+    assert_select "input[type='password'][value]", count: 0
     assert_select "input[name='store_registration[referral_code]'][value=?]", referral_code.code
     assert_equal "meta", @request.session[ApplicationController::STORE_LP_202607_ATTRIBUTION_SESSION_KEY]["utm_source"]
     assert_no_match(/utm_source/, response.body)

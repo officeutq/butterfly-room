@@ -729,6 +729,8 @@ end
 
 店舗登録は、アカウントとStoreを作る段階、初回店舗設定で情報を保存・公開する段階、サンクスを表示する段階を分ける。
 
+「店舗として登録」画面では、次の画面でAIが店舗情報の入力を補助すること、登録だけでは公開されず内容を確認してから公開できることを案内する。フォーム全体のカード枠は設けず、初回店舗設定と同じ幅・白い背景のフローティングラベル（入力欄内のラベル）に揃える。主ボタンは黄色の「登録して店舗設定へ進む」とし、紹介コードは任意、既存の規約同意・戻り先・登録計測を維持する。
+
 1. `Stores::RegisterStoreAdmin`はStore、store_admin、管理者所属、初期ドリンクを作る。Storeは`published = false`、`onboarding_step = invite_cast`とし、この時点では`store_registration_complete`を記録しない。
 2. 登録成功後は新しいstore_adminでログインし、作成したStoreを`current_store`に設定する。許可済みの`from`、UTM、Store IDを`store_registration_pending` sessionへ保存し、`/admin/stores/:store_id/registration_setup/edit`へ遷移する。
 3. 初回店舗設定は、pendingのStore ID、`current_store`、管理権限がすべて一致する場合だけ表示・更新できる。通常の店舗情報フォーム、AI店舗情報入力、Cropper.js画像組、`Stores::UpdateService`を再利用する。

@@ -13,13 +13,14 @@ const result = (values) => ({
   sources: [{ url: "https://example.com/store", title: "店舗公式サイト" }]
 })
 
-async function register(page) {
+async function register(page, testInfo) {
   await page.goto("/stores/new_registration")
-  await page.getByLabel("店舗名", { exact: true }).fill("AI入力確認用店舗")
+  if (testInfo) await page.screenshot({ path: testInfo.outputPath("registration.png"), fullPage: true })
+  await page.getByLabel("店舗名（必須）", { exact: true }).fill("AI入力確認用店舗")
   await page.getByLabel("店舗管理者のメールアドレス").fill(`setup-${Date.now()}-${Math.random().toString(36).slice(2)}@example.test`)
-  await page.getByLabel("パスワード", { exact: true }).fill("SetupTest123!")
-  await page.getByLabel("パスワード（確認）").fill("SetupTest123!")
-  await page.getByRole("button", { name: "登録して管理画面へ" }).click()
+  await page.getByLabel("パスワード（必須）", { exact: true }).fill("SetupTest123!")
+  await page.getByLabel("パスワード（確認・必須）").fill("SetupTest123!")
+  await page.getByRole("button", { name: "登録して店舗設定へ進む" }).click()
   await expect(page).toHaveURL(/registration_setup\/edit$/, { timeout: 20_000 })
   await expect(page.locator(".store-registration-setup__badge")).toHaveCount(11)
 }
@@ -50,7 +51,7 @@ for (const [name, viewport, withImage] of [
     page.on("request", (request) => {
       if (request.url().endsWith("/registration_setup") && request.method() !== "GET") saves++
     })
-    await register(page)
+    await register(page, testInfo)
     const storeId = new URL(page.url()).pathname.match(/\/stores\/(\d+)\//)[1]
     const storeName = page.getByLabel("店舗名（必須）", { exact: true })
     const publish = page.getByRole("button", { name: "店舗情報を保存して公開する", exact: true })

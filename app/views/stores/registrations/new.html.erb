@@ -1,67 +1,80 @@
-<h1 class="container mt-4">店舗として登録</h1>
+<% content_for :title, "店舗として登録" %>
 
-<div class="container mt-3" style="max-width: 720px;">
-  <% if @form.errors.any? %>
-    <div class="alert alert-danger">
-      <ul class="mb-0">
-        <% @form.errors.full_messages.each do |msg| %>
-          <li><%= msg %></li>
-        <% end %>
-      </ul>
-    </div>
-  <% end %>
+<div class="store-edit pb-4">
+  <div class="store-edit__fields">
+    <h1 class="h3 mb-3">店舗として登録</h1>
+    <p class="h5 mb-3">お店の魅力を、もっと多くのお客様へ。</p>
+    <p class="text-body-secondary mb-4">まずは店舗名と管理用アカウントを登録しましょう。次の画面では、AIが店舗情報の入力をお手伝いします。</p>
 
-  <div class="card">
-    <div class="card-body">
-      <%= form_with model: @form,
-            url: @store_registration_form_path,
-            scope: :store_registration,
-            data: lp_analytics_form_tracking_data(
-              @lp_analytics_form_event_type,
-              lp_identifier: @lp_analytics_form_lp_identifier
-            ) do |f| %>
-        <div class="mb-3">
-          <%= f.label :store_name, "店舗名", class: "form-label" %>
-          <%= f.text_field :store_name, class: "form-control", required: true, autocomplete: "organization" %>
+    <% if @form.errors.any? %>
+      <div class="alert alert-danger" role="alert">
+        <ul class="mb-0">
+          <% @form.errors.full_messages.each do |msg| %>
+            <li><%= msg %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <%# Keep inputs and labels adjacent for floating labels, including validation errors. %>
+    <%= form_with url: @store_registration_form_path,
+          scope: :store_registration,
+          data: lp_analytics_form_tracking_data(
+            @lp_analytics_form_event_type,
+            lp_identifier: @lp_analytics_form_lp_identifier
+          ) do |f| %>
+      <div class="form-floating mb-3" data-bs-theme="light">
+        <%= f.text_field :store_name, value: @form.store_name, class: "form-control", placeholder: "店舗名", required: true, autocomplete: "organization" %>
+        <%= f.label :store_name, "店舗名（必須）" %>
+      </div>
+
+      <div class="form-floating mb-3" data-bs-theme="light">
+        <%= f.email_field :email, value: @form.email, class: "form-control", placeholder: "店舗管理者のメールアドレス", required: true, autocomplete: "email" %>
+        <%= f.label :email, "店舗管理者のメールアドレス（必須）" %>
+      </div>
+
+      <div class="mb-3">
+        <div class="form-floating" data-bs-theme="light">
+          <%= f.password_field :password, class: "form-control", placeholder: "パスワード", required: true, autocomplete: "new-password",
+                aria: { describedby: "store-registration-password-help" } %>
+          <%= f.label :password, "パスワード（必須）" %>
         </div>
+        <p class="form-text mb-0" id="store-registration-password-help"><%= Devise.password_length.min %>〜<%= Devise.password_length.max %>文字で入力してください。</p>
+      </div>
 
-        <div class="mb-3">
-          <%= f.label :email, "店舗管理者のメールアドレス", class: "form-label" %>
-          <%= f.email_field :email, class: "form-control", required: true, autocomplete: "email" %>
+      <div class="form-floating mb-3" data-bs-theme="light">
+        <%= f.password_field :password_confirmation, class: "form-control", placeholder: "パスワード（確認）", required: true, autocomplete: "new-password" %>
+        <%= f.label :password_confirmation, "パスワード（確認・必須）" %>
+      </div>
+
+      <div class="mb-4">
+        <div class="form-floating" data-bs-theme="light">
+          <%= f.text_field :referral_code, value: @form.referral_code, class: "form-control", placeholder: "紹介コード", autocomplete: "off" %>
+          <%= f.label :referral_code, "紹介コード（任意）" %>
         </div>
+        <p class="form-text mb-0">お持ちの場合のみ入力してください。</p>
+      </div>
 
-        <div class="mb-3">
-          <%= f.label :password, "パスワード", class: "form-label" %>
-          <%= f.password_field :password, class: "form-control", required: true, autocomplete: "new-password" %>
-        </div>
+      <div class="bg-body-tertiary border rounded-3 p-3 mb-3">
+        <p class="fw-semibold mb-1">店舗ページは、内容を確認してから公開できます。</p>
+        <p class="mb-0">この登録だけで公開されることはありません。</p>
+      </div>
 
-        <div class="mb-3">
-          <%= f.label :password_confirmation, "パスワード（確認）", class: "form-label" %>
-          <%= f.password_field :password_confirmation, class: "form-control", required: true, autocomplete: "new-password" %>
-        </div>
+      <p class="small text-body-secondary mb-3">
+        登録することで、
+        <%= link_to "利用規約", terms_path, target: "_blank", rel: "noopener" %>
+        および
+        <%= link_to "プライバシーポリシー", privacy_policy_path, target: "_blank", rel: "noopener" %>
+        に同意したものとみなします。
+      </p>
 
-        <div class="mb-3">
-          <%= f.label :referral_code, "紹介コード", class: "form-label" %>
-          <%= f.text_field :referral_code, class: "form-control", autocomplete: "off" %>
-          <div class="form-text">お持ちの場合は入力してください。未入力の場合は標準コードで登録します。</div>
-        </div>
-
-        <p class="small text-secondary mb-3">
-          登録することで、
-          <%= link_to "利用規約", terms_path, target: "_blank", rel: "noopener" %>
-          および
-          <%= link_to "プライバシーポリシー", privacy_policy_path, target: "_blank", rel: "noopener" %>
-          に同意したものとみなします。
-        </p>
-
-        <div class="d-flex gap-2">
-          <%= f.submit "登録して管理画面へ", class: "btn btn-primary" %>
-          <%= link_to "戻る",
-                @store_registration_back_path,
-                class: "btn btn-outline-secondary",
-                data: ([ stores_lp_202607_return_path, stores_lp_202609_return_path ].include?(@store_registration_back_path) ? { turbo_prefetch: false, turbo: false } : {}) %>
-        </div>
-      <% end %>
-    </div>
+      <%= f.submit "登録して店舗設定へ進む", class: "btn btn-warning btn-lg w-100 py-3" %>
+      <div class="text-center mt-3">
+        <%= link_to "戻る",
+              @store_registration_back_path,
+              class: "btn btn-link text-body-secondary",
+              data: ([ stores_lp_202607_return_path, stores_lp_202609_return_path ].include?(@store_registration_back_path) ? { turbo_prefetch: false, turbo: false } : {}) %>
+      </div>
+    <% end %>
   </div>
 </div>
