@@ -11,13 +11,13 @@ function setup(navigator = {}) {
     .replace("export default class extends Controller", "globalThis.Invite = class extends Controller")
   let hidden = 0
   const context = vm.createContext({ navigator, document: {}, window: { dispatchEvent: e => events.push(e) },
-    CustomEvent: class { constructor(type, options) { this.type = type; this.detail = options.detail } },
+    CustomEvent: class { constructor(type, options) { this.type = type; this.detail = options?.detail } },
     Modal: { getInstance: () => ({ hide: () => hidden++ }) } })
   vm.runInContext(source, context)
   const c = new context.Invite()
   for (const name of ["error", "status", "retry", "content", "url", "expires", "note", "unsupported", "cancelHelp", "shareButton", "closeLabel"]) c[`${name}Target`] = { value: "", hidden: false }
   c.closeButtonTargets = [{}]
-  c.element = {}
+  c.element = { dataset: {} }
   c.invitation = { url: "https://example.test/invite", text: "店舗の管理者から", update_url: "/invite/1", shared_url: "/invite/1/shared" }
   c.savedNote = ""
   c.completed = false
@@ -56,6 +56,15 @@ test("unsupported share copies only URL", async () => {
   await c.share()
   assert.equal(copied, c.invitation.url)
   assert.equal(c.completed, true)
+})
+
+test("share text includes the URL once for destinations that only receive text", async () => {
+  let payload
+  const { c } = setup({ share: async value => { payload = value } })
+  await c.share()
+  assert.equal(payload.text, `${c.invitation.text}\n\n${c.invitation.url}`)
+  assert.equal(payload.url, undefined)
+  assert.equal(c.element.dataset.onboardingInvitationState, "close")
 })
 
 test("successful sharing and failed note save preserve completion and retry on close", async () => {

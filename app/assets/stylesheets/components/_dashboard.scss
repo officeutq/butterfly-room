@@ -80,6 +80,21 @@
   border-radius: 12px;
 }
 
+// モーダルのフォームと重なっても案内を読めるようにする。
+.modal .tutorial-popover {
+  --bs-popover-max-width: min(360px, calc(100vw - 24px));
+  z-index: 1;
+}
+
+.modal .tutorial-popover-inner {
+  background: #edd9f5;
+  backdrop-filter: none;
+}
+
+.modal .tutorial-popover-skip {
+  color: #59308f;
+}
+
 .tutorial-popover-layout {
   display: grid;
   grid-template-columns: 80px minmax(0, 1fr);

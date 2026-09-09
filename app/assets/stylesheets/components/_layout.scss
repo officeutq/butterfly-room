@@ -115,7 +115,10 @@
 
 .app-footer-nav-item--live-broadcast:hover,
 .app-footer-nav-item--live-broadcast:focus,
-.app-footer-nav-item--live-broadcast:active {
+.app-footer-nav-item--live-broadcast:active,
+.app-footer-nav-item--invite:hover,
+.app-footer-nav-item--invite:focus,
+.app-footer-nav-item--invite:active {
   color: #63db8a;
   background: rgba(79, 209, 122, 0.14);
 }

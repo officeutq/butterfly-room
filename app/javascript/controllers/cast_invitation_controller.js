@@ -126,7 +126,8 @@ export default class extends Controller {
 
   async performShare(mode) {
     if (mode === "share") {
-      return navigator.share({ title: "Butterflyve", text: this.invitation.text, url: this.invitation.url })
+      // 本文だけを受け取る共有先にもURLを届ける。url欄との重複は避ける。
+      return navigator.share({ title: "Butterflyve", text: `${this.invitation.text}\n\n${this.invitation.url}` })
     }
     if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(this.invitation.url)
     this.urlTarget.focus()
@@ -171,8 +172,11 @@ export default class extends Controller {
   }
 
   updateCompleted() {
+    this.element.dataset.onboardingInvitationState = this.completed ? "close" : "share"
+    this.element.dataset.onboardingInvitationMode = this.useCopy ? "copy" : "share"
     this.closeLabelTarget.textContent = this.completed ? "閉じる" : "キャンセル"
     this.cancelHelpTarget.hidden = this.completed
+    window.dispatchEvent(new CustomEvent("cast-invitation:updated"))
   }
 
   updateShareLabel() {

@@ -56,6 +56,25 @@ class Admin::StoreRegistrationSetupTest < ActionDispatch::IntegrationTest
     assert_nil @request.session[ApplicationController::STORE_REGISTRATION_COMPLETION_SESSION_KEY]
   end
 
+  test "tutorial starts on the store page after setup and thanks" do
+    store = register_store
+
+    get edit_admin_store_registration_setup_path(store)
+    assert_response :success
+    assert_select "[data-controller~='onboarding']", count: 0
+
+    patch admin_store_registration_setup_path(store), params: { store: { name: store.name } }
+    assert_redirected_to stores_registration_thanks_path
+    follow_redirect!
+    assert_response :success
+    assert_select "h1", text: "店舗情報の登録・公開が完了しました"
+    assert_select "[data-controller~='onboarding']", count: 0
+
+    get store_path(store)
+    assert_response :success
+    assert_select "[data-controller~='onboarding'][data-onboarding-step-value='invite_cast']", count: 1
+  end
+
   test "setup reuses the store form image editor and AI autofill without publication controls" do
     store = register_store
 

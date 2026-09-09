@@ -55,6 +55,9 @@ export default class extends Controller {
     }
 
     modalEl.addEventListener("hidden.bs.modal", this._onHidden, { once: true })
+    modalEl.addEventListener("shown.bs.modal", () => {
+      window.dispatchEvent(new CustomEvent("app-modal:shown"))
+    }, { once: true })
     this.modal.show()
   }
 

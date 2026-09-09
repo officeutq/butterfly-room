@@ -21,11 +21,14 @@ export default class extends Controller {
     this.handleUpdate = this.update.bind(this)
     this.handleBeforeCache = this.beforeCache.bind(this)
     this.handleModalOpening = () => { this.modalOpen = true; this.beforeCache() }
-    this.handleModalClosed = () => { this.modalOpen = false; this.render() }
+    this.handleModalShown = () => { this.beforeCache(); this.render() }
+    this.handleModalClosed = () => { this.modalOpen = false; this.beforeCache(); this.render() }
 
     window.addEventListener("onboarding:update", this.handleUpdate)
     document.addEventListener("turbo:before-cache", this.handleBeforeCache)
     window.addEventListener("app-modal:opening", this.handleModalOpening)
+    window.addEventListener("app-modal:shown", this.handleModalShown)
+    window.addEventListener("cast-invitation:updated", this.handleModalShown)
     window.addEventListener("app-modal:closed", this.handleModalClosed)
 
     requestAnimationFrame(() => {
@@ -39,6 +42,8 @@ export default class extends Controller {
     window.removeEventListener("onboarding:update", this.handleUpdate)
     document.removeEventListener("turbo:before-cache", this.handleBeforeCache)
     window.removeEventListener("app-modal:opening", this.handleModalOpening)
+    window.removeEventListener("app-modal:shown", this.handleModalShown)
+    window.removeEventListener("cast-invitation:updated", this.handleModalShown)
     window.removeEventListener("app-modal:closed", this.handleModalClosed)
     window.clearTimeout(this.popoverTimeout)
 
@@ -63,11 +68,12 @@ export default class extends Controller {
   }
 
   render() {
-    if (this.modalOpen || document.querySelector(".modal.show")) return
-    const config = this.stepConfig()
+    const modal = document.querySelector(".modal.show")
+    const inModal = this.modalOpen || !!modal
+    const config = inModal ? this.modalStepConfig(modal) : this.stepConfig()
     if (!config) return
 
-    const target = document.querySelector(
+    const target = (inModal ? modal : document).querySelector(
       `[data-onboarding-target-element="${config.target}"]`
     )
     if (!target) return
@@ -86,6 +92,28 @@ export default class extends Controller {
     }
 
     this.showPopover(target, config.message, config.imageUrl, config.showSkip !== false)
+  }
+
+  modalStepConfig(modal) {
+    if (!["invite_cast", "create_invite", "go_dashboard_for_drinks"].includes(this.stepValue)) return null
+    const state = modal?.dataset.onboardingInvitationState
+    if (state === "close") {
+      return {
+        target: "invitation-close",
+        message: modal.dataset.onboardingInvitationMode === "copy"
+          ? "招待URLをLINEなどに貼り付けて送ったら、『閉じる』を押して、次の設定に進みましょう。"
+          : "共有操作が完了したら、『閉じる』を押して、次の設定に進みましょう。",
+        imageUrl: this.goDashboardImageUrlValue
+      }
+    }
+    if (state === "share" && this.stepValue !== "go_dashboard_for_drinks") {
+      return {
+        target: "invitation-share",
+        message: "招待URLを共有・コピーして、キャスト本人に送りましょう。管理者用メモは相手には表示されません。",
+        imageUrl: this.createInviteImageUrlValue
+      }
+    }
+    return null
   }
 
   stepConfig() {
@@ -172,7 +200,7 @@ export default class extends Controller {
       placement: "auto",
       html: true,
       sanitize: false,
-      container: "body",
+      container: target.closest(".modal") || "body",
       fallbackPlacements: ["top", "bottom", "right", "left"],
       customClass: "tutorial-popover",
       content: this.popoverContent(message, imageUrl, showSkip)

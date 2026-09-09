@@ -15,7 +15,7 @@
       </div>
 
       <% onboarding_store = layout_current_store %>
-      <% if current_user&.store_admin? || onboarding_store&.onboarding_active? %>
+      <% if show_onboarding?(onboarding_store) %>
         <div
           data-controller="onboarding"
           data-onboarding-store-id-value="<%= onboarding_store&.id %>"
