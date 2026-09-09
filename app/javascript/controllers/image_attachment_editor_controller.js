@@ -75,6 +75,7 @@ export default class extends Controller {
     this.boundFormSubmit = this.validateFormSubmit.bind(this)
     this.returnFocusTarget = null
     this.cancelPhase = null
+    this.candidateTouched = false
     this.form = this.element.closest("form")
     this.form?.addEventListener("submit", this.boundFormSubmit)
 
@@ -102,6 +103,7 @@ export default class extends Controller {
   async selectFile(event) {
     const file = event.currentTarget.files?.[0]
     if (!file) return
+    this.candidateTouched = true
     if (!this.supportedFile(file)) {
       this.resetToBaseline({ announce: false })
       this.renderError("JPEG / PNG / WebP / HEIC / HEIFを選択してください。")
@@ -141,6 +143,73 @@ export default class extends Controller {
       this.fileInputTarget.value = ""
       this.phase = "idle"
       this.renderError(error.message || "画像を読み込めませんでした。")
+    }
+  }
+
+  canImportCandidate() {
+    return !this.isDisconnected && !this.candidateTouched && this.phase === "idle" &&
+      !this.hasCurrentDisplayImage() && !this.operationInputTarget.value &&
+      !this.fileInputTarget.files?.length
+  }
+
+  // Stage a representative image without opening the cropping dialog or saving.
+  // The same source/display pair can subsequently be edited with Cropper.js.
+  async importCandidate(file, { signal } = {}) {
+    if (!this.canImportCandidate() || signal?.aborted) return false
+
+    this.resetToBaseline({ announce: false })
+    const generation = this.generation
+    this.phase = "processing"
+    const abort = () => {
+      if (this.isCurrent(generation)) this.resetToBaseline({ announce: false })
+    }
+    signal?.addEventListener("abort", abort, { once: true })
+    let canvas
+    try {
+      const normalized = await this.sourceNormalizer.normalize(file, { ratioKey: this.ratioKeyValue })
+      if (!this.isCurrent(generation)) return false
+
+      this.workingSourceFile = normalized.file
+      this.workingSourceObjectUrl = URL.createObjectURL(normalized.file)
+      this.sourceTarget.src = this.workingSourceObjectUrl
+      await this.waitForSourceImage()
+      if (!this.isCurrent(generation)) return false
+
+      const sourceWidth = this.sourceTarget.naturalWidth
+      const sourceHeight = this.sourceTarget.naturalHeight
+      const config = cropConfigFor(this.ratioKeyValue)
+      const width = Math.min(sourceWidth, sourceHeight * config.ratio)
+      const height = width / config.ratio
+      const crop = { x: (sourceWidth - width) / 2, y: (sourceHeight - height) / 2, width, height }
+      const state = validateCropState({
+        state: {
+          schemaVersion: 1, ratioKey: this.ratioKeyValue,
+          source: { width: sourceWidth, height: sourceHeight }, crop,
+          zoom: sourceWidth / width,
+          output: { width: config.width, height: config.height, mimeType: "image/jpeg", quality: IMAGE_CROP_JPEG_QUALITY }
+        },
+        ratioKey: this.ratioKeyValue, sourceWidth, sourceHeight
+      })
+      canvas = document.createElement("canvas")
+      canvas.width = config.width
+      canvas.height = config.height
+      const context = canvas.getContext("2d")
+      context.fillStyle = "#ffffff"
+      context.fillRect(0, 0, canvas.width, canvas.height)
+      context.drawImage(this.sourceTarget, crop.x, crop.y, width, height, 0, 0, canvas.width, canvas.height)
+      const blob = await this.canvasToJpeg(canvas)
+      if (!this.isCurrent(generation)) return false
+
+      this.candidateTouched = true
+      this.candidateStaged = true
+      this.stageFiles({ state, displayFile: new File([blob], "display.jpg", { type: "image/jpeg" }), replacement: true })
+      return true
+    } catch (_) {
+      if (this.isCurrent(generation)) this.resetToBaseline({ announce: false })
+      return false
+    } finally {
+      signal?.removeEventListener("abort", abort)
+      this.releaseCanvas(canvas)
     }
   }
 
@@ -303,29 +372,7 @@ export default class extends Controller {
 
       const displayFile = new File([blob], "display.jpg", { type: "image/jpeg" })
       const replacement = this.phase === "editing-replacement"
-      this.setInputFile(this.sourceInputTarget, replacement ? this.workingSourceFile : null)
-      this.setInputFile(this.displayInputTarget, displayFile)
-      this.cropDataInputTarget.value = JSON.stringify(state)
-      this.operationInputTarget.value = replacement ? "replace" : "reedit"
-      this.revokePreviewObjectUrl()
-      this.previewObjectUrl = URL.createObjectURL(displayFile)
-      this.currentPreviewTarget.src = this.previewObjectUrl
-      this.currentPreviewTarget.hidden = false
-      this.previewEmptyTarget.hidden = true
-      this.deletionNoticeTarget.hidden = true
-      this.phase = replacement ? "staged-replace" : "staged-reedit"
-      this.cancelPhase = null
-      this.releaseEditor()
-      this.revokeWorkingSourceObjectUrl()
-      this.workingSourceFile = null
-      this.hideWorkspace()
-      this.editButtonTarget.hidden = !this.keepStagedActionsValue
-      this.deleteButtonTarget.hidden = !this.keepStagedActionsValue || !this.hasCurrentDisplayImage()
-      this.undoButtonTarget.hidden = false
-      this.syncImageMenuButton()
-      this.renderWarning("")
-      this.renderStatus("画像の変更を反映しました。最後にフォームの保存ボタンを押してください。")
-      this.dispatch("change", { detail: { operation: this.operationInputTarget.value } })
+      this.stageFiles({ state, displayFile, replacement })
     } catch (error) {
       if (!this.isCurrent(generation) || previewGeneration !== this.previewGeneration) return
 
@@ -337,6 +384,32 @@ export default class extends Controller {
     }
   }
 
+  stageFiles({ state, displayFile, replacement }) {
+    this.setInputFile(this.sourceInputTarget, replacement ? this.workingSourceFile : null)
+    this.setInputFile(this.displayInputTarget, displayFile)
+    this.cropDataInputTarget.value = JSON.stringify(state)
+    this.operationInputTarget.value = replacement ? "replace" : "reedit"
+    this.revokePreviewObjectUrl()
+    this.previewObjectUrl = URL.createObjectURL(displayFile)
+    this.currentPreviewTarget.src = this.previewObjectUrl
+    this.currentPreviewTarget.hidden = false
+    this.previewEmptyTarget.hidden = true
+    this.deletionNoticeTarget.hidden = true
+    this.phase = replacement ? "staged-replace" : "staged-reedit"
+    this.cancelPhase = null
+    this.releaseEditor()
+    this.revokeWorkingSourceObjectUrl()
+    this.workingSourceFile = null
+    this.hideWorkspace()
+    this.editButtonTarget.hidden = !this.keepStagedActionsValue
+    this.deleteButtonTarget.hidden = !this.keepStagedActionsValue || !(this.hasCurrentDisplayImage() || this.candidateStaged)
+    this.undoButtonTarget.hidden = false
+    this.syncImageMenuButton()
+    this.renderWarning("")
+    this.renderStatus("画像の変更を反映しました。最後にフォームの保存ボタンを押してください。")
+    this.dispatch("change", { detail: { operation: this.operationInputTarget.value } })
+  }
+
   cancelEdit(event) {
     event?.preventDefault()
     const returnFocusTarget = this.returnFocusTarget
@@ -346,6 +419,10 @@ export default class extends Controller {
   }
 
   removeImage() {
+    if (this.candidateStaged && !this.hasCurrentDisplayImage()) {
+      this.resetToBaseline()
+      return
+    }
     if (!this.hasCurrentDisplayImage()) return
 
     this.resetToBaseline({ announce: false })
@@ -587,6 +664,7 @@ export default class extends Controller {
 
   resetToBaseline({ announce = true, preservePicker = false } = {}) {
     this.releaseWorkingResources()
+    this.candidateStaged = false
     this.cancelPhase = null
     this.clearPayloadInputs()
     if (!preservePicker) this.fileInputTarget.value = ""
@@ -622,7 +700,7 @@ export default class extends Controller {
     this.phase = stagedPhase
     this.cancelPhase = null
     this.editButtonTarget.hidden = false
-    this.deleteButtonTarget.hidden = !this.hasCurrentDisplayImage()
+    this.deleteButtonTarget.hidden = !(this.hasCurrentDisplayImage() || this.candidateStaged)
     this.undoButtonTarget.hidden = false
     this.syncImageMenuButton()
     this.renderWarning("")

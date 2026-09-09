@@ -6,6 +6,7 @@ module Admin
 
     before_action :set_store
     before_action :authorize_store_edit!
+    before_action :authorize_registration_images!
 
     rate_limit(
       to: 10,
@@ -20,10 +21,17 @@ module Admin
       result = Stores::AiAutofill::SearchService.new(
         store: @store,
         actor: current_user,
-        store_name: ai_autofill_params[:store_name]
+        store_name: ai_autofill_params[:store_name],
+        image_search: registration_images?
       ).call
 
-      render json: result.as_json, status: :ok
+      body = result.as_json
+      if registration_images?
+        body[:image_token] = Stores::AiAutofill::ImageSources.token_for(
+          result.image_sources, store: @store, actor: current_user
+        )
+      end
+      render json: body, status: :ok
     rescue Stores::AiAutofill::SearchService::InvalidStoreNameError
       render_feature_error(:unprocessable_entity, "invalid_store_name")
     rescue Stores::AiAutofill::Settings::ConfigurationError
@@ -56,6 +64,21 @@ module Admin
       return ActionController::Parameters.new unless search_params.respond_to?(:permit)
 
       search_params.permit(:store_name)
+    end
+
+    def registration_images?
+      params[:registration_images] == "1"
+    end
+
+    def authorize_registration_images!
+      return unless registration_images?
+
+      pending = session[STORE_REGISTRATION_PENDING_SESSION_KEY]
+      pending_id = pending.respond_to?(:[]) ? pending["store_id"] : nil
+      return if Integer(pending_id, exception: false) == @store.id &&
+        Integer(session[:current_store_id], exception: false) == @store.id
+
+      head :forbidden
     end
 
     def render_feature_error(status, error_code, error: nil)

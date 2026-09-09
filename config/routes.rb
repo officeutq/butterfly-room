@@ -189,7 +189,9 @@ Rails.application.routes.draw do
       resource :ai_autofill, only: :create, controller: "store_ai_autofills"
       resource :registration_setup,
                only: %i[edit update],
-               controller: "store_registration_setups"
+               controller: "store_registration_setups" do
+        post :image
+      end
 
       collection do
         get :select_modal

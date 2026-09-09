@@ -426,6 +426,23 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
     end
   end
 
+  test "only opt-in matched searches expose official image sources without another AI call" do
+    data = base_data
+    data["identity_evidence"] = [ official_website_evidence ]
+    data["fields"]["website_url"] = candidate(@source_url)
+    calls = []
+    result = call_service(data, image_search: true, calls:)
+    assert_equal [ @source_url ], result.image_sources.pluck("url")
+    assert_equal 1, calls.size
+    assert_not result.as_json.key?(:image_sources)
+    assert_empty call_service(data).image_sources
+    data["conflicting_candidates_found"] = true
+    assert_empty call_service(data, image_search: true).image_sources
+    data["conflicting_candidates_found"] = false
+    data["identity_evidence"] = [ phone_evidence ]
+    assert_empty call_service(data, image_search: true).image_sources
+  end
+
   private
 
   def call_service(
@@ -433,7 +450,8 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
     calls: [],
     store_name: @store.name,
     logger: Logger.new(IO::NULL),
-    sources: [ { "title" => "店舗公式", "url" => @source_url } ]
+    sources: [ { "title" => "店舗公式", "url" => @source_url } ],
+    image_search: false
   )
     api_result = Stores::AiAutofill::ResponsesClient::Result.new(
       data:,
@@ -448,6 +466,7 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
       actor: @actor,
       store_name:,
       responses_client: fake_client,
+      image_search:,
       logger:
     ).call
   end
