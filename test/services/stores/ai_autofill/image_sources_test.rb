@@ -6,27 +6,21 @@ class Stores::AiAutofill::ImageSourcesTest < ActiveSupport::TestCase
   Sources = Stores::AiAutofill::ImageSources
   Identity = Data.define(:id)
 
-  test "orders verified branch and official accounts, not third-party or other accounts" do
+  test "orders accepted URL fields without requiring another set of official evidence" do
     fields = {
-      "website_url" => "https://shop.example/",
+      "website_url" => "https://shop.example/branches/akihabara",
       "x_url" => "https://x.com/shop",
       "instagram_url" => "https://www.instagram.com/shop/",
       "tiktok_url" => "https://www.tiktok.com/@shop",
       "youtube_url" => "https://www.youtube.com/@shop"
     }
-    evidence = fields.reverse_each.map do |field, url|
-      { "kind" => field == "website_url" ? "official_website" : "official_sns", "source_url" => url }
-    end
-    evidence.last["source_url"] = "https://shop.example/branches/akihabara"
-    result = Sources.from(fields:, evidence:)
+    result = Sources.from(fields: fields.to_a.reverse.to_h)
     assert_equal Sources::FIELDS, result.pluck("kind")
-    assert_equal "https://shop.example/branches/akihabara", result.first["url"]
+    assert_equal fields.values, result.pluck("url")
 
-    evidence[0]["source_url"] = "https://www.youtube.com/@another"
-    evidence[1]["source_url"] = "https://www.tiktok.com/@another/video/123"
-    evidence[2]["kind"] = "other"
-    evidence[3]["source_url"] = "https://x.com/shop_imposter"
-    assert_equal [ "website_url" ], Sources.from(fields:, evidence:).pluck("kind")
+    fields["website_url"] = nil
+    fields["youtube_url"] = nil
+    assert_equal %w[x_url instagram_url tiktok_url], Sources.from(fields:).pluck("kind")
   end
 
   test "does not widen a branch URL or treat login and shared social domains as a store" do

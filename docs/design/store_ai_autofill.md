@@ -949,7 +949,7 @@ CSSを変更した場合だけ`npm run build:css`も実行する。
 
 - 初回画面だけ検索URLに`registration_images=1`を付ける。pending、current_store、管理権限が一致する場合だけ画像取得元の確認を追加する。
 - AIは従来の1回のResponses API（AIへの問い合わせ）で店舗名からテキストと公式ページの根拠を取得する。画像検索用の追加AIリクエストやモデル変更は行わない。
-- `ImageSources`は、今回の検索で同一店舗と判定され、Web検索情報源に照合済みの公式根拠を持つURLだけを、公式サイト → X → Instagram → TikTok → YouTubeの順に並べる。フォーム入力のURLを直接取得しない。
+- `ImageSources`は、今回の検索でURL入力候補として採用済みの`website_url` / `x_url` / `instagram_url` / `tiktok_url` / `youtube_url`を、そのまま同じ順に画像取得元へ使う。店舗同一性、情報源との照合、SNSドメインの条件はテキストURLの取得と共通にし、画像だけに追加の`official_website` / `official_sns`根拠やSNSの認証バッジを要求しない。AIへの指示・問い合わせ内容も通常のURL取得と共通。フォーム入力のURLを直接取得しない。
 - 取得元リストは店舗・利用者に結び付けた5分間有効の署名付き`image_token`で渡す。通常編集のレスポンス形式は変えない。
 - ブラウザは画像未設定・未編集の場合だけ`POST /admin/stores/:store_id/registration_setup/image`へトークンを送る。初回設定の認可を再確認し、`ImageImportService`が画像を一時取得する。画像取得はAIの実行回数に含めず、別に利用者ごと10分間10回を上限にする。
 - 公開HTML（ページの内容）中の`og:image`、次に`twitter:image`を試す。画像がない、取得不可、破損・寸法不足の場合は次の取得元へ進む。ログイン回避や任意の投稿巡回は行わない。

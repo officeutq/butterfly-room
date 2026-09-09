@@ -4,26 +4,20 @@ require "uri"
 
 module Stores
   module AiAutofill
-    # Only URLs supported by the same search's verified official evidence may
-    # cross the boundary into server-side image fetching. Form URLs are not used.
+    # Reuse the URL candidates already accepted by SearchService. Image fetching
+    # does not require a second identity-evidence category or account badge.
+    # Form URLs are not used; PublicImageFetcher checks every network destination.
     class ImageSources
       FIELDS = %w[website_url x_url instagram_url tiktok_url youtube_url].freeze
       LABELS = %w[公式サイト X Instagram TikTok YouTube].freeze
       PURPOSE = "store_registration_image"
 
-      def self.from(fields:, evidence:)
+      def self.from(fields:)
         FIELDS.filter_map.with_index do |field, index|
           target = fields[field]
-          kind = field == "website_url" ? "official_website" : "official_sns"
           next if target.blank?
 
-          verified = evidence.find do |item|
-            item["kind"] == kind && same_owner?(target, item["source_url"], field:)
-          end
-          next unless verified
-
-          # Keep the verified branch page, rather than widening to a brand home.
-          { "kind" => field, "title" => LABELS[index], "url" => verified.fetch("source_url") }
+          { "kind" => field, "title" => LABELS[index], "url" => target }
         end
       end
 

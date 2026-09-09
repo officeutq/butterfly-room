@@ -14,6 +14,7 @@ result = Stores::AiAutofill::SearchService.new(
 ).call
 puts({ status: result.status, model: Stores::AiAutofill::Settings.from_env.model,
        search_ms: ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - started) * 1000).round,
+       url_candidates: result.fields.slice(*Stores::AiAutofill::ImageSources::FIELDS),
        official_sources: result.image_sources }.to_json)
 
 result.image_sources.each do |source|
