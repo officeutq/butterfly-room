@@ -147,9 +147,12 @@ export default class extends Controller {
   }
 
   canImportCandidate() {
-    return !this.isDisconnected && !this.candidateTouched && this.phase === "idle" &&
-      !this.hasCurrentDisplayImage() && !this.operationInputTarget.value &&
-      !this.fileInputTarget.files?.length
+    if (this.isDisconnected || this.fileInputTarget.files?.length) return false
+    // Explicit deletion makes the slot available without saving the deletion first.
+    if (this.phase === "staged-delete" && this.operationInputTarget.value === "delete") return true
+
+    return !this.candidateTouched && this.phase === "idle" &&
+      !this.hasCurrentDisplayImage() && !this.operationInputTarget.value
   }
 
   // Stage a representative image without opening the cropping dialog or saving.
@@ -157,11 +160,16 @@ export default class extends Controller {
   async importCandidate(file, { signal } = {}) {
     if (!this.canImportCandidate() || signal?.aborted) return false
 
-    this.resetToBaseline({ announce: false })
+    const replacingDeletedImage = this.phase === "staged-delete"
+    const restorePreviousState = () => {
+      if (replacingDeletedImage) this.removeImage()
+      else this.resetToBaseline({ announce: false })
+    }
+    restorePreviousState()
     const generation = this.generation
     this.phase = "processing"
     const abort = () => {
-      if (this.isCurrent(generation)) this.resetToBaseline({ announce: false })
+      if (this.isCurrent(generation)) restorePreviousState()
     }
     signal?.addEventListener("abort", abort, { once: true })
     let canvas
@@ -205,7 +213,7 @@ export default class extends Controller {
       this.stageFiles({ state, displayFile: new File([blob], "display.jpg", { type: "image/jpeg" }), replacement: true })
       return true
     } catch (_) {
-      if (this.isCurrent(generation)) this.resetToBaseline({ announce: false })
+      if (this.isCurrent(generation)) restorePreviousState()
       return false
     } finally {
       signal?.removeEventListener("abort", abort)
@@ -420,6 +428,7 @@ export default class extends Controller {
 
   removeImage() {
     if (this.candidateStaged && !this.hasCurrentDisplayImage()) {
+      this.candidateTouched = false
       this.resetToBaseline()
       return
     }

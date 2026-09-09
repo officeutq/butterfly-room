@@ -199,3 +199,78 @@ test("save cancellation and permission failures preserve the live form and relea
   await expect(page.locator(".store-edit__save")).toBeEnabled()
   expect(saves).toBe(1)
 })
+
+test("a saved image can be deleted and replaced by AI before saving, including failed download and save", async ({ page }) => {
+  test.setTimeout(120_000)
+  const { editPath, storeId } = await openRegularEditor(page)
+  let imageStatus = 200, images = 0, searches = 0, saves = 0
+  await page.route("**/admin/stores/*/ai_autofill", (route) => {
+    searches++
+    return route.fulfill({ json: { ...result(), image_token: "signed" } })
+  })
+  await page.route("**/ai_autofill/image", (route) => {
+    images++
+    return route.fulfill({ status: imageStatus, contentType: "image/jpeg",
+      body: imageStatus === 200 ? fs.readFileSync(path.resolve(__dirname, "../../test/fixtures/files/sample.jpg")) : "" })
+  })
+  const operation = page.locator('[data-image-attachment-editor-target="operationInput"]')
+  const preview = page.locator('[data-image-attachment-editor-target="currentPreview"]')
+  const expectedIds = () => page.locator('input[name^="image_pair[expected]"]').evaluateAll((inputs) =>
+    Object.fromEntries(inputs.map((input) => [input.name, input.value])))
+  const searchAgain = () => page.getByRole("button", { name: "AIで再検索", exact: true }).click()
+  const done = () => expect(page.locator('[data-store-ai-autofill-target="loading"]')).toBeHidden()
+
+  await page.getByRole("button", { name: "AIで店舗情報を自動入力", exact: true }).click()
+  await expect(operation).toHaveValue("replace")
+  await done()
+  await save(page).click()
+  await expect(page).toHaveURL(/\/dashboard$/, { timeout: 20_000 })
+  await page.goto(editPath)
+  const originalIds = await expectedIds()
+  const originalPreview = await preview.getAttribute("src")
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname === `/admin/stores/${storeId}` && request.method() !== "GET") saves++
+  })
+  await page.locator('[data-image-attachment-editor-target="imageMenuButton"]').click()
+  await page.getByRole("button", { name: "画像を削除", exact: true }).click()
+  await expect(operation).toHaveValue("delete")
+  await expect(preview).toBeHidden()
+
+  imageStatus = 503
+  await page.getByRole("button", { name: "AIで店舗情報を自動入力", exact: true }).click()
+  await done()
+  expect(images).toBe(2)
+  await expect(operation).toHaveValue("delete")
+  await expect(page.locator('[data-image-attachment-editor-target="deletionNotice"]')).toBeVisible()
+  expect(await expectedIds()).toEqual(originalIds)
+
+  imageStatus = 200
+  await searchAgain()
+  await done()
+  await expect(operation).toHaveValue("replace")
+  await expect(preview).toBeVisible()
+  expect(await expectedIds()).toEqual(originalIds)
+  expect(saves).toBe(0)
+  expect(images).toBe(3)
+  await searchAgain()
+  await done()
+  expect(images).toBe(3)
+
+  const pendingPreview = await preview.getAttribute("src")
+  await input(page, "area").fill("長".repeat(51))
+  await save(page).click()
+  await expect(page.locator('[data-image-pair-form-target="error"]')).toBeVisible()
+  await expect(operation).toHaveValue("replace")
+  await expect(preview).toHaveAttribute("src", pendingPreview)
+  expect(await expectedIds()).toEqual(originalIds)
+  await input(page, "area").fill("")
+  await save(page).click()
+  await expect(page).toHaveURL(/\/dashboard$/, { timeout: 20_000 })
+  await page.goto(editPath)
+  await expect(operation).toHaveValue("")
+  await expect(preview).toBeVisible()
+  await expect(preview).not.toHaveAttribute("src", originalPreview)
+  expect(await expectedIds()).not.toEqual(originalIds)
+  expect(saves).toBe(2)
+  expect(searches).toBe(4)
+})
