@@ -43,6 +43,10 @@
   flex: 0 0 auto;
 }
 
+.store-show-edit {
+  --bs-btn-color: var(--bs-body-color);
+}
+
 .store-show-info {
   display: flex;
   flex-direction: column;

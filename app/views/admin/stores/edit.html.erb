@@ -30,6 +30,7 @@
             "turbo:submit-end->store-edit#turboSubmitEnd"
           ].join(" ")
         } do |f| %>
+    <%= hidden_field_tag :return_to, @edit_return_to if @edit_return_to.present? %>
     <div class="store-ai-autofill__loading" data-store-ai-autofill-target="loading" role="status" tabindex="-1" hidden>
       <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
       <span data-store-ai-autofill-target="loadingMessage">お店の情報を探しています…</span>
@@ -38,7 +39,7 @@
               f: f,
               store: @store,
               submit_label: "保存",
-              back_path: dashboard_path %>
+              back_path: store_edit_return_path %>
   <% end %>
 
 </div>

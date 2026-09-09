@@ -18,6 +18,7 @@ class StoreShowTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     assert_select "h1", text: store.name
+    assert_select "a.store-show-edit", count: 0
     assert_includes @response.body, booth.name
     assert_select "form[action=?]", booth_path(booth), minimum: 2
     assert_select "a[href=?]", user_path(cast), text: cast.display_name
@@ -69,6 +70,7 @@ class StoreShowTest < ActionDispatch::IntegrationTest
     get store_path(store)
     assert_response :success
 
+    assert_select "a.store-show-edit", count: 0
     assert_includes @response.body, "store"
     assert_includes @response.body, "Store description"
     assert_includes @response.body, "渋谷"
@@ -109,5 +111,65 @@ class StoreShowTest < ActionDispatch::IntegrationTest
 
     assert_includes @response.body, "javascript:alert(1)"
     refute_includes @response.body, 'href="javascript:alert(1)"'
+  end
+
+  test "store admin sees edit only for stores they administer, independent of the selected store" do
+    store = Store.create!(name: "管理店舗", published: true)
+    selected_store = Store.create!(name: "選択中の管理店舗", published: true)
+    other_store = Store.create!(name: "他店舗", published: true)
+    admin = User.create!(email: "store-show-admin@example.com", password: "password", role: :store_admin)
+    [ store, selected_store ].each do |managed_store|
+      StoreMembership.create!(store: managed_store, user: admin, membership_role: :admin)
+    end
+    sign_in admin, scope: :user
+    post admin_current_store_path, params: { store_id: selected_store.id }
+
+    get store_path(store)
+
+    assert_response :success
+    assert_select "a.store-show-edit[href=?]", edit_admin_store_path(store, return_to: "store_detail"),
+                  text: "店舗情報を編集", count: 1
+    assert_equal selected_store.id, @request.session[:current_store_id].to_i
+
+    get store_path(other_store)
+
+    assert_response :success
+    assert_select "a.store-show-edit", count: 0
+  end
+
+  test "cast membership and user role alone do not grant a store edit link" do
+    store = Store.create!(name: "編集権限確認店舗", published: true)
+    [ :customer, :cast, :store_admin ].each do |role|
+      user = User.create!(email: "store-show-#{role}@example.com", password: "password", role:)
+      membership_role = role == :store_admin ? :cast : :admin
+      StoreMembership.create!(store:, user:, membership_role:)
+      sign_in user, scope: :user
+
+      get store_path(store)
+
+      assert_response :success
+      assert_select "a.store-show-edit", count: 0
+    end
+  end
+
+  test "system admin sees edit without membership but unpublished details remain unavailable to operators" do
+    store = Store.create!(name: "運営編集店舗", published: true)
+    system_admin = User.create!(email: "store-show-system@example.com", password: "password", role: :system_admin)
+    sign_in system_admin, scope: :user
+
+    get store_path(store)
+
+    assert_response :success
+    assert_select "a.store-show-edit[href=?]", edit_admin_store_path(store, return_to: "store_detail"), count: 1
+
+    store.update!(published: false)
+    get store_path(store)
+    assert_response :not_found
+
+    admin = User.create!(email: "store-show-hidden-admin@example.com", password: "password", role: :store_admin)
+    StoreMembership.create!(store:, user: admin, membership_role: :admin)
+    sign_in admin, scope: :user
+    get store_path(store)
+    assert_response :not_found
   end
 end

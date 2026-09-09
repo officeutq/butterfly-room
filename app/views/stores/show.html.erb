@@ -15,6 +15,13 @@
     <div class="store-show-header d-flex justify-content-between align-items-start gap-3">
       <div class="min-w-0">
         <h1 class="store-show-title mb-0"><%= @store.name %></h1>
+        <% if @can_edit_store %>
+          <%= link_to edit_admin_store_path(@store, return_to: "store_detail"),
+                class: "btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2 mt-3 store-show-edit" do %>
+            <i class="bi bi-pencil" aria-hidden="true"></i>
+            <span>店舗情報を編集</span>
+          <% end %>
+        <% end %>
       </div>
 
       <div id="store_favorite_button" class="store-show-favorite">
