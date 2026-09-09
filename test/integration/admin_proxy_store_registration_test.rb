@@ -57,6 +57,18 @@ class AdminProxyStoreRegistrationTest < ActionDispatch::IntegrationTest
     assert_nil session[:current_booth_id]
     assert_not store.sales_support_company?
     assert StoreMembership.admin_only.exists?(store: store, user: @actor)
+    follow_redirect!
+    assert_select "form[data-controller~='store-ai-autofill'][data-image-pair-form-always-submit-value='true']"
+    assert_select "form[data-store-ai-autofill-image-url-value=?]", image_admin_store_ai_autofill_path(store)
+    assert_select "[data-store-ai-autofill-target='modal']", count: 0
+    assert_nil session[ApplicationController::STORE_REGISTRATION_PENDING_SESSION_KEY]
+
+    token = Stores::AiAutofill::ImageSources.verifier.generate(
+      { "store_id" => store.id, "user_id" => @actor.id, "sources" => [] },
+      purpose: Stores::AiAutofill::ImageSources::PURPOSE, expires_in: 5.minutes
+    )
+    post image_admin_store_ai_autofill_path(store), params: { image_token: token }, as: :json
+    assert_response :no_content
   end
 
   test "regular store admins and system_admin are forbidden" do

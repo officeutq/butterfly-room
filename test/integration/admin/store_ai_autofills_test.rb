@@ -75,7 +75,7 @@ class Admin::StoreAiAutofillsTest < ActionDispatch::IntegrationTest
     assert_response :ok
   end
 
-  test "edit page contains the AI search control and dedicated modal" do
+  test "edit page directly applies AI with full form locking and preserves failed saves" do
     sign_in @store_admin, scope: :user
 
     get edit_admin_store_path(@store)
@@ -83,7 +83,15 @@ class Admin::StoreAiAutofillsTest < ActionDispatch::IntegrationTest
     assert_response :ok
     assert_select "[data-controller~='store-ai-autofill']"
     assert_select "button[data-action='store-ai-autofill#search']", text: /AIで店舗情報を自動入力/
-    assert_select ".modal[data-store-ai-autofill-target='modal']"
+    assert_select ".modal[data-store-ai-autofill-target='modal']", count: 0
+    assert_select "form[data-image-pair-form-always-submit-value='true']"
+    assert_select "form[data-store-ai-autofill-image-url-value=?]", image_admin_store_ai_autofill_path(@store)
+    assert_select "[data-store-ai-autofill-target='content']" do
+      assert_select ".store-edit__action-bar input[type='submit']"
+      assert_select "textarea#store_description", text: "保存済み概要"
+    end
+    assert_select ".form-text", text: "登録済みの項目をAIで入れ直したい場合は、空欄にしてから検索してください。"
+    assert_select "meta[name='turbo-cache-control'][content='no-cache']"
   end
 
   test "rate limits the eleventh search across stores and resets after ten minutes" do
@@ -193,15 +201,24 @@ class Admin::StoreAiAutofillsTest < ActionDispatch::IntegrationTest
     )
   end
 
-  test "normal editing cannot opt in to image fetching without an initial registration session" do
+  test "normal editing issues a bound image token without an initial registration session or saving" do
     sign_in @store_admin, scope: :user
     calls = []
-    with_search_result(partial_result, initialization_calls: calls) do
-      post admin_store_ai_autofill_path(@store, registration_images: 1),
-        params: { store_ai_autofill: { store_name: "画像検索" } }, as: :json
+    original = @store.attributes
+    sources = [ { "kind" => "website_url", "title" => "公式サイト", "url" => "https://shop.example/" } ]
+    with_search_result(partial_result.with(image_sources: sources), initialization_calls: calls) do
+      assert_no_difference -> { ActiveStorage::Blob.count } do
+        post admin_store_ai_autofill_path(@store),
+          params: { store_ai_autofill: { store_name: "画像検索" } }, as: :json
+      end
     end
-    assert_response :forbidden
-    assert_empty calls
+    assert_response :ok
+    assert_nil @request.session[ApplicationController::STORE_REGISTRATION_PENDING_SESSION_KEY]
+    assert_equal true, calls.sole[:image_search]
+    assert_equal sources, Stores::AiAutofill::ImageSources.verify(
+      response.parsed_body.fetch("image_token"), store: @store, actor: @store_admin
+    )
+    assert_equal original, @store.reload.attributes
   end
 
   private

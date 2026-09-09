@@ -1,18 +1,27 @@
 <% content_for :title, "店舗設定編集" %>
+<% content_for :head do %>
+  <meta name="turbo-cache-control" content="no-cache">
+<% end %>
 
-<div
-  class="store-edit-shell"
-  data-controller="store-ai-autofill"
-  data-store-ai-autofill-url-value="<%= admin_store_ai_autofill_path(@store) %>">
+<div class="store-edit-shell">
   <%= form_with model: [:admin, @store],
         id: "store-edit-form",
-        class: "store-edit",
+        class: "store-edit store-ai-autofill",
         html: { multipart: true },
         data: {
-          controller: "image-pair-form store-edit",
+          controller: "store-ai-autofill image-pair-form store-edit",
+          "store-ai-autofill-url-value": admin_store_ai_autofill_path(@store),
+          "store-ai-autofill-image-url-value": image_admin_store_ai_autofill_path(@store),
+          "image-pair-form-always-submit-value": true,
           action: [
-            "submit->image-pair-form#submit",
+            "submit->store-ai-autofill#guardSubmit",
             "submit->store-edit#prepareSubmit",
+            "submit->image-pair-form#submit",
+            "input->store-ai-autofill#edited",
+            "change->store-ai-autofill#edited",
+            "image-attachment-editor:change->store-ai-autofill#imageChanged",
+            "image-pair-form:submit-start->store-ai-autofill#saving",
+            "image-pair-form:submit-error->store-ai-autofill#saveFailed",
             "input->store-edit#refresh",
             "change->store-edit#refresh",
             "image-attachment-editor:change->store-edit#refresh",
@@ -21,6 +30,10 @@
             "turbo:submit-end->store-edit#turboSubmitEnd"
           ].join(" ")
         } do |f| %>
+    <div class="store-ai-autofill__loading" data-store-ai-autofill-target="loading" role="status" tabindex="-1" hidden>
+      <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+      <span data-store-ai-autofill-target="loadingMessage">お店の情報を探しています…</span>
+    </div>
     <%= render "form",
               f: f,
               store: @store,
@@ -28,5 +41,4 @@
               back_path: dashboard_path %>
   <% end %>
 
-  <%= render "ai_autofill_modal" %>
 </div>

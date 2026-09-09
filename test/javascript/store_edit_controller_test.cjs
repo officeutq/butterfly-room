@@ -96,6 +96,22 @@ test("starts clean and enables save after any store field changes", () => {
   assert.equal(saveButtons.every((button) => !button.disabled), true)
 })
 
+test("unchanged Enter submissions and saving duplicates stop later multipart handlers", () => {
+  const { Controller } = loadController()
+  const { controller } = buildController(Controller)
+  for (const saving of [false, true]) {
+    controller.saving = saving
+    const event = {
+      prevented: false, stopped: false,
+      preventDefault() { this.prevented = true },
+      stopImmediatePropagation() { this.stopped = true },
+    }
+    controller.prepareSubmit(event)
+    assert.equal(event.prevented, true)
+    assert.equal(event.stopped, true)
+  }
+})
+
 test("tracks image operations and checkbox changes", () => {
   const { Controller } = loadController()
   const { controller, controls, saveButtons } = buildController(Controller)

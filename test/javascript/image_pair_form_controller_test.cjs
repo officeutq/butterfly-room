@@ -151,7 +151,7 @@ test("leaves a normal profile update to Turbo when no image operation exists", a
   assert.equal(environment.requests.length, 0)
 })
 
-test("initial registration opts into JSON without an image and keeps the form on failure", async () => {
+test("store forms opt into JSON without an image and keep the form on failure", async () => {
   const environment = loadController({ error: new Error("地域は50文字以内で入力してください") })
   const { controller, form, errorTarget, button } = buildController(environment.Controller, [""])
   controller.alwaysSubmitValue = true
@@ -167,6 +167,21 @@ test("initial registration opts into JSON without an image and keeps the form on
   assert.equal(errorTarget.hidden, false)
   assert.match(errorTarget.textContent, /50文字/)
   assert.equal(button.disabled, false)
+})
+
+test("store save permission errors keep staged images and explain the authentication problem", async () => {
+  for (const status of [401, 403]) {
+    const environment = loadController({ error: Object.assign(new Error("generic error"), { status }) })
+    const { controller, editors, errorTarget, button } = buildController(environment.Controller, ["replace"])
+    controller.alwaysSubmitValue = true
+    controller.submit(submitEvent())
+    await flushPromises()
+    assert.match(errorTarget.textContent, /再ログインまたは権限の確認/)
+    assert.equal(editors[0].input.value, "replace")
+    assert.equal(button.disabled, false)
+    assert.equal(environment.requests.length, 1)
+    assert.equal(environment.navigations.length, 0)
+  }
 })
 
 test("sends both image sections once and shows the saving state", async () => {

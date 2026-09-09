@@ -7,46 +7,47 @@
 <%= form_with model: @store,
       url: admin_store_registration_setup_path(@store),
       method: :patch,
-      id: "store-registration-setup-form",
-      class: "store-edit store-registration-setup",
+      id: "store-ai-autofill-form",
+      class: "store-edit store-ai-autofill",
       html: { multipart: true },
       data: {
-        controller: "store-registration-setup image-pair-form",
-        "store-registration-setup-url-value": admin_store_ai_autofill_path(@store, registration_images: 1),
-        "store-registration-setup-image-url-value": image_admin_store_registration_setup_path(@store),
-        "store-registration-setup-ready-value": reviewing,
+        controller: "store-ai-autofill image-pair-form",
+        "store-ai-autofill-initial-value": true,
+        "store-ai-autofill-url-value": admin_store_ai_autofill_path(@store),
+        "store-ai-autofill-image-url-value": image_admin_store_ai_autofill_path(@store),
+        "store-ai-autofill-ready-value": reviewing,
         "image-pair-form-always-submit-value": true,
-        action: "submit->store-registration-setup#guardSubmit submit->image-pair-form#submit input->store-registration-setup#edited change->store-registration-setup#edited image-attachment-editor:change->store-registration-setup#imageChanged image-pair-form:submit-start->store-registration-setup#saving image-pair-form:submit-error->store-registration-setup#saveFailed"
+        action: "submit->store-ai-autofill#guardSubmit submit->image-pair-form#submit input->store-ai-autofill#edited change->store-ai-autofill#edited image-attachment-editor:change->store-ai-autofill#imageChanged image-pair-form:submit-start->store-ai-autofill#saving image-pair-form:submit-error->store-ai-autofill#saveFailed"
       } do |f| %>
-  <div class="store-registration-setup__loading" data-store-registration-setup-target="loading" role="status" tabindex="-1" hidden>
+  <div class="store-ai-autofill__loading" data-store-ai-autofill-target="loading" role="status" tabindex="-1" hidden>
     <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-    <span data-store-registration-setup-target="loadingMessage">お店の情報を探しています…</span>
+    <span data-store-ai-autofill-target="loadingMessage">お店の情報を探しています…</span>
   </div>
 
-  <div class="store-edit__fields" data-store-registration-setup-target="content">
-    <section data-store-registration-setup-target="intro" <%= "hidden" if reviewing %>>
-      <div class="store-registration-setup__mark mb-3" aria-hidden="true"><i class="bi bi-shop"></i></div>
+  <div class="store-edit__fields" data-store-ai-autofill-target="content">
+    <section data-store-ai-autofill-target="intro" <%= "hidden" if reviewing %>>
+      <div class="store-ai-autofill__mark mb-3" aria-hidden="true"><i class="bi bi-shop"></i></div>
       <h1 class="h3 mb-3">お店の紹介ページを公開しましょう</h1>
       <p class="text-body-secondary">Butterflyveに店舗情報を掲載して、お客様にお店を知ってもらうきっかけをつくりましょう。</p>
       <h2 class="h5 mt-4">まずはAIで、店舗情報をかんたん入力</h2>
       <p class="text-body-secondary mb-4">店舗名からネット上の情報を探して、住所・営業時間・紹介文などの入力をお手伝いします。</p>
     </section>
 
-    <header data-store-registration-setup-target="reviewHeader" <%= "hidden" unless reviewing %>>
-      <h1 class="h4 mb-3" tabindex="-1" data-store-registration-setup-target="reviewHeading">店舗情報を確認しましょう</h1>
-      <p class="text-body-secondary" data-store-registration-setup-target="resultMessage" role="status" hidden></p>
+    <header data-store-ai-autofill-target="reviewHeader" <%= "hidden" unless reviewing %>>
+      <h1 class="h4 mb-3" tabindex="-1" data-store-ai-autofill-target="reviewHeading">店舗情報を確認しましょう</h1>
+      <p class="text-body-secondary" data-store-ai-autofill-target="resultMessage" role="status" hidden></p>
       <p class="form-text mb-4">任意項目は空欄のままでも公開できます。あとから追加・変更することもできます。</p>
     </header>
 
     <div class="form-floating mb-3" data-bs-theme="light">
       <%= f.text_field :name, class: "form-control", placeholder: "店舗名", required: true,
-            data: { "store-registration-setup-target": "name" } %>
+            data: { "store-ai-autofill-target": "name" } %>
       <%= f.label :name, "店舗名（必須）" %>
     </div>
-    <p class="text-danger small" role="alert" data-store-registration-setup-target="nameError" hidden></p>
+    <p class="text-danger small" role="alert" data-store-ai-autofill-target="nameError" hidden></p>
 
-    <div data-store-registration-setup-target="initialAction" <%= "hidden" if reviewing %>>
-      <button type="button" class="btn btn-warning btn-lg w-100 py-3" data-action="store-registration-setup#search">
+    <div data-store-ai-autofill-target="initialAction" <%= "hidden" if reviewing %>>
+      <button type="button" class="btn btn-warning btn-lg w-100 py-3" data-action="store-ai-autofill#search">
         <i class="bi bi-stars me-1" aria-hidden="true"></i> AIで店舗情報を自動入力
       </button>
       <div class="bg-body-tertiary border rounded-3 p-3 mt-3">
@@ -55,9 +56,9 @@
       </div>
     </div>
 
-    <fieldset class="border-0 p-0 m-0 w-100" data-store-registration-setup-target="details" <%= "hidden disabled" unless reviewing %>>
+    <fieldset class="border-0 p-0 m-0 w-100" data-store-ai-autofill-target="details" <%= "hidden disabled" unless reviewing %>>
       <legend class="visually-hidden">店舗の詳細情報</legend>
-      <button type="button" class="btn btn-warning btn-sm mb-4" data-action="store-registration-setup#search">
+      <button type="button" class="btn btn-warning btn-sm mb-4" data-action="store-ai-autofill#search">
         <i class="bi bi-stars me-1" aria-hidden="true"></i> AIで再検索
       </button>
 
@@ -73,9 +74,9 @@
 
       <%= render "stores/information_fields", f:, store: @store, registration_setup: true %>
 
-      <details class="store-registration-setup__sources mb-4" data-store-registration-setup-target="sourcesSection" hidden>
+      <details class="store-ai-autofill__sources mb-4" data-store-ai-autofill-target="sourcesSection" hidden>
         <summary>AIが参照した情報</summary>
-        <ul class="small mt-2 mb-0" data-store-registration-setup-target="sources"></ul>
+        <ul class="small mt-2 mb-0" data-store-ai-autofill-target="sources"></ul>
       </details>
 
       <p class="form-text mt-4 mb-2">入力内容は公開後も変更できます。</p>

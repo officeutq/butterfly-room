@@ -36,7 +36,7 @@ test("imported candidates stage a centered pair without a dialog and remain edit
     assert.equal(result.editingPhase, "editing-replacement")
     assert.equal(result.restoredPhase, "staged-replace")
     assert.equal(result.canDelete, true)
-    assert.deepEqual(result.afterDelete, { operation: "", canImport: false, hidden: true })
+    assert.deepEqual(result.afterDelete, { operation: "", canImport: true, hidden: true })
   } finally {
     await environment?.close()
     await browser.close()
@@ -67,6 +67,85 @@ test("candidate import protects current and manually selected images and cancels
       return { currentProtected, manualProtected, aborted, phase: controller.phase, operation: controller.operationInputTarget.value }
     })
     assert.deepEqual(result, { currentProtected: true, manualProtected: true, aborted: true, phase: "idle", operation: "" })
+  } finally {
+    await environment?.close()
+    await browser.close()
+  }
+})
+
+test("deleting a saved image allows AI replacement before saving and undo restores the saved image", async () => {
+  const browser = await browsers.chromium.launch({ headless: true })
+  let environment
+  try {
+    environment = await openImageAttachmentEditorPage(browser)
+    const results = await environment.page.evaluate(async () => {
+      const current = await window.currentImage()
+      const file = await window.imageFile({ width: 1200, height: 630 })
+      const results = []
+      for (const legacy of [false, true]) {
+        const controller = window.mountEditor({ ...current, ratioKey: "social", keepStagedActions: true,
+          ...(legacy ? { currentSourceUrl: "", currentSourceBlobId: 0, currentCropData: "" } : {}) })
+        controller.removeImage()
+        const deleted = { operation: controller.operationInputTarget.value, canImport: controller.canImportCandidate() }
+        const imported = await controller.importCandidate(file)
+        const replaced = { operation: controller.operationInputTarget.value, source: controller.sourceInputTarget.files.length,
+          display: controller.displayInputTarget.files.length, canImport: controller.canImportCandidate() }
+        controller.undoChange()
+        const undone = { operation: controller.operationInputTarget.value, url: controller.currentPreviewTarget.src,
+          canImport: controller.canImportCandidate() }
+        controller.removeImage()
+        const canSearchAfterDeletingAgain = controller.canImportCandidate()
+        results.push({ imported, deleted, replaced, undone, originalUrl: current.currentDisplayUrl, canSearchAfterDeletingAgain })
+      }
+      return results
+    })
+    for (const result of results) {
+      assert.deepEqual(result.deleted, { operation: "delete", canImport: true })
+      assert.equal(result.imported, true)
+      assert.deepEqual(result.replaced, { operation: "replace", source: 1, display: 1, canImport: false })
+      assert.deepEqual(result.undone, { operation: "", url: result.originalUrl, canImport: false })
+      assert.equal(result.canSearchAfterDeletingAgain, true)
+    }
+  } finally {
+    await environment?.close()
+    await browser.close()
+  }
+})
+
+test("failed or aborted AI replacement preserves a pending deletion and newer edits win", async () => {
+  const browser = await browsers.chromium.launch({ headless: true })
+  let environment
+  try {
+    environment = await openImageAttachmentEditorPage(browser)
+    const results = await environment.page.evaluate(async () => {
+      const current = await window.currentImage()
+      const file = await window.imageFile({ width: 1200, height: 630 })
+      const results = []
+      for (const mode of ["failure", "abort", "undo"]) {
+        const controller = window.mountEditor({ ...current, ratioKey: "social" })
+        controller.removeImage()
+        let finish
+        controller.sourceNormalizer.normalize = () => new Promise((resolve, reject) => {
+          finish = mode === "failure" ? () => reject(new Error("invalid image")) : () => resolve({ file })
+        })
+        const abort = new AbortController()
+        const pending = controller.importCandidate(file, { signal: abort.signal })
+        const whileImporting = { hidden: controller.currentPreviewTarget.hidden, operation: controller.operationInputTarget.value }
+        if (mode === "abort") abort.abort()
+        if (mode === "undo") controller.undoChange()
+        finish()
+        results.push({ mode, whileImporting, imported: await pending, operation: controller.operationInputTarget.value,
+          hidden: controller.currentPreviewTarget.hidden, notice: !controller.deletionNoticeTarget.hidden,
+          canImport: controller.canImportCandidate(), phase: controller.phase,
+          files: controller.sourceInputTarget.files.length + controller.displayInputTarget.files.length })
+      }
+      return results
+    })
+    for (const result of results) {
+      const deleted = result.mode !== "undo"
+      assert.deepEqual(result, { mode: result.mode, whileImporting: { hidden: true, operation: "delete" }, imported: false, operation: deleted ? "delete" : "",
+        hidden: deleted, notice: deleted, canImport: deleted, phase: deleted ? "staged-delete" : "idle", files: 0 })
+    }
   } finally {
     await environment?.close()
     await browser.close()

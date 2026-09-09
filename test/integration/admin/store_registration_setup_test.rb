@@ -9,7 +9,6 @@ class Admin::StoreRegistrationSetupTest < ActionDispatch::IntegrationTest
   include ActiveJob::TestHelper
 
   setup do
-    Admin::StoreRegistrationSetupsController::IMAGE_RATE_LIMIT_STORE.clear
     Admin::StoreAiAutofillsController::RATE_LIMIT_STORE.clear
     @tempfiles = []
     @referral_code = ReferralCode.create!(
@@ -65,10 +64,10 @@ class Admin::StoreRegistrationSetupTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "h1", text: "お店の紹介ページを公開しましょう"
     assert_select "form[action=?]", admin_store_registration_setup_path(store)
-    assert_select "form[data-controller~='store-registration-setup']" \
-                  "[data-store-registration-setup-url-value=?]", admin_store_ai_autofill_path(store, registration_images: 1)
+    assert_select "form[data-controller~='store-ai-autofill']" \
+                  "[data-store-ai-autofill-url-value=?]", admin_store_ai_autofill_path(store)
     assert_select "form[data-image-pair-form-always-submit-value='true']"
-    assert_select "button[data-action='store-registration-setup#search']", count: 2
+    assert_select "button[data-action='store-ai-autofill#search']", count: 2
     assert_select "[data-store-ai-autofill-target='modal']", count: 0
     assert_select "input[name='store[name]'][value=?]", store.name, count: 1
     assert_select "fieldset[hidden][disabled]" do
@@ -163,7 +162,7 @@ class Admin::StoreRegistrationSetupTest < ActionDispatch::IntegrationTest
 
     assert_response :unprocessable_entity
     assert_select ".alert-danger", text: /店舗名/
-    assert_select "form[data-store-registration-setup-ready-value='true']"
+    assert_select "form[data-store-ai-autofill-ready-value='true']"
     assert_select "fieldset[hidden]", count: 0
     assert_select "textarea[name='store[description]']", text: "保存されない"
     store.reload
@@ -312,12 +311,12 @@ class Admin::StoreRegistrationSetupTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_user_session_path
   end
 
-  test "image fetch is authorized by pending session and a bound search token and does not save" do
+  test "image fetch uses a bound search token without saving and remains available after registration" do
     store = register_store
     actor = User.find_by!(email: @registered_email)
     original = store.attributes
     token = Stores::AiAutofill::ImageSources.token_for([], store:, actor:)
-    post image_admin_store_registration_setup_path(store), params: { image_token: token }, as: :json
+    post image_admin_store_ai_autofill_path(store), params: { image_token: token }, as: :json
     assert_response :unprocessable_entity
 
     token = Stores::AiAutofill::ImageSources.verifier.generate(
@@ -325,20 +324,20 @@ class Admin::StoreRegistrationSetupTest < ActionDispatch::IntegrationTest
       purpose: Stores::AiAutofill::ImageSources::PURPOSE, expires_in: 5.minutes
     )
     assert_no_difference -> { ActiveStorage::Blob.count } do
-      post image_admin_store_registration_setup_path(store), params: { image_token: token }, as: :json
+      post image_admin_store_ai_autofill_path(store), params: { image_token: token }, as: :json
     end
     assert_response :no_content
     assert_includes response.headers["Cache-Control"], "no-store"
     assert_equal original, store.reload.attributes
 
     other, = create_store_admin
-    post image_admin_store_registration_setup_path(other), params: { image_token: token }, as: :json
-    assert_response :redirect
+    post image_admin_store_ai_autofill_path(other), params: { image_token: token }, as: :json
+    assert_response :forbidden
 
     patch admin_store_registration_setup_path(store), params: { store: { name: store.name } }, as: :json
     assert_response :success
-    post image_admin_store_registration_setup_path(store), params: { image_token: token }, as: :json
-    assert_response :redirect
+    post image_admin_store_ai_autofill_path(store), params: { image_token: token }, as: :json
+    assert_response :no_content
   end
 
   test "verified image bytes are returned without creating blobs or publishing the store" do
@@ -360,7 +359,7 @@ class Admin::StoreRegistrationSetupTest < ActionDispatch::IntegrationTest
     original_constructor = klass.method(:new)
     klass.define_singleton_method(:new) { fake_fetcher }
     assert_no_difference -> { ActiveStorage::Blob.count } do
-      post image_admin_store_registration_setup_path(store), params: { image_token: token }, as: :json
+      post image_admin_store_ai_autofill_path(store), params: { image_token: token }, as: :json
     end
     assert_response :success
     assert_equal "image/jpeg", response.media_type
@@ -380,14 +379,14 @@ class Admin::StoreRegistrationSetupTest < ActionDispatch::IntegrationTest
       purpose: Stores::AiAutofill::ImageSources::PURPOSE, expires_in: 5.minutes
     )
     10.times do
-      post image_admin_store_registration_setup_path(store), params: { image_token: token }, as: :json
+      post image_admin_store_ai_autofill_path(store), params: { image_token: token }, as: :json
       assert_response :no_content
     end
-    post image_admin_store_registration_setup_path(store), params: { image_token: token }, as: :json
+    post image_admin_store_ai_autofill_path(store), params: { image_token: token }, as: :json
     assert_response :too_many_requests
   end
 
-  test "initial search issues image tokens while the normal search response remains unchanged" do
+  test "search issues the same bound image tokens before and after registration completion" do
     store = register_store
     actor = User.find_by!(email: @registered_email)
     result = Stores::AiAutofill::SearchService::Result.new(
@@ -400,18 +399,22 @@ class Admin::StoreRegistrationSetupTest < ActionDispatch::IntegrationTest
     klass = Stores::AiAutofill::SearchService
     original_constructor = klass.method(:new)
     klass.define_singleton_method(:new) { |**arguments| calls << arguments; service }
-    post admin_store_ai_autofill_path(store, registration_images: 1),
+    post admin_store_ai_autofill_path(store),
       params: { store_ai_autofill: { store_name: "入力名" } }, as: :json
     assert_response :success
     assert_equal true, calls.last[:image_search]
     assert_equal result.image_sources, Stores::AiAutofill::ImageSources.verify(
       response.parsed_body.fetch("image_token"), store:, actor:
     )
+    patch admin_store_registration_setup_path(store), params: { store: { name: store.name } }, as: :json
+    assert_response :success
     post admin_store_ai_autofill_path(store),
       params: { store_ai_autofill: { store_name: "入力名" } }, as: :json
     assert_response :success
-    assert_equal false, calls.last[:image_search]
-    assert_not response.parsed_body.key?("image_token")
+    assert_equal true, calls.last[:image_search]
+    assert_equal result.image_sources, Stores::AiAutofill::ImageSources.verify(
+      response.parsed_body.fetch("image_token"), store:, actor:
+    )
   ensure
     klass.define_singleton_method(:new, original_constructor) if original_constructor
   end

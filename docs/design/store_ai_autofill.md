@@ -9,20 +9,20 @@
   - [#1079 店舗情報編集画面にAI自動入力機能を実装する](https://github.com/officeutq/butterfly-room/issues/1079)
 - 最終確認日: 2026-09-09
 
-本書は店舗情報編集画面のAI自動入力機能の正本とする。初回店舗設定だけの表示・反映方式は「25. 初回店舗設定のAI入力」、画像取得の追加試作は「26. 初回店舗設定の画像候補取得」を優先し、通常編集は従来の候補選択方式を維持する。
+本書は店舗情報編集画面のAI自動入力機能の正本とする。#1228（子Issue #1229〜#1231）で初回・代行・通常編集のAI反映と画像取得を共通化した。初回専用の導入・公開導線は25節、画像取得は26節、通常編集への適用範囲と保存境界は27節を参照する。
 
 ## 2. 目的と重要な境界
 
-店舗情報編集フォームへ現在入力されている店舗名だけを検索キーとしてWeb上の公開情報を検索し、同じフォームへ反映できる候補を提示する。既存の住所、電話番号、業態、Webサイト、SNS等は誤っている可能性がある修正対象とみなし、検索条件や店舗同一性の根拠には使用しない。
+店舗情報編集フォームへ現在入力されている店舗名だけを検索キーとしてWeb上の公開情報を検索し、同じフォームの更新可能な項目へ直接反映する。既存の住所、電話番号、業態、Webサイト、SNS等は誤っている可能性がある修正対象とみなし、検索条件や店舗同一性の根拠には使用しない。
 
 処理の境界は次のとおりとする。
 
 ```text
 AI検索
-  → 候補確認
-  → 選択項目を表示中のフォームへ反映
+  → 空欄またはAI・未バッジ付き項目へ直接反映
+  → 未設定・未編集、または明示的に削除した画像があれば仮反映
   → ユーザーが内容を確認
-  → 既存の「更新する」でDB保存
+  → 明示的な「保存」でDB保存
 ```
 
 AI検索、候補表示、フォーム反映ではDBを更新しない。住所から座標を取得する既存のgeocode（住所から緯度・経度を取得する処理）も、従来どおり最終保存時だけ動作させる。
@@ -43,7 +43,7 @@ GET /admin/stores/:id/edit
 
 PATCH /admin/stores/:id
   → Admin::StoresController#update
-  → ImageAttachments::UpdateService#call
+  → Stores::UpdateService#call
   → Store更新と必要な画像処理
 ```
 
@@ -61,7 +61,7 @@ PATCH /admin/stores/:id
 - `tiktok_url`
 - `youtube_url`
 
-AI対象外の`published`、`name`、`thumbnail`も通常更新では扱うが、AI検索結果からは変更しない。
+`published`、`name`はAI検索結果から変更しない。店舗画像は未設定・未編集、または明示的に削除した場合だけ仮反映し、残っている画像を保護する。
 
 ### 3.2 Storeモデル
 
@@ -84,18 +84,13 @@ AI対象外の`published`、`name`、`thumbnail`も通常更新では扱うが�
 
 AI検索にも、画面表示だけでなく同じサーバー側認可を適用する。
 
-### 3.4 フロントエンドとモーダル
+### 3.4 フロントエンド
 
-- Rails Views、Turbo、Stimulus、Bootstrap Modalを利用している
-- `application.html.erb`には`turbo-frame#modal`が常設されている
-- `modal_controller.js`はTurbo Frameで取得したモーダルを開き、閉じたときにFrame内容を破棄する
-- JSONの非同期通信では、`lp_analytics/event_sender.js`にCSRF token、`Accept: application/json`、`Content-Type: application/json`、`credentials: same-origin`を付ける既存例がある
-
-AIモーダルは検索中から結果表示まで同じDOMを保持する必要がある。閉じるたびに内容を破棄する既存の共通`modal_controller.js`は変更せず、店舗編集専用Stimulus Controller（画面状態を制御するJavaScriptクラス）と専用モーダルを追加する。
+Rails Views、Turbo、Stimulusを使用する。AI入力は共通の `store_ai_autofill_controller.js` が検索、直接反映、バッジ、情報源、画面操作のロックを担当し、候補確認モーダルを使わない。初回だけ `initial` を有効にし導入画面を表示する。共通のモーダル処理や画像編集ダイアログは変更しない。
 
 ### 3.5 外部API、環境変数、ログ、レート制限
 
-- OpenAI SDKおよびOpenAI用環境変数は未導入
+- OpenAI SDKと環境変数は`Settings`、`ResponsesClient`で管理する
 - 外部APIは`Ivs::Client`、`Sms::Client`、`LpAnalytics::Sheets::ClientFactory`等でラップしている
 - 環境変数の読み取りと検証は`LpAnalytics::Sheets::Settings`に既存例がある
 - productionは`.env.production`、stagingは`.env.staging`をDocker Composeの`env_file`として利用する
@@ -108,20 +103,20 @@ AIモーダルは検索中から結果表示まで同じDOMを保持する必要
 ### 4.1 対象
 
 - 店舗情報編集画面のAI検索ボタン
-- 押下直後に表示する検索中モーダル
+- 押下直後の同一画面内スピナーと全体操作ロック
 - OpenAI Responses APIとWeb Searchの連携
 - 店舗同一性判定
 - AI候補と情報源の取得
-- 現在値と候補の比較
-- 項目ごとの選択とフォーム反映
+- 現在値・バッジに基づく編集保護とフォームへの直接反映
+- 未設定・未編集画像の取得と仮反映
 - 権限、二重実行防止、レート制限、timeout（処理待ち上限）、エラー処理、ログ
 - 自動テスト
 
 ### 4.2 対象外
 
 - AI検索時のDB更新
-- 公開状態、店舗名、サムネイル画像のAI変更
-- 通常編集での画像検索または画像の自動設定（初回設定の追加試作は26節を参照）
+- 公開状態、店舗名、営業支援会社のAI変更
+- 設定済み・手動選択済み・仮反映済み画像の自動差し替え
 - 店舗情報の新規カラム追加
 - バックグラウンドJob化
 - OpenAIの管理画面をアプリケーションから操作する機能
@@ -129,7 +124,7 @@ AIモーダルは検索中から結果表示まで同じDOMを保持する必要
 
 ## 5. 全体構成
 
-後続の#1079では、次の構成を採用する。
+現在の構成は次のとおり。
 
 | ファイル | 責務 |
 | --- | --- |
@@ -137,9 +132,8 @@ AIモーダルは検索中から結果表示まで同じDOMを保持する必要
 | `app/services/stores/ai_autofill/settings.rb` | 環境変数の読み取りと検証 |
 | `app/services/stores/ai_autofill/responses_client.rb` | OpenAI公式Ruby SDK、Responses APIリクエスト、SDK responseの正規化 |
 | `app/services/stores/ai_autofill/search_service.rb` | 検索入力、候補検証、同一性と情報源の検証、アプリ向け結果生成 |
-| `app/javascript/controllers/store_ai_autofill_controller.js` | モーダル状態、fetch、比較、チェック初期値、フォーム反映、二重実行防止 |
-| `app/views/admin/stores/_ai_autofill_modal.html.erb` | 検索中・結果・エラーを表示する単一モーダルの骨格 |
-| `app/views/admin/stores/edit.html.erb` | 専用Controller、検索URL、フォーム、モーダルの接続 |
+| `app/javascript/controllers/store_ai_autofill_controller.js` | 検索、編集保護、直接反映、バッジ・情報源、画像取得、全体操作ロック |
+| `app/views/admin/stores/edit.html.erb` | 共通Controller、検索・画像URL、JSON保存、変更検知の接続 |
 | `config/routes.rb` | 店舗単位のAI検索endpoint（サーバーの受付URL） |
 
 ControllerへOpenAI呼び出し、候補検証、プロンプト生成を置かない。Service内でDB更新やtransaction（データベースの一連処理）は行わない。
@@ -153,7 +147,9 @@ namespace :admin do
   resources :stores, only: %i[index new create edit update] do
     resource :ai_autofill,
       only: :create,
-      controller: "store_ai_autofills"
+      controller: "store_ai_autofills" do
+      post :image
+    end
   end
 end
 ```
@@ -185,7 +181,7 @@ end
 - Rails標準のCSRF保護を無効化しない
 - fetchは`X-CSRF-Token`を送信する
 - `credentials: "same-origin"`を指定する
-- endpointはJSON以外の成功レスポンスを返さない
+- 検索はJSONを返す。画像受付URLは画像データ、候補なしの場合は204を返す
 - session切れ、`401`、`403`は候補を返さず、画面では権限または再ログインが必要なエラーとして表示する
 
 ### 6.4 レート制限
@@ -389,11 +385,7 @@ Structured Output内の`source_urls`はモデル生成値であるため、そ�
 
 ### 12.3 画面表示
 
-各変更候補の直下に、その候補の主要な情報源をクリック可能なリンクとして表示する。加えてモーダル末尾に重複を除いた主要情報源一覧を表示する。
-
-リンクは`target="_blank"`と`rel="noopener noreferrer"`を付ける。URLとtitleはDOMへHTMLとして挿入せず、`textContent`と属性設定を使う。
-
-OpenAI公式ドキュメントは、Web検索結果をユーザーへ表示する場合、引用を明確かつクリック可能にすることを求めている。候補とsourceの対応を画面上で維持する。
+反映した項目の情報源を保持し、重複を除いた「AIが参照した情報」に折りたたんで表示する。手動編集で保護された値の情報源を、再検索結果で差し替えない。画像の仮反映が成功した場合は掲載元も追加し、画像の削除・変更取消で外す。リンクには検証済みHTTP(S) URLとテキストノードを使用する。
 
 ## 13. Structured Output Schema
 
@@ -552,7 +544,7 @@ SNSに店舗公式である根拠がない場合は、同名アカウントで�
 - 公式住所が「福岡県福岡市中央区…」なら`福岡市中央区`
 - 公式ページが商業地域名を明示し、住所とも整合する場合は`渋谷`等の短い表記を利用してよい
 - 住所から確認できない通称地域を推測しない
-- 現在値がある場合は初期チェックOFFのため、自動上書きしない
+- 保存済み・手動編集済みの非空欄は保護し、空欄またはAI・未バッジ付きの場合だけ反映する
 
 ### 15.2 業態
 
@@ -615,97 +607,44 @@ SNSに店舗公式である根拠がない場合は、同名アカウントで�
 
 `fields`には11項目を常に含め、候補がない値を`null`にする。`field_sources`は候補がある項目だけを含める。`sources`は検証済み候補または同一性根拠から参照されるURLだけに絞り、重複を除く。
 
-## 17. 現在値との比較
+## 17. 直接反映と編集保護
 
-検索開始時にStimulus Controllerが、AI対象11項目の表示中フォーム値をsnapshot（比較用の固定値）として保持する。モーダルはstatic backdropで開き、検索中は背面フォームを操作できないため、response受信までsnapshotと表示値のずれを発生させない。
+AI対象は既存のテキスト11項目。画面を開いた時点の保存済み非空欄は、取得経緯にかかわらずバッジなしで保護する。空欄またはAI・未バッジ付き項目だけを更新する。手動編集でバッジを消し、非空欄を保護する。手動で空欄にした項目は次の検索で更新可能になる。
 
-比較用の正規化だけを行い、フォームへ反映する候補文字列自体は書き換えない。
+success / partialでは取得値を反映してAIバッジを付け、更新対象の未取得項目は空欄と未バッジにする。以前のAI値が今回未取得ならクリアする。説明文を入力値に設定しない。not_found / ambiguous / errorでは値・バッジ・反映済み情報源を維持する。
 
-| 種別 | 比較方法 |
-| --- | --- |
-| 共通文字列 | Unicode NFKC、前後空白除去、改行コード統一 |
-| `business_type` | enum文字列の完全一致 |
-| 電話番号 | 数字だけを抽出して比較。`+81`と先頭`0`の変換は推測になるため行わない |
-| URL | schemeとhostを小文字化し、default port、末尾 `/`、fragmentを比較時だけ除外する |
+店舗名、公開状態、営業支援会社は対象外。画像は26節の保護条件で別途扱う。AI状態は画面内だけに保持しDBに保存しない。
 
-utm等のquery parameterは公式URLの一部である可能性があるため、一律削除しない。
-
-### 17.1 候補行の表示条件
-
-- AI候補が`null`または空欄: 表示しない
-- 現在値とAI候補が正規化後に同一: 表示しない
-- 上記以外: 変更候補として表示する
-- 現在値が空欄の項目は「新しく追加される情報」、現在値がある項目は「既存情報の変更候補」に分ける
-- 追加候補は候補値を直接表示する。ただし概要とURL項目は長くなりやすいため、折りたたみ内に表示する
-- 変更候補は一覧上で現在値と候補値を繰り返さず、「変更内容を見る」の折りたたみ内で比較する
-
-### 17.2 checkbox初期値
-
-- 現在値が空欄、AI候補あり: ON
-- 現在値あり、AI候補と異なる: OFF
-
-## 18. モーダルと画面状態
+## 18. 同一画面での検索と結果表示
 
 ### 18.1 状態遷移
 
-```text
-idle
-  └─ ボタン押下
-       ├─ モーダルを直ちに表示
-       ├─ snapshot作成
-       ├─ ボタン無効化
-       └─ loading
-            ├─ success
-            ├─ partial
-            ├─ not_found
-            ├─ ambiguous
-            ├─ no_changes
-            └─ error
-```
+通常編集は詳細フォームから始まり、AI検索は任意。初回だけ導入画面から始まり、検索後に詳細フォームを表示する。
 
-response受信時にモーダルを閉じたり、新しいモーダルへ差し替えたりしない。同じBootstrap Modal instanceと同じモーダルDOM内でbodyとfooterを切り替える。
+1. 黄色の「AIで店舗情報を自動入力」を押す。
+2. 「お店の情報を探しています…」とスピナーを表示する。
+3. フォーム全体（上部の保存・戻るを含む）と周囲のナビゲーションをinertにし、二重検索とEnter保存を防ぐ。
+4. テキストを直接反映する。必要なら同じ操作ロック中に画像を取得・仮反映する。
+5. 結果をフォーム内に表示してロックを解除する。以降のボタンは「AIで再検索」とする。
 
-### 18.2 状態別表示
+### 18.2 結果と保存
 
-| 状態 | 表示 | 操作 |
-| --- | --- | --- |
-| `loading` | 「AIで店舗情報を検索しています」、spinner、`aria-live` | 操作不可。二重実行不可 |
-| `success` | 全項目の変更候補、現在値、AI候補、情報源、checkbox | キャンセル、フォームに反映する |
-| `partial` | 取得できた項目だけと一部取得の説明 | キャンセル、フォームに反映する |
-| `not_found` | 店舗情報を確認できなかった説明 | 閉じる |
-| `ambiguous` | 同名・類似店舗等により特定できなかった説明 | 閉じる |
-| `no_changes` | 現在値との差分がなかった説明、主要情報源 | 閉じる |
-| `error` | 検索を完了できなかった汎用説明と`error_code` | 閉じる |
+- success / partial：反映後のフォームで確認する。各項目のAI・未バッジの説明は操作時だけ開く。
+- 値の変更がない場合：「入力内容に変更はありませんでした。必要に応じて手入力で修正できます。」。バッジだけでは未保存変更にしない。
+- テキスト変更がなく画像だけ反映した場合：「店舗画像を入力しました。内容を確認し、必要に応じて修正してください。」。テキストの変更がないことを理由に画像取得を省略しない。
+- not_found / ambiguous / error：25.2節の案内を表示し、手入力で続けられる。認証・権限エラーは再ログイン・権限確認を案内する。
 
-画面へ表示する`error_code`は本機能で定義した固定値だけを許可し、取得できない値や未知の値は`unknown_error`とする。内部例外、`error_code`以外のAPI response body、prompt、API keyは画面へ出さない。
+反映時は対応する入力値を更新し、input / changeイベントで既存の変更検知へ通知する。AI検索・仮反映では保存しない。検索前後で実際の値が変わった場合だけ既存の未保存変更扱いになる。APIの内部例外や秘密値は表示しない。開発環境向けの限定診断情報は従来どおり応答可能だが、画面には固定の案内文を使う。
 
-development（開発環境）に限り、原因調査用としてOpenAI SDK例外の`type`、`code`、HTTP status、request IDを`development_diagnostics`で返し、エラーモーダル内へ表示する。値は200文字までとし、例外message、header全体、request / response bodyは含めない。development以外では`development_diagnostics`自体をresponseへ含めない。
+### 18.3 通信と破棄
 
-`success`と`partial`では、項目ごとの情報源リンクを繰り返し表示せず、重複を除いた「参照元 N件」をモーダル下部の折りたたみに集約する。反映ボタンには選択中の件数を表示し、選択が0件の場合は無効化する。
+- 1操作につきAI問い合わせは1回。自動再試行なし。
+- ブラウザのAI待ち上限は50秒、サーバーは45秒。画像の待ち上限は別に20秒。
+- 完了・失敗時にタイマーを解除し、操作ロックを戻す。
+- disconnectでは通信を中止し、ロックを解除する。遅れて届いた応答を別画面へ反映しない。
+- 初回・通常編集ともTurboの画面キャッシュを使わない。再訪問時は保存済みデータから開始する。
 
-モーダルは画面中央に配置し、最大幅を640px、内容全体の最大高さをおおむね画面の76%とする。候補が多い場合はheader（見出し）とfooter（操作部）を固定したままbody（候補一覧）だけをスクロールさせる。
-
-### 18.3 フォーム反映
-
-「フォームに反映する」は`type="button"`とし、フォームをsubmitしない。
-
-1. checkboxがONの候補だけを対象にする
-2. 対応する`store[...]` inputまたはselectの`value`を書き換える
-3. `input`と`change` eventをdispatchする
-4. モーダルを閉じる
-5. 既存の「更新する」は押さない
-
-対象field名は固定allowlist（許可一覧）とし、responseに未知のfield名があってもDOMへ反映しない。`published`、`name`、`thumbnail`、`remove_thumbnail`はallowlistへ含めない。
-
-### 18.4 lifecycle
-
-- `requestInFlight` guard（実行中防御条件）とボタンの`disabled`を併用する
-- `AbortController`を保持する
-- client側は50秒でfetch待ちを打ち切る。server側OpenAI timeoutの45秒より長くする
-- `disconnect`と`turbo:before-cache`でfetchをabortし、Bootstrap Modalをdisposeする
-- 完了、失敗、切断の全経路でtimer、guard、button状態をcleanup（後始末）する
-
-client timeoutで接続を切っても、server側処理が即時停止するとは限らない。server側45秒timeoutを処理上限の正とする。
+ブラウザの通信中止でサーバー側処理が即時停止するとは限らない。サーバー側にも既存の時間上限を維持する。
 
 ## 19. エラー処理
 
@@ -827,28 +766,13 @@ OpenAI公式Ruby SDKへ`Rails.logger`と`log_level: :info`を設定してよい�
 
 既存の`test/integration/admin_store_edit_authorization_test.rb`と`test/integration/admin/store_update_test.rb`も実行し、通常更新の権限と保存処理に回帰がないことを確認する。
 
-### 22.3 JavaScript test
+### 22.3 JavaScript・ブラウザテスト
 
-配置:
-
-- `test/javascript/store_ai_autofill_controller_test.cjs`
-
-確認内容:
-
-- fetch完了前にモーダルとloadingが表示される
-- 二重クリックでfetchが1回だけ実行される
-- CSRF、JSON Accept、same-origin credentialsを送る
-- 7状態を同じモーダル内で切り替える
-- 空欄は初期ON、既存値ありは初期OFF、同一値とnull候補は非表示
-- 追加候補と変更候補を分け、長い項目と変更比較を折りたたむ
-- 情報源を重複排除して1か所の折りたたみに集約する
-- 選択件数を反映ボタンに表示し、0件では無効化する
-- 全候補が同一なら`no_changes`
-- checkboxがONの項目だけをフォームへ反映する
-- 反映時にフォームをsubmitしない
-- API対象外項目を変更しない
-- disconnectとtimeoutでcleanupする
-- source linkを安全に描画する
+- `test/javascript/store_ai_autofill_controller_test.cjs`：初回・通常編集、空欄とバッジ付きだけの直接反映、手動編集保護、情報源、無変更・画像のみ、エラー・切断・操作ロック。
+- `test/javascript/store_edit_controller_test.cjs` と `image_pair_form_controller_test.cjs`：変更検知、未変更Enterの抑止、確認操作、画像なしのJSON保存、失敗後の再送信。
+- `tests/manual_capture/store_ai_edit.spec.js`：PC・スマートフォンで保存済み値の保護、バッジ、再検索、画像あり・なしの実際の保存失敗と再保存、非公開維持、画像取消、無変更時の保存無効。
+- `tests/manual_capture/initial_store_setup.spec.js`：初回画面から公開・完了画面までの回帰確認。
+- `test/javascript/browser/image_attachment_editor_test.cjs`：中央切り抜き、仮反映、設定済み・手動画像の保護、取消・削除・中断、共通画像編集。
 
 ### 22.4 確認コマンド
 
@@ -856,6 +780,7 @@ OpenAI公式Ruby SDKへ`Rails.logger`と`log_level: :info`を設定してよい�
 bin/rails test \
   test/services/stores/ai_autofill \
   test/integration/admin/store_ai_autofills_test.rb \
+  test/integration/admin/store_ai_images_test.rb \
   test/integration/admin_store_edit_authorization_test.rb \
   test/integration/admin/store_update_test.rb
 
@@ -937,9 +862,9 @@ CSSを変更した場合だけ`npm run build:css`も実行する。
 
 ### 25.3 保存と状態の所有者
 
-`store_registration_setup_controller.js`が初回専用の表示・検索・バッジ・情報源を保持する。`stores/_information_fields`は初回専用の引数で店舗名・通常AIボタンを除外して共有する。検索・再検索・フォーム表示だけではDB保存・公開しない。
+`store_ai_autofill_controller.js`が共通の検索・バッジ・情報源を保持し、初回だけ`initial`で導入表示を有効にする。`stores/_information_fields`は初回専用の引数で店舗名・通常AIボタンを除外して共有する。検索・再検索・フォーム表示だけではDB保存・公開しない。
 
-初回フォームのみ`image-pair-form-always-submit-value=true`を指定し、画像の有無にかかわらず既存のFormDataによるJSON送信経路を使う。これにより画像なしの検証失敗でもTurboによる再描画を避け、同じDOM（画面要素）と入力値・バッジ・情報源・編集保護状態を維持する。通常編集の送信方式は変更しない。AI状態を送信用の店舗属性やDBへ追加しない。
+初回・通常編集フォームは`image-pair-form-always-submit-value=true`を指定し、画像の有無にかかわらず既存のFormDataによるJSON送信経路を使う。これにより画像なしの検証失敗でもTurboによる再描画を避け、同じDOM（画面要素）と入力値・バッジ・情報源・編集保護状態を維持する。通常編集でも同じ送信方式を使う（27節）。AI状態を送信用の店舗属性やDBへ追加しない。
 
 サーバーのHTMLエラー応答でも詳細フォームを表示する。通常利用ではJSON応答を受け、画面上にエラーを表示してAIを再実行しない。明示的な「店舗情報を保存して公開する」だけで既存の保存・公開・登録完了計測を実行する。
 
@@ -947,17 +872,29 @@ CSSを変更した場合だけ`npm run build:css`も実行する。
 
 ## 26. 初回店舗設定の画像候補取得
 
-対象Issue：#1224。画像対象外だった#1219の初期実装に対する追加試作。詳細と実取得結果は[店舗画像取得の試作記録](store_ai_image_trial.md)を参照する。
+対象Issue：#1224、#1230。画像対象外だった#1219の初期実装に対する追加試作を、#1228で全店舗編集へ共通化した。詳細と実取得結果は[店舗画像取得の試作記録](store_ai_image_trial.md)を参照する。
 
-- 初回画面だけ検索URLに`registration_images=1`を付ける。pending、current_store、管理権限が一致する場合だけ画像取得元の確認を追加する。
+- 初回・代行・通常編集とも同じ検索URLを使い、`image_search: true`で検索結果から取得元を作る。初回専用クエリは使わない。
 - AIは従来の1回のResponses API（AIへの問い合わせ）で店舗名からテキストと公式ページの根拠を取得する。画像検索用の追加AIリクエストやモデル変更は行わない。
 - `ImageSources`は、今回の検索でURL入力候補として採用済みの`website_url` / `x_url` / `instagram_url` / `tiktok_url` / `youtube_url`を、そのまま同じ順に画像取得元へ使う。店舗同一性、情報源との照合、SNSドメインの条件はテキストURLの取得と共通にし、画像だけに追加の`official_website` / `official_sns`根拠やSNSの認証バッジを要求しない。AIへの指示・問い合わせ内容も通常のURL取得と共通。フォーム入力のURLを直接取得しない。
-- 取得元リストは店舗・利用者に結び付けた5分間有効の署名付き`image_token`で渡す。通常編集のレスポンス形式は変えない。
-- ブラウザは画像未設定・未編集の場合だけ`POST /admin/stores/:store_id/registration_setup/image`へトークンを送る。初回設定の認可を再確認し、`ImageImportService`が画像を一時取得する。画像取得はAIの実行回数に含めず、別に利用者ごと10分間10回を上限にする。
+- 取得元リストは店舗・利用者に結び付けた5分間有効の署名付き`image_token`で渡す。検索応答には`image_token`を含め、取得元がなければnullとする。
+- ブラウザは画像未設定・未編集、または利用者が明示的に画像を削除した場合に`POST /admin/stores/:store_id/ai_autofill/image`へトークンを送る。通常の店舗編集権限を再確認し、`ImageImportService`が画像を一時取得する。画像取得はAIの実行回数に含めず、別に利用者ごと10分間10回を上限にする。
 - 公開HTML（ページの内容）中の`og:image`、次に`twitter:image`を試す。画像がない、取得不可、破損・寸法不足の場合は次の取得元へ進む。ログイン回避や任意の投稿巡回は行わない。
 - 画像取得は全体15秒・取得元ごと3秒を上限とする。ブラウザは画像の通信・仮反映を20秒で打ち切る。AI通信の既存上限とは別なので、追加待ち時間が発生する。
 - `PublicImageFetcher`がHTTP(S)の通常ポート、DNS（ドメインの接続先）と各転送先、取得量・取得時間を検証する。公開IPだけを許可し、そのIPへ接続を固定する。HTMLは1MiB、画像は5MiB。画像はJPEG / PNG / WebPの実体を検査する。
 - 仮反映は既存の編集元JPEG生成・画像組送信を再利用する。中央を1200×630で切り抜き、ダイアログを挟まず確認フォームに表示する。利用者は既存の画像メニューで構図変更・差し替え・削除できる。
-- 設定済み・手動選択済み・仮反映済み画像を再検索で上書きしない。一度編集や削除をした画像を同じ画面内で自動取得し直さない。
+- 設定済み・手動選択済み・仮反映済み画像を再検索で上書きしない。ただし「画像を削除」した場合は空欄と同じ扱いとし、削除を保存する前でも次のAI検索で画像を取得できる。「画像の変更を取り消す」だけでは再取得を許可しない。
+- 削除後の画像取得が失敗・中断した場合は削除予定を維持する。取得に成功した場合は既存の画像差し替えとして仮反映し、元画像の競合検知用IDは保存まで維持する。変更取消では保存済み画像へ戻し、画像の削除・差し替えは最後の保存操作で確定する。
 - 掲載元は「AIが参照した情報」内に表示する。画像取得失敗はテキスト結果・バッジを破棄せず、画像なしで保存・公開を続けられる。
 - 画像取得時にDB・Active Storage（添付ファイル保存先）を更新しない。ブラウザ上の一時ファイルとして保持し、既存の明示的な保存時だけ画像組と店舗情報を確定する。保存失敗でも画像組・入力値を保持する。
+
+## 27. 代行・通常店舗編集への適用（#1228〜#1231）
+
+- 代行店舗作成後、ダッシュボード、店舗切替、招待・運営追加された店舗管理者、運営管理者、初回設定離脱後の通常編集は、すべて既存の店舗編集画面を利用する。
+- 導入画面を追加せず詳細フォームを最初から表示する。通常編集のAIボタン直下だけに「登録済みの項目をAIで入れ直したい場合は、空欄にしてから検索してください。」を表示する。
+- 初回・通常編集で同じ直接反映・バッジ・情報源・画像保護を使う。候補モーダルと初回専用JavaScriptは廃止する。
+- 共通画像取得は店舗編集権限と店舗・利用者に結び付いた5分間有効のトークンで認可する。pendingやcurrent_storeとの一致を要求しない。URLで指定された店舗の認可を行い、検索・画像取得で選択店舗を切り替えない。
+- 画像取得の利用者ごと10分10回は全店舗・全導線で共通。AI検索の10分10回とは別枠とし、Railsの画像制限に名前を付けてキーの衝突を防ぐ。導線ごとに枠を増設しない。
+- 画像あり・なしとも既存のJSON保存を利用し、保存失敗時に値、画像ファイル、バッジ、編集保護、情報源を同じ画面に残す。検索は再実行しない。保存確認、未保存変更警告、戻る、公開状態、運営専用項目、成功後のダッシュボード遷移を維持する。
+- 通常保存は `Admin::StoresController#update → Stores::UpdateService`。初回公開・登録完了・コンバージョン計測を行う `Stores::CompleteRegistrationSetup` は通常編集から呼ばない。初回のedit/updateのpending認可は維持する。
+- DB変更、保存済みAI由来の永続化、別画面との同期、画像の強制差し替えは対象外。既存の画像更新競合検知、プロフィール・ブース画像フォームの責務を維持する。
