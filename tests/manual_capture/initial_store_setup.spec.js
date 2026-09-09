@@ -51,6 +51,7 @@ for (const [name, viewport, withImage] of [
       if (request.url().endsWith("/registration_setup") && request.method() !== "GET") saves++
     })
     await register(page)
+    const storeId = new URL(page.url()).pathname.match(/\/stores\/(\d+)\//)[1]
     const storeName = page.getByLabel("店舗名（必須）", { exact: true })
     const publish = page.getByRole("button", { name: "店舗情報を保存して公開する", exact: true })
     await expect(storeName).toHaveValue("AI入力確認用店舗")
@@ -112,6 +113,10 @@ for (const [name, viewport, withImage] of [
     await publish.click()
     await expect(page).toHaveURL(/\/stores\/registration\/thanks$/)
     await expect(page.getByRole("heading", { name: "店舗情報の登録・公開が完了しました" })).toBeVisible()
+    await page.screenshot({ path: testInfo.outputPath(`${name}-thanks.png`), fullPage: true })
+    await page.getByRole("link", { name: "店舗ページを見る", exact: true }).click()
+    await expect(page).toHaveURL(new RegExp(`/stores/${storeId}$`))
+    await expect(page.getByRole("heading", { name: "確認済み店舗", exact: true })).toBeVisible()
     expect(saves).toBe(2)
     expect(searches).toBe(2)
     expect(errors).toEqual([])

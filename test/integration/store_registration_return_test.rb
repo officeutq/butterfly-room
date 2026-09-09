@@ -390,7 +390,7 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "h1", text: "店舗情報の登録・公開が完了しました"
-    assert_select "a[href=?]", dashboard_path, text: "ダッシュボードへ進む"
+    assert_select "a[href=?]", store_path(store), text: "店舗ページを見る"
     assert_equal(
       [
         {
@@ -409,6 +409,11 @@ class StoreRegistrationReturnTest < ActionDispatch::IntegrationTest
     refute_includes data_layer_events.first.keys, "user_id"
     refute_includes data_layer_events.first.keys, "ref"
     refute_includes data_layer_events.first.keys, "referral_code"
+
+    get store_path(store)
+    assert_response :success
+    assert_select "h1", text: store.name
+    assert_empty data_layer_events
 
     get dashboard_path
     assert_response :success

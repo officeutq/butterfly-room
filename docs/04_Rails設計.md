@@ -735,7 +735,7 @@ end
 4. `Stores::CompleteRegistrationSetup`が店舗情報と画像を保存し、request由来の公開状態を受け付けずサーバー側で`published = true`にする。保存に失敗した場合は非公開状態、pending、旧画像を維持する。
 5. 保存・公開成功後だけ、Storeに匿名LP訪問が紐づいていれば`store_registration_complete`を記録する。その後pendingを削除し、Store ID、許可済み`from`、UTMだけを`store_registration_completion` sessionへ移してサンクスへ遷移する。
 6. サンクスはcompletionのStore ID、`current_store`、管理権限を検証し、初回表示時にcompletionを消費する。GTMのdataLayerへは完了event、許可済み`from`、UTMだけを渡し、Store ID、User ID、紹介コードは渡さない。
-7. サンクス表示後にLP attribution / referral code sessionを削除し、ダッシュボードへ案内する。ダッシュボードでは既存オンボーディングが`invite_cast`から始まる。
+7. サンクス表示後にLP attribution / referral code sessionを削除し、「店舗ページを見る」から登録完了情報に対応する`store_path(@store)`へ案内する（#1226）。説明は「店舗情報を公開しました。作成したお店のページを見てみましょう。」とする。ダッシュボードを開いた場合の既存オンボーディングは`invite_cast`から始まる。
 
 初回設定を離脱しても通常管理画面への移動は強制的に禁止しない。通常店舗編集から公開した場合や、pending sessionを失った場合は登録完了イベントを補完しない。初回設定の再開状態を表すDBカラムも追加しないため、このようなStoreは公開状態にかかわらず初回フローのCV未達成として扱う。
 
