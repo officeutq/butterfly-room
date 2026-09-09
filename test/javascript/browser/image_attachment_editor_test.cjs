@@ -3,6 +3,76 @@ const test = require("node:test")
 const browsers = require("@playwright/test")
 const { openImageAttachmentEditorPage } = require("./helpers/image_attachment_editor_page.cjs")
 
+test("imported candidates stage a centered pair without a dialog and remain editable and removable", async () => {
+  const browser = await browsers.chromium.launch({ headless: true })
+  let environment
+  try {
+    environment = await openImageAttachmentEditorPage(browser)
+    const result = await environment.page.evaluate(async () => {
+      const controller = window.mountEditor({ ratioKey: "social", keepStagedActions: true })
+      const file = await window.imageFile({ width: 800, height: 1200 })
+      const imported = await controller.importCandidate(file)
+      const state = JSON.parse(controller.cropDataInputTarget.value)
+      const bitmap = await createImageBitmap(controller.displayInputTarget.files[0])
+      const output = { width: bitmap.width, height: bitmap.height }
+      bitmap.close()
+      const workspaceHidden = controller.workspaceTarget.hidden
+      const canImportAgain = controller.canImportCandidate()
+      await controller.editExisting()
+      const editingPhase = controller.phase
+      controller.cancelEdit()
+      const restoredPhase = controller.phase
+      const canDelete = !controller.deleteButtonTarget.hidden
+      controller.removeImage()
+      const afterDelete = { operation: controller.operationInputTarget.value, canImport: controller.canImportCandidate(), hidden: controller.currentPreviewTarget.hidden }
+      return { imported, state, output, workspaceHidden, canImportAgain, editingPhase, restoredPhase, canDelete, afterDelete }
+    })
+    assert.equal(result.imported, true)
+    assert.deepEqual(result.output, { width: 1200, height: 630 })
+    assert.equal(result.state.ratioKey, "social")
+    assert.ok(result.state.crop.y > 0)
+    assert.equal(result.workspaceHidden, true)
+    assert.equal(result.canImportAgain, false)
+    assert.equal(result.editingPhase, "editing-replacement")
+    assert.equal(result.restoredPhase, "staged-replace")
+    assert.equal(result.canDelete, true)
+    assert.deepEqual(result.afterDelete, { operation: "", canImport: false, hidden: true })
+  } finally {
+    await environment?.close()
+    await browser.close()
+  }
+})
+
+test("candidate import protects current and manually selected images and cancels on abort", async () => {
+  const browser = await browsers.chromium.launch({ headless: true })
+  let environment
+  try {
+    environment = await openImageAttachmentEditorPage(browser)
+    const result = await environment.page.evaluate(async () => {
+      const file = await window.imageFile({ width: 1200, height: 630 })
+      let controller = window.mountEditor({ ...(await window.currentImage()), ratioKey: "social" })
+      const currentProtected = !(await controller.importCandidate(file))
+      controller = window.mountEditor({ ratioKey: "social" })
+      await controller.selectFile({ currentTarget: { files: [file] } })
+      controller.cancelEdit()
+      const manualProtected = !(await controller.importCandidate(file))
+      controller = window.mountEditor({ ratioKey: "social" })
+      let finish
+      controller.sourceNormalizer.normalize = () => new Promise((resolve) => { finish = resolve })
+      const abort = new AbortController()
+      const pending = controller.importCandidate(file, { signal: abort.signal })
+      abort.abort()
+      finish({ file })
+      const aborted = !(await pending)
+      return { currentProtected, manualProtected, aborted, phase: controller.phase, operation: controller.operationInputTarget.value }
+    })
+    assert.deepEqual(result, { currentProtected: true, manualProtected: true, aborted: true, phase: "idle", operation: "" })
+  } finally {
+    await environment?.close()
+    await browser.close()
+  }
+})
+
 test("shared editor creates fixed-size replacement files without blank borders", async () => {
   const browser = await browsers[process.env.IMAGE_VERIFICATION_BROWSER || "chromium"].launch({ headless: true })
   let environment

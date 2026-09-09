@@ -41,7 +41,7 @@ for (const [name, viewport, withImage] of [
     let release
     let nextResult = result({ area: "渋谷", description: "AIで入力した紹介文" })
     const firstSearch = new Promise((resolve) => { release = resolve })
-    await page.route("**/admin/stores/*/ai_autofill", async (route) => {
+    await page.route("**/admin/stores/*/ai_autofill?*", async (route) => {
       searches++
       expect(route.request().postDataJSON()).toEqual({ store_ai_autofill: { store_name: "確認済み店舗" } })
       if (searches === 1) await firstSearch
@@ -120,7 +120,7 @@ for (const [name, viewport, withImage] of [
 
 test("AI unavailability allows manual publishing without badges or an automatic retry", async ({ page }) => {
   let searches = 0
-  await page.route("**/admin/stores/*/ai_autofill", async (route) => {
+  await page.route("**/admin/stores/*/ai_autofill?*", async (route) => {
     searches++
     await route.fulfill({ status: 503, json: { status: "error", error_code: "openai_unavailable" } })
   })
@@ -131,4 +131,67 @@ test("AI unavailability allows manual publishing without badges or an automatic 
   await page.getByRole("button", { name: "店舗情報を保存して公開する", exact: true }).click()
   await expect(page).toHaveURL(/\/stores\/registration\/thanks$/)
   expect(searches).toBe(1)
+})
+
+for (const [name, viewport] of [["desktop", { width: 1440, height: 1000 }], ["mobile", { width: 390, height: 844 }]]) {
+  test(`${name}: AI image preview survives re-search and failed save and is published explicitly`, async ({ page }, testInfo) => {
+    await page.setViewportSize(viewport)
+    const errors = []
+    page.on("pageerror", (error) => errors.push(error.message))
+    let imageRequests = 0
+    let searches = 0
+    await page.route("**/admin/stores/*/ai_autofill?*", async (route) => {
+      searches++
+      await route.fulfill({ json: { ...result({ area: "渋谷" }), image_token: "test-signed-token" } })
+    })
+    await page.route("**/registration_setup/image", async (route) => {
+      imageRequests++
+      expect(route.request().postDataJSON()).toEqual({ image_token: "test-signed-token" })
+      await route.fulfill({
+        contentType: "image/jpeg", body: require("node:fs").readFileSync(path.resolve(__dirname, "../../test/fixtures/files/sample.jpg")),
+        headers: { "X-Image-Source-Url": "https://example.com/official-store" }
+      })
+    })
+    await register(page)
+    await page.getByRole("button", { name: "AIで店舗情報を自動入力", exact: true }).click()
+    const operation = page.locator('[data-image-attachment-editor-target="operationInput"]')
+    const preview = page.locator('[data-image-attachment-editor-target="currentPreview"]')
+    await expect(operation).toHaveValue("replace")
+    await expect(preview).toBeVisible()
+    await expect(page.locator("dialog[open]")).toHaveCount(0)
+    await page.getByText("AIが参照した情報", { exact: true }).click()
+    await expect(page.getByRole("link", { name: "店舗画像の掲載元" })).toHaveAttribute("href", "https://example.com/official-store")
+    const previewUrl = await preview.getAttribute("src")
+    await page.getByRole("button", { name: "AIで再検索", exact: true }).click()
+    await expect(page.locator('[data-store-registration-setup-target="loading"]')).toBeHidden()
+    expect(imageRequests).toBe(1)
+    await expect(preview).toHaveAttribute("src", previewUrl)
+    await page.getByLabel("地域", { exact: true }).fill("長".repeat(51))
+    const publish = page.getByRole("button", { name: "店舗情報を保存して公開する", exact: true })
+    await publish.click()
+    await expect(page.locator('[data-image-pair-form-target="error"]')).toBeVisible()
+    await expect(operation).toHaveValue("replace")
+    await expect(preview).toHaveAttribute("src", previewUrl)
+    await page.getByLabel("地域", { exact: true }).fill("画像確認用")
+    await page.screenshot({ path: testInfo.outputPath(`${name}-ai-image.png`), fullPage: true })
+    await publish.click()
+    await expect(page).toHaveURL(/\/stores\/registration\/thanks$/)
+    expect(searches).toBe(2)
+    expect(imageRequests).toBe(1)
+    expect(errors).toEqual([])
+  })
+}
+
+test("image download failure keeps the successful text result and permits publication", async ({ page }) => {
+  await page.route("**/admin/stores/*/ai_autofill?*", (route) => route.fulfill({
+    json: { ...result({ area: "保持する地域" }), image_token: "test-signed-token" }
+  }))
+  await page.route("**/registration_setup/image", (route) => route.fulfill({ status: 503 }))
+  await register(page)
+  await page.getByRole("button", { name: "AIで店舗情報を自動入力", exact: true }).click()
+  await expect(page.getByLabel("地域", { exact: true })).toHaveValue("保持する地域")
+  await expect(badge(page, "area")).toHaveText(/AI/)
+  await expect(page.locator('[data-image-attachment-editor-target="operationInput"]')).toHaveValue("")
+  await page.getByRole("button", { name: "店舗情報を保存して公開する", exact: true }).click()
+  await expect(page).toHaveURL(/\/stores\/registration\/thanks$/)
 })

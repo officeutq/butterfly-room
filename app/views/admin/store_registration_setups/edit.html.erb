@@ -12,10 +12,11 @@
       html: { multipart: true },
       data: {
         controller: "store-registration-setup image-pair-form",
-        "store-registration-setup-url-value": admin_store_ai_autofill_path(@store),
+        "store-registration-setup-url-value": admin_store_ai_autofill_path(@store, registration_images: 1),
+        "store-registration-setup-image-url-value": image_admin_store_registration_setup_path(@store),
         "store-registration-setup-ready-value": reviewing,
         "image-pair-form-always-submit-value": true,
-        action: "submit->store-registration-setup#guardSubmit submit->image-pair-form#submit input->store-registration-setup#edited change->store-registration-setup#edited image-pair-form:submit-start->store-registration-setup#saving image-pair-form:submit-error->store-registration-setup#saveFailed"
+        action: "submit->store-registration-setup#guardSubmit submit->image-pair-form#submit input->store-registration-setup#edited change->store-registration-setup#edited image-attachment-editor:change->store-registration-setup#imageChanged image-pair-form:submit-start->store-registration-setup#saving image-pair-form:submit-error->store-registration-setup#saveFailed"
       } do |f| %>
   <div class="store-registration-setup__loading" data-store-registration-setup-target="loading" role="status" tabindex="-1" hidden>
     <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>

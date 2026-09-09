@@ -426,6 +426,50 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
     end
   end
 
+  test "only opt-in matched searches expose official image sources without another AI call" do
+    data = base_data
+    data["identity_evidence"] = [ official_website_evidence ]
+    data["fields"]["website_url"] = candidate(@source_url)
+    calls = []
+    result = call_service(data, image_search: true, calls:)
+    assert_equal [ @source_url ], result.image_sources.pluck("url")
+    assert_equal 1, calls.size
+    assert_not result.as_json.key?(:image_sources)
+    assert_empty call_service(data).image_sources
+    data["conflicting_candidates_found"] = true
+    assert_empty call_service(data, image_search: true).image_sources
+    data["conflicting_candidates_found"] = false
+    data["identity_evidence"] = [ phone_evidence ]
+    assert_equal [ @source_url ], call_service(data, image_search: true).image_sources.pluck("url")
+  end
+
+  test "accepted social URL candidates are image sources even when sourced by a store listing" do
+    data = base_data
+    data["matched_name"] = "キャンディーメイド熊本"
+    data["identity_evidence"] = [ phone_evidence ]
+    urls = {
+      "x_url" => "https://twitter.com/cmade_kumamoto",
+      "instagram_url" => "https://www.instagram.com/cmade_kumamoto/",
+      "tiktok_url" => "https://www.tiktok.com/@candymade.kumamoto"
+    }
+    urls.each { |field, value| data["fields"][field] = candidate(value) }
+    plain_calls = []
+    image_calls = []
+    plain = call_service(data, calls: plain_calls)
+    with_images = call_service(data, image_search: true, calls: image_calls)
+    assert_equal plain.fields, with_images.fields
+    assert_equal plain_calls.sole, image_calls.sole
+    assert_equal urls.keys, with_images.image_sources.pluck("kind")
+    assert_equal urls.values, with_images.image_sources.pluck("url")
+
+    data["fields"]["x_url"] = candidate(urls["x_url"], "https://unverified.example")
+    rejected = call_service(data, image_search: true)
+    assert_nil rejected.fields["x_url"]
+    assert_not_includes rejected.image_sources.pluck("kind"), "x_url"
+    data["match_status"] = "not_found"
+    assert_empty call_service(data, image_search: true).image_sources
+  end
+
   private
 
   def call_service(
@@ -433,7 +477,8 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
     calls: [],
     store_name: @store.name,
     logger: Logger.new(IO::NULL),
-    sources: [ { "title" => "店舗公式", "url" => @source_url } ]
+    sources: [ { "title" => "店舗公式", "url" => @source_url } ],
+    image_search: false
   )
     api_result = Stores::AiAutofill::ResponsesClient::Result.new(
       data:,
@@ -448,6 +493,7 @@ class Stores::AiAutofill::SearchServiceTest < ActiveSupport::TestCase
       actor: @actor,
       store_name:,
       responses_client: fake_client,
+      image_search:,
       logger:
     ).call
   end

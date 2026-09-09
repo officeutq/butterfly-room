@@ -193,6 +193,17 @@ class Admin::StoreAiAutofillsTest < ActionDispatch::IntegrationTest
     )
   end
 
+  test "normal editing cannot opt in to image fetching without an initial registration session" do
+    sign_in @store_admin, scope: :user
+    calls = []
+    with_search_result(partial_result, initialization_calls: calls) do
+      post admin_store_ai_autofill_path(@store, registration_images: 1),
+        params: { store_ai_autofill: { store_name: "画像検索" } }, as: :json
+    end
+    assert_response :forbidden
+    assert_empty calls
+  end
+
   private
 
   def with_search_result(result, initialization_calls: nil)

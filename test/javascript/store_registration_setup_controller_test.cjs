@@ -29,7 +29,7 @@ function setup() {
   const requests = []
   let request = async () => { throw new Error("network") }
   const context = vm.createContext({
-    AbortController, Event, URL,
+    AbortController, Event, URL, File, Blob,
     document: { createElement: () => new Node(), querySelector: () => ({ content: "csrf" }) },
     window: {
       setTimeout(callback) { timers.set(callback, callback); return callback },
@@ -75,6 +75,38 @@ function result(values = {}) {
 function response(data, status = 200) {
   return { ok: status === 200, status, json: async () => data }
 }
+
+test("optional image request remains locked and its timeout preserves the completed text result", async () => {
+  const env = setup()
+  env.controller.hasImageUrlValue = true
+  env.controller.imageUrlValue = "/registration_setup/image"
+  let imports = 0
+  env.controller.imageEditor = () => ({ canImportCandidate: () => true, importCandidate: async () => { imports++ } })
+  let imageStarted
+  const started = new Promise((resolve) => { imageStarted = resolve })
+  env.respond((url, options) => {
+    if (url === env.controller.urlValue) return Promise.resolve(response({ ...result({ area: "保持する" }), image_token: "signed" }))
+    return new Promise((_, reject) => {
+      options.signal.addEventListener("abort", () => reject(new Error("timeout")))
+      imageStarted()
+    })
+  })
+  const pending = env.controller.search()
+  await started
+  assert.equal(env.controller.contentTarget.inert, true)
+  assert.equal(env.inputs.area.value, "保持する")
+  await env.controller.search()
+  assert.equal(env.requests.length, 2)
+  Array.from(env.timers.values())[0]()
+  await pending
+  assert.equal(env.controller.busy, false)
+  assert.equal(env.controller.readyValue, true)
+  assert.equal(env.controller.fields.get("area").origin, "ai")
+  assert.equal(env.inputs.area.value, "保持する")
+  assert.match(env.controller.resultMessageTarget.textContent, /AIで見つかった/)
+  assert.equal(imports, 0)
+  assert.equal(env.timers.size, 0)
+})
 
 function submitEvent() {
   return { prevented: false, stopped: false,

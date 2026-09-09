@@ -20,13 +20,14 @@ export default class extends Controller {
     "intro", "initialAction", "reviewHeader", "reviewHeading", "name", "nameError",
     "details", "content", "loading", "loadingMessage", "resultMessage", "sourcesSection", "sources"
   ]
-  static values = { url: String, ready: Boolean, timeout: { type: Number, default: 50000 } }
+  static values = { url: String, imageUrl: String, ready: Boolean, timeout: { type: Number, default: 50000 } }
 
   connect() {
     this.connected = true
     this.busy = false
     this.applying = false
     this.blockedRegions = []
+    this.imageSource = null
     this.fields = new Map()
     FIELD_NAMES.forEach((field) => {
       const input = this.element.querySelector(`[name="store[${field}]"]`)
@@ -119,7 +120,10 @@ export default class extends Controller {
             data.fields?.[field] === null || typeof data.fields?.[field] === "string"
           )) throw new Error("invalid_response")
           result = data.status
-          if (["success", "partial"].includes(result)) this.applyResult(data)
+          if (["success", "partial"].includes(result)) {
+            this.applyResult(data)
+            await this.importImage(data.image_token, controller)
+          }
         }
       }
     } catch (_) {
@@ -136,6 +140,51 @@ export default class extends Controller {
         this.setBusy(false)
         this.showReview(result)
       }
+    }
+  }
+
+  imageEditor() {
+    const element = this.element.querySelector('[data-controller~="image-attachment-editor"]')
+    return element && this.application.getControllerForElementAndIdentifier(element, "image-attachment-editor")
+  }
+
+  async importImage(token, controller) {
+    const editor = this.imageEditor()
+    if (!token || !this.hasImageUrlValue || !editor?.canImportCandidate()) return
+
+    window.clearTimeout(this.timeoutId)
+    this.timeoutId = window.setTimeout(() => controller.abort(), 20000)
+    this.loadingMessageTarget.textContent = "お店の画像を確認しています…"
+    try {
+      const response = await fetch(this.imageUrlValue, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content || ""
+        },
+        credentials: "same-origin",
+        body: JSON.stringify({ image_token: token }),
+        signal: controller.signal
+      })
+      if (!response.ok || response.status === 204 || response.redirected) return
+      const blob = await response.blob()
+      if (!this.connected || this.abortController !== controller || controller.signal.aborted) return
+      if (!["image/jpeg", "image/png", "image/webp"].includes(blob.type) || blob.size > 5 * 1024 ** 2) return
+
+      const imported = await editor.importCandidate(new File([blob], "store-image", { type: blob.type }), { signal: controller.signal })
+      if (!this.connected || this.abortController !== controller || !imported) return
+      const url = response.headers.get("X-Image-Source-Url")
+      if (this.safeUrl(url)) this.imageSource = { url, title: "店舗画像の掲載元" }
+      this.renderSources()
+    } catch (_) {
+      // Image retrieval is optional: preserve the completed text search.
+    }
+  }
+
+  imageChanged(event) {
+    if (["", "delete"].includes(event.detail.operation)) {
+      this.imageSource = null
+      this.renderSources()
     }
   }
 
@@ -165,6 +214,7 @@ export default class extends Controller {
   renderSources() {
     const sources = new Map()
     this.fields.forEach((entry) => entry.sources.forEach((source) => sources.set(source.url, source)))
+    if (this.imageSource) sources.set(this.imageSource.url, this.imageSource)
     this.sourcesTarget.replaceChildren()
     sources.forEach((source) => {
       const item = document.createElement("li")

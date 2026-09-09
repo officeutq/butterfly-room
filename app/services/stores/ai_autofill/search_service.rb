@@ -32,7 +32,11 @@ module Stores
       }.freeze
       TRACKING_QUERY_KEYS = %w[fbclid gclid msclkid].freeze
 
-      Result = Data.define(:status, :fields, :field_sources, :sources) do
+      Result = Data.define(:status, :fields, :field_sources, :sources, :image_sources) do
+        def initialize(status:, fields:, field_sources:, sources:, image_sources: [])
+          super
+        end
+
         def as_json(*)
           {
             status:,
@@ -43,12 +47,13 @@ module Stores
         end
       end
 
-      def initialize(store:, actor:, store_name:, responses_client: nil, logger: Rails.logger)
+      def initialize(store:, actor:, store_name:, responses_client: nil, logger: Rails.logger, image_search: false)
         @store = store
         @actor = actor
         @store_name = store_name.to_s.strip
         @responses_client = responses_client
         @logger = logger
+        @image_search = image_search
       end
 
       def call
@@ -194,7 +199,8 @@ module Stores
           status:,
           fields:,
           field_sources:,
-          sources: sources_for(referenced_sources, source_map)
+          sources: sources_for(referenced_sources, source_map),
+          image_sources: @image_search ? ImageSources.from(fields:) : []
         )
       end
 
