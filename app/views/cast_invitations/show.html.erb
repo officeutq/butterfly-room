@@ -8,13 +8,6 @@
         <strong><%= @invitation.store.name %></strong>
       </div>
 
-      <% if @invitation.note.present? %>
-        <div class="mb-2">
-          <span class="text-muted">メモ：</span>
-          <span><%= @invitation.note %></span>
-        </div>
-      <% end %>
-
       <div class="mb-2">
         <span class="text-muted">期限：</span>
         <span><%= l(@invitation.expires_at) %></span>
@@ -27,7 +20,9 @@
     </div>
   </div>
 
-  <% if !user_signed_in? %>
+  <% if @invitation.cancelled? %>
+    <div class="alert alert-warning" role="alert">この招待は取り消されました。店舗の管理者に新しい招待をご依頼ください。</div>
+  <% elsif !user_signed_in? %>
     <div class="card mb-3">
       <div class="card-body">
         <h2 class="h5 mb-2">キャスト招待を受ける</h2>

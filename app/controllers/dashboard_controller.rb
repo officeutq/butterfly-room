@@ -5,7 +5,7 @@ class DashboardController < ApplicationController
 
   def show
     store = layout_current_store_for_onboarding
-    store&.advance_onboarding_to_setup_drinks!
+    Stores::AdvanceOnboarding.call!(store: store, action: :dashboard) if store
 
     @selectable_stores_count = selectable_stores.count
     @cast_booths_count = cast_booths.count

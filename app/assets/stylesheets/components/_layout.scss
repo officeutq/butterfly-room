@@ -100,9 +100,25 @@
   color: #4fd17a;
 }
 
+.app-footer-nav-item--invite {
+  color: #4fd17a;
+  padding-inline: 0;
+}
+
+.app-footer-nav-item.app-footer-nav-item--invite .app-footer-nav-label {
+  font-size: clamp(0.45rem, 2.3vw, 0.68rem);
+  letter-spacing: 0;
+  text-overflow: clip;
+}
+
+.text-pre-wrap { white-space: pre-wrap; }
+
 .app-footer-nav-item--live-broadcast:hover,
 .app-footer-nav-item--live-broadcast:focus,
-.app-footer-nav-item--live-broadcast:active {
+.app-footer-nav-item--live-broadcast:active,
+.app-footer-nav-item--invite:hover,
+.app-footer-nav-item--invite:focus,
+.app-footer-nav-item--invite:active {
   color: #63db8a;
   background: rgba(79, 209, 122, 0.14);
 }

@@ -12,6 +12,11 @@ class StoreCastInvitation < ApplicationRecord
   validates :expires_at, presence: true
 
   scope :recent_first, -> { order(created_at: :desc, id: :desc) }
+  scope :visible_in_list, -> { where(cancelled_at: nil) }
+
+  def cancelled?
+    cancelled_at.present?
+  end
 
   def expired?
     expires_at < Time.current
@@ -22,10 +27,11 @@ class StoreCastInvitation < ApplicationRecord
   end
 
   def usable?
-    !used? && !expired?
+    !cancelled? && !used? && !expired?
   end
 
   def status_label
+    return "取消済み" if cancelled?
     return "使用済み" if used?
     return "期限切れ" if expired?
     "有効"

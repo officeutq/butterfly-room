@@ -26,16 +26,20 @@ export default class extends Controller {
 
     const modalEl = this.element.querySelector(".modal")
     if (!modalEl) return
+    if (!this.modal) this.opener = document.activeElement
 
     if (this.modal) {
       try { this.modal.dispose() } catch (_) {}
       this.modal = null
+      this._cleanupBootstrapModalState()
     }
 
     this.modal = new Modal(modalEl, {
       backdrop: "static",
       keyboard: true
     })
+
+    window.dispatchEvent(new CustomEvent("app-modal:opening"))
 
     this._onHidden = () => {
       this._clearRedirectTimeout()
@@ -45,9 +49,15 @@ export default class extends Controller {
       this.element.innerHTML = ""
       this._onHidden = null
       this._cleanupBootstrapModalState()
+      if (this.opener?.isConnected) this.opener.focus({ preventScroll: true })
+      this.opener = null
+      window.dispatchEvent(new CustomEvent("app-modal:closed"))
     }
 
     modalEl.addEventListener("hidden.bs.modal", this._onHidden, { once: true })
+    modalEl.addEventListener("shown.bs.modal", () => {
+      window.dispatchEvent(new CustomEvent("app-modal:shown"))
+    }, { once: true })
     this.modal.show()
   }
 

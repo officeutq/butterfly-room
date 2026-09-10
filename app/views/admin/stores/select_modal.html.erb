@@ -58,7 +58,7 @@
                             class: "btn btn-primary btn-sm",
                             form: {
                               class: "d-inline",
-                              data: { turbo_frame: "_top" }
+                              data: { turbo_frame: @return_to_key == "cast_invitation" ? "modal" : "_top" }
                             } %>
                     </div>
                   </div>

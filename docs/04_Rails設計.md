@@ -800,3 +800,13 @@ User / Store / Boothの新方式では、1用途につき編集元画像・表�
 * `comment_author_link` は未ログイン・退会済みを名前だけ表示する。ログイン済みの共有描画は他人向けのリンク、または本人用の文字要素だけを生成し、current_userを参照しない。
 * `self-profile-link` は通常layoutの `data-current-user-id` と投稿者IDが一致する場合だけ文字をリンクへ置き換える。初期・追加・置換に同じ処理を適用し、切断・Turboキャッシュ保存前は文字へ戻す。共有HTMLに本人の非公開プロフィール内容を含めず、詳細取得はサーバー側で再認可する。
 * プロフィール編集・運営用アカウント管理、関連Store/Booth公開条件、BAN、配信・金銭処理の権限は変更しない。
+
+### キャスト招待モーダル・閲覧専用一覧（#1237〜#1239）
+
+- `Admin::CastInvitationsController#new` はモーダル枠のみ取得し、URL発行は `create` のPOSTで行う。通常GETはダッシュボードへ戻す。
+- `StoreCastInvitations::IssueInvitation` が招待・発行URLを同一transactionで保存する。発行者と `request_key` の一意制約・発行者ロックにより、同じ発行操作の再試行は同じ招待を返す。
+- `StoreCastInvitations::UpdateInvitation` がメモ更新・取消・共有完了を行ロック付きで処理する。各操作は招待の店舗に対する現在の管理権限を確認し、sessionの別店舗へ書き込まない。
+- 招待モーダルは共有・コピーをクリック直後に実行し、メモ保存通信を待たない。メモ保存と共有成功は別状態として管理する。成功後にメモを編集した場合は閉じる際に保存し、失敗時は入力を保持する。共有通知だけが失敗した場合も、閉じる際に通知を再試行する。
+- キャンセルはサーバーで無効化できてから閉じる。発行応答が不明なら同じキーで復旧して取消する。端末の共有画面のキャンセルは招待取消と区別する。
+- `Admin::CastsController#index` は `tab=invitations` で取消済みを除いた閲覧専用一覧を表示する。旧 `GET /admin/cast_invitations` は新タブへ転送する。
+- `Stores::AdvanceOnboarding` はダッシュボード到達・スキップ時の状態変更を担当する。招待発行・共有に伴う進捗は対応する招待Serviceが更新する。

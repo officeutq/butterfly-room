@@ -170,6 +170,15 @@ module ApplicationHelper
     dashboard_path
   end
 
+  def show_onboarding?(store)
+    return false if session[ApplicationController::STORE_REGISTRATION_PENDING_SESSION_KEY].present?
+    return false if session[ApplicationController::STORE_REGISTRATION_COMPLETION_SESSION_KEY].present?
+    return false if controller_path == "admin/store_registration_setups"
+    return false if controller_path == "stores/registrations" && action_name == "thanks"
+
+    current_user&.store_admin? || store&.onboarding_active?
+  end
+
   # 参照表示用：可能な範囲で current_store / current_booth を解決する（副作用なし）
   def layout_current_store
     return nil unless user_signed_in?

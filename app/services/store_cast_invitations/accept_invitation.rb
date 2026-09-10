@@ -24,7 +24,7 @@ module StoreCastInvitations
       ActiveRecord::Base.transaction do
         @invitation.lock!
 
-        raise NotUsable, "この招待は使用できません（期限切れ/使用済み）" unless @invitation.usable?
+        raise NotUsable, "この招待は使用できません（取消済み/期限切れ/使用済み）" unless @invitation.usable?
 
         begin
           StoreMembership.create!(

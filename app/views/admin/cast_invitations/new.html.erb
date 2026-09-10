@@ -1,0 +1,38 @@
+<% content_for :title, "キャストを招待" %>
+<%= turbo_frame_tag "modal" do %>
+  <div class="modal fade" tabindex="-1" aria-labelledby="castInviteTitle" aria-modal="true" role="dialog"
+       data-controller="cast-invitation"
+       data-cast-invitation-create-url-value="<%= admin_cast_invitations_path %>"
+       data-cast-invitation-store-id-value="<%= @store.id %>"
+       data-cast-invitation-request-key-value="<%= @request_key %>">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 id="castInviteTitle" class="modal-title fs-5">キャストを招待</h1>
+          <button type="button" class="btn-close" aria-label="閉じる" data-action="cast-invitation#close" data-cast-invitation-target="closeButton"></button>
+        </div>
+        <div class="modal-body">
+          <p class="fw-semibold"><i class="bi bi-shop me-1" aria-hidden="true"></i><%= @store.name %></p>
+          <p>招待URLをキャスト本人に送りましょう。相手が招待を承認すると、この店舗の所属キャストになります。</p>
+          <div class="alert alert-danger" role="alert" hidden data-cast-invitation-target="error"></div>
+          <p role="status" aria-live="polite" data-cast-invitation-target="status">招待URLを発行しています…</p>
+          <button type="button" class="btn btn-outline-primary mb-3" hidden data-cast-invitation-target="retry" data-action="cast-invitation#issue">発行を再試行</button>
+          <div hidden data-cast-invitation-target="content">
+            <label for="castInviteUrl" class="form-label">招待URL</label>
+            <input id="castInviteUrl" class="form-control mb-2" readonly data-cast-invitation-target="url">
+            <p class="small text-body-secondary">このURLは1人用です。発行から1週間有効です。<br>有効期限：<span data-cast-invitation-target="expires"></span></p>
+            <label for="castInviteNote" class="form-label">管理者用メモ（任意）</label>
+            <textarea id="castInviteNote" class="form-control" rows="2" aria-describedby="castInviteNoteHelp" data-cast-invitation-target="note"></textarea>
+            <p id="castInviteNoteHelp" class="small text-body-secondary mt-2">誰に送る招待か、名前などを控えておけます。このメモは相手には表示されません。</p>
+            <p class="small text-body-secondary" hidden data-cast-invitation-target="unsupported">このブラウザでは共有機能を利用できません。招待URLをコピーして送ってください。</p>
+          </div>
+          <p class="small text-body-secondary mb-0" data-cast-invitation-target="cancelHelp">キャンセルすると、この招待URLは使えなくなります。</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-onboarding-target-element="invitation-close" data-cast-invitation-target="closeButton closeLabel" data-action="cast-invitation#close">キャンセル</button>
+          <button type="button" class="btn btn-primary" disabled data-onboarding-target-element="invitation-share" data-cast-invitation-target="shareButton" data-action="cast-invitation#share">招待URLを共有</button>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
