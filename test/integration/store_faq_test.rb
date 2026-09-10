@@ -8,31 +8,32 @@ class StoreFaqTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select ".store-faq[data-controller='store-faq']", count: 1
-    assert_select ".store-faq__category", count: 10
+    assert_select ".store-faq__category", count: 11
     assert_select ".store-faq__category[hidden]", count: 0
-    assert_select "a.store-faq__category-button[href^='#store-faq-category-']", count: 10
-    assert_select ".store-faq__category-number", count: 10
-    assert_select ".store-faq__question", count: 49
-    assert_select "details.store-faq__question summary[data-action='click->store-faq#toggleQuestion']", count: 49
-    assert_select ".store-faq__section-actions", count: 10
-    assert_select "a.store-faq__section-action--top[href='#store-faq-top']", count: 10, text: /ページトップ/
-    assert_select "a.store-faq__section-action--back", count: 10, text: /戻る/
+    assert_select "a.store-faq__category-button[href^='#store-faq-category-']", count: 11
+    assert_select ".store-faq__category-number", count: 11
+    assert_select ".store-faq__question", count: 53
+    assert_select "details.store-faq__question summary[data-action='click->store-faq#toggleQuestion']", count: 53
+    assert_select ".store-faq__section-actions", count: 11
+    assert_select "a.store-faq__section-action--top[href='#store-faq-top']", count: 11, text: /ページトップ/
+    assert_select "a.store-faq__section-action--back", count: 11, text: /戻る/
 
-    (1..49).each do |number|
+    (1..53).each do |number|
       assert_select "#faq-q#{number}", count: 1
     end
 
     assert_select "a.store-faq__back-link[href=?]", stores_lp_path, count: 1, text: /戻る/
-    assert_select "a[href=?]", stores_lp_path, minimum: 11
+    assert_select "a[href=?]", stores_lp_path, minimum: 12
   end
 
   test "catalog keeps the canonical categories and continuous Q numbers" do
-    assert_equal 10, StoreFaqCatalog.categories.size
-    assert_equal (1..49).to_a, StoreFaqCatalog.questions.map { |faq| faq.fetch(:number) }
+    assert_equal 11, StoreFaqCatalog.categories.size
+    assert_equal (1..53).to_a, StoreFaqCatalog.questions.map { |faq| faq.fetch(:number) }
     assert_equal [
       "サービスについて",
       "料金・ポイント・売上について",
       "利用開始について",
+      "キャストについて",
       "配信について",
       "ブースについて",
       "お客様の利用方法について",
@@ -56,6 +57,30 @@ class StoreFaqTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "コメントもリアルタイムで閲覧できます。"
     assert_includes response.body, "すべての機能を利用するには、お客様のアカウント作成とログインが必要です。"
     assert_not_includes response.body, "初回利用時にはお客様のアカウント作成が必要です。"
+  end
+
+  test "cast category explains invitation and membership using the current entry points" do
+    get stores_faq_path
+
+    assert_response :success
+    assert_select "#store-faq-category-casts" do
+      assert_select "details.store-faq__question", count: 6
+      assert_select "#faq-q19", text: /キャストとは何ですか？/
+      assert_select "#faq-q20", text: /URLを発行しただけでは、所属は確定しません。/
+      assert_select "#faq-q21", text: /画面下部の「キャスト招待」/
+      assert_select "#faq-q21", text: /「招待URLを共有」/
+      assert_select "#faq-q21", text: /「招待URLをコピー」/
+      assert_select "#faq-q21", text: /招待URLは1人用で、発行から1週間有効です。/
+      assert_select "#faq-q22", text: /所属キャスト・招待中のキャストを確認するには？/
+      assert_select "#faq-q22", text: /「所属キャスト」タブ/
+      assert_select "#faq-q22", text: /「キャスト招待一覧」タブ/
+      assert_select "#faq-q23", text: /1人のキャストが複数の店舗に所属できますか？/
+      assert_select "#faq-q24", text: /キャストが退店した場合、所属を解除できますか？/
+    end
+    assert_select "#store-faq-category-store-management details.store-faq__question", count: 2
+    assert_select "#faq-q18", text: /「店舗ページを見る」で進むと、キャスト招待からドリンク設定までのチュートリアルが始まります。/
+    assert_select "#faq-q38", text: /「ブース管理」で対象ブースの「配信\/視聴」/
+    assert_select "#faq-q47", text: /「店舗情報を保存して公開する」を押すと、店舗情報が公開されます。/
   end
 
   test "point purchase plans and store settlement rate are rendered separately" do
