@@ -21,7 +21,7 @@ class ProfileAccountModalsTest < ActionDispatch::IntegrationTest
     @previous_mode.nil? ? ENV.delete("SMS_DELIVERY_MODE") : ENV["SMS_DELIVERY_MODE"] = @previous_mode
   end
 
-  test "all roles have private account actions and the dashboard profile badge" do
+  test "all roles have private account actions and the dashboard links to their profile with a phone badge" do
     User.roles.each_key do |role|
       @user.update!(role:)
       get edit_profile_path
@@ -34,7 +34,13 @@ class ProfileAccountModalsTest < ActionDispatch::IntegrationTest
       [ false, true ].each do |verified|
         @user.update!(phone_number: verified ? "+819012345678" : nil, phone_verified_at: verified ? Time.current : nil)
         get dashboard_path
-        assert_select "a[href='#{edit_profile_path}'] .badge", text: verified ? "電話番号認証済み" : "電話番号未認証"
+        assert_response :success
+        assert_select "a[href='#{user_path(@user)}'] .dashboard-role-card", count: 1 do
+          assert_select ".card-title", text: /プロフィール情報/
+          assert_select ".card-text", text: "プロフィールの確認・編集を行います"
+          assert_select ".badge.text-bg-#{verified ? 'success' : 'warning'}", text: verified ? "電話番号認証済み" : "電話番号未認証"
+        end
+        assert_select "a[href='#{edit_profile_path}'] .dashboard-role-card", count: 0
         assert_select "a[href='#{phone_verification_path}']", count: 0
       end
 

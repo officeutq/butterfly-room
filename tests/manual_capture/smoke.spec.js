@@ -10,7 +10,7 @@ const accounts = [
   {
     name: "customer_dashboard",
     email: "manual+customer@example.test",
-    expectedText: "プロフィール編集",
+    expectedText: "プロフィール情報",
   },
   {
     name: "store_admin_dashboard",
