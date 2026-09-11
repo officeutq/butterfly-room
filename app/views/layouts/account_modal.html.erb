@@ -1,0 +1,18 @@
+<%= turbo_frame_tag "modal" do %>
+  <div class="modal fade" tabindex="-1" aria-labelledby="account-modal-title" aria-modal="true" role="dialog" data-bs-theme="light"
+       data-controller="account-modal-form"
+       data-action="turbo:submit-start->account-modal-form#start turbo:submit-end->account-modal-form#finish turbo:fetch-request-error->account-modal-form#failed hide.bs.modal->account-modal-form#beforeClose click->account-modal-form#beforeNavigate">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 id="account-modal-title" class="modal-title fs-5"><%= yield :title %></h1>
+          <button type="button" class="btn-close" aria-label="閉じる" data-action="modal#close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="alert alert-danger" role="alert" hidden data-account-modal-form-target="error"></p>
+          <%= yield %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>

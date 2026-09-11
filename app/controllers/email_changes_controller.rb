@@ -5,17 +5,26 @@ class EmailChangesController < ApplicationController
 
   def edit
     @user = current_user
+    render :edit, layout: "account_modal" if turbo_frame_request?
   end
 
   def update
     @user = current_user
 
-    if @user.update_with_password(email_change_params)
+    if Accounts::ChangeEmailService.new(user: @user, attributes: email_change_params).call
       bypass_sign_in(@user)
-      redirect_to edit_profile_path, notice: "メールアドレスを変更しました"
+      if turbo_frame_request?
+        render turbo_stream: [
+          turbo_stream.replace("profile-account-email", partial: "profiles/account_email", locals: { user: @user }),
+          turbo_stream.update("profile-account-notice", html: "メールアドレスを変更しました"),
+          turbo_stream.append("modal", partial: "shared/account_modal_complete")
+        ]
+      else
+        redirect_to edit_profile_path, notice: "メールアドレスを変更しました"
+      end
     else
-      @user.email = current_user.email
-      render :edit, status: :unprocessable_entity
+      render :edit, formats: [ :html ], layout: (turbo_frame_request? ? "account_modal" : "application"),
+                    status: :unprocessable_entity
     end
   end
 

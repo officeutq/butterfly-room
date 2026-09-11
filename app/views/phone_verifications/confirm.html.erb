@@ -1,31 +1,24 @@
 <% content_for :title, "認証コード入力" %>
 
-<div class="row justify-content-center">
-  <div class="col-12 col-md-8 col-lg-6">
-    <div class="card" data-bs-theme="light">
-      <div class="card-body">
-        <h1 class="h4 mb-3">認証コード入力</h1>
+<%= render "phone_verifications/messages" %>
+<p><strong><%= format_phone_number_for_display(@phone_number) %></strong> 宛のSMSに記載された6桁の認証コードを入力してください。</p>
+<p class="small text-body-secondary">コードの有効期限は5分です。閉じても登録番号は変わらず、再度開くとコード入力を再開できます。</p>
 
-        <p class="mb-3">
-          <strong><%= format_phone_number_for_display(@phone_number) %></strong> 宛に認証コードを送信しました。<br>
-          SMSに記載された6桁の認証コードを入力してください。
-        </p>
-
-        <%= form_with url: verify_phone_verification_path, method: :post do %>
-          <div class="mb-3">
-            <%= label_tag :otp_code, "認証コード", class: "form-label" %>
-            <%= text_field_tag :otp_code, nil, class: "form-control", inputmode: "numeric", maxlength: 6, placeholder: "6桁の認証コード" %>
-          </div>
-
-          <div class="d-flex gap-2 flex-wrap">
-            <%= submit_tag "認証して登録", class: "btn btn-primary" %>
-            <%= button_to "認証コードを再送", phone_verification_path, method: :post,
-                  params: { phone_number: @phone_number },
-                  class: "btn btn-outline-primary" %>
-            <%= link_to "電話番号を入力し直す", phone_verification_path, class: "btn btn-outline-secondary" %>
-          </div>
-        <% end %>
-      </div>
-    </div>
+<%= form_with url: verify_phone_verification_path, method: :post do %>
+  <div class="mb-3">
+    <%= label_tag :otp_code, "認証コード", class: "form-label" %>
+    <%= text_field_tag :otp_code, nil, class: "form-control", inputmode: "numeric", autocomplete: "one-time-code",
+          pattern: "[0-9]{6}", maxlength: 6, placeholder: "6桁の認証コード", required: true %>
   </div>
+  <div class="d-flex gap-2 flex-wrap mb-3">
+    <%= submit_tag "認証して登録", class: "btn btn-primary", data: { turbo_submits_with: "認証中…" } %>
+    <%= render "phone_verifications/close" %>
+  </div>
+<% end %>
+<div class="d-flex gap-2 flex-wrap">
+  <%= button_to "認証コードを再送", phone_verification_path, method: :post,
+        params: { phone_number: @phone_number }, class: "btn btn-outline-primary",
+        data: { turbo_submits_with: "送信中…" } %>
+  <%= link_to "電話番号を入力し直す", phone_verification_path(edit: "1"), class: "btn btn-outline-secondary" %>
 </div>
+<p class="form-text">再送は前回の送信から60秒後にできます。</p>

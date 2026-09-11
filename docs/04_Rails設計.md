@@ -28,6 +28,15 @@
 * Deviseの認証・パスワード再設定検索は`users.deleted_at IS NULL`に限定する
 * email / phone_numberの一意性は、model validationとDBの部分一意indexの両方で有効ユーザー間に限定する
 
+### プロフィールのアカウント設定（#1244）
+
+* 視聴者以上の本人用プロフィール編集から、メールアドレス変更・電話番号認証を共通modal枠で開く。成功時は対象のアカウント表示と完了通知だけをTurbo Streamで更新し、モーダルを閉じる。プロフィールフォームや画像編集状態を置換しない。
+* `Accounts::ChangeEmailService`が現在のパスワード確認とメール更新を行い、Controllerは成功時に`bypass_sign_in`でログイン状態を維持する。
+* `PhoneVerifications::RegisterPhoneService`が利用者ロック下で重複確認、本人に発行されたOTPの検証、電話番号・認証日時の保存を行う。コード消費と登録を同じtransactionに含める。コード誤入力回数はエラー応答でも確定する。
+* 認証途中の番号はsessionに保持し、モーダル再表示時はコード入力を再開する。`edit=1`で番号を入力し直せる。SMS送信成功では閉じず、認証・登録成功時だけ閉じる。コード6桁・5分有効・再送60秒・試行上限5回は維持する。
+* `account-modal-form`が通信中の重複操作と閉じる操作を止め、通信失敗時は入力を保持して案内する。`account-modal-complete`は完了時にTurboの画面キャッシュを消し、戻る操作で古いアカウント表示を復元しない。
+* 通常のプロフィール保存ではメールアドレス・電話番号・認証状態を受け付けない。独立URLの通常HTML要求は画面表示を維持し、完了後はプロフィール編集へ戻す。
+
 ### ユーザー自身の退会
 
 * routeは`GET /account_withdrawal`（確認モーダル）と`DELETE /account_withdrawal`（実行）を使用する

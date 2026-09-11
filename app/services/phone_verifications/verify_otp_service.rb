@@ -15,10 +15,11 @@ module PhoneVerifications
 
     Result = Struct.new(:phone_verification, keyword_init: true)
 
-    def initialize(phone_number:, purpose:, otp_code:)
+    def initialize(phone_number:, purpose:, otp_code:, user: nil)
       @raw_phone_number = phone_number
       @purpose = purpose.to_s
       @otp_code = otp_code.to_s
+      @user = user
     end
 
     def call!
@@ -26,11 +27,9 @@ module PhoneVerifications
 
       normalized_phone_number = PhoneNumberNormalizer.call(@raw_phone_number)
 
-      phone_verification = PhoneVerification
-                             .for_phone_and_purpose(normalized_phone_number, @purpose)
-                             .recent_first
-                             .lock
-                             .first
+      scope = PhoneVerification.for_phone_and_purpose(normalized_phone_number, @purpose)
+      scope = scope.where(user: @user) if @user
+      phone_verification = scope.recent_first.lock.first
 
       raise NotFound if phone_verification.blank?
       raise AlreadyCompleted unless phone_verification.active?

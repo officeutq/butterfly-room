@@ -1,0 +1,13 @@
+<div id="profile-account-phone">
+  <div class="small text-body-secondary mb-2">電話番号</div>
+  <div class="mb-2">
+    <% if user.phone_verified? %>
+      <span><%= format_phone_number_for_display(user.phone_number) %></span>
+      <span class="badge text-bg-success ms-2">認証済み</span>
+    <% else %>
+      <span class="badge text-bg-warning">未認証</span>
+    <% end %>
+  </div>
+  <%= link_to(user.phone_verified? ? "電話番号を変更" : "電話番号を認証する",
+        phone_verification_path, class: "btn btn-outline-secondary btn-sm", data: { turbo_frame: "modal" }) %>
+</div>

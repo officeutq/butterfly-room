@@ -89,11 +89,11 @@
   <section class="card profile-edit__account mb-3" aria-labelledby="profile-account-heading">
     <div class="card-body">
       <h2 id="profile-account-heading" class="h6">アカウント</h2>
-      <div class="small text-body-secondary mb-2">メールアドレス</div>
-      <div class="text-break mb-3"><%= @user.email %></div>
-      <%= link_to "メールアドレスを変更",
-            edit_email_change_path,
-            class: "btn btn-outline-secondary btn-sm" %>
+      <p class="small text-body-secondary">メールアドレス・電話番号は公開プロフィールに表示されません。</p>
+      <div id="profile-account-notice" class="text-success small mb-2" role="status" aria-live="polite"></div>
+      <%= render "profiles/account_email", user: @user %>
+      <%= render "profiles/account_phone", user: @user %>
+      <p class="small text-body-secondary mt-3 mb-0">メールアドレス変更・電話番号認証は、それぞれの画面で確定します。プロフィールの「保存」は不要で、編集中のプロフィールを破棄しても取り消されません。</p>
     </div>
   </section>
 
