@@ -32,7 +32,6 @@
 
       <%= f.submit "保存",
             class: "btn btn-primary btn-sm rounded-pill px-3 profile-edit__save",
-            disabled: true,
             data: {
               "image-pair-form-target": "submitButton",
               "profile-edit-target": "saveButton",
@@ -89,11 +88,9 @@
   <section class="card profile-edit__account mb-3" aria-labelledby="profile-account-heading">
     <div class="card-body">
       <h2 id="profile-account-heading" class="h6">アカウント</h2>
-      <div class="small text-body-secondary mb-2">メールアドレス</div>
-      <div class="text-break mb-3"><%= @user.email %></div>
-      <%= link_to "メールアドレスを変更",
-            edit_email_change_path,
-            class: "btn btn-outline-secondary btn-sm" %>
+      <p class="small text-body-secondary">メールアドレス・電話番号は公開プロフィールに表示されません。</p>
+      <%= render "profiles/account_email", user: @user %>
+      <%= render "profiles/account_phone", user: @user %>
     </div>
   </section>
 
@@ -109,7 +106,6 @@
   <div class="profile-edit__bottom-actions">
     <%= f.submit "保存",
           class: "btn btn-primary btn-lg w-100 profile-edit__bottom-save",
-          disabled: true,
           data: {
             "image-pair-form-target": "submitButton",
             "profile-edit-target": "saveButton",

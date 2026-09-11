@@ -22,7 +22,7 @@ class PhoneVerificationFlowTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "dashboard shows phone verification link" do
+  test "dashboard shows phone status on profile link without a separate verification link" do
     user = User.create!(
       email: "dashboard_phone_link@example.com",
       password: "password",
@@ -35,7 +35,8 @@ class PhoneVerificationFlowTest < ActionDispatch::IntegrationTest
     get dashboard_path
 
     assert_response :success
-    assert_includes @response.body, "電話番号認証"
+    assert_select "a[href='#{edit_profile_path}'] .badge.text-bg-warning", text: "電話番号未認証"
+    assert_select "a[href='#{phone_verification_path}']", count: 0
   end
 
   test "send phone otp redirects to confirm without saving phone_number to user" do
@@ -79,10 +80,10 @@ class PhoneVerificationFlowTest < ActionDispatch::IntegrationTest
 
     post verify_phone_verification_path, params: { otp_code: latest_otp_code }
 
-    assert_redirected_to dashboard_path
+    assert_redirected_to edit_profile_path
     follow_redirect!
     assert_response :success
-    assert_includes @response.body, "電話番号を認証して登録しました"
+    assert_includes @response.body, "✓ 電話番号を認証して保存しました"
 
     user.reload
     assert_equal "+819012345678", user.phone_number
@@ -113,7 +114,7 @@ class PhoneVerificationFlowTest < ActionDispatch::IntegrationTest
 
     post verify_phone_verification_path, params: { otp_code: latest_otp_code }
 
-    assert_redirected_to phone_verification_path
+    assert_redirected_to phone_verification_path(edit: "1")
     follow_redirect!
     assert_response :success
     assert_includes @response.body, "この電話番号はすでに他のユーザーに登録されています"

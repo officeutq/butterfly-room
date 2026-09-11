@@ -77,12 +77,12 @@ function buildController(Controller) {
   return { backLink, controller, element, operationInputs, saveButtons }
 }
 
-test("starts clean and enables save after a field changes", () => {
+test("save stays enabled with or without changes while dirty state is tracked", () => {
   const { Controller } = loadController()
   const { controller, element, saveButtons } = buildController(Controller)
 
   assert.equal(element.dataset.dirty, "false")
-  assert.equal(saveButtons.every((button) => button.disabled), true)
+  assert.equal(saveButtons.every((button) => !button.disabled), true)
 
   controller.displayNameTarget.value = "変更後の名前"
   controller.refresh()
@@ -101,7 +101,8 @@ test("tracks staged and reverted image operations", () => {
 
   operationInputs[0].value = ""
   controller.refresh()
-  assert.equal(saveButtons.every((button) => button.disabled), true)
+  assert.equal(controller.dirty, false)
+  assert.equal(saveButtons.every((button) => !button.disabled), true)
 })
 
 test("keeps the user on the page when discarding changes is rejected", () => {
@@ -135,4 +136,34 @@ test("marks a normal form submission as saving", async () => {
   assert.equal(element.attributes["aria-busy"], "true")
   assert.equal(backLink.classList.contains("disabled"), true)
   assert.equal(backLink.attributes["aria-disabled"], "true")
+})
+
+test("unchanged profile can be saved and retry is enabled after failure", async () => {
+  const { Controller } = loadController()
+  const { controller, saveButtons } = buildController(Controller)
+  const event = {
+    defaultPrevented: false,
+    preventDefault() { this.defaultPrevented = true },
+  }
+
+  controller.prepareSubmit(event)
+  await new Promise((resolve) => setImmediate(resolve))
+  assert.equal(event.defaultPrevented, false)
+  assert.equal(controller.dirty, false)
+  assert.equal(saveButtons.every(button => button.disabled), true)
+  controller.prepareSubmit(event)
+  assert.equal(event.defaultPrevented, true)
+
+  controller.turboSubmitEnd({ detail: { success: false } })
+  assert.equal(saveButtons.every(button => !button.disabled), true)
+  assert.deepEqual(saveButtons.map(button => button.value), ["保存", "保存"])
+})
+
+test("unchanged profile can be left without a discard confirmation", () => {
+  const { Controller, confirmations } = loadController()
+  const { controller } = buildController(Controller)
+  const event = { preventDefault() { assert.fail("unchanged profile should not block navigation") } }
+  controller.back(event)
+  controller.beforeUnload(event)
+  assert.deepEqual(confirmations, [])
 })

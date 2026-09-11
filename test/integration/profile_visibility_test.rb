@@ -52,6 +52,43 @@ class ProfileVisibilityTest < ActionDispatch::IntegrationTest
     assert_includes response.body, @store.name
   end
 
+  test "edit action is visible only on the signed in users own profile" do
+    get user_path(@cast)
+    assert_select ".user-show-edit", count: 0
+
+    @targets.reject(&:deleted?).each do |viewer|
+      sign_in viewer
+      get user_path(viewer)
+      assert_response :success
+      assert_select ".user-show-header a.user-show-edit[href='#{edit_profile_path}'].btn-outline-secondary.btn-sm", count: 1 do
+        assert_select "i.bi-pencil[aria-hidden='true']"
+        assert_select "span", text: "プロフィールを編集"
+      end
+
+      other = viewer == @cast ? @customer : @cast
+      get user_path(other)
+      assert_response :success
+      assert_select ".user-show-edit", count: 0
+      sign_out viewer
+    end
+  end
+
+  test "all active roles can complete profile editing at their own detail" do
+    @targets.reject(&:deleted?).each do |viewer|
+      sign_in viewer
+      patch profile_path, params: { user: { display_name: viewer.display_name, bio: viewer.bio } }
+      assert_redirected_to user_path(viewer)
+      follow_redirect!
+      assert_response :success
+      assert_select ".user-show-edit", count: 1
+
+      patch profile_path, params: { user: { display_name: viewer.display_name } }, as: :json
+      assert_response :success
+      assert_equal user_path(viewer), response.parsed_body.fetch("redirect_url")
+      sign_out viewer
+    end
+  end
+
   test "support membership and role changes are evaluated on each request" do
     sign_in @customer
     membership = StoreMembership.create!(store: @support, user: @admin, membership_role: :cast)

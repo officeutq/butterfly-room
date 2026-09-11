@@ -1,0 +1,7 @@
+<div id="profile-account-email" class="mb-3">
+  <div class="small text-body-secondary mb-2">メールアドレス</div>
+  <div class="text-break mb-2"><%= user.email %></div>
+  <div id="profile-account-email-notice" class="text-success small mb-2" role="status" aria-live="polite"></div>
+  <%= link_to "メールアドレスを変更", edit_email_change_path,
+        class: "btn btn-outline-secondary btn-sm", data: { turbo_frame: "modal" } %>
+</div>

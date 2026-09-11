@@ -22,7 +22,7 @@ class ProfileEditUiTest < ActionDispatch::IntegrationTest
       assert_select ".profile-edit__action-bar", count: 1 do
         assert_select ".container.profile-edit__action-bar-inner", count: 1 do
           assert_select "a.profile-edit__back[href='#{dashboard_path}']", text: /戻る/, count: 1
-          assert_select "input.profile-edit__save[type='submit'][value='保存'][disabled]", count: 1
+          assert_select "input.profile-edit__save[type='submit'][value='保存']:not([disabled])", count: 1
         end
       end
       assert_select ".profile-edit__media", count: 1
@@ -36,7 +36,7 @@ class ProfileEditUiTest < ActionDispatch::IntegrationTest
       assert_select ".profile-edit__account", text: /profile-edit-ui@example.com/, count: 1
       assert_select ".profile-edit__withdrawal a", text: "退会する", count: 1
       assert_select ".profile-edit__bottom-actions", count: 1 do
-        assert_select "input.profile-edit__bottom-save[type='submit'][value='保存'][disabled]" \
+        assert_select "input.profile-edit__bottom-save[type='submit'][value='保存']:not([disabled])" \
                       "[data-image-pair-form-target='submitButton'][data-profile-edit-target='saveButton']",
                       count: 1
       end

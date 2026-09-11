@@ -23,7 +23,7 @@ export default class extends Controller {
     this.dirty = this.snapshot() !== this.initialSnapshot
     this.element.dataset.dirty = String(this.dirty)
     this.saveButtonTargets.forEach((button) => {
-      button.disabled = !this.dirty || this.saving
+      button.disabled = this.saving
     })
   }
 
@@ -39,7 +39,7 @@ export default class extends Controller {
   }
 
   prepareSubmit(event) {
-    if (!this.dirty || this.saving) {
+    if (this.saving) {
       event.preventDefault()
       return
     }
@@ -88,7 +88,7 @@ export default class extends Controller {
     if (saving) this.element.setAttribute("aria-busy", "true")
     else this.element.removeAttribute("aria-busy")
     this.saveButtonTargets.forEach((button) => {
-      button.disabled = saving || !this.dirty
+      button.disabled = saving
       button.value = saving
         ? (button.dataset.submittingLabel || "保存中…")
         : this.originalSaveLabels.get(button)
