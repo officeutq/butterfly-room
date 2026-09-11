@@ -6,18 +6,18 @@
   <div class="row g-3">
     <% if current_user.at_least?(:customer) %>
       <div class="col-12 col-md-6 col-xl-4">
-        <%= link_to edit_profile_path, class: "text-decoration-none" do %>
+        <%= link_to user_path(current_user), class: "text-decoration-none" do %>
           <div class="card h-100 dashboard-role-card dashboard-role-card-customer" data-bs-theme="light">
             <div class="card-body">
               <h5 class="card-title mb-2">
-                プロフィール編集
+                プロフィール情報
                 <% if current_user.phone_verified? %>
                   <span class="badge text-bg-success ms-2">電話番号認証済み</span>
                 <% else %>
                   <span class="badge text-bg-warning ms-2">電話番号未認証</span>
                 <% end %>
               </h5>
-              <p class="card-text mb-0">プロフィールやアイコンを編集します</p>
+              <p class="card-text mb-0">プロフィールの確認・編集を行います</p>
             </div>
           </div>
         <% end %>

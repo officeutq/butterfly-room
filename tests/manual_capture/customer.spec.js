@@ -168,7 +168,7 @@ test("customer normal operation screenshots", async ({ page }) => {
 
   await gotoAndSettle(page, "/dashboard");
   await expect(page).toHaveURL(/\/dashboard/);
-  await expect(page.locator("body")).toContainText("プロフィール編集");
+  await expect(page.locator("body")).toContainText("プロフィール情報");
   await expect(page.locator("body")).toContainText("電話番号認証");
   await capture(page, "dashboard", "01_dashboard.png");
 

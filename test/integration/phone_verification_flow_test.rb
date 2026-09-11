@@ -35,7 +35,7 @@ class PhoneVerificationFlowTest < ActionDispatch::IntegrationTest
     get dashboard_path
 
     assert_response :success
-    assert_select "a[href='#{edit_profile_path}'] .badge.text-bg-warning", text: "電話番号未認証"
+    assert_select "a[href='#{user_path(user)}'] .badge.text-bg-warning", text: "電話番号未認証"
     assert_select "a[href='#{phone_verification_path}']", count: 0
   end
 
