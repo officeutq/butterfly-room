@@ -133,8 +133,8 @@ test("cast normal operation screenshots", async ({ page }) => {
   await gotoAndSettle(page, "/dashboard");
   await expect(page).toHaveURL(/\/dashboard/);
   await expect(page.locator("body")).toContainText("ブース情報");
-  await expect(page.locator("body")).toContainText("ブース編集");
-  await expect(page.locator("body")).toContainText("配信履歴");
+  await expect(page.locator(".card-title", { hasText: /^ブース編集$/ })).toHaveCount(0);
+  await expect(page.locator(".card-title", { hasText: /^配信履歴$/ })).toHaveCount(0);
   await capture(page, "dashboard", "01_dashboard.png");
 
   await gotoAndSettle(page, "/cast/booths");
@@ -163,7 +163,7 @@ test("cast normal operation screenshots", async ({ page }) => {
   await submitAndWaitForURL(
     page,
     'form[action*="/cast/booths/"] input[type="submit"], form[action*="/cast/booths/"] button[type="submit"]',
-    /\/dashboard/
+    new RegExp(`/cast/booths/${primaryBooth.id}$`)
   );
   await expect(page.locator("body")).toContainText("ブースを更新しました");
   await capture(page, "booth_edit", "03_after_update_dashboard.png");

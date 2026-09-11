@@ -50,7 +50,8 @@
                         method: :post,
                         params: {
                           booth_id: booth.id,
-                          return_to: (@include_archived ? cast_booths_path(archived: 1) : cast_booths_path)
+                          return_to_key: @return_to_key,
+                          return_to: @return_to.presence || (@include_archived ? cast_booths_path(archived: 1) : cast_booths_path)
                         },
                         class: "btn btn-warning btn-sm",
                         form: {
@@ -91,6 +92,7 @@
 
                 <%= link_to "このブースを選択して編集",
                       edit_cast_booth_path(booth),
+                      data: booth_navigation_link_data(booth),
                       class: "btn btn-outline-secondary btn-sm" %>
               </div>
             <% end %>

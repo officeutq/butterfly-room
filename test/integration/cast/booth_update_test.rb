@@ -18,7 +18,7 @@ class Cast::BoothUpdateTest < ActionDispatch::IntegrationTest
     @tempfiles.each(&:close!)
   end
 
-  test "cast booth update redirects to dashboard with notice" do
+  test "cast booth update redirects to booth information with notice" do
     cast = User.create!(
       email: "cast_booth_update@example.com",
       password: "password",
@@ -39,7 +39,7 @@ class Cast::BoothUpdateTest < ActionDispatch::IntegrationTest
       }
     }
 
-    assert_redirected_to dashboard_path
+    assert_redirected_to cast_booth_path(booth)
     follow_redirect!
     assert_response :success
     assert_includes @response.body, "ブースを更新しました"
@@ -124,7 +124,7 @@ class Cast::BoothUpdateTest < ActionDispatch::IntegrationTest
       }
     }
 
-    assert_redirected_to dashboard_path
+    assert_redirected_to cast_booth_path(booth)
 
     booth.reload
     assert_equal "画像付きブース", booth.name
@@ -148,7 +148,7 @@ class Cast::BoothUpdateTest < ActionDispatch::IntegrationTest
       }
     end
 
-    assert_redirected_to dashboard_path
+    assert_redirected_to cast_booth_path(booth)
 
     booth.reload
     assert booth.thumbnail_image.attached?
@@ -165,7 +165,7 @@ class Cast::BoothUpdateTest < ActionDispatch::IntegrationTest
       patch cast_booth_path(booth), params: { booth: { remove_thumbnail_image: "1" } }
     end
 
-    assert_redirected_to dashboard_path
+    assert_redirected_to cast_booth_path(booth)
     assert_not booth.reload.thumbnail_image.attached?
     assert_not ActiveStorage::Blob.exists?(old_blob.id)
   end
@@ -203,7 +203,7 @@ class Cast::BoothUpdateTest < ActionDispatch::IntegrationTest
     assert_response :success
     response_body = JSON.parse(response.body)
     assert_equal "complete", response_body.fetch("state")
-    assert_equal dashboard_path, response_body.fetch("redirect_url")
+    assert_equal cast_booth_path(booth), response_body.fetch("redirect_url")
     booth.reload
     assert_equal "画像組ブース", booth.name
     assert_equal "画像と一体更新", booth.description
@@ -223,7 +223,7 @@ class Cast::BoothUpdateTest < ActionDispatch::IntegrationTest
       image_pair: reedit_pair_params(booth)
     }
 
-    assert_redirected_to dashboard_path
+    assert_redirected_to cast_booth_path(booth)
     booth.reload
     assert_equal "再編集", booth.description
     assert_equal original_source_id, booth.thumbnail_image_source.blob.id
@@ -235,7 +235,7 @@ class Cast::BoothUpdateTest < ActionDispatch::IntegrationTest
       image_pair: replace_pair_params(booth, color: "orange")
     }
 
-    assert_redirected_to dashboard_path
+    assert_redirected_to cast_booth_path(booth)
     booth.reload
     assert_equal "差し替え", booth.description
     assert_not_equal reedited_ids.first, booth.thumbnail_image_source.blob.id
@@ -248,7 +248,7 @@ class Cast::BoothUpdateTest < ActionDispatch::IntegrationTest
       }
     end
 
-    assert_redirected_to dashboard_path
+    assert_redirected_to cast_booth_path(booth)
     booth.reload
     assert_equal "削除後", booth.description
     assert_not booth.thumbnail_image_source.attached?
@@ -393,7 +393,7 @@ class Cast::BoothUpdateTest < ActionDispatch::IntegrationTest
       }
     }
 
-    assert_redirected_to dashboard_path
+    assert_redirected_to cast_booth_path(booth)
 
     booth.reload
     assert_equal "未紐づけブース更新後", booth.name

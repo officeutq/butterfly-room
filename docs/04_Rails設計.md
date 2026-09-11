@@ -39,6 +39,12 @@
 * `profile-edit`は変更の有無にかかわらず通常保存を許可し、送信中だけ保存ボタンを無効化する。dirty判定（未保存変更の有無）は破棄確認に使い、保存可否とは分離する。アカウント変更の完了通知は項目別の表示枠へ更新する。
 * `ProfilesController#update`の通常保存後はHTML・JSONとも本人の`user_path`へ戻す。キャスト招待後のブース編集への遷移は維持する。`users#show`の編集リンクは本人だけに表示し、既存の`User.profiles_visible_to`と本人用のプロフィール更新認可を変更しない。
 
+### ブース情報・編集・履歴の導線（#1248）
+
+* `Cast::Booths::StreamSessionsController#index` はURLの `booth_id` を認可し、有効な対象を選択中ブース・店舗へ反映する。閉鎖済みの履歴閲覧では選択を維持する。共通 `current_booth` の優先順位や配信開始用 `create` は変更しない。
+* 情報確認用の `select_modal` / `Cast::CurrentBoothsController#create` は配信開始Serviceを呼ばず、認可済み対象を選択して目的画面へ進む。通常の配信開始経路は既存Serviceを維持する。
+* `Cast::BoothsController#update` の通常保存後はHTML/JSONとも対象の `cast_booth_path` へ戻る。招待直後のホーム遷移を維持する。詳細は `07_モード導線設計.md` の6.1節を参照する。
+
 ### ユーザー自身の退会
 
 * routeは`GET /account_withdrawal`（確認モーダル）と`DELETE /account_withdrawal`（実行）を使用する

@@ -3,11 +3,9 @@
 module Cast
   module Booths
     class StreamSessionsController < Cast::BaseController
-      before_action :require_current_booth!, only: %i[index]
+      before_action :set_booth_for_history, only: %i[index]
 
       def index
-        @booth = current_booth
-
         @stream_sessions =
           @booth
             .stream_sessions
@@ -40,6 +38,18 @@ module Cast
         end
       rescue ::Booths::EnterAsCastService::NotAuthorized
         redirect_to cast_booths_path, alert: "選択できないブースです"
+      end
+
+      private
+
+      def set_booth_for_history
+        @booth = Booth.find(params[:booth_id])
+        unless Authorization::BoothPolicy.new(current_user, @booth).update?
+          head :forbidden
+          return
+        end
+
+        select_current_booth(@booth) unless @booth.archived?
       end
     end
   end
