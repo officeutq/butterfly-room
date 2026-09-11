@@ -199,7 +199,7 @@ class ProfileAccountModalsTest < ActionDispatch::IntegrationTest
 
   test "account changes cannot be submitted through normal profile save" do
     patch profile_path, params: { user: { display_name: "通常の保存", email: "injected@example.com", phone_number: "+819099999999", phone_verified_at: Time.current } }
-    assert_redirected_to root_path
+    assert_redirected_to user_path(@user)
     assert_equal "通常の保存", @user.reload.display_name
     assert_equal "account-modal@example.com", @user.email
     assert_nil @user.phone_number
@@ -249,7 +249,7 @@ class ProfileAccountModalsTest < ActionDispatch::IntegrationTest
 
   def save_unchanged_profile
     patch profile_path, params: { user: { display_name: @user.display_name, bio: @user.bio } }
-    assert_redirected_to root_path
+    assert_redirected_to user_path(@user)
   end
 
   def assert_account_completion(target)

@@ -42,6 +42,10 @@
   flex: 0 0 auto;
 }
 
+.user-show-edit {
+  --bs-btn-color: var(--bs-body-color);
+}
+
 .user-show-info {
   display: flex;
   flex-direction: column;

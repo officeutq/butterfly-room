@@ -18,7 +18,7 @@ class ProfileUpdateTest < ActionDispatch::IntegrationTest
     @tempfiles.each(&:close!)
   end
 
-  test "profile update redirects to home with notice" do
+  test "profile update redirects to own detail with notice" do
     user = User.create!(
       email: "profile_update@example.com",
       password: "password",
@@ -35,7 +35,7 @@ class ProfileUpdateTest < ActionDispatch::IntegrationTest
       }
     }
 
-    assert_redirected_to root_path
+    assert_redirected_to user_path(user)
     follow_redirect!
     assert_response :success
     assert_includes @response.body, "プロフィールを更新しました"
@@ -114,7 +114,7 @@ class ProfileUpdateTest < ActionDispatch::IntegrationTest
       }
     }
 
-    assert_redirected_to root_path
+    assert_redirected_to user_path(user)
 
     user.reload
     assert_equal "画像付きユーザー", user.display_name
@@ -138,7 +138,7 @@ class ProfileUpdateTest < ActionDispatch::IntegrationTest
       }
     end
 
-    assert_redirected_to root_path
+    assert_redirected_to user_path(user)
 
     user.reload
     assert user.avatar.attached?
@@ -155,7 +155,7 @@ class ProfileUpdateTest < ActionDispatch::IntegrationTest
       patch profile_path, params: { user: { remove_avatar: "1" } }
     end
 
-    assert_redirected_to root_path
+    assert_redirected_to user_path(user)
     assert_not user.reload.avatar.attached?
     assert_not ActiveStorage::Blob.exists?(old_blob.id)
   end
@@ -189,7 +189,7 @@ class ProfileUpdateTest < ActionDispatch::IntegrationTest
       cover_image_pair: replace_pair_params(user:, purpose: :cover)
     }
 
-    assert_redirected_to root_path
+    assert_redirected_to user_path(user)
     user.reload
     assert_equal "画像組ユーザー", user.display_name
     assert_equal "2用途を同時保存", user.bio
@@ -211,7 +211,7 @@ class ProfileUpdateTest < ActionDispatch::IntegrationTest
     assert_response :success
     response_body = JSON.parse(response.body)
     assert_equal "complete", response_body.fetch("state")
-    assert_equal root_path, response_body.fetch("redirect_url")
+    assert_equal user_path(user), response_body.fetch("redirect_url")
     assert_equal "JSONで保存", user.reload.bio
     assert_complete_pair(user, :avatar)
   end
@@ -233,7 +233,7 @@ class ProfileUpdateTest < ActionDispatch::IntegrationTest
       cover_image_pair: replace_pair_params(user:, purpose: :cover)
     }
 
-    assert_redirected_to root_path
+    assert_redirected_to user_path(user)
     user.reload
     assert_equal "再編集と差し替え", user.bio
     assert_equal avatar_source_id, user.avatar_source.blob.id
@@ -247,7 +247,7 @@ class ProfileUpdateTest < ActionDispatch::IntegrationTest
       avatar_image_pair: delete_pair_params(user:, purpose: :avatar)
     }
 
-    assert_redirected_to root_path
+    assert_redirected_to user_path(user)
     user.reload
     assert_not user.avatar_source.attached?
     assert_not user.avatar.attached?
@@ -259,7 +259,7 @@ class ProfileUpdateTest < ActionDispatch::IntegrationTest
       cover_image_pair: delete_pair_params(user:, purpose: :cover)
     }
 
-    assert_redirected_to root_path
+    assert_redirected_to user_path(user)
     user.reload
     assert_not user.cover_image_source.attached?
     assert_not user.cover_image.attached?
@@ -279,7 +279,7 @@ class ProfileUpdateTest < ActionDispatch::IntegrationTest
       }
     end
 
-    assert_redirected_to root_path
+    assert_redirected_to user_path(user)
     user.reload
     assert_not user.avatar.attached?
     assert_not user.avatar_source.attached?

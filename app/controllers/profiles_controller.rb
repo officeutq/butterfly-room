@@ -57,7 +57,7 @@ class ProfilesController < ApplicationController
         root_path
       end
     else
-      root_path
+      user_path(@user)
     end
 
     respond_to do |format|
