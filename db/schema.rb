@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_10_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_12_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -72,6 +72,29 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_10_000000) do
     t.index ["store_id", "archived_at"], name: "index_booths_on_store_id_and_archived_at"
     t.index ["store_id", "status"], name: "index_booths_on_store_id_and_status"
     t.index ["store_id"], name: "index_booths_on_store_id"
+  end
+
+  create_table "change_logs", force: :cascade do |t|
+    t.string "action", limit: 20, null: false
+    t.bigint "actor_user_id"
+    t.datetime "archived_at"
+    t.jsonb "change_data", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "occurred_at", null: false
+    t.string "request_id", limit: 100
+    t.string "source", limit: 20, null: false
+    t.bigint "store_id"
+    t.bigint "stream_session_id"
+    t.bigint "target_id", null: false
+    t.string "target_type", limit: 50, null: false
+    t.index ["actor_user_id", "occurred_at", "id"], name: "index_change_logs_on_actor_user_id_and_occurred_at_and_id"
+    t.index ["archived_at", "occurred_at", "id"], name: "index_change_logs_on_archived_at_and_occurred_at_and_id"
+    t.index ["occurred_at", "id"], name: "index_change_logs_on_occurred_at_and_id"
+    t.index ["request_id"], name: "index_change_logs_on_request_id"
+    t.index ["store_id", "occurred_at", "id"], name: "index_change_logs_on_store_id_and_occurred_at_and_id"
+    t.index ["target_type", "target_id", "occurred_at", "id"], name: "index_change_logs_on_target_and_time"
+    t.check_constraint "action::text = ANY (ARRAY['created'::character varying, 'updated'::character varying]::text[])", name: "change_logs_action"
+    t.check_constraint "jsonb_typeof(change_data) = 'object'::text AND octet_length(change_data::text) <= 16384", name: "change_logs_data_size"
   end
 
   create_table "comment_reports", force: :cascade do |t|
@@ -158,6 +181,32 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_10_000000) do
     t.index ["enabled", "position"], name: "index_effects_on_enabled_and_position"
     t.index ["key"], name: "index_effects_on_key", unique: true
     t.index ["zip_filename"], name: "index_effects_on_zip_filename", unique: true
+  end
+
+  create_table "error_logs", force: :cascade do |t|
+    t.bigint "actor_user_id"
+    t.datetime "archived_at"
+    t.jsonb "backtrace", default: [], null: false
+    t.datetime "created_at", null: false
+    t.string "exception_class", limit: 200, null: false
+    t.integer "executions"
+    t.boolean "handled", default: false, null: false
+    t.string "job_class", limit: 200
+    t.string "job_id", limit: 100
+    t.datetime "occurred_at", null: false
+    t.string "request_id", limit: 100
+    t.string "severity", limit: 10, null: false
+    t.string "source", limit: 20, null: false
+    t.bigint "store_id"
+    t.bigint "stream_session_id"
+    t.text "summary", null: false
+    t.index ["actor_user_id", "occurred_at", "id"], name: "index_error_logs_on_actor_user_id_and_occurred_at_and_id"
+    t.index ["archived_at", "occurred_at", "id"], name: "index_error_logs_on_archived_at_and_occurred_at_and_id"
+    t.index ["occurred_at", "id"], name: "index_error_logs_on_occurred_at_and_id"
+    t.index ["request_id"], name: "index_error_logs_on_request_id"
+    t.index ["severity", "occurred_at", "id"], name: "index_error_logs_on_severity_and_occurred_at_and_id"
+    t.index ["store_id", "occurred_at", "id"], name: "index_error_logs_on_store_id_and_occurred_at_and_id"
+    t.check_constraint "severity::text = ANY (ARRAY['info'::character varying, 'warning'::character varying, 'error'::character varying]::text[])", name: "error_logs_severity"
   end
 
   create_table "favorite_booths", force: :cascade do |t|
