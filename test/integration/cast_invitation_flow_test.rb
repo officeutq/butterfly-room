@@ -118,6 +118,8 @@ class CastInvitationFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes @response.body, "ブース編集"
 
+    assert_select ".booth-form__back[href='#{dashboard_path}']"
+
     patch cast_booth_path(booth), params: {
       booth: {
         name: "更新後ブース名",

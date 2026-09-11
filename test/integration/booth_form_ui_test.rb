@@ -14,7 +14,7 @@ class BoothFormUiTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "header#app_header .header-title", text: "ブース編集", count: 1
-    assert_integrated_booth_form(submit_label: "保存", back_path: dashboard_path) do
+    assert_integrated_booth_form(submit_label: "保存", back_path: cast_booth_path(booth)) do
       assert_select ".booth-form__readonly-card:not([data-bs-theme])", count: 1 do
         assert_select ".booth-form__readonly-section", count: 2
         assert_select ".booth-form__readonly-label", text: "所属キャスト", count: 1

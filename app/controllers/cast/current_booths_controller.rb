@@ -27,6 +27,12 @@ module Cast
         return
       end
 
+      if booth_information_selection?
+        select_current_booth(booth)
+        redirect_to resolve_redirect_path(booth), notice: "ブースを選択しました"
+        return
+      end
+
       session[:current_booth_id] = booth.id
 
       result = ::Booths::EnterAsCastService.new(

@@ -248,6 +248,21 @@ module ApplicationHelper
     "配信中（または離席中）のブースから切り替えます。よろしいですか？"
   end
 
+  def booth_navigation_link_data(booth)
+    data = { turbo_prefetch: false }
+    return data if booth.archived? || session[:current_booth_id].blank?
+    return data unless layout_current_booth&.id.to_s == session[:current_booth_id].to_s
+
+    message = enter_booth_switch_confirm_message(booth)
+    return data if message.blank?
+
+    data.merge(
+      controller: "confirm-navigation",
+      action: "click->confirm-navigation#confirm",
+      confirm_navigation_message_value: message
+    )
+  end
+
   def footer_nav_item_classes(active: false, extra: nil)
     [ "app-footer-nav-item", ("is-active" if active), extra ].compact.join(" ")
   end

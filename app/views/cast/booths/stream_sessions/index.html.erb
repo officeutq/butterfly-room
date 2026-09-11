@@ -1,6 +1,7 @@
 <% content_for :title, "配信履歴" %>
 
 <div class="mb-4">
+  <%= link_to "ブース情報へ戻る", cast_booth_path(@booth), class: "btn btn-outline-secondary btn-sm mb-3" %>
   <div class="text-muted small"><%= @booth.store.name %></div>
   <h1 class="h4 fw-bold mb-0"><%= @booth.name.presence || "(no name)" %></h1>
 </div>

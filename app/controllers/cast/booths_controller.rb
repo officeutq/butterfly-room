@@ -20,6 +20,11 @@ module Cast
       booth ||= @booths.first if @booths.size == 1
 
       if booth.present?
+        if booth_information_selection?
+          redirect_after_booth_selection(booth)
+          return
+        end
+
         result = ::Booths::EnterAsCastService.new(
           booth: booth,
           actor: current_user
@@ -27,17 +32,7 @@ module Cast
 
         case result.action
         when :redirect_live
-          session[:current_booth_id] = result.booth.id
-          session[:current_store_id] = result.booth.store_id
-
-          redirect_path = resolve_select_modal_redirect_path(result.booth)
-
-          if turbo_frame_request?
-            flash[:notice] = "ブースを選択しました"
-            render_select_modal_redirect(path: redirect_path)
-          else
-            redirect_to redirect_path, notice: "ブースを選択しました"
-          end
+          redirect_after_booth_selection(result.booth)
         when :occupied_by_other
           if turbo_frame_request?
             flash[:alert] = "このブースはすでに配信中です"
@@ -168,7 +163,7 @@ module Cast
         if session.delete(:redirect_to_home_after_cast_booth_update)
           root_path
         else
-          helpers.dashboard_path_for(current_user)
+          cast_booth_path(@booth)
         end
 
       respond_to do |format|
@@ -234,7 +229,7 @@ module Cast
     end
 
     def load_selectable_booths
-      @include_archived = ActiveModel::Type::Boolean.new.cast(params[:archived])
+      @include_archived = ActiveModel::Type::Boolean.new.cast(params[:archived]) && !booth_information_selection?
 
       @booths =
         if current_user.system_admin?
@@ -254,7 +249,8 @@ module Cast
       @booths = @booths.order(Arel.sql('"booths"."archived_at" ASC NULLS FIRST'), id: :desc)
 
       @current_booth_id = session[:current_booth_id]
-      @confirm_switch_booth = current_booth&.live? || current_booth&.away?
+      selected = current_booth if @current_booth_id.present?
+      @confirm_switch_booth = selected&.id == @current_booth_id.to_i && (selected.live? || selected.away?)
       @return_to = params[:return_to].presence
       @return_to_key = params[:return_to_key].presence
     end
@@ -262,6 +258,17 @@ module Cast
     def render_select_modal_redirect(path:)
       @redirect_path = path
       render :select_modal_redirect, layout: false, status: :ok
+    end
+
+    def redirect_after_booth_selection(booth)
+      select_current_booth(booth)
+      path = resolve_select_modal_redirect_path(booth)
+      if turbo_frame_request?
+        flash[:notice] = "ブースを選択しました"
+        render_select_modal_redirect(path: path)
+      else
+        redirect_to path, notice: "ブースを選択しました"
+      end
     end
 
     def resolve_select_modal_redirect_path(booth)
@@ -335,8 +342,7 @@ module Cast
       end
 
       @booth = booth
-      session[:current_booth_id] = @booth.id
-      session[:current_store_id] = @booth.store_id
+      select_current_booth(@booth)
     end
 
     def authorize_update!

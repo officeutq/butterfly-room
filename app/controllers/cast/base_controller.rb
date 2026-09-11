@@ -9,6 +9,27 @@ module Cast
 
     private
 
+    def select_current_booth(booth)
+      session[:current_booth_id] = booth.id
+      session[:current_store_id] = booth.store_id
+    end
+
+    # 情報確認用の選択では配信準備を開始しない。明示された戻り先だけを判定する。
+    def booth_information_selection?
+      key = params[:return_to_key].to_s
+      return true if %w[booth_show booth_edit booth_stream_sessions].include?(key)
+      return false if key == "booth_live"
+
+      path = safe_return_to(params[:return_to])
+      return false if path.blank?
+
+      route = Rails.application.routes.recognize_path(path, method: :get)
+      (route[:controller] == "cast/booths" && %w[show edit].include?(route[:action])) ||
+        (route[:controller] == "cast/booths/stream_sessions" && route[:action] == "index")
+    rescue ActionController::RoutingError, URI::InvalidURIError, ArgumentError
+      false
+    end
+
     # cast領域の「直前ページ」をsessionに保存（Issue #304）
     #
     # - GET / HEAD の HTML のみ対象

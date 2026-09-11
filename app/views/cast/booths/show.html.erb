@@ -71,21 +71,18 @@
 
       <% unless @booth.archived? %>
         <%= link_to edit_cast_booth_path(@booth),
+              data: booth_navigation_link_data(@booth),
               class: "btn btn-outline-secondary d-inline-flex align-items-center gap-2" do %>
           <i class="bi bi-pencil-square" aria-hidden="true"></i>
           <span>編集</span>
         <% end %>
-      <% else %>
-        <button class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" disabled>
-          <i class="bi bi-pencil-square" aria-hidden="true"></i>
-          <span>編集</span>
-        </button>
-      <% end %>
 
-      <%= link_to cast_booth_stream_sessions_path(@booth),
-            class: "btn btn-outline-secondary d-inline-flex align-items-center gap-2" do %>
-        <i class="bi bi-clock-history" aria-hidden="true"></i>
-        <span>配信履歴</span>
+        <%= link_to cast_booth_stream_sessions_path(@booth),
+              data: booth_navigation_link_data(@booth),
+              class: "btn btn-outline-secondary d-inline-flex align-items-center gap-2" do %>
+          <i class="bi bi-clock-history" aria-hidden="true"></i>
+          <span>配信履歴</span>
+        <% end %>
       <% end %>
     </div>
 

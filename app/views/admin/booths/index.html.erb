@@ -115,6 +115,7 @@
 
                   <%= link_to "このブースを選択して編集",
                         edit_cast_booth_path(booth),
+                        data: booth_navigation_link_data(booth),
                         class: "btn btn-outline-secondary btn-sm" %>
 
                   <% if can_force_end %>
