@@ -53,11 +53,11 @@ class PhoneVerificationsController < ApplicationController
     if turbo_frame_request?
       render turbo_stream: [
         turbo_stream.replace("profile-account-phone", partial: "profiles/account_phone", locals: { user: @user }),
-        turbo_stream.update("profile-account-notice", html: "電話番号を認証して登録しました"),
+        turbo_stream.update("profile-account-phone-notice", html: "✓ 電話番号を認証して保存しました"),
         turbo_stream.append("modal", partial: "shared/account_modal_complete")
       ]
     else
-      redirect_to edit_profile_path, notice: "電話番号を認証して登録しました"
+      redirect_to edit_profile_path, notice: "✓ 電話番号を認証して保存しました"
     end
   rescue PhoneVerifications::RegisterPhoneService::NumberTaken
     respond_step(:new, error: "この電話番号はすでに他のユーザーに登録されています")

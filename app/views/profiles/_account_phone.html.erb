@@ -8,6 +8,7 @@
       <span class="badge text-bg-warning">未認証</span>
     <% end %>
   </div>
+  <div id="profile-account-phone-notice" class="text-success small mb-2" role="status" aria-live="polite"></div>
   <%= link_to(user.phone_verified? ? "電話番号を変更" : "電話番号を認証する",
         phone_verification_path, class: "btn btn-outline-secondary btn-sm", data: { turbo_frame: "modal" }) %>
 </div>

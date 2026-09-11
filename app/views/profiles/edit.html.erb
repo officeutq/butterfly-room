@@ -32,7 +32,6 @@
 
       <%= f.submit "保存",
             class: "btn btn-primary btn-sm rounded-pill px-3 profile-edit__save",
-            disabled: true,
             data: {
               "image-pair-form-target": "submitButton",
               "profile-edit-target": "saveButton",
@@ -90,10 +89,8 @@
     <div class="card-body">
       <h2 id="profile-account-heading" class="h6">アカウント</h2>
       <p class="small text-body-secondary">メールアドレス・電話番号は公開プロフィールに表示されません。</p>
-      <div id="profile-account-notice" class="text-success small mb-2" role="status" aria-live="polite"></div>
       <%= render "profiles/account_email", user: @user %>
       <%= render "profiles/account_phone", user: @user %>
-      <p class="small text-body-secondary mt-3 mb-0">メールアドレス変更・電話番号認証は、それぞれの画面で確定します。プロフィールの「保存」は不要で、編集中のプロフィールを破棄しても取り消されません。</p>
     </div>
   </section>
 
@@ -109,7 +106,6 @@
   <div class="profile-edit__bottom-actions">
     <%= f.submit "保存",
           class: "btn btn-primary btn-lg w-100 profile-edit__bottom-save",
-          disabled: true,
           data: {
             "image-pair-form-target": "submitButton",
             "profile-edit-target": "saveButton",

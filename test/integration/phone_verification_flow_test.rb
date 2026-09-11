@@ -83,7 +83,7 @@ class PhoneVerificationFlowTest < ActionDispatch::IntegrationTest
     assert_redirected_to edit_profile_path
     follow_redirect!
     assert_response :success
-    assert_includes @response.body, "電話番号を認証して登録しました"
+    assert_includes @response.body, "✓ 電話番号を認証して保存しました"
 
     user.reload
     assert_equal "+819012345678", user.phone_number

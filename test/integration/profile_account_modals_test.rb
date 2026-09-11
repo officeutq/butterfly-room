@@ -52,6 +52,8 @@ class ProfileAccountModalsTest < ActionDispatch::IntegrationTest
     get edit_profile_path
     assert_response :success
     assert_select "#profile-account-email", text: /updated-modal@example.com/
+    save_unchanged_profile
+    assert_equal "updated-modal@example.com", @user.reload.email
   end
 
   test "email failures remain in the modal without persisting or echoing the password" do
@@ -89,6 +91,9 @@ class ProfileAccountModalsTest < ActionDispatch::IntegrationTest
     assert_equal "+819012345678", @user.reload.phone_number
     assert @user.phone_verified?
     assert PhoneVerification.order(:id).last.consumed_at.present?
+    save_unchanged_profile
+    assert_equal "+819012345678", @user.reload.phone_number
+    assert @user.phone_verified?
     get phone_verification_path, headers: FRAME_HEADERS
     assert_modal "電話番号認証"
   end
@@ -242,11 +247,17 @@ class ProfileAccountModalsTest < ActionDispatch::IntegrationTest
     assert_select "form#profile-edit-form", count: 0
   end
 
+  def save_unchanged_profile
+    patch profile_path, params: { user: { display_name: @user.display_name, bio: @user.bio } }
+    assert_redirected_to root_path
+  end
+
   def assert_account_completion(target)
     assert_response :success
     assert_equal "text/vnd.turbo-stream.html", response.media_type
     assert_select "turbo-stream[action='replace'][target='#{target}']", count: 1
-    assert_select "turbo-stream[action='update'][target='profile-account-notice']", count: 1
+    message = target == "profile-account-email" ? "✓ メールアドレスの変更を保存しました" : "✓ 電話番号を認証して保存しました"
+    assert_select "turbo-stream[action='update'][target='#{target}-notice'] template", text: message, count: 1
     assert_select "turbo-stream[action='append'][target='modal']", count: 1
     assert_select "turbo-stream", count: 3
     assert_select "form#profile-edit-form", count: 0

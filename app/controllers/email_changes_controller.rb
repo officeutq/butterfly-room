@@ -16,11 +16,11 @@ class EmailChangesController < ApplicationController
       if turbo_frame_request?
         render turbo_stream: [
           turbo_stream.replace("profile-account-email", partial: "profiles/account_email", locals: { user: @user }),
-          turbo_stream.update("profile-account-notice", html: "メールアドレスを変更しました"),
+          turbo_stream.update("profile-account-email-notice", html: "✓ メールアドレスの変更を保存しました"),
           turbo_stream.append("modal", partial: "shared/account_modal_complete")
         ]
       else
-        redirect_to edit_profile_path, notice: "メールアドレスを変更しました"
+        redirect_to edit_profile_path, notice: "✓ メールアドレスの変更を保存しました"
       end
     else
       render :edit, formats: [ :html ], layout: (turbo_frame_request? ? "account_modal" : "application"),

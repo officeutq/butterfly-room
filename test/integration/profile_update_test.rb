@@ -422,7 +422,7 @@ class ProfileUpdateTest < ActionDispatch::IntegrationTest
     assert_redirected_to edit_profile_path
     follow_redirect!
     assert_response :success
-    assert_includes @response.body, "メールアドレスを変更しました"
+    assert_includes @response.body, "✓ メールアドレスの変更を保存しました"
 
     user.reload
     assert_equal "new_email@example.com", user.email
