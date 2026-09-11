@@ -1200,6 +1200,9 @@ DB check constraint により保証する。
 
 ### 8.7 ログ・監査
 
+種類別ログの追加設計は [種類別ログ設計](design/application_logs.md) を参照する。
+`error_logs` と共通 `change_logs` を使用し、下記の既存業務履歴はそのまま保持する。
+
 以下を監査可能とする。
 
 - 誰が配信を開始／終了したか

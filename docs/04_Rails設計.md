@@ -5,6 +5,7 @@
 * **Controllerは“認可→Service呼び出し→レスポンス”のみ**
 * **状態変更・金銭処理はServiceに集約**
 * **DBトランザクションはServiceの中で持つ**
+* **必須の更新ログは対象更新と同じtransactionで保存する**。エラーログは同じDBの専用接続で保存し、業務取消から独立させる。対象・保存項目・保持方針は [種類別ログ設計](design/application_logs.md) を参照。
 * **通知（Turbo Streams）は“結果に応じて”Notifierに集約**
 * **PresenceはServiceで抽象化**（DB→Redis差し替え可能に）
 
