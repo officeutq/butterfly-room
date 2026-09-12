@@ -1,0 +1,63 @@
+<% content_for :title, "#{application_log_title(@kind)} ##{@entry.id}" %>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-0"><%= application_log_title(@kind) %> #<%= @entry.id %></h1>
+  <%= link_to "一覧へ", application_log_index_path(@kind), class: "btn btn-outline-secondary btn-sm" %>
+</div>
+<div class="card card-body mb-4">
+  <dl class="row mb-0">
+    <% {
+      "発生日時（日本時間）" => application_log_time(@entry.occurred_at),
+      "記録日時（日本時間）" => application_log_time(@entry.created_at),
+      "実行者" => application_log_actor(@entry),
+      "店舗ID" => @entry.store_id,
+      "配信セッションID" => @entry.stream_session_id,
+      "処理元" => @entry.source,
+      "リクエストID" => @entry.request_id,
+      "アーカイブ日時（日本時間）" => application_log_time(@entry.archived_at)
+    }.each do |label, value| %>
+      <dt class="col-sm-4"><%= label %></dt><dd class="col-sm-8 text-break"><%= value.presence || "—" %></dd>
+    <% end %>
+  </dl>
+</div>
+
+<% if @kind == :errors %>
+  <h2 class="h5">エラー情報</h2>
+  <dl class="row">
+    <% {
+      "重要度" => @entry.severity,
+      "例外クラス" => @entry.exception_class,
+      "捕捉状態" => (@entry.handled ? "処理側で捕捉済み（復旧済みとは限りません）" : "未処理"),
+      "要約" => @entry.summary,
+      "ジョブクラス" => @entry.job_class,
+      "ジョブID" => @entry.job_id,
+      "実行回数" => @entry.executions
+    }.each do |label, value| %>
+      <dt class="col-sm-4"><%= label %></dt><dd class="col-sm-8 text-break"><%= value.presence || "—" %></dd>
+    <% end %>
+  </dl>
+  <h2 class="h5">アプリケーション内の発生箇所</h2>
+  <% if @entry.backtrace.any? %>
+    <pre class="border rounded p-3"><code><%= @entry.backtrace.join("\n") %></code></pre>
+  <% else %>
+    <p class="text-muted">記録された発生箇所はありません。</p>
+  <% end %>
+  <p class="text-muted small">秘密情報の混入を防ぐため、任意の例外メッセージやリクエスト本文は保存しません。</p>
+<% else %>
+  <h2 class="h5"><%= @entry.target_type %> #<%= @entry.target_id %> の<%= application_log_action(@entry.action) %></h2>
+  <% if @entry.change_data.any? %>
+    <div class="table-responsive">
+      <table class="table table-bordered">
+        <thead><tr><th scope="col">項目</th><th scope="col">変更前</th><th scope="col">変更後</th></tr></thead>
+        <tbody>
+          <% @entry.change_data.each do |field, values| %>
+            <tr><th scope="row"><%= field %></th><td class="text-break"><%= application_log_value(values[0]) %></td><td class="text-break"><%= application_log_value(values[1]) %></td></tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <p class="text-muted">作成の事実のみ記録されています。</p>
+  <% end %>
+  <p class="text-muted small">秘匿項目は変更の事実だけを表示します。対象がなくなった場合も識別用のIDを保持します。</p>
+<% end %>

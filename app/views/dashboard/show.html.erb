@@ -355,6 +355,17 @@
 
     <% if current_user.system_admin? %>
       <div class="col-12 col-md-6 col-xl-4">
+        <%= link_to system_admin_error_logs_path, class: "text-decoration-none" do %>
+          <div class="card h-100 dashboard-role-card dashboard-role-card-system-admin" data-bs-theme="light">
+            <div class="card-body">
+              <h5 class="card-title mb-2">システムログ</h5>
+              <p class="card-text mb-0">エラーと店舗・ブースの更新履歴を確認します。</p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="col-12 col-md-6 col-xl-4">
         <% if store.present? %>
           <%= link_to admin_store_bans_path, class: "text-decoration-none" do %>
             <div class="card h-100 dashboard-role-card dashboard-role-card-system-admin" data-bs-theme="light">

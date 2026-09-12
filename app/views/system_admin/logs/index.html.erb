@@ -1,0 +1,120 @@
+<% content_for :title, application_log_title(@kind) %>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="mb-0">システムログ</h1>
+  <%= link_to "ダッシュボード", dashboard_path, class: "btn btn-outline-secondary btn-sm" %>
+</div>
+<nav class="nav nav-tabs mb-3" aria-label="ログの種類">
+  <% %i[errors changes].each do |kind| %>
+    <%= link_to application_log_title(kind), application_log_index_path(kind),
+          class: "nav-link #{'active' if @kind == kind}", aria: { current: (@kind == kind ? "page" : nil) } %>
+  <% end %>
+</nav>
+<p class="text-muted">日時は日本時間。初期表示は直近7日、検索期間は最大366日です。</p>
+
+<%= form_with url: application_log_index_path(@kind), method: :get, class: "card card-body mb-4", data: { turbo: false } do %>
+  <div class="row g-3">
+    <% [["from", "開始日"], ["to", "終了日"]].each do |field, label| %>
+      <div class="col-6 col-lg-3">
+        <%= label_tag field, label, class: "form-label" %>
+        <%= date_field_tag field, @filters[field], required: true, class: "form-control" %>
+      </div>
+    <% end %>
+    <div class="col-6 col-lg-3">
+      <%= label_tag :archive, "表示対象", class: "form-label" %>
+      <%= select_tag :archive, options_for_select([["通常", "active"], ["アーカイブ済み", "archived"], ["すべて", "all"]], @filters["archive"]), class: "form-select" %>
+    </div>
+    <div class="col-6 col-lg-3">
+      <%= label_tag :source, "処理元", class: "form-label" %>
+      <%= select_tag :source, options_for_select([["すべて", ""], ["画面・リクエスト", "web"], ["非同期処理", "job"], ["コマンド", "runner"], ["配信連携", "ivs"], ["アプリケーション", "application"]], @filters["source"]), class: "form-select" %>
+    </div>
+    <% [["actor_user_id", "実行者ユーザーID"], ["store_id", "店舗ID"]].each do |field, label| %>
+      <div class="col-6 col-lg-3">
+        <%= label_tag field, label, class: "form-label" %>
+        <%= number_field_tag field, @filters[field], min: 1, step: 1, class: "form-control" %>
+      </div>
+    <% end %>
+    <div class="col-12 col-lg-6">
+      <%= label_tag :request_id, "リクエストID（完全一致）", class: "form-label" %>
+      <%= text_field_tag :request_id, @filters["request_id"], maxlength: 100, class: "form-control" %>
+    </div>
+    <% if @kind == :errors %>
+      <div class="col-6 col-lg-3">
+        <%= label_tag :severity, "重要度", class: "form-label" %>
+        <%= select_tag :severity, options_for_select([["すべて", ""], ["エラー", "error"], ["警告", "warning"], ["情報", "info"]], @filters["severity"]), class: "form-select" %>
+      </div>
+      <div class="col-12 col-lg-6">
+        <%= label_tag :exception_class, "例外クラス（完全一致）", class: "form-label" %>
+        <%= text_field_tag :exception_class, @filters["exception_class"], maxlength: 200, class: "form-control" %>
+      </div>
+    <% else %>
+      <div class="col-6 col-lg-3">
+        <%= label_tag :target_type, "更新対象", class: "form-label" %>
+        <%= select_tag :target_type, options_for_select([["すべて", ""], ["店舗", "Store"], ["ブース", "Booth"]], @filters["target_type"]), class: "form-select" %>
+      </div>
+      <div class="col-6 col-lg-3">
+        <%= label_tag :target_id, "対象ID", class: "form-label" %>
+        <%= number_field_tag :target_id, @filters["target_id"], min: 1, step: 1, class: "form-control" %>
+      </div>
+      <div class="col-6 col-lg-3">
+        <%= label_tag :change_action, "変更区分", class: "form-label" %>
+        <%= select_tag :change_action, options_for_select([["すべて", ""], ["作成", "created"], ["更新", "updated"]], @filters["change_action"]), class: "form-select" %>
+      </div>
+    <% end %>
+    <div class="col-12 d-flex gap-2">
+      <%= submit_tag "検索", name: nil, class: "btn btn-primary" %>
+      <%= link_to "条件をリセット", application_log_index_path(@kind), class: "btn btn-outline-secondary" %>
+    </div>
+  </div>
+<% end %>
+
+<% if @page.errors.any? %>
+  <div class="alert alert-danger" role="alert">
+    <% @page.errors.each do |error| %><p class="mb-1"><%= error %></p><% end %>
+  </div>
+<% elsif @page.records.empty? %>
+  <div class="alert alert-secondary">条件に一致するログはありません。</div>
+<% else %>
+  <h2 class="h5"><%= application_log_title(@kind) %> <span class="text-muted">（<%= @page.current_page %>ページ・<%= @page.records.size %>件）</span></h2>
+  <p class="small text-muted d-lg-none">表は横にスクロールできます。</p>
+  <div class="table-responsive">
+    <table class="table table-striped align-middle text-nowrap">
+      <thead>
+        <tr><th scope="col">発生日時</th><th scope="col"><%= @kind == :errors ? "重要度・例外" : "対象・変更区分" %></th><th scope="col">実行者</th><th scope="col">店舗ID</th><th scope="col">処理元</th><th scope="col">状態</th><th scope="col">詳細</th></tr>
+      </thead>
+      <tbody>
+        <% @page.records.each do |entry| %>
+          <tr>
+            <td class="text-nowrap"><%= application_log_time(entry.occurred_at) %></td>
+            <td class="text-break">
+              <% if @kind == :errors %>
+                <span class="badge <%= { 'error' => 'text-bg-danger', 'warning' => 'text-bg-warning', 'info' => 'text-bg-info' }.fetch(entry.severity) %>"><%= entry.severity %></span>
+                <div><%= entry.exception_class %></div>
+              <% else %>
+                <div><%= entry.target_type %> #<%= entry.target_id %></div>
+                <%= application_log_action(entry.action) %>
+              <% end %>
+            </td>
+            <td class="text-break"><%= application_log_actor(entry) %></td>
+            <td><%= entry.store_id || "—" %></td>
+            <td><%= entry.source %></td>
+            <td class="text-nowrap"><%= entry.archived_at ? "アーカイブ済み" : "通常" %></td>
+            <td><%= link_to "詳細", application_log_path(entry), class: "btn btn-outline-primary btn-sm", aria: { label: "ログ#{entry.id}の詳細" } %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>
+<% if @page.errors.empty? %>
+  <nav class="d-flex gap-2 my-3" aria-label="ログのページ送り">
+    <% if @page.current_page > 1 %>
+      <%= link_to "前へ", application_log_index_path(@kind, @filters.merge("page" => @page.current_page - 1)), class: "btn btn-outline-secondary" %>
+    <% end %>
+    <% if @page.has_next && @page.current_page < Logs::SearchQuery::MAX_PAGE %>
+      <%= link_to "次へ", application_log_index_path(@kind, @filters.merge("page" => @page.current_page + 1)), class: "btn btn-outline-secondary" %>
+    <% elsif @page.has_next %>
+      <p class="text-muted">表示上限に達しました。期間や条件を絞り込んでください。</p>
+    <% end %>
+  </nav>
+<% end %>
