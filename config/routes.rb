@@ -242,6 +242,8 @@ Rails.application.routes.draw do
 
   # --- System Admin ---
   namespace :system_admin do
+    resources :error_logs, only: %i[index show]
+    resources :change_logs, only: %i[index show]
     resource :image_upload_verification, only: :show
     resources :image_upload_verification_runs, only: %i[create destroy] do
       member do
