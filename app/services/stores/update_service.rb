@@ -9,6 +9,9 @@ module Stores
     def initialize(
       store:,
       attributes:,
+      actor_user: nil,
+      source: "application",
+      request_id: nil,
       image_update: nil,
       legacy_thumbnail_upload: nil,
       remove_legacy_thumbnail: false,
@@ -17,6 +20,7 @@ module Stores
     )
       @store = store
       @attributes = attributes.to_h.symbolize_keys
+      @change_tracker = Logs::ChangeTracker.new(actor_user:, source:, request_id:)
       @image_update = image_update
       @legacy_thumbnail_upload = legacy_thumbnail_upload
       @remove_legacy_thumbnail = ActiveModel::Type::Boolean.new.cast(remove_legacy_thumbnail)
@@ -27,10 +31,14 @@ module Stores
     end
 
     def call(&block)
+      record_change = proc do |record|
+        block&.call(record)
+        @change_tracker.record!(record)
+      end
       if @image_update
-        update_image_pair(&block)
+        update_image_pair(&record_change)
       else
-        update_legacy_thumbnail(&block)
+        update_legacy_thumbnail(&record_change)
       end
     rescue ImageAttachments::UpdateService::Error,
            ImageAttachments::MultipartUpdateService::Error,
@@ -56,7 +64,8 @@ module Stores
         record: @store,
         purpose: :thumbnail,
         payload: @image_update,
-        attributes: @attributes
+        attributes: @attributes,
+        before_save: @change_tracker.method(:capture_before)
       ).call(&block)
     end
 
@@ -68,7 +77,8 @@ module Stores
         upload: @legacy_thumbnail_upload,
         remove_attachment: @remove_legacy_thumbnail,
         max_width: 1920,
-        max_height: 1080
+        max_height: 1080,
+        before_save: @change_tracker.method(:capture_before)
       ).call(&block)
     end
 

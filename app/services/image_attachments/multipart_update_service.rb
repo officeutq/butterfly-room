@@ -15,12 +15,14 @@ module ImageAttachments
       payload: nil,
       updates: nil,
       attributes: {},
+      before_save: nil,
       blob_upload_service: StagedBlobUploadService,
       pair_update_service: StagedPairUpdateService
     )
       @record = record
       @entries = build_entries(purpose:, payload:, updates:)
       @attributes = attributes.to_h
+      @before_save = before_save
       @blob_upload_service = blob_upload_service
       @pair_update_service = pair_update_service
       @crop_data = {}
@@ -135,6 +137,7 @@ module ImageAttachments
           operation: entry.payload.operation,
           expected_snapshot: entry.payload.expected_snapshot,
           attributes: index.zero? ? @attributes : {},
+          before_save: index.zero? ? @before_save : nil,
           crop_data: @crop_data[entry.purpose_name],
           new_source_blob: @staged_blobs[[ entry.purpose_name, :source ]],
           new_display_blob: @staged_blobs[[ entry.purpose_name, :display ]]

@@ -47,6 +47,10 @@ class Cast::BoothUpdateTest < ActionDispatch::IntegrationTest
     booth.reload
     assert_equal "更新後ブース名", booth.name
     assert_equal "更新後説明", booth.description
+    entry = ChangeLog.where(target_type: "Booth", target_id: booth.id).sole
+    assert_equal cast.id, entry.actor_user_id
+    assert_equal [ "更新前ブース名", "更新後ブース名" ], entry.change_data["name"]
+    assert_equal [ "[FILTERED]", "[FILTERED]" ], entry.change_data["description"]
   end
 
   test "cast booth update failure redirects to edit for html request" do

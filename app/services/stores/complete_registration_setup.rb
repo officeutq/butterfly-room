@@ -5,12 +5,16 @@ module Stores
     def initialize(
       store:,
       attributes:,
+      actor_user: nil,
+      source: "application",
+      request_id: nil,
       image_update: nil,
       update_service: Stores::UpdateService,
       completion_service: LpAnalytics::Completions::RecordService,
       logger: Rails.logger
     )
       @store = store
+      @log_context = { actor_user:, source:, request_id: }
       @attributes = attributes.to_h.symbolize_keys.except(:published, :sales_support_company)
       @image_update = image_update
       @update_service = update_service
@@ -22,7 +26,8 @@ module Stores
       @update_service.new(
         store: @store,
         attributes: @attributes.merge(published: true),
-        image_update: @image_update
+        image_update: @image_update,
+        **@log_context
       ).call
 
       record_completion

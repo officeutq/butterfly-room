@@ -9,6 +9,7 @@ module Admin
     def update
       Stores::CompleteRegistrationSetup.new(
         store: @store,
+        actor_user: current_user, source: "web", request_id: request.request_id,
         attributes: store_information_params,
         image_update: image_pair_payload
       ).call
