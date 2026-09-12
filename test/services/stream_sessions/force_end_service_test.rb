@@ -136,5 +136,9 @@ class StreamSessions::ForceEndServiceTest < ActiveSupport::TestCase
     assert @stream_session.ended_at.present?
     assert @booth.offline?
     assert_nil @booth.current_stream_session_id
+    entry = ErrorLog.where(stream_session_id: @stream_session.id, source: "ivs").sole
+    assert_equal @actor.id, entry.actor_user_id
+    assert_equal @store.id, entry.store_id
+    assert entry.handled
   end
 end

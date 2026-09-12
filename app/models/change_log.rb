@@ -10,7 +10,7 @@ class ChangeLog < ApplicationRecord
   validates :target_type, inclusion: { in: TARGET_TYPES }
   validates :target_id, numericality: { only_integer: true, greater_than: 0 }
   validates :action, inclusion: { in: ACTIONS }
-  validates :change_data, presence: true
+  validates :change_data, presence: true, unless: -> { action == "created" }
   validate :bounded_change_data
 
   private

@@ -37,6 +37,7 @@ module ImageAttachments
       operation:,
       expected_snapshot:,
       attributes: {},
+      before_save: nil,
       crop_data: nil,
       new_source_blob: nil,
       new_display_blob: nil
@@ -46,6 +47,7 @@ module ImageAttachments
       @operation = operation.to_sym if operation.respond_to?(:to_sym)
       @expected_snapshot = expected_snapshot
       @attributes = attributes.to_h.symbolize_keys
+      @before_save = before_save
       @crop_data = crop_data
       @new_source_blob = new_source_blob
       @new_display_blob = new_display_blob
@@ -104,6 +106,8 @@ module ImageAttachments
       @record.lock! if @record.persisted?
       verify_expected_snapshot!
       lock_staged_blobs!
+
+      @before_save&.call(@record)
 
       @record.assign_attributes(@attributes)
       apply_operation!

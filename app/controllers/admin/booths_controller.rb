@@ -36,6 +36,7 @@ module Admin
       ::Booths::UpdateService.new(
         booth: @booth,
         attributes:,
+        actor_user: current_user, source: "web", request_id: request.request_id,
         image_update: image_pair_payload,
         legacy_thumbnail_upload: upload,
         remove_legacy_thumbnail: remove_thumbnail_image

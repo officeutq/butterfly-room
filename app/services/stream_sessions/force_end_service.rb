@@ -54,15 +54,24 @@ module StreamSessions
         "participant_id=#{target.participant_id}"
       )
     rescue Aws::IVSRealTime::Errors::ServiceError => e
+      report_error(e)
       Rails.logger.error(
         "[ForceEnd][IVS] #{e.class}: #{e.message} " \
         "stream_session_id=#{@stream_session.id} stage_arn=#{stage_arn}"
       )
     rescue => e
+      report_error(e)
       Rails.logger.error(
         "[ForceEnd] #{e.class}: #{e.message} " \
         "stream_session_id=#{@stream_session.id} stage_arn=#{stage_arn}"
       )
+    end
+
+    def report_error(error)
+      Rails.error.report(error, handled: true, source: "ivs", context: {
+        log_source: "ivs", actor_user_id: @actor&.id,
+        stream_session_id: @stream_session.id, store_id: @stream_session.store_id
+      })
     end
   end
 end

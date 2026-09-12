@@ -9,7 +9,7 @@ module Logs
 
       differences = changes.select { |_key, values| values.is_a?(Array) && values.size == 2 && values[0] != values[1] }
       data = Sanitizer.change_data(target_type, differences)
-      return if data.empty?
+      return if data.empty? && action != "created"
 
       ChangeLog.create!(
         target_type:, target_id: record.id, action:, change_data: data,

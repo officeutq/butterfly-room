@@ -15,6 +15,7 @@ module ImageAttachments
       remove_attachment:,
       max_width:,
       max_height:,
+      before_save: nil,
       expected_attachment_id: nil,
       expected_blob_id: nil
     )
@@ -29,6 +30,8 @@ module ImageAttachments
       @expected_blob_id = optional_positive_integer!(expected_blob_id, :expected_blob_id)
       @pending_blob = nil
 
+      @before_save = before_save
+
       validate_attachment!
       validate_attributes!
       validate_expected_attachment!
@@ -40,8 +43,9 @@ module ImageAttachments
       committed = false
 
       @record.class.transaction do
-        @record.lock! if @record.persisted? && attachment_change?
+        @record.lock! if @record.persisted? && (attachment_change? || @before_save)
         verify_expected_attachment! if attachment_change?
+        @before_save&.call(@record)
         @record.assign_attributes(@attributes)
         old_blob = current_blob if attachment_change?
         assign_attachment(new_blob)

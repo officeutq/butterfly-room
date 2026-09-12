@@ -18,6 +18,7 @@ class ApplicationController < ActionController::Base
   STORE_LP_202607_REF_MAX_LENGTH = 100
 
   before_action :authenticate_user!
+  before_action :set_application_log_context
   before_action :set_default_meta_tags
 
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
@@ -40,6 +41,10 @@ class ApplicationController < ActionController::Base
                 :image_upload_verification_enabled?
 
   private
+
+  def set_application_log_context
+    Rails.error.set_context(log_source: "web", request_id: request.request_id, actor_user_id: current_user&.id)
+  end
 
   def enable_gtm
     @gtm_enabled = true
