@@ -89,7 +89,7 @@ module StreamSessions
       raise PublisherControl::Conflict, "配信ルームの対応を確認できません" if session.ivs_stage_arn.blank? || session.ivs_stage_arn != booth.ivs_stage_arn
 
       participants = @client.list_participants(stage_arn: session.ivs_stage_arn)
-      publishers = participants.select { |p| p.state == "CONNECTED" && (p.attributes || {})["role"] != "viewer" }
+      publishers = participants.select { |p| p.state != "DISCONNECTED" && (p.attributes || {})["role"] != "viewer" }
       if publishers.any? { |p| (p.attributes || {})["stream_session_id"] != session.id.to_s }
         raise PublisherControl::Conflict, "別セッションの接続があるため終了できません"
       end

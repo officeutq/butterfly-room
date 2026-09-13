@@ -42,7 +42,7 @@ module StreamSessions
       end
       attempts.each do |attempt|
         participants = client.list_participants(stage_arn: attempt.stream_session.ivs_stage_arn)
-        next if participants.any? { |p| p.state == "CONNECTED" && (p.attributes || {})["role"] != "viewer" }
+        next if participants.any? { |p| p.state != "DISCONNECTED" && (p.attributes || {})["role"] != "viewer" }
 
         attempt.update!(retired_at: Time.current)
       end

@@ -98,7 +98,7 @@ module StreamSessions
 
     def ensure_no_connected_publishers!(session, participants: nil, except: nil)
       participants ||= @client.list_participants(stage_arn: session.ivs_stage_arn)
-      if participants.any? { |p| p.state == "CONNECTED" && p.participant_id != except && (p.attributes || {})["role"] != "viewer" }
+      if participants.any? { |p| p.state != "DISCONNECTED" && p.participant_id != except && (p.attributes || {})["role"] != "viewer" }
         raise PublisherControl::Conflict, "既存の接続があります。配信元で接続を終了してください"
       end
     end

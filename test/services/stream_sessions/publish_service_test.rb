@@ -160,6 +160,17 @@ class StreamSessions::PublishServiceTest < ActiveSupport::TestCase
     end
   end
 
+  test "participant with missing state is not assumed disconnected" do
+    service.issue_token
+    @client.publish_last!
+    @client.participants.first.state = nil
+    travel 2.minutes do
+      assert_raises(StreamSessions::PublisherControl::Conflict) { service(@y, SecureRandom.uuid).issue_token }
+      assert_equal @id, @session.stream_publish_attempts.open.sole.request_id
+      assert_empty @client.disconnects
+    end
+  end
+
   test "archived current and legacy sessions cannot issue or confirm" do
     @booth.update!(archived_at: Time.current)
     assert_raises(StreamSessions::PublisherControl::NotAuthorized) { service.issue_token }
