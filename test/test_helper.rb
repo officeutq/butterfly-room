@@ -6,11 +6,16 @@ require "nokogiri"
 require "devise"
 require "warden/test/helpers"
 
+# テストは実際のAWSへ接続しない。個々のテストで応答・API引数を検証する。
+Aws.config[:stub_responses] = true
+require_relative "support/publisher_test_helper"
+
 # Rails 8 ではルートが遅延ロードされるため、Devise の Warden 設定を先に初期化する。
 Rails.application.routes_reloader.execute_unless_loaded
 
 module ActiveSupport
   class TestCase
+    include PublisherTestHelper
     parallelize(workers: :number_of_processors)
     fixtures :all
 

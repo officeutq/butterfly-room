@@ -16,11 +16,20 @@ module Booths
     def call
       authorize!
 
-      Booth.transaction do
+      StreamSessions::PublisherControl.with_user_lock(@actor) do
+        authorize!
+        StreamSessions::PublisherControl.release_expired_attempts!(@actor)
         booth = Booth.lock.find(@booth.id)
         raise ActiveRecord::RecordNotFound if booth.archived?
 
         current_stream_session = booth.current_stream_session
+        if StreamSessions::PublisherControl.busy_elsewhere?(@actor, booth: booth)
+          return Result.new(action: ACTION_ALREADY_LIVE_ELSEWHERE, booth: booth, stream_session: current_stream_session)
+        end
+
+        if current_stream_session && !StreamSessions::PublisherControl.available_to?(current_stream_session, @actor)
+          return Result.new(action: :occupied_by_other, booth: booth, stream_session: current_stream_session)
+        end
 
         if booth.offline?
           return handle_offline!(booth, current_stream_session)
@@ -45,7 +54,7 @@ module Booths
       booth = @booth
 
       allowed =
-        if actor.blank?
+        if actor.blank? || actor.deleted?
           false
         elsif actor.system_admin?
           true
@@ -60,12 +69,7 @@ module Booths
 
     def handle_offline!(booth, current_stream_session)
       if booth.current_stream_session_id.present?
-        if current_stream_session.present?
-          booth.update!(status: :standby)
-          return Result.new(action: :redirect_live, booth: booth, stream_session: current_stream_session)
-        end
-
-        booth.update!(current_stream_session_id: nil)
+        return Result.new(action: :occupied_by_other, booth: booth, stream_session: current_stream_session)
       end
 
       stream_session = StreamSessions::StartService.new(booth: booth, actor: @actor).call
@@ -89,7 +93,7 @@ module Booths
     end
 
     def handle_live_or_away(booth, current_stream_session)
-      if current_stream_session.present? && current_stream_session.started_by_cast_user_id == @actor.id
+      if current_stream_session&.broadcaster?(@actor)
         return Result.new(action: :redirect_live, booth: booth, stream_session: current_stream_session)
       end
 

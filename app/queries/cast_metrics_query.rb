@@ -29,10 +29,12 @@ class CastMetricsQuery
         include_all_casts || sales_by_cast[u.id].to_i.positive? || seconds_by_cast[u.id].to_i.positive?
       end
 
+    casts << nil if sales_by_cast[nil].to_i.nonzero? || seconds_by_cast[nil].to_i.positive?
+
     casts
       .map do |u|
-        sales = sales_by_cast[u.id] || 0
-        secs = seconds_by_cast[u.id] || 0
+        sales = sales_by_cast[u&.id] || 0
+        secs = seconds_by_cast[u&.id] || 0
 
         Row.new(
           cast_user: u,
@@ -42,7 +44,7 @@ class CastMetricsQuery
           real_store_sales_yen: calc_store_share_yen(sales)
         )
       end
-      .sort_by { |r| [ -r.stream_sales_points.to_i, -r.stream_seconds.to_i, r.cast_user.id ] }
+      .sort_by { |r| [ -r.stream_sales_points.to_i, -r.stream_seconds.to_i, r.cast_user&.id || 0 ] }
   end
 
   private
@@ -59,9 +61,8 @@ class CastMetricsQuery
     stream_actor_user_ids =
       StreamSession
         .where(store_id: store.id)
-        .where.not(started_by_cast_user_id: nil)
-        .where.not(broadcast_started_at: nil)
-        .pluck(:started_by_cast_user_id)
+        .where.not(broadcast_started_by_user_id: nil)
+        .pluck(:broadcast_started_by_user_id)
 
     user_ids = (booth_cast_user_ids + stream_actor_user_ids).uniq
 
@@ -73,7 +74,7 @@ class CastMetricsQuery
       .joins(:stream_session)
       .where(store_id: store.id)
       .where(occurred_at: from...to)
-      .group("stream_sessions.started_by_cast_user_id")
+      .group("stream_sessions.broadcast_started_by_user_id")
       .sum(:points)
       .compact
   end
@@ -88,15 +89,13 @@ class CastMetricsQuery
     seconds_by_cast = Hash.new(0)
 
     sessions.find_each do |s|
-      next if s.started_by_cast_user_id.blank?
-
       start_t = [ s.broadcast_started_at, from ].max
       end_t = [ s.ended_at || now, to ].min
 
       dur = end_t - start_t
       dur = 0 if dur.negative?
 
-      seconds_by_cast[s.started_by_cast_user_id] += dur.to_i
+      seconds_by_cast[s.broadcast_started_by_user_id] += dur.to_i
     end
 
     seconds_by_cast

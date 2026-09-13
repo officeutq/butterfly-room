@@ -1,5 +1,7 @@
 # 基本設計_Phase1
 
+配信開始者・準備作成者・担当者の区別、状態表、関連表示と旧データの扱いは [配信開始者の設計](design/actual_stream_broadcaster.md) を参照。
+
 ## 0. はじめに
 
 ### 0.1 本書の目的
@@ -503,7 +505,11 @@ erDiagram
 * `status`（integer）
 * `started_at`（必須）
 * `ended_at`（任意）
-* `started_by_cast_user_id`（users参照）
+* `started_by_cast_user_id`（users参照、準備作成者）
+* `broadcast_started_by_user_id`（users参照、配信開始者、未確定はNULL）
+* `broadcast_started_at`（IVS配信の初回確認時刻）
+* `broadcast_identity_source` / `broadcast_identity_evidence`（本人確認・旧補完・証拠補正の由来）
+* `publisher_protocol`（新方式の準備は1、旧方式はNULL）
 * `ivs_stage_arn`（任意）
 
 ---
@@ -727,7 +733,7 @@ Booth は「配信可能なルームの状態」を表す。
 #### 状態遷移
 
 offline → standby
-standby → live
+standby → live（PublishServiceでIVS上の本人の配信を確認して確定）
 live → away
 away → live
 standby / live / away → offline

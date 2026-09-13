@@ -10,7 +10,7 @@ module Cast
           @booth
             .stream_sessions
             .ended
-            .includes(:started_by_cast_user)
+            .includes(:broadcast_started_by_user)
             .order(started_at: :desc, id: :desc)
       end
 

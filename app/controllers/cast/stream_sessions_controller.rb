@@ -2,8 +2,11 @@
 
 module Cast
   class StreamSessionsController < Cast::BaseController
-    before_action :set_stream_session, only: %i[show finish pending_drink_orders meta_display metadata start_broadcast]
-    before_action :authorize_stream_session_access!, only: %i[show finish pending_drink_orders meta_display metadata start_broadcast]
+    before_action :set_stream_session, only: %i[show finish pending_drink_orders meta_display metadata start_broadcast cancel_publish]
+    before_action :authorize_stream_session_access!, only: %i[show finish pending_drink_orders meta_display metadata start_broadcast cancel_publish]
+    rescue_from StreamSessions::PublisherControl::Conflict, with: :publish_conflict
+    rescue_from StreamSessions::PublisherControl::NotAuthorized, with: -> { head :forbidden }
+    rescue_from Aws::IVSRealTime::Errors::ServiceError, Seahorse::Client::NetworkingError, with: :publish_unavailable
 
     def show
       booth = @stream_session.booth
@@ -29,7 +32,7 @@ module Cast
         )
 
       @booth = booth
-      @cast_user = @stream_session.started_by_cast_user
+      @cast_user = @stream_session.broadcast_started_by_user
 
       @comment_count =
         comments_scope.where(kind: Comment::KIND_CHAT).count
@@ -69,13 +72,19 @@ module Cast
     def finish
       ended_session = StreamSessions::EndService.new(
         stream_session: @stream_session,
-        actor: current_user
+        actor: current_user,
+        attempt_id: params[:publish_attempt_id]
       ).call
 
-      redirect_to cast_stream_session_path(ended_session),
-                  notice: "今回の配信が終了しました"
+      respond_to do |format|
+        format.json { render json: { redirect_url: cast_stream_session_path(ended_session) } }
+        format.html { redirect_to cast_stream_session_path(ended_session), notice: "今回の配信が終了しました" }
+      end
     rescue => e
-      redirect_to live_cast_booth_path(@stream_session.booth_id), alert: e.message
+      respond_to do |format|
+        format.json { render json: { error: e.message }, status: :conflict }
+        format.html { redirect_to live_cast_booth_path(@stream_session.booth_id), alert: e.message }
+      end
     end
 
     def pending_drink_orders
@@ -105,7 +114,8 @@ module Cast
         return respond_conflict(booth, "スタンバイ中のみ編集できます")
       end
 
-      @stream_session.update!(metadata_params)
+      @stream_session = StreamSessions::UpdateMetadataService.new(stream_session: @stream_session,
+        actor: current_user, attributes: metadata_params).call
 
       StreamSessionNotifier.broadcast_stream_state(booth: booth)
 
@@ -145,23 +155,32 @@ module Cast
     end
 
     def start_broadcast
-      booth = @stream_session.booth
-
-      unless booth.current_stream_session_id == @stream_session.id
-        return head :forbidden
-      end
-
-      if @stream_session.broadcast_started_at.blank?
-        @stream_session.update!(broadcast_started_at: Time.current)
-      end
-
+      publish_service.confirm
       render json: { ok: true }, status: :ok
     rescue ActiveRecord::RecordInvalid => e
       message = e.record.errors.full_messages.join(", ").presence || "配信開始時刻の保存に失敗しました"
       render json: { error: message }, status: :unprocessable_entity
     end
 
+    def cancel_publish
+      publish_service.cancel
+      head :no_content
+    end
+
     private
+
+    def publish_service
+      StreamSessions::PublishService.new(stream_session: @stream_session, actor: current_user,
+        attempt_id: params[:publish_attempt_id])
+    end
+
+    def publish_conflict(error)
+      render json: { error: error.message, retryable: error.is_a?(StreamSessions::PublishService::PublicationPending) }, status: :conflict
+    end
+
+    def publish_unavailable(_error)
+      render json: { error: "配信接続を確認できません。再試行してください" }, status: :service_unavailable
+    end
 
     def set_stream_session
       @stream_session = StreamSession.find(params[:id])

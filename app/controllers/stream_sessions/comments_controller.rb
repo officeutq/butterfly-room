@@ -120,7 +120,7 @@ module StreamSessions
     end
 
     def ensure_comment_moderator!
-      head :forbidden unless @stream_session.started_by_cast_user_id == current_user.id
+      head :forbidden unless @stream_session.broadcaster?(current_user)
     end
 
     def render_comment_form_error(message, status:)

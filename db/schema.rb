@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_12_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_13_010000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -61,6 +61,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_12_000000) do
     t.string "ivs_stage_arn"
     t.datetime "last_online_at"
     t.string "name", null: false
+    t.datetime "publisher_blocked_until"
     t.integer "status", default: 0, null: false
     t.bigint "store_id", null: false
     t.jsonb "thumbnail_image_crop_data", default: {}, null: false
@@ -125,7 +126,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_12_000000) do
     t.jsonb "metadata", default: {}, null: false
     t.bigint "stream_session_id", null: false
     t.datetime "updated_at", null: false
-    t.bigint "user_id", null: false
+    t.bigint "user_id"
     t.index ["booth_id", "created_at"], name: "index_comments_on_booth_id_and_created_at"
     t.index ["booth_id"], name: "index_comments_on_booth_id"
     t.index ["stream_session_id", "created_at"], name: "index_comments_on_stream_session_id_and_created_at"
@@ -659,12 +660,34 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_12_000000) do
     t.index ["referral_code_id"], name: "index_stores_on_referral_code_id"
   end
 
+  create_table "stream_publish_attempts", force: :cascade do |t|
+    t.datetime "cancelled_at"
+    t.datetime "confirmed_at"
+    t.datetime "created_at", null: false
+    t.datetime "expires_at", null: false
+    t.string "participant_id"
+    t.string "request_id", null: false
+    t.datetime "retired_at"
+    t.bigint "stream_session_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["request_id"], name: "index_stream_publish_attempts_on_request_id", unique: true
+    t.index ["stream_session_id"], name: "index_stream_publish_attempts_on_stream_session_id"
+    t.index ["stream_session_id"], name: "one_open_publish_attempt_per_session", unique: true, where: "(retired_at IS NULL)"
+    t.index ["user_id"], name: "index_stream_publish_attempts_on_user_id"
+    t.index ["user_id"], name: "one_open_publish_attempt_per_user", unique: true, where: "(retired_at IS NULL)"
+  end
+
   create_table "stream_sessions", force: :cascade do |t|
     t.bigint "booth_id", null: false
+    t.jsonb "broadcast_identity_evidence", default: {}, null: false
+    t.string "broadcast_identity_source"
     t.datetime "broadcast_started_at"
+    t.bigint "broadcast_started_by_user_id"
     t.datetime "created_at", null: false
     t.datetime "ended_at"
     t.string "ivs_stage_arn"
+    t.integer "publisher_protocol"
     t.datetime "started_at", null: false
     t.bigint "started_by_cast_user_id", null: false
     t.integer "status", null: false
@@ -674,6 +697,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_12_000000) do
     t.index ["booth_id", "started_at"], name: "index_stream_sessions_on_booth_id_and_started_at"
     t.index ["booth_id"], name: "index_stream_sessions_on_booth_id"
     t.index ["broadcast_started_at"], name: "index_stream_sessions_on_broadcast_started_at"
+    t.index ["broadcast_started_by_user_id"], name: "index_stream_sessions_on_broadcast_started_by_user_id"
     t.index ["ended_at"], name: "index_stream_sessions_on_ended_at"
     t.index ["ivs_stage_arn"], name: "index_stream_sessions_on_ivs_stage_arn"
     t.index ["started_by_cast_user_id"], name: "index_stream_sessions_on_started_by_cast_user_id"
@@ -865,8 +889,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_12_000000) do
   add_foreign_key "store_payout_accounts", "users", column: "updated_by_user_id"
   add_foreign_key "stores", "lp_analytics_visits"
   add_foreign_key "stores", "referral_codes"
+  add_foreign_key "stream_publish_attempts", "stream_sessions"
+  add_foreign_key "stream_publish_attempts", "users"
   add_foreign_key "stream_sessions", "booths"
   add_foreign_key "stream_sessions", "stores"
+  add_foreign_key "stream_sessions", "users", column: "broadcast_started_by_user_id"
   add_foreign_key "stream_sessions", "users", column: "started_by_cast_user_id"
   add_foreign_key "support_inquiries", "comments", column: "source_comment_id"
   add_foreign_key "support_inquiries", "stores"
