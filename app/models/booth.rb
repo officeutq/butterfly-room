@@ -32,6 +32,14 @@ class Booth < ApplicationRecord
     archived_at.present?
   end
 
+  def actual_publisher_user
+    session = current_stream_session
+    return unless session&.live? && session.publisher_recording_state == :recorded
+    return unless session.booth_id == id && (live? || away?)
+
+    session.actual_publisher_user
+  end
+
   def primary_cast_user_id
     booth_casts.order(created_at: :desc, id: :desc).pick(:cast_user_id)
   end

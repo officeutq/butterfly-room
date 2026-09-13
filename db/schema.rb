@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_12_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_14_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -659,26 +659,74 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_12_000000) do
     t.index ["referral_code_id"], name: "index_stores_on_referral_code_id"
   end
 
+  create_table "stream_publisher_connections", force: :cascade do |t|
+    t.bigint "booth_id", null: false
+    t.datetime "confirmed_at"
+    t.datetime "created_at", null: false
+    t.integer "disconnect_attempts", default: 0, null: false
+    t.string "disconnect_reason"
+    t.datetime "disconnect_requested_at"
+    t.datetime "disconnected_at"
+    t.bigint "generation", null: false
+    t.string "ivs_participant_id"
+    t.string "ivs_stage_arn", null: false
+    t.string "last_disconnect_error"
+    t.datetime "next_disconnect_retry_at"
+    t.datetime "released_at"
+    t.uuid "request_id", null: false
+    t.bigint "stream_session_id", null: false
+    t.datetime "token_expires_at"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["booth_id"], name: "index_stream_publisher_connections_on_booth_id"
+    t.index ["ivs_stage_arn", "ivs_participant_id"], name: "index_publisher_connections_on_stage_and_participant", unique: true
+    t.index ["next_disconnect_retry_at"], name: "index_pending_publisher_disconnect_retries", where: "((disconnect_requested_at IS NOT NULL) AND (disconnected_at IS NULL))"
+    t.index ["request_id"], name: "index_stream_publisher_connections_on_request_id", unique: true
+    t.index ["stream_session_id"], name: "index_stream_publisher_connections_on_stream_session_id"
+    t.index ["stream_session_id"], name: "index_unreleased_publisher_connections_on_session", unique: true, where: "(released_at IS NULL)"
+    t.index ["user_id"], name: "index_stream_publisher_connections_on_user_id"
+    t.index ["user_id"], name: "index_unreleased_publisher_connections_on_user", unique: true, where: "(released_at IS NULL)"
+    t.check_constraint "(disconnect_requested_at IS NULL) = (disconnect_reason IS NULL)", name: "publisher_connections_disconnect_request"
+    t.check_constraint "(ivs_participant_id IS NULL) = (token_expires_at IS NULL)", name: "publisher_connections_participant_token"
+    t.check_constraint "disconnect_attempts >= 0", name: "publisher_connections_disconnect_attempts"
+    t.check_constraint "disconnect_reason::text = ANY (ARRAY['cancel'::character varying, 'replace'::character varying, 'end'::character varying]::text[])", name: "publisher_connections_disconnect_reason"
+    t.check_constraint "generation > 0", name: "publisher_connections_generation"
+  end
+
   create_table "stream_sessions", force: :cascade do |t|
+    t.jsonb "actual_publisher_evidence", default: {}, null: false
+    t.datetime "actual_publisher_recorded_at"
+    t.string "actual_publisher_source"
+    t.bigint "actual_publisher_user_id"
     t.bigint "booth_id", null: false
     t.datetime "broadcast_started_at"
     t.datetime "created_at", null: false
+    t.bigint "current_publisher_connection_id"
     t.datetime "ended_at"
     t.string "ivs_stage_arn"
+    t.bigint "publisher_generation", default: 0, null: false
     t.datetime "started_at", null: false
     t.bigint "started_by_cast_user_id", null: false
     t.integer "status", null: false
     t.bigint "store_id", null: false
     t.string "title"
     t.datetime "updated_at", null: false
+    t.index ["actual_publisher_source"], name: "index_stream_sessions_on_actual_publisher_source"
+    t.index ["actual_publisher_user_id"], name: "index_stream_sessions_on_actual_publisher_user_id"
+    t.index ["actual_publisher_user_id"], name: "index_unended_sessions_on_actual_publisher", where: "(ended_at IS NULL)"
     t.index ["booth_id", "started_at"], name: "index_stream_sessions_on_booth_id_and_started_at"
     t.index ["booth_id"], name: "index_stream_sessions_on_booth_id"
     t.index ["broadcast_started_at"], name: "index_stream_sessions_on_broadcast_started_at"
+    t.index ["current_publisher_connection_id"], name: "index_stream_sessions_on_current_publisher_connection_id"
     t.index ["ended_at"], name: "index_stream_sessions_on_ended_at"
     t.index ["ivs_stage_arn"], name: "index_stream_sessions_on_ivs_stage_arn"
     t.index ["started_by_cast_user_id"], name: "index_stream_sessions_on_started_by_cast_user_id"
     t.index ["store_id", "started_at"], name: "index_stream_sessions_on_store_id_and_started_at"
     t.index ["store_id"], name: "index_stream_sessions_on_store_id"
+    t.check_constraint "actual_publisher_source::text = ANY (ARRAY['ivs_verified'::character varying, 'legacy_creator_backfill'::character varying, 'evidence_backfill'::character varying]::text[])", name: "stream_sessions_actual_publisher_source"
+    t.check_constraint "actual_publisher_user_id IS NULL AND actual_publisher_source IS NULL AND actual_publisher_recorded_at IS NULL OR actual_publisher_user_id IS NOT NULL AND actual_publisher_source IS NOT NULL AND actual_publisher_recorded_at IS NOT NULL AND broadcast_started_at IS NOT NULL", name: "stream_sessions_actual_publisher_record"
+    t.check_constraint "jsonb_typeof(actual_publisher_evidence) = 'object'::text", name: "stream_sessions_actual_publisher_evidence"
+    t.check_constraint "publisher_generation >= 0", name: "stream_sessions_publisher_generation"
   end
 
   create_table "stripe_webhook_events", force: :cascade do |t|
@@ -865,8 +913,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_12_000000) do
   add_foreign_key "store_payout_accounts", "users", column: "updated_by_user_id"
   add_foreign_key "stores", "lp_analytics_visits"
   add_foreign_key "stores", "referral_codes"
+  add_foreign_key "stream_publisher_connections", "booths"
+  add_foreign_key "stream_publisher_connections", "stream_sessions"
+  add_foreign_key "stream_publisher_connections", "users"
   add_foreign_key "stream_sessions", "booths"
   add_foreign_key "stream_sessions", "stores"
+  add_foreign_key "stream_sessions", "stream_publisher_connections", column: "current_publisher_connection_id"
+  add_foreign_key "stream_sessions", "users", column: "actual_publisher_user_id"
   add_foreign_key "stream_sessions", "users", column: "started_by_cast_user_id"
   add_foreign_key "support_inquiries", "comments", column: "source_comment_id"
   add_foreign_key "support_inquiries", "stores"
