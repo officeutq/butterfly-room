@@ -81,12 +81,12 @@ async function pageState(page) {
   return page.evaluate(() => ({ ...window.probe.state, events: [...window.probe.state.events] }))
 }
 
-async function join(token, label) {
+async function join(token, label, expected = "published", publishMedia = true) {
   const context = await browser.newContext()
   const page = await context.newPage()
   await page.goto(baseUrl)
   await page.addScriptTag({ url: sdkUrl })
-  await page.evaluate(tokenValue => {
+  await page.evaluate(({ tokenValue, publishMedia }) => {
     const { Stage, LocalStageStream, SubscribeType, StageEvents } = window.IVSBroadcastClient
     const canvas = document.getElementById("synthetic")
     const paint = canvas.getContext("2d")
@@ -101,7 +101,7 @@ async function join(token, label) {
     const stream = new LocalStageStream(media.getVideoTracks()[0])
     const stage = new Stage(tokenValue, {
       stageStreamsToPublish: () => [stream],
-      shouldPublishParticipant: () => true,
+      shouldPublishParticipant: () => window.probe.publishEnabled,
       shouldSubscribeToParticipant: () => SubscribeType.NONE
     })
     const state = { connection: null, publish: null, joinResult: "pending", error: null, events: [] }
@@ -116,19 +116,24 @@ async function join(token, label) {
       state.error = { code: error.code, category: error.category }; event("error", state.error)
     })
     stage.on(StageEvents.STAGE_LEFT, value => event("left", value))
-    window.probe = { stage, state, media, timer }
+    window.probe = { stage, state, media, timer, publishEnabled: publishMedia }
     stage.join().then(() => { state.joinResult = "resolved" }).catch(error => {
       state.joinResult = "rejected"
       state.error = { code: error.code, category: error.category }
     })
-  }, token.token)
+  }, { tokenValue: token.token, publishMedia })
   let timedOut = false
   try {
-    await page.waitForFunction(() => window.probe.state.publish === "published" ||
-      window.probe.state.joinResult === "rejected" || window.probe.state.error, null, { timeout: 25000 })
+    await page.waitForFunction(publishMedia => window.probe.state.publish === "published" ||
+      (!publishMedia && window.probe.state.connection === "connected") ||
+      window.probe.state.joinResult === "rejected" || window.probe.state.error, publishMedia, { timeout: 25000 })
   } catch { timedOut = true }
-  record(label, { timedOut, ...await pageState(page) })
+  const state = await pageState(page)
+  record(label, { timedOut, ...state })
   if (timedOut) throw new Error(`${label}: observation_timeout`)
+  if (expected === "published" && state.publish !== "published") throw new Error(`${label}: publish_not_observed`)
+  if (expected === "connected" && state.connection !== "connected") throw new Error(`${label}: connection_not_observed`)
+  if (typeof expected === "number" && state.error?.code !== expected) throw new Error(`${label}: expected_error_${expected}`)
   return { page, context }
 }
 
@@ -168,7 +173,7 @@ async function snapshot(token, label) {
 async function main() {
   mkdirSync(resolve("tmp"), { recursive: true })
   const identity = await requireAws("sts", "get-caller-identity")
-  if (!identity.Arn.endsWith(":user/butterfly-room-local")) throw new Error("local development identity required")
+  if (identity.Arn !== "arn:aws:iam::137775584467:user/butterfly-room-local") throw new Error("local development identity required")
   record("identity_checked", { localDevelopmentUser: true })
   server = createServer((_req, res) => {
     res.writeHead(200, { "Content-Type": "text/html", "Cache-Control": "no-store" })
@@ -188,18 +193,18 @@ async function main() {
   await snapshot(unused, "V01.before_join")
   await disconnect(unused, "V01.disconnect_before_join")
   await disconnect(unused, "V01.disconnect_repeated")
-  const denied = await join(unused, "V01.join_after_disconnect")
+  const denied = await join(unused, "V01.join_after_disconnect", 10)
   await close(denied, "V01.cleanup")
 
   const connected = await mint("V02")
   const live = await join(connected, "V02.join")
   await snapshot(connected, "V02.connected_snapshot")
   await disconnect(connected, "V02.disconnect_connected")
-  try { await live.page.waitForFunction(() => window.probe.state.connection === "disconnected", null, { timeout: 10000 }) } catch {}
+  await live.page.waitForFunction(() => window.probe.state.connection === "disconnected", null, { timeout: 10000 })
   record("V02.after_disconnect", await pageState(live.page))
   await snapshot(connected, "V02.disconnected_snapshot")
   await close(live, "V02.cleanup")
-  const reuse = await join(connected, "V02.same_token_retry")
+  const reuse = await join(connected, "V02.same_token_retry", 10)
   await close(reuse, "V02.retry_cleanup")
   await disconnect(connected, "V06.repeat_after_disconnect")
 
@@ -211,6 +216,74 @@ async function main() {
   await close(second, "V03.cleanup")
   await disconnect(voluntary, "V03.revoke_after_leave")
 
+  const abrupt = await mint("V03b")
+  const vanished = await join(abrupt, "V03b.join")
+  await vanished.context.close()
+  record("V03b.browser_context_closed", { explicitLeave: false })
+  await disconnect(abrupt, "V03b.revoke_previous")
+  const replacement = await mint("V03b.replacement")
+  const restored = await join(replacement, "V03b.new_token_recovery")
+  await close(restored, "V03b.cleanup")
+  await disconnect(replacement, "V03b.revoke_replacement")
+
+  const history = await mint("V05")
+  await snapshot(history, "V05.never_joined_snapshot")
+  const observer = await join(history, "V05.join_without_publishing", "connected", false)
+  await snapshot(history, "V05.connected_not_published_snapshot")
+  await observer.page.evaluate(() => {
+    window.probe.publishEnabled = true
+    window.probe.stage.refreshStrategy()
+  })
+  await observer.page.waitForFunction(() => window.probe.state.publish === "published", null, { timeout: 25000 })
+  record("V05.published", await pageState(observer.page))
+  await snapshot(history, "V05.published_snapshot")
+  await observer.page.evaluate(() => {
+    window.probe.publishEnabled = false
+    window.probe.stage.refreshStrategy()
+  })
+  await observer.page.waitForFunction(() => window.probe.state.publish === "not_published", null, { timeout: 10000 })
+  record("V05.publish_stopped", await pageState(observer.page))
+  await snapshot(history, "V05.still_connected_after_publish_snapshot")
+  await close(observer, "V05.leave")
+  await snapshot(history, "V05.left_snapshot")
+  await disconnect(history, "V05.revoke")
+
+  // AWSの応答を取得した後で利用側が捨てる。実際のネットワーク応答消失とは区別する。
+  const responseLost = await mint("V06.response_discard")
+  await requireAws("ivs-realtime", "disconnect-participant", {
+    stageArn, participantId: responseLost.participantId, reason: "isolated issue1298 discarded-response probe"
+  })
+  record("V06.disconnect_response_discarded", { simulatedByCaller: true })
+  await disconnect(responseLost, "V06.retry_after_discard")
+  const revoked = await join(responseLost, "V06.retry_token_after_discard", 10)
+  await close(revoked, "V06.discard_cleanup")
+
+  const racing = await mint("V06.race")
+  const racingHandle = await join(racing, "V06.race_stage_ready", "connected", false)
+  await Promise.all([
+    racingHandle.page.evaluate(() => { window.probe.publishEnabled = true; window.probe.stage.refreshStrategy() }),
+    disconnect(racing, "V06.disconnect_racing_publish")
+  ])
+  await racingHandle.page.waitForFunction(() => ["disconnected", "errored"].includes(window.probe.state.connection), null, { timeout: 10000 })
+  record("V06.after_publish_race", await pageState(racingHandle.page))
+  await close(racingHandle, "V06.race_cleanup")
+  const raceRetry = await join(racing, "V06.race_token_retry", 10)
+  await close(raceRetry, "V06.race_retry_cleanup")
+  const successor = await mint("V06.successor")
+  const surviving = await join(successor, "V06.successor_join")
+  await disconnect(racing, "V06.delayed_old_disconnect")
+  await snapshot(successor, "V06.successor_after_old_disconnect_snapshot")
+  const survivingState = await pageState(surviving.page)
+  record("V06.successor_after_old_disconnect", survivingState)
+  if (survivingState.connection !== "connected" || survivingState.publish !== "published") throw new Error("old disconnect affected successor")
+  await close(surviving, "V06.successor_cleanup")
+  await disconnect(successor, "V06.revoke_successor")
+
+  const unknown = await aws("ivs-realtime", "disconnect-participant", {
+    stageArn, participantId: randomUUID().replaceAll("-", "").slice(0, 12), reason: "isolated issue1298 unknown participant probe"
+  })
+  record("V06.never_issued_participant_disconnect", { ok: unknown.ok, error: unknown.error })
+
   const expiring = await mint("V04", 1)
   const persistent = await join(expiring, "V04.join_before_expiry")
   const until = new Date(expiring.expirationTime).getTime() + 2000
@@ -221,7 +294,7 @@ async function main() {
   record("V04.connection_after_expiry", await pageState(persistent.page))
   await snapshot(expiring, "V04.after_expiry_snapshot")
   await close(persistent, "V04.leave_after_expiry")
-  const expired = await join(expiring, "V04.expired_token_retry")
+  const expired = await join(expiring, "V04.expired_token_retry", 2)
   await close(expired, "V04.cleanup")
 }
 
