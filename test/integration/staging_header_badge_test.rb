@@ -38,7 +38,6 @@ class StagingHeaderBadgeTest < ActionDispatch::IntegrationTest
       started_by_cast_user: cast, ivs_stage_arn: "arn:aws:ivsrealtime:ap-northeast-1:123456789012:stage/badge"
     )
     booth.update!(current_stream_session: stream_session)
-    record_confirmed_broadcast!(stream_session, user: cast)
 
     with_env("APP_ENV" => "staging", "BASIC_AUTH_ENABLED" => "false") do
       get booth_path(booth)

@@ -1,7 +1,5 @@
 # 1. Phase1 アプリケーション設計（Rails）
 
-配信開始・再接続の共通制御、開始者の記録・補完は [配信開始者の設計](design/actual_stream_broadcaster.md) と [移行手順](ops/stream_broadcaster_migration.md) を参照。
-
 ## 1.0. 設計方針
 
 * **Controllerは“認可→Service呼び出し→レスポンス”のみ**
@@ -121,9 +119,7 @@
 
 * boothの現在状態を確認（offlineのみ開始可）
 * stream_session作成（started_at）
-* 準備作成者と `publisher_protocol=1` を保存。配信開始者・配信開始時刻は未確定
-* booth.status=standby + booth.current_stream_session_id セット
-* 実際の開始は `PublishService` が開始権確保、IVSトークン発行、参加者確認の後に別途確定する
+* booth.status=live + booth.current_stream_session_id セット
 * Notifierで status更新配信（必要なら）
 
 **出力**
@@ -143,13 +139,11 @@
 * booth_id
 * actor_cast_user_id
 * status（away/live）
-* publish_attempt_id（現在の確定済みの接続）
 
 **処理**
 
 * booth.current_stream_session_id があること
-* 配信開始者本人と最新の開始要求IDを確認し、閉鎖済み・不整合・別人を拒否する
-* booth.status がlive/away間で遷移可能であること。standby→liveはこのServiceで行わない
+* booth.status が遷移可能であること
 * booth.status 更新
 * Notifierで視聴側の状態UI更新（eventsでreplace）
 
@@ -164,12 +158,11 @@
 
 **処理（トランザクション）**
 
-1. 利用者→booth→stream_sessionの順にロック。現在参照・最新の本人の要求IDを確認（管理終了は権限者の明示操作）
-2. 当該セッションのIVS配信者接続を確認して切断。照会/切断失敗や別セッションの接続混在なら終了しない
-3. boothをoffline化（current_stream_session_id=null）
-4. `DrinkOrders::RefundService` を呼ぶ（pending→refunded一括）
-5. stream_session.ended_at 更新。配信開始者と初回開始時刻は保持
-6. Notifierで終了通知（顧客/キャスト）
+1. stream_sessionをロックして終了済みでないこと確認
+2. boothをoffline化（current_stream_session_id=null）
+3. `DrinkOrders::RefundService` を呼ぶ（pending→refunded一括）
+4. stream_session.ended_at 更新
+5. Notifierで終了通知（顧客/キャスト）
 
 **出力**
 
@@ -547,9 +540,7 @@ end
 
   * belongs_to :store
   * belongs_to :booth
-  * belongs_to :started_by_cast_user, class_name: "User"（準備作成者）
-  * belongs_to :broadcast_started_by_user, class_name: "User", optional: true（配信開始者）
-  * has_many :stream_publish_attempts（発行前の開始権・参加者ID・期限・確定/取消/解放の記録）
+  * belongs_to :started_by_cast_user, class_name: "User"
   * has_many :presences
   * has_many :comments
   * has_many :drink_orders

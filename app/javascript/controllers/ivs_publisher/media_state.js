@@ -45,11 +45,6 @@ export function ensureCanvasPublishTrack(ctx) {
 }
 
 export function cleanupStage(ctx) {
-  // 参照を捨てる前にSDKから退出する。参加後のAPI失敗でも送信を残さない。
-  const stage = ctx._stage
-  if (stage) {
-    try { stage.leave() } catch (_) {}
-  }
   ctx._stage = null
   ctx._strategy = null
   ctx._banubaStageStream = null

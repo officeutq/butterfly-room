@@ -8,8 +8,8 @@ class AdminBoothForceEndTest < ActionDispatch::IntegrationTest
     @store1 = Store.create!(name: "store1")
     @store2 = Store.create!(name: "store2")
 
-    @booth1 = Booth.create!(store: @store1, name: "booth1", status: :live, ivs_stage_arn: "arn:aws:ivs:ap-northeast-1:123456789012:stage/booth1")
-    @booth2 = Booth.create!(store: @store2, name: "booth2", status: :away, ivs_stage_arn: "arn:aws:ivs:ap-northeast-1:123456789012:stage/booth2")
+    @booth1 = Booth.create!(store: @store1, name: "booth1", status: :live)
+    @booth2 = Booth.create!(store: @store2, name: "booth2", status: :away)
 
     @cast = User.create!(email: "cast@example.com", password: "password", role: :cast)
 
@@ -21,7 +21,6 @@ class AdminBoothForceEndTest < ActionDispatch::IntegrationTest
     @session1 = StreamSession.create!(
       booth: @booth1,
       store: @store1,
-      ivs_stage_arn: @booth1.ivs_stage_arn,
       started_by_cast_user: @cast,
       status: :live,
       started_at: Time.current
@@ -32,7 +31,6 @@ class AdminBoothForceEndTest < ActionDispatch::IntegrationTest
     @session2 = StreamSession.create!(
       booth: @booth2,
       store: @store2,
-      ivs_stage_arn: @booth2.ivs_stage_arn,
       started_by_cast_user: @cast,
       status: :live,
       started_at: Time.current
@@ -99,14 +97,13 @@ class AdminBoothForceEndTest < ActionDispatch::IntegrationTest
     assert_redirected_to dashboard_path
 
     @session2.update!(ivs_stage_arn: "arn:aws:ivs:ap-northeast-1:123:stage/test")
-    @booth2.update!(ivs_stage_arn: @session2.ivs_stage_arn)
 
     participant = OpenStruct.new(
       attributes: {
         "stream_session_id" => @session2.id.to_s,
         "role" => "publisher"
       },
-      state: "CONNECTED",
+      stage_session_id: "stage-session-1",
       participant_id: "participant-1"
     )
 
@@ -124,9 +121,10 @@ class AdminBoothForceEndTest < ActionDispatch::IntegrationTest
         @participants
       end
 
-      def disconnect_participant(stage_arn:, participant_id:)
+      def disconnect_participant(stage_arn:, session_id:, participant_id:)
         @disconnect_participant_calls << {
           stage_arn: stage_arn,
+          session_id: session_id,
           participant_id: participant_id
         }
         nil
@@ -145,6 +143,7 @@ class AdminBoothForceEndTest < ActionDispatch::IntegrationTest
 
     disconnect_call = fake_client.disconnect_participant_calls.first
     assert_equal "arn:aws:ivs:ap-northeast-1:123:stage/test", disconnect_call[:stage_arn]
+    assert_equal "stage-session-1", disconnect_call[:session_id]
     assert_equal "participant-1", disconnect_call[:participant_id]
   ensure
     Ivs::Client.reset_factory!

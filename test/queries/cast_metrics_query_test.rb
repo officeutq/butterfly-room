@@ -207,21 +207,6 @@ class CastMetricsQueryTest < ActiveSupport::TestCase
     assert_equal 0, row.stream_seconds
   end
 
-  test "attributes Xs session to Y and retains unknown amounts and seconds in a separate row" do
-    known = create_consumed_sales!(booth: @booth_sales, cast_user: @cast_with_sales, points: 301, occurred_at: @from + 1.day)
-    unknown = create_consumed_sales!(booth: @booth_sales, cast_user: @cast_with_sales, points: 502, occurred_at: @from + 2.days)
-    known.stream_session.update!(broadcast_started_by_user: @store_admin_performer)
-    unknown.stream_session.update!(broadcast_started_by_user: nil)
-    rows = CastMetricsQuery.new(store: @store, from: @from, to: @to).call
-    assert_equal 803, rows.sum(&:stream_sales_points)
-    assert_equal StoreLedgerEntry.where(store: @store).sum(:points), rows.sum(&:stream_sales_points)
-    assert_equal 301, rows.find { |r| r.cast_user == @store_admin_performer }.stream_sales_points
-    unidentified = rows.find { |r| r.cast_user.nil? }
-    assert_equal 502, unidentified.stream_sales_points
-    assert_equal 3_600, unidentified.stream_seconds
-    refute rows.any? { |r| r.cast_user == @cast_with_sales }
-  end
-
   private
 
   def create_stream_session!(booth:, cast_user:, started_at: nil, broadcast_started_at:, ended_at:)
@@ -229,7 +214,6 @@ class CastMetricsQueryTest < ActiveSupport::TestCase
       store: @store,
       booth: booth,
       started_by_cast_user: cast_user,
-      broadcast_started_by_user: broadcast_started_at ? cast_user : nil,
       status: :ended,
       started_at: started_at || broadcast_started_at,
       broadcast_started_at: broadcast_started_at,

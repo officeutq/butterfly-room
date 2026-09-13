@@ -70,7 +70,6 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
   test "live: live screen renders booth share button in ops slot" do
     StreamSessions::StartService.new(booth: @booth, actor: @cast).call
     @booth.update!(status: :live)
-    record_confirmed_broadcast!(@booth.reload.current_stream_session, user: @cast)
 
     get live_cast_booth_path(@booth)
     assert_response :success
@@ -80,7 +79,6 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
   test "away: live screen renders the same stream sharing URL" do
     StreamSessions::StartService.new(booth: @booth, actor: @cast).call
     @booth.update!(status: :away)
-    record_confirmed_broadcast!(@booth.reload.current_stream_session, user: @cast)
 
     get live_cast_booth_path(@booth)
 
@@ -92,9 +90,6 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
     stream_session = StreamSessions::StartService.new(booth: @booth, actor: @cast).call
 
     %i[standby live away live].each do |status|
-      if status == :live && stream_session.broadcast_started_by_user_id.nil?
-        record_confirmed_broadcast!(stream_session, user: @cast)
-      end
       @booth.update!(status: status)
 
       get live_cast_booth_path(@booth)
@@ -113,10 +108,7 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
       display_name: "配信開始管理者"
     )
     StoreMembership.create!(store: @store, user: store_admin, membership_role: :admin)
-    stream_session = StreamSessions::StartService.new(booth: @booth, actor: @cast).call
-    record_confirmed_broadcast!(stream_session, user: store_admin)
-    @booth.update!(status: :live)
-    sign_in store_admin, scope: :user
+    stream_session = StreamSessions::StartService.new(booth: @booth, actor: store_admin).call
 
     get live_cast_booth_path(@booth)
 
@@ -156,7 +148,6 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
   test "viewer live screen does not render cast booth share button" do
     StreamSessions::StartService.new(booth: @booth, actor: @cast).call
     @booth.update!(status: :live)
-    record_confirmed_broadcast!(@booth.reload.current_stream_session, user: @cast)
 
     sign_out :user
     sign_in @customer, scope: :user
@@ -183,7 +174,6 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
   test "live by self: enter redirects to live without creating new session" do
     session = StreamSessions::StartService.new(booth: @booth, actor: @cast).call
     @booth.update!(status: :live)
-    record_confirmed_broadcast!(@booth.reload.current_stream_session, user: @cast)
 
     assert_no_difference "StreamSession.count" do
       get enter_booth_path(@booth)
@@ -197,7 +187,6 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
   test "away by self: enter redirects to live without creating new session" do
     session = StreamSessions::StartService.new(booth: @booth, actor: @cast).call
     @booth.update!(status: :away)
-    record_confirmed_broadcast!(@booth.reload.current_stream_session, user: @cast)
 
     assert_no_difference "StreamSession.count" do
       get enter_booth_path(@booth)
@@ -254,7 +243,7 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
     assert modal.ancestors.none? { |ancestor| ancestor["class"]&.split&.include?("live-overlay-ops-slot") }
     assert_stream_share_modal(
       modal,
-      expected_text: stream_session.broadcast_started_by_user_id ? "Test Castの配信はここから！遊びに来てね🦋" : "配信はここから！遊びに来てね🦋",
+      expected_text: "Test Castの配信はここから！遊びに来てね🦋",
       expected_url: share_booth_url(@booth, stream: stream_session.id)
     )
     assert_stream_share_url stream_session
