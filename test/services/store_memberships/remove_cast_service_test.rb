@@ -30,13 +30,12 @@ class StoreMemberships::RemoveCastServiceTest < ActiveSupport::TestCase
   end
 
   test "forces an active stream to end before archiving" do
-    booth = Booth.create!(store: @store, name: "Live Booth", status: :live, ivs_stage_arn: "arn:aws:ivs:ap-northeast-1:123456789012:stage/removal")
+    booth = Booth.create!(store: @store, name: "Live Booth", status: :live)
     BoothCast.create!(booth:, cast_user: @cast)
     stream_session = StreamSession.create!(
       booth:,
       store: @store,
       started_by_cast_user: @cast,
-      ivs_stage_arn: booth.ivs_stage_arn,
       status: :live,
       started_at: Time.current
     )

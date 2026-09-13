@@ -11,7 +11,7 @@ export async function fetchParticipantToken(ctx, role) {
       "Accept": "application/json",
       "X-CSRF-Token": csrfToken(),
     },
-    body: JSON.stringify({ role, publish_attempt_id: ctx._publishAttemptId }),
+    body: JSON.stringify({ role }),
   })
 
   let body = null
@@ -32,7 +32,6 @@ export async function patchBoothStatus(ctx, to) {
 
   const url = new URL(ctx.statusUrlValue, window.location.origin)
   url.searchParams.set("to", to)
-  url.searchParams.set("publish_attempt_id", ctx._publishAttemptId || "")
 
   const resp = await fetch(url.toString(), {
     method: "PATCH",
@@ -59,38 +58,18 @@ export async function patchBoothStatus(ctx, to) {
 export async function patchBroadcastStartedAt(ctx) {
   if (!ctx.hasStartBroadcastUrlValue) return
 
-  const attemptId = ctx._publishAttemptId
-  for (let retry = 0; retry < 15; retry += 1) {
-    if (ctx._publishAttemptId !== attemptId || ctx._publishCancelled) throw new Error("配信開始は取り消されました")
-    const resp = await fetch(ctx.startBroadcastUrlValue, {
-      method: "PATCH",
-      credentials: "same-origin",
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "X-CSRF-Token": csrfToken(),
-      },
-      body: JSON.stringify({ publish_attempt_id: attemptId }),
-    })
-    if (resp.ok) return
-    const body = await resp.json().catch(() => ({}))
-    if ((resp.status === 409 && body.retryable) || resp.status === 503) {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      continue
-    }
-    throw new Error(body.error || `start_broadcast_failed(${resp.status})`)
-  }
-  throw new Error("配信開始を確認できません。接続を終了してから再試行してください")
-}
-
-export async function cancelPublish(ctx, attemptId = ctx._publishAttemptId) {
-  if (!attemptId || !ctx.cancelPublishUrlValue) return
-  const response = await fetch(ctx.cancelPublishUrlValue, {
-    method: "POST", credentials: "same-origin", keepalive: true,
-    headers: { "Accept": "application/json", "Content-Type": "application/json", "X-CSRF-Token": csrfToken() },
-    body: JSON.stringify({ publish_attempt_id: attemptId }),
+  const resp = await fetch(ctx.startBroadcastUrlValue, {
+    method: "PATCH",
+    credentials: "same-origin",
+    headers: {
+      "Accept": "application/json",
+      "X-CSRF-Token": csrfToken(),
+    },
   })
-  if (!response.ok && response.status !== 404) throw new Error("接続終了を確認できません。再試行してください")
+
+  if (!resp.ok) {
+    throw new Error(`start_broadcast_failed(${resp.status})`)
+  }
 }
 
 export async function reloadMetaDisplay(ctx) {
@@ -118,14 +97,12 @@ export async function postFinish(ctx) {
     method: "POST",
     credentials: "same-origin",
     headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
+      "Accept": "text/html, application/xhtml+xml",
       "X-CSRF-Token": csrfToken(),
     },
-    body: JSON.stringify({ publish_attempt_id: ctx._publishAttemptId }),
   })
 
-  const body = await resp.json()
-  if (!resp.ok) throw new Error(body.error || `finish_failed(${resp.status})`)
-  return body.redirect_url
+  if (!resp.ok) throw new Error(`finish_failed(${resp.status})`)
+
+  return resp.url
 }

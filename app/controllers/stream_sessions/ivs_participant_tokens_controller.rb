@@ -62,23 +62,15 @@ module StreamSessions
       token = Ivs::CreateParticipantTokenService.new(
         stream_session: stream_session,
         actor: current_user,
-        role: role,
-        attempt_id: params[:publish_attempt_id]
+        role: role
       ).call
 
       render json: {
         stream_session_id: stream_session.id,
         ivs_stage_arn: stream_session.ivs_stage_arn,
         role: role,
-        participant_token: role == "publisher" ? token.token : token,
-        publish_attempt_id: role == "publisher" ? token.attempt_id : nil
+        participant_token: token
       }
-    rescue StreamSessions::PublisherControl::Conflict => e
-      render json: { error: e.message }, status: :conflict
-    rescue StreamSessions::PublisherControl::NotAuthorized
-      render json: { error: "forbidden" }, status: :forbidden
-    rescue Aws::IVSRealTime::Errors::ServiceError, Seahorse::Client::NetworkingError
-      render json: { error: "配信接続を確認できません。しばらく待って再試行してください" }, status: :service_unavailable
     rescue ActiveRecord::RecordNotFound
       render json: { error: "not_found" }, status: :not_found
     rescue ActionController::ParameterMissing

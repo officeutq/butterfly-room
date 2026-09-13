@@ -21,9 +21,10 @@ class StreamSessions::ForceEndServiceTest < ActiveSupport::TestCase
       @participants
     end
 
-    def disconnect_participant(stage_arn:, participant_id:)
+    def disconnect_participant(stage_arn:, session_id:, participant_id:)
       @disconnect_participant_calls << {
         stage_arn: stage_arn,
+        session_id: session_id,
         participant_id: participant_id
       }
       nil
@@ -66,7 +67,7 @@ class StreamSessions::ForceEndServiceTest < ActiveSupport::TestCase
         "stream_session_id" => @stream_session.id.to_s,
         "role" => "publisher"
       },
-      state: "CONNECTED",
+      stage_session_id: "stage-session-1",
       participant_id: "participant-1"
     )
 
@@ -83,6 +84,7 @@ class StreamSessions::ForceEndServiceTest < ActiveSupport::TestCase
 
     disconnect_call = fake_client.disconnect_participant_calls.first
     assert_equal @booth.ivs_stage_arn, disconnect_call[:stage_arn]
+    assert_equal "stage-session-1", disconnect_call[:session_id]
     assert_equal "participant-1", disconnect_call[:participant_id]
 
     @stream_session.reload
@@ -115,19 +117,25 @@ class StreamSessions::ForceEndServiceTest < ActiveSupport::TestCase
     assert_nil @booth.current_stream_session_id
   end
 
-  test "preserves session and records error when IVS cannot confirm disconnection" do
-    fake_client = FakeIvsClient.new(error: Aws::IVSRealTime::Errors::ServiceError.new(nil, "ivs error"))
+  test "ends session even if IVS raises error" do
+    fake_client = FakeIvsClient.new(error: StandardError.new("ivs error"))
     Ivs::Client.factory = ->(region:) { fake_client }
 
-    assert_raises(Aws::IVSRealTime::Errors::ServiceError) do
-      StreamSessions::ForceEndService.new(stream_session: @stream_session, actor: @actor).call
-    end
+    StreamSessions::ForceEndService.new(
+      stream_session: @stream_session,
+      actor: @actor
+    ).call
+
     assert_equal 1, fake_client.list_participants_calls.size
-    assert_empty fake_client.disconnect_participant_calls
-    assert @stream_session.reload.live?
-    assert_nil @stream_session.ended_at
-    assert @booth.reload.live?
-    assert_equal @stream_session.id, @booth.current_stream_session_id
+    assert_equal 0, fake_client.disconnect_participant_calls.size
+
+    @stream_session.reload
+    @booth.reload
+
+    assert_equal "ended", @stream_session.status
+    assert @stream_session.ended_at.present?
+    assert @booth.offline?
+    assert_nil @booth.current_stream_session_id
     entry = ErrorLog.where(stream_session_id: @stream_session.id, source: "ivs").sole
     assert_equal @actor.id, entry.actor_user_id
     assert_equal @store.id, entry.store_id

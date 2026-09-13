@@ -1,4 +1,4 @@
-<% user = stream_session.broadcast_started_by_user %>
+<% user = stream_session.started_by_cast_user %>
 <% title_display = stream_session.title.presence || stream_session.booth.name %>
 <% show_viewer_count = local_assigns.fetch(:show_viewer_count, true) %>
 
@@ -16,11 +16,9 @@
 
   <!-- name -->
   <div class="meta-name">
-    <% if user && !user.deleted? %>
-      <%= link_to stream_broadcaster_name(stream_session), user_path(user), class: "text-decoration-none text-reset" %>
-    <% else %>
-      <%= stream_broadcaster_name(stream_session) %>
-    <% end %>
+    <%= link_to display_name_or_anonymous(user),
+          user_path(user),
+          class: "text-decoration-none text-reset" %>
   </div>
 
   <!-- title -->

@@ -26,7 +26,7 @@ module BoothSharesHelper
   end
 
   def stream_session_web_share_text(stream_session)
-    display_name = public_share_display_name(stream_session.broadcast_started_by_user)
+    display_name = public_share_display_name(stream_session.started_by_cast_user)
     return "配信はここから！遊びに来てね🦋" if display_name.blank?
 
     "#{display_name}の配信はここから！遊びに来てね🦋"

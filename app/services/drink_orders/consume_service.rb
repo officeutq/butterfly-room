@@ -57,7 +57,7 @@ module DrinkOrders
 
       StreamSessions::Comments::CreateService.new(
         stream_session: drink_order.stream_session,
-        user: drink_order.stream_session.broadcast_started_by_user,
+        user: drink_order.stream_session.started_by_cast_user,
         kind: Comment::KIND_DRINK_CONSUMED,
         metadata: {
           drink_item_id: drink_order.drink_item_id,

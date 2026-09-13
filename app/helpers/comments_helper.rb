@@ -6,8 +6,6 @@ module CommentsHelper
   end
 
   def comment_author_link(user, guest_viewer:, member_profile_ids: nil)
-    return "配信者不明" unless user
-
     name = display_name_or_anonymous(user)
     return name if guest_viewer || user.deleted?
 

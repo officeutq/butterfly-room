@@ -23,7 +23,6 @@ class StorePublicationTest < ActionDispatch::IntegrationTest
       started_at: Time.current
     )
     @unpublished_booth.update!(current_stream_session: @stream_session)
-    record_confirmed_broadcast!(@stream_session, user: @cast)
     @comment = Comment.create!(
       stream_session: @stream_session,
       booth: @unpublished_booth,
