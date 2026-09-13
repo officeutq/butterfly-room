@@ -4,7 +4,7 @@
 <div
   id="comment_<%= comment.id %>"
   class="comment comment-item
-    <%= "comment-from-broadcaster" if comment.user_id == comment.stream_session.started_by_cast_user_id %>
+    <%= "comment-from-broadcaster" if comment.stream_session.broadcaster?(comment.user) %>
     <%= "is-hidden-comment" if comment.hidden? %>">
     <% case comment.kind %>
     <% when Comment::KIND_CHAT %>

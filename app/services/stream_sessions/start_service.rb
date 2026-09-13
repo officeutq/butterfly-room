@@ -17,12 +17,15 @@ module StreamSessions
     def call
       authorize!
 
-      StreamSession.transaction do
+      PublisherControl.with_user_lock(@actor) do
+        authorize!
+        PublisherControl.release_expired_attempts!(@actor)
         booth = Booth.lock.find(@booth.id)
 
         raise BoothArchived, "booth is archived" if booth.archived?
 
         raise BoothNotOffline, "booth is #{booth.status}" unless booth.offline?
+        raise BoothNotOffline, "終了していないセッションが残っています" if booth.current_stream_session_id.present?
         raise AnotherBoothAlreadyLive, "他のブースで配信中のため開始できません" if another_live_booth_exists?(booth)
 
         raise BoothStageNotBound, "booth.ivs_stage_arn is blank" if booth.ivs_stage_arn.blank?
@@ -37,6 +40,7 @@ module StreamSessions
           status: :live, # ※ここは現状維持でもOK（後で整理してもよい）
           started_at: Time.current,
           started_by_cast_user: @actor,
+          publisher_protocol: 1,
           ivs_stage_arn: booth.ivs_stage_arn # ★ここが #123
         )
 
@@ -56,7 +60,7 @@ module StreamSessions
       booth = @booth
 
       allowed =
-        if actor.blank?
+        if actor.blank? || actor.deleted?
           false
         elsif actor.system_admin?
           true
@@ -70,12 +74,7 @@ module StreamSessions
     end
 
     def another_live_booth_exists?(booth)
-      Booth.active
-           .joins(:current_stream_session)
-           .where(stream_sessions: { started_by_cast_user_id: @actor.id })
-           .where(status: %i[live away])
-           .where.not(id: booth.id)
-           .exists?
+      PublisherControl.busy_elsewhere?(@actor, booth: booth)
     end
   end
 end

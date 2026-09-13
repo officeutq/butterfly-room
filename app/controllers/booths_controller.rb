@@ -197,7 +197,7 @@ class BoothsController < ApplicationController
     title = @stream_session&.title.presence || @booth.name
     share_user =
       if @stream_session.present?
-        @stream_session.started_by_cast_user
+        @stream_session.broadcast_started_by_user
       else
         @booth.primary_cast_user
       end

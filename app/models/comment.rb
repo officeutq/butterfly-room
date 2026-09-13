@@ -17,7 +17,8 @@ class Comment < ApplicationRecord
 
   belongs_to :stream_session
   belongs_to :booth
-  belongs_to :user
+  belongs_to :user, optional: true
+  validates :user, presence: true, unless: -> { kind == KIND_DRINK_CONSUMED }
 
   has_many :comment_reports, dependent: :restrict_with_error
   has_many :support_inquiries,

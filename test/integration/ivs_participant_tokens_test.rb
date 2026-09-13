@@ -24,7 +24,8 @@ class IvsParticipantTokensTest < ActionDispatch::IntegrationTest
       ivs_stage_arn: "arn:aws:ivsrealtime:ap-northeast-1:123456789012:stage/abcdEFGHijklMNOP"
     )
 
-    @booth.update!(current_stream_session: @session, status: :live)
+    @booth.update!(current_stream_session: @session, status: :live, ivs_stage_arn: @session.ivs_stage_arn)
+    @session.update!(publisher_protocol: 1, broadcast_started_by_user: @cast, broadcast_started_at: Time.current)
 
     # cast を booth に紐付け
     BoothCast.create!(booth: @booth, cast_user: @cast)
@@ -35,7 +36,7 @@ class IvsParticipantTokensTest < ActionDispatch::IntegrationTest
 
     stub_ivs_token("PUB_TOKEN") do
       post stream_session_ivs_participant_tokens_path(@session),
-          params: { role: "publisher" }.to_json,
+          params: { role: "publisher", publish_attempt_id: SecureRandom.uuid }.to_json,
           headers: json_headers
     end
 
@@ -126,12 +127,12 @@ class IvsParticipantTokensTest < ActionDispatch::IntegrationTest
          headers: json_headers
 
     assert_response :conflict
-    assert_equal "stage_not_bound", JSON.parse(response.body)["error"]
+    assert_equal "stage_mismatch", JSON.parse(response.body)["error"]
   end
 
   test "publisher: guest remains unauthenticated" do
     post stream_session_ivs_participant_tokens_path(@session),
-         params: { role: "publisher" }.to_json,
+         params: { role: "publisher", publish_attempt_id: SecureRandom.uuid }.to_json,
          headers: json_headers
 
     assert_response :unauthorized
@@ -177,7 +178,7 @@ class IvsParticipantTokensTest < ActionDispatch::IntegrationTest
 
     # AWS が呼ばれないことも保証したいので、stubは置かない（呼ばれたら例外になるよう後述のstub方式でもOK）
     post stream_session_ivs_participant_tokens_path(@session),
-         params: { role: "publisher" }.to_json,
+         params: { role: "publisher", publish_attempt_id: SecureRandom.uuid }.to_json,
          headers: json_headers
 
     assert_response :forbidden
@@ -247,7 +248,7 @@ class IvsParticipantTokensTest < ActionDispatch::IntegrationTest
     sign_in @cast, scope: :user
 
     post stream_session_ivs_participant_tokens_path(@session),
-         params: { role: "publisher" }.to_json,
+         params: { role: "publisher", publish_attempt_id: SecureRandom.uuid }.to_json,
          headers: json_headers
 
     assert_response :conflict
@@ -275,7 +276,7 @@ class IvsParticipantTokensTest < ActionDispatch::IntegrationTest
 
     stub_ivs_token("ADMIN_PUB_TOKEN") do
       post stream_session_ivs_participant_tokens_path(@session),
-          params: { role: "publisher" }.to_json,
+          params: { role: "publisher", publish_attempt_id: SecureRandom.uuid }.to_json,
           headers: json_headers
     end
 
@@ -291,7 +292,7 @@ class IvsParticipantTokensTest < ActionDispatch::IntegrationTest
 
     stub_ivs_token("HIDDEN_CAST_PUB_TOKEN") do
       post stream_session_ivs_participant_tokens_path(@session),
-           params: { role: "publisher" }.to_json,
+           params: { role: "publisher", publish_attempt_id: SecureRandom.uuid }.to_json,
            headers: json_headers
     end
 
@@ -306,7 +307,7 @@ class IvsParticipantTokensTest < ActionDispatch::IntegrationTest
 
     stub_ivs_token("HIDDEN_ADMIN_PUB_TOKEN") do
       post stream_session_ivs_participant_tokens_path(@session),
-           params: { role: "publisher" }.to_json,
+           params: { role: "publisher", publish_attempt_id: SecureRandom.uuid }.to_json,
            headers: json_headers
     end
 
@@ -320,7 +321,7 @@ class IvsParticipantTokensTest < ActionDispatch::IntegrationTest
     sign_in other_cast, scope: :user
 
     post stream_session_ivs_participant_tokens_path(@session),
-         params: { role: "publisher" }.to_json,
+         params: { role: "publisher", publish_attempt_id: SecureRandom.uuid }.to_json,
          headers: json_headers
 
     assert_response :forbidden
@@ -343,14 +344,20 @@ class IvsParticipantTokensTest < ActionDispatch::IntegrationTest
 
   # AWS IVS RealTime クライアントをスタブして token を返す
   def stub_ivs_token(token)
+    # publisher発行ケースは配信前、viewerケースは確定済みの配信を用意する。
+    if name.include?("publisher:")
+      @session.update!(broadcast_started_by_user: nil, broadcast_started_at: nil)
+      @booth.update!(status: :standby)
+    end
     requests = []
-    participant_token = Struct.new(:token, :expiration_time).new(token, Time.current + 15.minutes)
+    participant_token = Struct.new(:token, :expiration_time, :participant_id).new(token, Time.current + 1.minute, "participant-1")
     resp = Struct.new(:participant_token).new(participant_token)
 
     original = Aws::IVSRealTime::Client
 
     fake_client_class = Class.new do
       define_method(:initialize) { |*| }
+      define_method(:get_stage) { |**| Struct.new(:stage).new(Struct.new(:active_session_id).new(nil)) }
       define_method(:create_participant_token) do |**kwargs|
         requests << kwargs
         resp

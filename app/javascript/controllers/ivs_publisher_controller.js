@@ -1,6 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import { clearError, humanizeError, setError } from "controllers/ivs_publisher/errors"
-import { fetchParticipantToken, patchBoothStatus, patchBroadcastStartedAt, postFinish, reloadMetaDisplay } from "controllers/ivs_publisher/api_client"
+import { cancelPublish, fetchParticipantToken, patchBoothStatus, patchBroadcastStartedAt, postFinish, reloadMetaDisplay } from "controllers/ivs_publisher/api_client"
 import { syncCanvasResolutionToMeasured, startCanvasRenderLoop, stopCanvasRenderLoop } from "controllers/ivs_publisher/away_canvas"
 import { waitForBanubaRenderedNode } from "controllers/ivs_publisher/banuba_session"
 import { cleanupBanubaPublishTrack, cleanupCameraMedia, cleanupMediaAndCanvas, cleanupStage, ensureAudioTrack, ensureCameraVideoTrack, ensureCanvasPublishTrack } from "controllers/ivs_publisher/media_state"
@@ -42,6 +42,7 @@ export default class extends Controller {
     statusUrl: String,
     metaDisplayUrl: String,
     startBroadcastUrl: String,
+    cancelPublishUrl: String,
     mirror: { type: Boolean, default: true },
     initialMode: { type: String, default: "normal" },
     initialBoothStatus: String,
@@ -66,6 +67,34 @@ export default class extends Controller {
   }
 
   connect() {
+    this._elementConnected = true
+    if (this._startTask || this._mediaCleanupTask) {
+      // Turboが同じControllerを再接続しても、古い非同期処理の破棄完了を待つ。
+      this._publishGeneration += 1
+      this._publishCancelled = true
+      Promise.allSettled([this._startTask, this._mediaCleanupTask]).then(() => {
+        if (this._elementConnected) this.connect()
+      })
+      return
+    }
+    this._publishGeneration = (this._publishGeneration || 0) + 1
+    this._publishCancelled = false
+    this._publishStartPending = false
+    this._attemptStorageKey = `ivs-publish:${this.tokenUrlValue}`
+    this._publishAttemptId = window.sessionStorage.getItem(this._attemptStorageKey)
+    this._onStatusSubmit = (event) => {
+      const form = event.target
+      if (!this.statusUrlValue || !form.action || new URL(form.action).pathname !== new URL(this.statusUrlValue, window.location.origin).pathname) return
+      let input = form.querySelector('input[name="publish_attempt_id"]')
+      if (!input) {
+        input = document.createElement("input")
+        input.type = "hidden"
+        input.name = "publish_attempt_id"
+        form.append(input)
+      }
+      input.value = this._publishAttemptId || ""
+    }
+    document.addEventListener("submit", this._onStatusSubmit, true)
     this._stage = null
     this._strategy = null
 
@@ -171,6 +200,11 @@ export default class extends Controller {
   }
 
   disconnect() {
+    this._elementConnected = false
+    this._publishGeneration += 1
+    this._publishCancelled = true
+    document.removeEventListener("submit", this._onStatusSubmit, true)
+    void cancelPublish(this).catch(() => {})
     document.removeEventListener("turbo:before-cache", this._beforeCache)
 
     if (window.publisher === this) {
@@ -185,13 +219,21 @@ export default class extends Controller {
     } catch (_) {}
 
     this._cleanupStage()
-    void this._cleanupMediaAndCanvas()
+    if (!this._startTask) void this._cleanupMediaAndCanvas()
   }
 
-  async startBroadcast(opts = {}) {
+  startBroadcast(opts = {}) {
+    if (this._startTask) return this._startTask
+    const task = this._runStartBroadcast(opts)
+    this._startTask = task
+    return task.finally(() => { if (this._startTask === task) this._startTask = null })
+  }
+
+  async _runStartBroadcast(opts = {}) {
     const { autoResume = false } = opts
 
     if (this._stage) return
+    if (this._publishStartPending || this._state === "stopping") return
     if (this._state === "starting" || this._state === "joining") return
 
     if (!this.hasTokenUrlValue) {
@@ -206,14 +248,31 @@ export default class extends Controller {
 
     this._clearError()
     this._setState("starting")
+    this._publishStartPending = true
+    this._publishCancelled = false
+    const generation = ++this._publishGeneration
+    let joiningStage = null
+    const assertCurrent = () => {
+      if (generation !== this._publishGeneration || this._publishCancelled) throw new Error("配信開始は取り消されました")
+    }
 
     try {
       await this._beautyProvider.ensureInitialBeautyStateLoaded()
+      assertCurrent()
       await this._beautyProvider.start()
+      assertCurrent()
       await this._beautyProvider.ensurePublishTrack()
+      assertCurrent()
       await this._ensureAudioTrack()
+      assertCurrent()
+
+      if (this._publishAttemptId) await cancelPublish(this)
+      assertCurrent()
+      this._publishAttemptId = crypto.randomUUID()
+      window.sessionStorage.setItem(this._attemptStorageKey, this._publishAttemptId)
 
       const token = await this._fetchParticipantToken("publisher")
+      assertCurrent()
 
       const { Stage, LocalStageStream, SubscribeType, StageEvents } = window.IVSBroadcastClient || {}
       if (!Stage || !LocalStageStream) {
@@ -262,34 +321,47 @@ export default class extends Controller {
       }
 
       this._stage = new Stage(token, this._strategy)
+      joiningStage = this._stage
 
       if (StageEvents?.STAGE_CONNECTION_STATE_CHANGED) {
         this._stage.on(StageEvents.STAGE_CONNECTION_STATE_CHANGED, (state) => {
+          if (generation !== this._publishGeneration) return
           console.log("[ivs] connection state:", state)
           this._setState(String(state))
         })
       }
 
       this._setState("joining")
-      await this._stage.join()
-      this._setState("live")
+      await joiningStage.join()
+      assertCurrent()
 
       await this._patchBroadcastStartedAt()
+      assertCurrent()
+      this._setState("live")
 
       this._broadcasting = true
       this._previewOnly = false
       this._syncUI()
 
-      await this._patchBoothStatus("live")
-      this._boothStatus = "live"
-      this._mode = "normal"
+      this._boothStatus = this._mode === "away" ? "away" : "live"
+      if (this._mode === "away") await this._patchBoothStatus("away")
+      assertCurrent()
       this._syncUI()
 
       await this._reloadMetaDisplay()
+      assertCurrent()
       this._applyCurrentMode()
       this._syncEffectPanelUI()
       this._syncBeautyPanelUI()
     } catch (e) {
+      // leaveより後にjoinが完了した場合も、保持した同じStageをもう一度退出させる。
+      try { joiningStage?.leave() } catch (_) {}
+      // startが完了するまで次のstartを禁止し、遅れて返った処理も必ず退出させる。
+      this._cleanupStage()
+      await cancelPublish(this).catch(() => {})
+      await this._cleanupMediaAndCanvas()
+      this._broadcasting = false
+      if (generation !== this._publishGeneration) return
       this._setState("error")
 
       if (autoResume) {
@@ -298,8 +370,8 @@ export default class extends Controller {
         this._setError(this._humanizeError(e))
       }
 
-      this._cleanupStage()
-      await this._cleanupMediaAndCanvas()
+    } finally {
+      this._publishStartPending = false
     }
 
     this._syncUI()
@@ -307,6 +379,8 @@ export default class extends Controller {
 
   async endBroadcast(opts = {}) {
     const { skipFinish = false } = opts
+    this._publishGeneration += 1
+    this._publishCancelled = true
     this._setState("stopping")
     this.closeEffectPanel()
     this.closeBeautyPanel()
@@ -319,6 +393,7 @@ export default class extends Controller {
       }
     } finally {
       this._cleanupStage()
+      if (this._startTask) await this._startTask
       await this._cleanupMediaAndCanvas()
       this._clearError()
       this._setState("idle")
@@ -328,7 +403,17 @@ export default class extends Controller {
       this._syncUI()
 
       if (!skipFinish && this.finishUrlValue) {
-        const redirectUrl = await this._postFinish()
+        let redirectUrl
+        try {
+          redirectUrl = await this._postFinish()
+          window.sessionStorage.removeItem(this._attemptStorageKey)
+          this._finishFailed = false
+        } catch (error) {
+          this._finishFailed = true
+          this._setError(error.message)
+          this._syncUI()
+          return
+        }
 
         if (redirectUrl) {
           if (window.Turbo?.visit) {
@@ -339,6 +424,8 @@ export default class extends Controller {
         } else {
           window.location.reload()
         }
+      } else {
+        await cancelPublish(this).catch((error) => this._setError(error.message))
       }
     }
   }
@@ -1117,7 +1204,10 @@ export default class extends Controller {
   }
 
   _cleanupMediaAndCanvas() {
-    return cleanupMediaAndCanvas(this)
+    if (this._mediaCleanupTask) return this._mediaCleanupTask
+    const task = cleanupMediaAndCanvas(this)
+    this._mediaCleanupTask = task
+    return task.finally(() => { if (this._mediaCleanupTask === task) this._mediaCleanupTask = null })
   }
 
   _syncMicUI() {
@@ -1126,7 +1216,7 @@ export default class extends Controller {
 
   _syncUI() {
     if (this.hasStartBtnTarget && this.hasEndBtnTarget) {
-      if (this._broadcasting) {
+      if (this._broadcasting || this._finishFailed) {
         this.startBtnTarget.classList.add("d-none")
         this.endBtnTarget.classList.remove("d-none")
       } else {

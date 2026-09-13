@@ -3,9 +3,10 @@
 module Authorization
   class StreamSessionPolicy < ApplicationPolicy
     def publish_token?
-      return false unless user.present?
+      return false unless user.present? && !user.deleted?
 
       booth = record.booth
+      return false if booth.archived?
 
       # 上位（store_admin/system_admin）は、所属 store の booth なら publisher token を許可（cast兼務）
       if user.at_least?(:store_admin)
@@ -23,8 +24,7 @@ module Authorization
       end
 
       # 担当未設定の暫定措置：
-      booth.cast_users.exists?(id: user.id) ||
-        record.started_by_cast_user_id == user.id
+      booth.cast_users.exists?(id: user.id)
     end
 
     def view_token?

@@ -85,6 +85,12 @@ module Cast
         return
       end
 
+      unless StreamSessions::PublisherControl.available_to?(@stream_session, current_user) &&
+          Authorization::StreamSessionPolicy.new(current_user, @stream_session).publish_token?
+        redirect_to cast_booths_path, alert: "別の配信者が使用中、または旧配信の確認が必要です"
+        return
+      end
+
       @comments =
         Comment.alive.where(stream_session: @stream_session)
                .order(created_at: :desc)
@@ -114,7 +120,7 @@ module Cast
       @banuba_effect_name = "beauty_base.zip"
 
       @auto_resume_publish =
-        @stream_session.started_by_cast_user_id == current_user.id &&
+        @stream_session.broadcaster?(current_user) &&
         (@booth.live? || @booth.away?)
     end
 
@@ -180,7 +186,8 @@ module Cast
       booth = StreamSessions::StatusService.new(
         booth: @booth,
         actor: current_user,
-        to_status: params[:to]
+        to_status: params[:to],
+        attempt_id: params[:publish_attempt_id]
       ).call
 
       StreamSessionNotifier.broadcast_stream_state(booth: booth)

@@ -47,6 +47,7 @@ class Cast::BoothsSelectModalTest < ActionDispatch::IntegrationTest
 
     session = StreamSessions::StartService.new(booth: live_booth, actor: cast).call
     live_booth.update!(status: :live)
+    record_confirmed_broadcast!(session, user: cast)
 
     assert_no_difference "StreamSession.count" do
       get select_modal_cast_booths_path(return_to_key: "booth_live")

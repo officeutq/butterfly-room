@@ -293,7 +293,7 @@ module Admin
         .where(id: comment_ids)
         .includes(
           :user,
-          stream_session: [ :booth, :started_by_cast_user ]
+          stream_session: [ :booth, :broadcast_started_by_user ]
         )
         .index_by(&:id)
     end

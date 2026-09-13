@@ -72,6 +72,7 @@ class StreamSessions::StartServiceTest < ActiveSupport::TestCase
 
     StreamSessions::StartService.new(booth: live_booth, actor: cast).call
     live_booth.update!(status: :live)
+    record_confirmed_broadcast!(live_booth.reload.current_stream_session, user: cast)
 
     err = assert_raises(StreamSessions::StartService::AnotherBoothAlreadyLive) do
       StreamSessions::StartService.new(booth: other_booth, actor: cast).call
@@ -102,6 +103,7 @@ class StreamSessions::StartServiceTest < ActiveSupport::TestCase
 
     StreamSessions::StartService.new(booth: away_booth, actor: cast).call
     away_booth.update!(status: :away)
+    record_confirmed_broadcast!(away_booth.reload.current_stream_session, user: cast)
 
     err = assert_raises(StreamSessions::StartService::AnotherBoothAlreadyLive) do
       StreamSessions::StartService.new(booth: other_booth, actor: cast).call

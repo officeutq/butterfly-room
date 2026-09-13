@@ -11,16 +11,22 @@ module Ivs
     ROLE_PUBLISHER = "publisher"
     ROLE_VIEWER    = "viewer"
 
-    def initialize(stream_session:, actor:, role:)
+    def initialize(stream_session:, actor:, role:, attempt_id: nil)
       @stream_session = stream_session
       @actor = actor
       @role = role.to_s
+      @attempt_id = attempt_id
     end
 
     def call
       validate_role!
       validate_joinable!
       authorize!
+
+      if @role == ROLE_PUBLISHER
+        return StreamSessions::PublishService.new(stream_session: @stream_session, actor: @actor,
+          attempt_id: @attempt_id).issue_token
+      end
 
       client = Aws::IVSRealTime::Client.new(region: ENV.fetch("AWS_REGION", "ap-northeast-1"))
 
@@ -37,6 +43,8 @@ module Ivs
       return false if @stream_session.ivs_stage_arn.blank?
 
       booth = @stream_session.booth
+      return false if booth.archived? || @stream_session.ended? || @stream_session.ended_at.present?
+      return false if booth.ivs_stage_arn != @stream_session.ivs_stage_arn
       return false if booth.current_stream_session_id != @stream_session.id
 
       booth_status = booth.status.to_s
@@ -47,7 +55,7 @@ module Ivs
         %w[standby live away].include?(booth_status)
       when ROLE_VIEWER
         # Issue #78: viewer は live/away のみ
-        %w[live away].include?(booth_status)
+        %w[live away].include?(booth_status) && (@stream_session.publisher_protocol != 1 || @stream_session.broadcast_started_by_user_id.present?)
       else
         false
       end

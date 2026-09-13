@@ -1,5 +1,7 @@
 # 配信設計（Phase1 / 本番：Amazon IVS Real-Time）
 
+配信開始者の記録、開始権、失敗・再接続・旧方式の移行は [配信開始者の設計](design/actual_stream_broadcaster.md) に定義する。
+
 本ドキュメントは、配信機能を **stream_session 単位**で成立させるための
 ルーム構造・責務分離・本番配信方式・制御（シグナリング）・最低限のメッセージ形式を定義する。
 
@@ -179,9 +181,9 @@ IVS SDK のイベントとして、最低限以下の概念を扱う。
 
 * #### publisher の join 条件（準備を許可）
 
-  * `booth.status` が `standby` / `live` / `away` のいずれかなら join 可能（ただし current_session 一致は必須）
-  * `stream_session.ivs_stage_arn` が空の場合は **publisher role のみ** Stage ensure を実行してから token を発行する
-    → Stage の作成責務は publisher 側に限定する
+  * `booth.status` が `standby` / `live` / `away`、current_session一致、未終了・未閉鎖であることに加え、配信権限と本人の開始権が必要。
+  * `stream_session.ivs_stage_arn` が空またはブースのStageと不一致なら発行しない。トークンAPIでStageを作らない。
+  * 配信者の発行要求には `publish_attempt_id`（UUID）が必要。トークン発行だけでは配信成功にせず、IVS参加者詳細の照合後に配信者・開始時刻・状態を確定する。
 
 ### Token API のレスポンス／エラー
 
@@ -191,6 +193,7 @@ IVS SDK のイベントとして、最低限以下の概念を扱う。
   * `ivs_stage_arn`
   * `role`
   * `participant_token`
+  * `publish_attempt_id`（publisherのみ）
 
 * #### エラー（主にUI制御・事故防止目的）
 
@@ -202,22 +205,18 @@ IVS SDK のイベントとして、最低限以下の概念を扱う。
   * 403 `forbidden`：権限不足（サービス側の認可）
   * 429 `rate_limited`：未ログインviewerの発行頻度超過
 
-### Stage 作成（EnsureIvsStageService）の責務分離
+### Stage 作成の責務分離
 
-* **Stage 作成（ensure）は publisher 起点のみ**で許可する
-
-  * viewer 起点では実行しない（万一 UI/JS が誤って呼んでも Stage が増えない）
-* `stream_session.ivs_stage_arn` が空の場合：
-
-  * viewer：409 `stage_not_bound`
-  * publisher：`EnsureIvsStageService` を実行してから token 発行
+* Stageは既存のブース作成処理で用意してブースに固定する。視聴者起点では作らない。
+* `EnsureIvsStageService` は廃止済み。準備作成やトークン発行からは呼ばない。
+* Stageが未束縛ならpublisher/viewerともに発行を拒否する。
 
 ### スタンバイ開始（StreamSessions::StartService）の仕様
 
 * #### 目的
 
   * “配信準備中（スタンバイ）” をサーバ状態として確定させ、viewer を封じる
-  * Stage は **この時点では作成しない**（配信開始＝publisher join のタイミングで初めて作成）
+  * Stage はこの時点では作成しない。ブースの既存ARNをセッションへコピーする
 
 * #### 処理
 

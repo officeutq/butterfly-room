@@ -129,8 +129,10 @@ data "aws_iam_policy_document" "app" {
     actions = [
       "ivs:CreateParticipantToken",
       "ivs:DisconnectParticipant",
+      "ivs:GetParticipant",
       "ivs:GetStage",
-      "ivs:ListParticipants"
+      "ivs:ListParticipants",
+      "ivs:ListStageSessions"
     ]
     resources = ["arn:aws:ivs:${local.aws_region}:${data.aws_caller_identity.current.account_id}:stage/*"]
 
