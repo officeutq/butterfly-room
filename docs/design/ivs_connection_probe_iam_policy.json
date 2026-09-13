@@ -1,0 +1,25 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "InspectAndDisconnectIssue1298ProbeParticipants",
+      "Effect": "Allow",
+      "Action": [
+        "ivs:ListParticipants",
+        "ivs:GetParticipant",
+        "ivs:DisconnectParticipant"
+      ],
+      "Resource": "arn:aws:ivs:ap-northeast-1:137775584467:stage/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:ResourceTag/app": "butterfly-room",
+          "aws:ResourceTag/env": "local-probe",
+          "aws:ResourceTag/issue": "1298"
+        },
+        "StringLike": {
+          "aws:ResourceTag/probe_run": "issue1298-*"
+        }
+      }
+    }
+  ]
+}
