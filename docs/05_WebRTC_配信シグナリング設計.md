@@ -27,12 +27,12 @@
 
 ## 2. ロール別責務（固定）
 
-### cast（配信者）
+### 配信権限を持ち、配信として入った人
 - **publisher**
 - 映像・音声を publish する責務を持つ
 - 配信開始 / 終了の主体
 
-### 未ログイン / customer / admin（視聴者・管理者）
+### 視聴として入った人（未ログイン / customer / cast / admin）
 - **viewer**
 - 映像・音声を subscribe する責務を持つ
 - 配信開始 / 終了を制御しない
@@ -50,8 +50,9 @@
 - アプリ（Rails）は映像を中継しない（配信基盤が中継する）
 
 ### 対応関係（ルーム ↔ IVS）
-- `stream_session` は 1 つの **IVS Stage** に対応する（1:1）
+- IVS Stageは **boothに固定**する。各 `stream_session` はそのARNをコピーして保持し、同じブースの後続セッションでも同じStageを使う
 - 以降、この Stage を「配信ルームの実体」として扱う
+- IVSの `activeSessionId` とアプリの `stream_session.id` は別の識別子。前者は参加者照会に、後者は業務・認可・履歴に使う
 
 ---
 
@@ -180,8 +181,8 @@ IVS SDK のイベントとして、最低限以下の概念を扱う。
 * #### publisher の join 条件（準備を許可）
 
   * `booth.status` が `standby` / `live` / `away` のいずれかなら join 可能（ただし current_session 一致は必須）
-  * `stream_session.ivs_stage_arn` が空の場合は **publisher role のみ** Stage ensure を実行してから token を発行する
-    → Stage の作成責務は publisher 側に限定する
+  * `stream_session.ivs_stage_arn` が空の場合は **409 stage_not_bound** とする。トークン要求からStageを作成しない
+  * Stageの作成は配信側のブース作成・準備に属する `Booths::ProvisionIvsStageService` の責務とする
 
 ### Token API のレスポンス／エラー
 
@@ -202,22 +203,18 @@ IVS SDK のイベントとして、最低限以下の概念を扱う。
   * 403 `forbidden`：権限不足（サービス側の認可）
   * 429 `rate_limited`：未ログインviewerの発行頻度超過
 
-### Stage 作成（EnsureIvsStageService）の責務分離
+### Stage作成の責務分離
 
-* **Stage 作成（ensure）は publisher 起点のみ**で許可する
-
-  * viewer 起点では実行しない（万一 UI/JS が誤って呼んでも Stage が増えない）
-* `stream_session.ivs_stage_arn` が空の場合：
-
-  * viewer：409 `stage_not_bound`
-  * publisher：`EnsureIvsStageService` を実行してから token 発行
+* Stageは `Booths::ProvisionIvsStageService` がboothへ一度紐づける。旧 `EnsureIvsStageService` によるセッション単位の作成方式は使用しない
+* viewerのアクセス、トークン発行、配信の再接続でStageを新規作成しない
+* ARNがない場合はviewer/publisherとも `stage_not_bound`。既存Stageを通常の復旧で削除・作り直ししない
 
 ### スタンバイ開始（StreamSessions::StartService）の仕様
 
 * #### 目的
 
   * “配信準備中（スタンバイ）” をサーバ状態として確定させ、viewer を封じる
-  * Stage は **この時点では作成しない**（配信開始＝publisher join のタイミングで初めて作成）
+  * この時点ではStageを作成せず、既にboothへ紐づいたARNを配信セッションへコピーする
 
 * #### 処理
 
@@ -286,7 +283,19 @@ IVS SDK のイベントとして、最低限以下の概念を扱う。
 ## 7. 設計方針まとめ
 
 * **ルーム単位：stream_session**
-* **責務分離：cast = publisher / customer・admin = viewer**
+* **責務分離：配信として入る権限者 = publisher / 視聴として入る人 = viewer**
 * **本番配信方式：Amazon IVS Real-Time（Stage + Token + SDK join）**
 * **シグナリング方式：Rails による token 発行 + IVS SDK イベント**
 * **以降の配信関連 Issue は本設計を前提として実装する**
+
+## 8. 実配信者と接続管理（#1280の目標仕様）
+
+保存列・API・27ケースは [実配信者設計](design/actual_publisher.md)、採用した外部契約は [実測資料](design/legacy_publisher_migration_research.md) を参照する。以下は個別実装の有効化前の設計である。
+
+- publisherの発行要求は `request_id` と `expected_generation` を追加し、開始権を1件だけ確保する。参加者ID・期限・人物・対象をDBへ保存してからトークンを返す。発行だけでは実配信者・開始時刻・booth.liveを設定しない。
+- 自分のSDKの `published` イベント後に、`request_id` と `generation` を既存の開始確定APIへ送る。GetStage→ListParticipants全ページ→GetParticipant→GetStageで参加者属性・状態・対象を照合し、実配信者・初回時刻・liveを同じDBトランザクションで保存する。
+- `ListParticipants` はstage_arnとIVSのsession_idが必須。属性は要約でなくGetParticipantで読む。`DisconnectParticipant` はstage_arnとparticipant_idを指定し、stage_session_idを渡さない。
+- 通常leave・自然切断・トークン期限は、保存した参加権限の失効の証拠にしない。取消・再接続・終了は保存した参加者IDへ切断を要求する。未参加でも切断は可能。同じIDへの再切断は、新しいIDへ影響しない。
+- 配信成功のDB保存後に応答が消失しても、同じ要求の確認で同じ人物・初回時刻を返す。別タブや遅い要求を最新接続へ割り当てない。通常の再接続に固定待機を追加しない。
+- 終了・返却はIVS切断失敗時もDBへ確定し、外部切断だけを記録して再試行する。閉鎖・退会後も記録を保持する。同じブース・人物の次回開始は切断待ちを再確認してから許可する。
+- viewerのSUBSCRIBE専用・standby参加禁止・公開範囲・BAN条件は維持する。全画面で常時IVSへ問い合わせる方式にはしない。

@@ -9,6 +9,14 @@
 * **通知（Turbo Streams）は“結果に応じて”Notifierに集約**
 * **PresenceはServiceで抽象化**（DB→Redis差し替え可能に）
 
+### 実配信者記録の目標契約（#1280）
+
+[実配信者設計](design/actual_publisher.md) がD01〜D04と27ケースを定義する。`started_by_cast_user`は準備作成者として保持し、`actual_publisher_user`を成功実績に使う。開始権・参加者ID・切断待ちは`StreamPublisherConnection`へ分ける。モデルの共通参照だけでIVS通信を行わない。
+
+配信者トークン発行、配信成功確定、取消、本人再接続、終了は同設計4・5節のServiceへ集約する。Controllerは認可・入力・呼び出し・レスポンスのみ。通常・管理終了の返却はDB確定し、IVS切断失敗は保存した参加者IDへ別途再試行する。終了・残高通知とジョブ投入は、退会を含む最外側トランザクションの確定後に行う。
+
+旧準備の再利用、準備終了、手動閉鎖、既存の退会・所属解除を維持する。コメントの人物NULLは不明の消化通知だけに限定し、普通のコメントの利用者必須条件を保持する。表示・集計・限定履歴補完は同設計6節の契約とする。これらは個別実装・有効化前の設計である。
+
 * **認証は Devise（User）を採用**：`users` は email+password を基本とし、`role`（enum）で customer/cast/store_admin/system_admin を管理
 
 ---
@@ -540,7 +548,9 @@ end
 
   * belongs_to :store
   * belongs_to :booth
-  * belongs_to :started_by_cast_user, class_name: "User"
+  * belongs_to :started_by_cast_user, class_name: "User"（準備作成者）
+  * #1280追加：belongs_to :actual_publisher_user, class_name: "User", optional: true（成功実績）
+  * #1280追加：has_many :stream_publisher_connections（発行要求・切断回復）
   * has_many :presences
   * has_many :comments
   * has_many :drink_orders

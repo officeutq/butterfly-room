@@ -503,8 +503,10 @@ erDiagram
 * `status`（integer）
 * `started_at`（必須）
 * `ended_at`（任意）
-* `started_by_cast_user_id`（users参照）
+* `started_by_cast_user_id`（users参照、準備作成者として保持）
 * `ivs_stage_arn`（任意）
+
+#1280の目標仕様では、`actual_publisher_user_id`・記録由来・記録時刻・根拠、`publisher_generation`・現在の配信接続参照を追加する。接続ごとの発行要求・参加者ID・切断待ちは `stream_publisher_connections` に分離する。列・索引・読み取り契約は [実配信者設計2節](design/actual_publisher.md) を参照。準備作成者の一括上書きや準備の終了は行わない。
 
 ---
 
@@ -906,6 +908,8 @@ StreamSession 終了時に：
 - 終了処理で booths.current_stream_session_id を NULL に戻し、booths.status を offline へ遷移させる
 - アーカイブ済みブースは配信開始不可
 
+#1280の開始確定はSDKの配信成功と外部参加者・要求・認証人物を照合して行い、実配信者・初回時刻・booth.liveを同時に保存する。再接続では同じ実配信者と初回時刻を維持する。終了は未消化返却と同時にDB確定し、外部切断に失敗した参加者だけを再試行する。閉鎖・所属解除・退会もDB成功なら進める。詳細と有効化条件は [実配信者設計3〜5・9節](design/actual_publisher.md)。
+
 ### 6.5 視聴：入室／在室（Presence）／退室
 
 #### 目的
@@ -1035,20 +1039,20 @@ Phase1における売上の正は `store_ledger_entries` とする。
 
 ### 7.3 キャスト売上の集計（Phase1）
 
-Phase1では drink_orders に cast_user_id を持たないため、
-キャスト売上は以下の方法で算出する。
+現行コードの `CastMetricsQuery` は配信セッションの準備作成者を集計キーとしている。#1280では次の実配信者別集計へ変更する。drink_ordersに人物列を追加して個人帰属を分散させない。
 
 #### 集計ロジック
 
-1. booth_casts から対象 cast_user_id に紐づく booth_id を取得
-2. 対象 booth_id に紐づく store_ledger_entries を取得
-3. points を合算
+1. 対象店舗・既存の期間条件でstore_ledger_entriesとstream_sessionsを結合する
+2. stream_sessions.actual_publisher_user_idごとに消化pointsを合算する
+3. 配信時間も同じ人物へ帰属させ、不明な人物の金額・時間は「配信者不明」行へ保持する
 
 #### 特徴
 
-- 店舗横断で集計する
+- 現行の店舗別集計の範囲・期間・率・丸めを維持する
 - キャストは複数ブースを持つことができる前提
 - 旧ブース（archived_at 設定済み）も履歴として含める
+- 担当者・準備作成者で実配信者を代替しない。履歴補完の由来は保存して識別する（[実配信者設計6節](design/actual_publisher.md)）
 
 #### 除外条件
 
