@@ -292,5 +292,6 @@
 
 <%= render "cast/booths/share_modal",
       modal_id: "stream-share-modal",
+      refresh_url: (share_cast_stream_session_path(@stream_session) if StreamSessions::PublisherControl.enabled?),
       share_text: share_text,
       share_url: share_url %>

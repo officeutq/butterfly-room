@@ -198,13 +198,12 @@ class BoothsController < ApplicationController
   def set_share_meta_tags
     brand_name = "Butterflyve（バタフライブ）"
     title = @stream_session&.title.presence || @booth.name
-    share_user =
+    description =
       if @stream_session.present?
-        @stream_session.started_by_cast_user
+        view_context.stream_session_share_og_description(@stream_session)
       else
-        @booth.primary_cast_user
+        view_context.booth_share_og_description(@booth.primary_cast_user)
       end
-    description = view_context.booth_share_og_description(share_user)
     image = booth_share_image_url
 
     set_meta_tags(

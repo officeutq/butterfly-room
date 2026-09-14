@@ -27,6 +27,23 @@ class StreamSessions::PublisherConnectionConcurrencyTest < ActiveSupport::TestCa
     verify_concurrent_claims(second_session: @stream_session, second_actor: @other_publisher)
   end
 
+  test "H01 表示通知が失敗しても開始成功とYを保持し再確認が同じ結果を返す" do
+    original = StreamSessionNotifier.method(:broadcast_stream_state)
+    StreamSessionNotifier.define_singleton_method(:broadcast_stream_state) { |booth:| raise IOError, "display unavailable" }
+    with_publisher_client do
+      issued = issue_token
+      stub_published_participant(issued)
+      assert_equal "confirmed", confirm_token(issued)[:state]
+      recorded = @stream_session.reload.attributes
+      assert_equal @publisher.id, @stream_session.actual_publisher_user_id
+      assert @booth.reload.live?
+      assert_equal "confirmed", confirm_token(issued)[:state]
+      assert_equal recorded, @stream_session.reload.attributes
+    end
+  ensure
+    StreamSessionNotifier.define_singleton_method(:broadcast_stream_state, original)
+  end
+
   test "S02 同じ人が二ブースを同時開始しても部分一意索引で一件に絞る" do
     second_booth = build_prepared_booth("concurrent-other-#{SecureRandom.hex(6)}")
     verify_concurrent_claims(second_session: second_booth.current_stream_session, second_actor: @publisher)

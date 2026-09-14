@@ -26,10 +26,23 @@ module BoothSharesHelper
   end
 
   def stream_session_web_share_text(stream_session)
-    display_name = public_share_display_name(stream_session.started_by_cast_user)
+    user = stream_session_publisher_user(stream_session)
+    if StreamSessions::PublisherControl.enabled? && user.nil?
+      return "#{stream_session_publisher_name(stream_session)}。配信はここから！遊びに来てね🦋"
+    end
+    display_name = public_share_display_name(user)
     return "配信はここから！遊びに来てね🦋" if display_name.blank?
 
     "#{display_name}の配信はここから！遊びに来てね🦋"
+  end
+
+  def stream_session_share_og_description(stream_session)
+    user = stream_session_publisher_user(stream_session)
+    if StreamSessions::PublisherControl.enabled? && user.nil?
+      "#{stream_session_publisher_name(stream_session)}。ライブ配信をButterflyveで楽しもう"
+    else
+      booth_share_og_description(user)
+    end
   end
 
   def x_share_intent_url(text:, url:)

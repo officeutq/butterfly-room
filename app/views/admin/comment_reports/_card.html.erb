@@ -1,7 +1,7 @@
 <% comment = card[:comment] %>
 <% stream_session = comment.stream_session %>
 <% booth = stream_session&.booth %>
-<% broadcaster = stream_session&.started_by_cast_user %>
+<% broadcaster = stream_session_publisher_user(stream_session) %>
 <% reported_user = comment.user %>
 <% title_display = stream_session&.title.presence || booth&.name.presence || "(no name)" %>
 <% status_key = card[:status_key] %>
@@ -21,7 +21,7 @@
       <div class="small text-muted flex-shrink-0">配信者</div>
       <div class="d-flex align-items-center justify-content-end gap-2 text-end">
         <%= user_avatar_badge(broadcaster, size: 32) %>
-        <span><%= display_name_or_anonymous(broadcaster) %></span>
+        <span><%= stream_session_publisher_name(stream_session) %></span>
       </div>
     </div>
 
