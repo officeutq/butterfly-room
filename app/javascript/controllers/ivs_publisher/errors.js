@@ -23,6 +23,7 @@ export function setError(ctx, msg) {
 }
 
 export function humanizeError(err) {
+  if (err?.code) return err.message
   const msg = `${err?.message || err}`
 
   if (msg.includes("token_api_failed(403)")) {

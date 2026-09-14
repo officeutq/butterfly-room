@@ -7,6 +7,7 @@ import { cleanupBanubaPublishTrack, cleanupCameraMedia, cleanupMediaAndCanvas, c
 import { applyCurrentMode, syncMicUI } from "controllers/ivs_publisher/ui_state"
 import { BanubaProvider } from "controllers/ivs_publisher/beauty_providers/banuba_provider"
 import { DeepARProvider } from "controllers/ivs_publisher/beauty_providers/deepar_provider"
+import { PublisherConnection } from "controllers/ivs_publisher/publisher_connection"
 
 export default class extends Controller {
   static targets = [
@@ -14,9 +15,11 @@ export default class extends Controller {
     "canvas",
     "error",
     "errorMessage",
+    "errorCloseBtn",
     "state",
     "startBtn",
     "endBtn",
+    "retryPublisherBtn",
     "summaryPanel",
     "metaPanel",
     "drinkPanel",
@@ -42,6 +45,11 @@ export default class extends Controller {
     statusUrl: String,
     metaDisplayUrl: String,
     startBroadcastUrl: String,
+    publisherStateUrl: String,
+    cancelBroadcastUrl: String,
+    publisherControl: { type: Boolean, default: false },
+    publisherGeneration: Number,
+    streamSessionId: Number,
     mirror: { type: Boolean, default: true },
     initialMode: { type: String, default: "normal" },
     initialBoothStatus: String,
@@ -66,6 +74,11 @@ export default class extends Controller {
   }
 
   connect() {
+    this._publisherAttempt?.invalidate()
+    this._publisherAttempt = null
+    this._publisherStartOperation = null
+    this._publisherRecoveryPending = false
+    this._publisherRecovering = false
     this._stage = null
     this._strategy = null
 
@@ -180,6 +193,12 @@ export default class extends Controller {
     this.closeEffectPanel()
     this.closeBeautyPanel()
 
+    if (this.publisherControlValue) {
+      this._publisherAttempt?.invalidate()
+      // 開始途中の非同期処理が戻った時に、同じ要求の確認・取消を完了する。
+      if (this._publisherStartOperation) return
+    }
+
     try {
       if (this._stage) this._stage.leave()
     } catch (_) {}
@@ -189,6 +208,18 @@ export default class extends Controller {
   }
 
   async startBroadcast(opts = {}) {
+    if (this._publisherStartOperation || this._publisherRecoveryPending) return
+    const operation = this._startBroadcast(opts)
+    this._publisherStartOperation = operation
+    try {
+      await operation
+    } finally {
+      if (this._publisherStartOperation === operation) this._publisherStartOperation = null
+      this._syncUI()
+    }
+  }
+
+  async _startBroadcast(opts = {}) {
     const { autoResume = false } = opts
 
     if (this._stage) return
@@ -206,14 +237,22 @@ export default class extends Controller {
 
     this._clearError()
     this._setState("starting")
+    const attempt = this.publisherControlValue ? new PublisherConnection(this) : null
+    if (attempt) this._publisherAttempt = attempt
+    this._syncUI()
 
     try {
       await this._beautyProvider.ensureInitialBeautyStateLoaded()
+      attempt?.assertCurrent()
       await this._beautyProvider.start()
+      attempt?.assertCurrent()
       await this._beautyProvider.ensurePublishTrack()
+      attempt?.assertCurrent()
       await this._ensureAudioTrack()
+      attempt?.assertCurrent()
 
-      const token = await this._fetchParticipantToken("publisher")
+      const token = attempt ? await attempt.token() : await this._fetchParticipantToken("publisher")
+      attempt?.assertCurrent()
 
       const { Stage, LocalStageStream, SubscribeType, StageEvents } = window.IVSBroadcastClient || {}
       if (!Stage || !LocalStageStream) {
@@ -252,47 +291,65 @@ export default class extends Controller {
 
       this._strategy = {
         stageStreamsToPublish: () => {
+          if (attempt && (!attempt.isCurrent() || attempt.left)) return []
           const streams = []
           if (this._currentVideoStageStream) streams.push(this._currentVideoStageStream)
           if (this._audioStageStream) streams.push(this._audioStageStream)
           return streams
         },
-        shouldPublishParticipant: () => true,
+        shouldPublishParticipant: () => !attempt || (attempt.isCurrent() && !attempt.left),
         shouldSubscribeToParticipant: () => SubscribeType.NONE,
       }
 
-      this._stage = new Stage(token, this._strategy)
+      const stage = new Stage(token, this._strategy)
+      this._stage = stage
+      const published = attempt?.watchPublish(stage, window.IVSBroadcastClient)
 
       if (StageEvents?.STAGE_CONNECTION_STATE_CHANGED) {
-        this._stage.on(StageEvents.STAGE_CONNECTION_STATE_CHANGED, (state) => {
+        stage.on(StageEvents.STAGE_CONNECTION_STATE_CHANGED, (state) => {
+          if (attempt && (!attempt.isCurrent() || attempt.left || this._stage !== stage)) return
           console.log("[ivs] connection state:", state)
           this._setState(String(state))
         })
       }
 
       this._setState("joining")
-      await this._stage.join()
-      this._setState("live")
+      const joining = stage.join()
+      if (attempt) attempt.joinPromise = joining
+      await joining
+      attempt?.assertCurrent()
 
-      await this._patchBroadcastStartedAt()
+      if (attempt) {
+        await published
+        attempt.assertCurrent()
+        this._setState("confirming")
+        await attempt.confirm()
+        attempt.assertCurrent()
+      } else {
+        await this._patchBroadcastStartedAt()
+        await this._patchBoothStatus("live")
+      }
 
-      this._broadcasting = true
-      this._previewOnly = false
-      this._syncUI()
-
-      await this._patchBoothStatus("live")
-      this._boothStatus = "live"
-      this._mode = "normal"
-      this._syncUI()
-
-      await this._reloadMetaDisplay()
-      this._applyCurrentMode()
-      this._syncEffectPanelUI()
-      this._syncBeautyPanelUI()
+      this._completePublisherStart(attempt)
     } catch (e) {
+      if (attempt) {
+        await attempt.recover()
+        // 応答消失でもDBが確定済みなら同じ接続を継続する。
+        if (attempt.isCurrent() && attempt.stage && attempt.published && attempt.state === "confirmed" && !attempt.left) {
+          this._completePublisherStart(attempt)
+          return
+        }
+        attempt.leave()
+        if (this._publisherAttempt !== attempt) return
+        this._applyPublisherRecovery(attempt)
+      }
       this._setState("error")
 
-      if (autoResume) {
+      if (attempt?.pending || attempt?.needsReload) {
+        this._showPublisherRecovery(attempt)
+      } else if (attempt?.invalidated) {
+        this._clearError()
+      } else if (autoResume) {
         this._setError("復帰に失敗しました。配信に戻るボタンを押して再度復帰を試してください。")
       } else {
         this._setError(this._humanizeError(e))
@@ -310,6 +367,13 @@ export default class extends Controller {
     this._setState("stopping")
     this.closeEffectPanel()
     this.closeBeautyPanel()
+
+    if (this.publisherControlValue && this._publisherStartOperation) {
+      this._publisherAttempt?.invalidate()
+      await this._publisherStartOperation
+      return
+    }
+    if (this.publisherControlValue && skipFinish) this._publisherAttempt?.invalidate()
 
     try {
       if (this._stage) {
@@ -343,6 +407,54 @@ export default class extends Controller {
     }
   }
 
+  _completePublisherStart(attempt) {
+    if (attempt) this.publisherGenerationValue = attempt.currentGeneration
+    this._publisherRecoveryPending = false
+    this._setState("live")
+    this._broadcasting = true
+    this._previewOnly = false
+    this._boothStatus = "live"
+    this._mode = "normal"
+    this._syncUI()
+    this._applyCurrentMode()
+    // 表示更新の失敗を配信開始失敗として取り消さない。
+    void this._reloadMetaDisplay().catch(() => {})
+  }
+
+  _applyPublisherRecovery(attempt) {
+    this._publisherRecoveryPending = attempt.pending || attempt.needsReload
+    if (Number.isSafeInteger(attempt.currentGeneration)) this.publisherGenerationValue = attempt.currentGeneration
+    if (attempt.state === "confirmed") {
+      this._resumable = true
+      this._boothStatus = attempt.result.booth_status
+    }
+    this._broadcasting = false
+  }
+
+  _showPublisherRecovery(attempt) {
+    this._setError(attempt.needsReload
+      ? "配信の状態が更新されています。画面を読み込み直してください。"
+      : "配信接続の確認待ちです。再確認が完了してから配信を開始できます。")
+  }
+
+  async retryPublisherRecovery() {
+    const attempt = this._publisherAttempt
+    if (!attempt || this._publisherStartOperation || this._publisherRecovering) return
+    if (attempt.needsReload) return window.location.reload()
+    this._publisherRecovering = true
+    this._syncUI()
+    try {
+      await attempt.recover()
+      if (this._publisherAttempt !== attempt) return
+      this._applyPublisherRecovery(attempt)
+      if (this._publisherRecoveryPending) this._showPublisherRecovery(attempt)
+      else this._clearError()
+    } finally {
+      this._publisherRecovering = false
+      this._syncUI()
+    }
+  }
+
   toggleMic() {
     this._lastManualMicEnabled = !this._lastManualMicEnabled
     this._applyManualMicState()
@@ -350,6 +462,7 @@ export default class extends Controller {
   }
 
   closeError() {
+    if (this._publisherRecoveryPending) return
     this._clearError()
   }
 
@@ -1125,15 +1238,25 @@ export default class extends Controller {
   }
 
   _syncUI() {
+    const starting = this.publisherControlValue && Boolean(this._publisherStartOperation || ["starting", "joining", "confirming"].includes(this._state))
     if (this.hasStartBtnTarget && this.hasEndBtnTarget) {
-      if (this._broadcasting) {
+      if (this._broadcasting || starting) {
         this.startBtnTarget.classList.add("d-none")
         this.endBtnTarget.classList.remove("d-none")
       } else {
         this.startBtnTarget.classList.remove("d-none")
         this.endBtnTarget.classList.add("d-none")
       }
+      this.startBtnTarget.disabled = Boolean(this._publisherRecoveryPending)
+      const endLabel = this.endBtnTarget.querySelector(".app-footer-nav-label")
+      if (endLabel) endLabel.textContent = starting ? "開始を取り消す" : "配信終了"
     }
+    if (this.hasRetryPublisherBtnTarget) {
+      this.retryPublisherBtnTarget.classList.toggle("d-none", !this._publisherRecoveryPending)
+      this.retryPublisherBtnTarget.disabled = Boolean(this._publisherRecovering || starting)
+      this.retryPublisherBtnTarget.textContent = this._publisherAttempt?.needsReload ? "画面を更新" : "再確認"
+    }
+    if (this.hasErrorCloseBtnTarget) this.errorCloseBtnTarget.classList.toggle("d-none", Boolean(this._publisherRecoveryPending))
 
     const canToggleCamera = this._broadcasting && !this._switchingVideoSource
 

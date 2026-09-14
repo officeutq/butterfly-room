@@ -188,7 +188,8 @@ module Cast
       booth = StreamSessions::StatusService.new(
         booth: @booth,
         actor: current_user,
-        to_status: params[:to]
+        to_status: params[:to],
+        stream_session_id: params[:stream_session_id], request_id: params[:request_id], generation: params[:generation]
       ).call
 
       StreamSessionNotifier.broadcast_stream_state(booth: booth)
@@ -218,6 +219,8 @@ module Cast
         format.json { render json: { ok: true }, status: :ok }
         format.any { head :no_content }
       end
+    rescue StreamSessions::PublisherControl::Error => error
+      render_publisher_entry_error(error)
     rescue => e
       respond_to do |format|
         format.html { redirect_to live_cast_booth_path(@booth), alert: e.message }

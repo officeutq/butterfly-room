@@ -16,6 +16,11 @@
   data-ivs-publisher-status-url-value="<%= status_cast_booth_path(@booth) %>"
   data-ivs-publisher-meta-display-url-value="<%= meta_display_cast_stream_session_path(@stream_session) %>"
   data-ivs-publisher-start-broadcast-url-value="<%= start_broadcast_cast_stream_session_path(@stream_session) %>"
+  data-ivs-publisher-publisher-control-value="<%= StreamSessions::PublisherControl.enabled? %>"
+  data-ivs-publisher-publisher-generation-value="<%= @stream_session.publisher_generation %>"
+  data-ivs-publisher-stream-session-id-value="<%= @stream_session.id %>"
+  data-ivs-publisher-publisher-state-url-value="<%= publisher_state_cast_stream_session_path(@stream_session) %>"
+  data-ivs-publisher-cancel-broadcast-url-value="<%= cancel_broadcast_cast_stream_session_path(@stream_session) %>"
   data-ivs-publisher-mirror-value="true"
   data-ivs-publisher-initial-mode-value="<%= @booth.away? ? "away" : "normal" %>"
   data-ivs-publisher-initial-booth-status-value="<%= @booth.status %>"
@@ -63,10 +68,14 @@
           role="alert"
           data-ivs-publisher-target="error">
           <span data-ivs-publisher-target="errorMessage"></span>
+          <button type="button" class="btn btn-sm btn-outline-danger ms-2 d-none"
+                  data-ivs-publisher-target="retryPublisherBtn"
+                  data-action="ivs-publisher#retryPublisherRecovery">再確認</button>
           <button
             type="button"
             class="btn-close"
             aria-label="Close"
+            data-ivs-publisher-target="errorCloseBtn"
             data-action="ivs-publisher#closeError"></button>
         </div>
       </div>

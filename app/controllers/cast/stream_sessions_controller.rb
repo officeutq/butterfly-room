@@ -165,6 +165,12 @@ module Cast
     end
 
     def start_broadcast
+      if StreamSessions::PublisherControl.enabled?
+        result = StreamSessions::ConfirmPublisherService.new(stream_session: @stream_session, actor: current_user,
+          request_id: params[:request_id], generation: params[:generation]).call
+        return render json: result
+      end
+
       booth = @stream_session.booth
 
       unless booth.current_stream_session_id == @stream_session.id
@@ -190,7 +196,7 @@ module Cast
     def authorize_stream_session_access!
       return if operable_booth_for_stream_session?(@stream_session.booth)
 
-      session.delete(:current_booth_id) unless StreamSessions::PublisherControl.enabled? && %w[publisher_state cancel_broadcast].include?(action_name)
+      session.delete(:current_booth_id) unless StreamSessions::PublisherControl.enabled? && %w[publisher_state cancel_broadcast start_broadcast].include?(action_name)
       head :forbidden
     end
 

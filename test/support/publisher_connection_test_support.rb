@@ -54,4 +54,20 @@ module PublisherConnectionTestSupport
   def disconnect_requests
     @ivs_client.api_requests.select { |request| request[:operation_name] == :disconnect_participant }.map { |request| request[:params] }
   end
+
+  def stub_published_participant(result, attributes: {}, published: true, extra_participants: [])
+    participant = { participant_id: result[:participant_id], state: "CONNECTED", published: published,
+      attributes: { "role" => "publisher", "stream_session_id" => @stream_session.id.to_s, "user_id" => @publisher.id.to_s }.merge(attributes) }
+    participants = [ participant, *extra_participants ]
+    @ivs_client.stub_responses(:get_stage, { stage: { arn: @booth.ivs_stage_arn, active_session_id: "ivs-session" } })
+    @ivs_client.stub_responses(:list_participants, { participants: participants.map { |entry| entry.except(:attributes) } })
+    @ivs_client.stub_responses(:get_participant, ->(context) {
+      { participant: participants.find { |entry| entry[:participant_id] == context.params[:participant_id] } }
+    })
+  end
+
+  def confirm_token(result, actor: @publisher)
+    StreamSessions::ConfirmPublisherService.new(stream_session: @stream_session, actor: actor,
+      request_id: result[:request_id], generation: result[:generation]).call
+  end
 end

@@ -2,6 +2,44 @@ function csrfToken() {
   return document.querySelector('meta[name="csrf-token"]')?.content
 }
 
+async function publisherJson(url, method, params) {
+  if (method === "GET") {
+    url = new URL(url, window.location.origin)
+    Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value))
+  }
+  const resp = await fetch(url, {
+    method, credentials: "same-origin",
+    headers: { "Content-Type": "application/json", "Accept": "application/json", "X-CSRF-Token": csrfToken() },
+    ...(method === "GET" ? {} : { body: JSON.stringify(params) }),
+  })
+  const body = await resp.json()
+  if (!resp.ok) {
+    const error = new Error(body.message || "配信操作を完了できませんでした。再確認してください。")
+    error.status = resp.status
+    error.code = body.error
+    throw error
+  }
+  return body
+}
+
+export function issuePublisherToken(ctx, attempt) {
+  return publisherJson(ctx.tokenUrlValue, "POST", {
+    role: "publisher", request_id: attempt.requestId, expected_generation: attempt.expectedGeneration,
+  })
+}
+
+export function confirmPublisher(ctx, attempt) {
+  return publisherJson(ctx.startBroadcastUrlValue, "PATCH", { request_id: attempt.requestId, generation: attempt.generation })
+}
+
+export function readPublisherState(ctx, attempt) {
+  return publisherJson(ctx.publisherStateUrlValue, "GET", { request_id: attempt.requestId })
+}
+
+export function cancelPublisher(ctx, attempt) {
+  return publisherJson(ctx.cancelBroadcastUrlValue, "POST", { request_id: attempt.requestId, generation: attempt.generation })
+}
+
 export async function fetchParticipantToken(ctx, role) {
   const resp = await fetch(ctx.tokenUrlValue, {
     method: "POST",
@@ -32,6 +70,11 @@ export async function patchBoothStatus(ctx, to) {
 
   const url = new URL(ctx.statusUrlValue, window.location.origin)
   url.searchParams.set("to", to)
+  if (ctx.publisherControlValue) {
+    url.searchParams.set("stream_session_id", ctx.streamSessionIdValue)
+    url.searchParams.set("request_id", ctx._publisherAttempt?.requestId || "")
+    url.searchParams.set("generation", ctx._publisherAttempt?.generation ?? "")
+  }
 
   const resp = await fetch(url.toString(), {
     method: "PATCH",
