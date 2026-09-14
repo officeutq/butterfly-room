@@ -1,10 +1,11 @@
 module Booths
   # 既存の外側トランザクションを維持し、対象boothをロックして検証する。
   class ValidatePublisherEntryService
-    def initialize(booth:, actor:, allow_new: false)
+    def initialize(booth:, actor:, allow_new: false, verify_connection: false)
       @booth = booth
       @actor = actor
       @allow_new = allow_new
+      @verify_connection = verify_connection
     end
 
     def call
@@ -41,6 +42,7 @@ module Booths
           reject!("publisher_in_use", "このブースはすでに他の人が配信中です")
         end
         # 本人の復帰画面はDBで判定。新しいトークンの発行時に外部を再確認する。
+        verify_external_state!(stream_session) if @verify_connection
       else
         reject!("publisher_state_unavailable", "配信状態を確認できません。再確認してください", status: :service_unavailable)
       end

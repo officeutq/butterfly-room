@@ -1,6 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import { clearError, humanizeError, setError } from "controllers/ivs_publisher/errors"
-import { fetchParticipantToken, patchBoothStatus, patchBroadcastStartedAt, postFinish, reloadMetaDisplay } from "controllers/ivs_publisher/api_client"
+import { fetchParticipantToken, patchBoothStatus, patchBroadcastStartedAt, postFinish, reloadMetaDisplay, changePublisherStatus } from "controllers/ivs_publisher/api_client"
 import { syncCanvasResolutionToMeasured, startCanvasRenderLoop, stopCanvasRenderLoop } from "controllers/ivs_publisher/away_canvas"
 import { waitForBanubaRenderedNode } from "controllers/ivs_publisher/banuba_session"
 import { cleanupBanubaPublishTrack, cleanupCameraMedia, cleanupMediaAndCanvas, cleanupStage, ensureAudioTrack, ensureCameraVideoTrack, ensureCanvasPublishTrack } from "controllers/ivs_publisher/media_state"
@@ -50,6 +50,9 @@ export default class extends Controller {
     publisherControl: { type: Boolean, default: false },
     publisherGeneration: Number,
     streamSessionId: Number,
+    existingRequestId: String,
+    existingRequestGeneration: Number,
+    existingRequestState: String,
     mirror: { type: Boolean, default: true },
     initialMode: { type: String, default: "normal" },
     initialBoothStatus: String,
@@ -173,6 +176,17 @@ export default class extends Controller {
 
     window.publisher = this
 
+    if (this.publisherControlValue && this.existingRequestIdValue && this.existingRequestStateValue !== "confirmed") {
+      const attempt = new PublisherConnection(this, { requestId: this.existingRequestIdValue, generation: this.existingRequestGenerationValue,
+        state: this.existingRequestStateValue, tokenRequested: true })
+      this._publisherAttempt = attempt
+      this._publisherRecoveryPending = true
+      this._showPublisherRecovery(attempt)
+      this._syncUI()
+      void this._recoverPublisherOnEntry(attempt)
+      return
+    }
+
     if (this._boothStatus === "standby") {
       this._startPreviewOnlyIfNeeded()
       return
@@ -208,7 +222,7 @@ export default class extends Controller {
   }
 
   async startBroadcast(opts = {}) {
-    if (this._publisherStartOperation || this._publisherRecoveryPending) return
+    if (this._publisherStartOperation || this._publisherRecoveryPending || this._publisherRecovering) return
     const operation = this._startBroadcast(opts)
     this._publisherStartOperation = operation
     try {
@@ -304,6 +318,14 @@ export default class extends Controller {
       const stage = new Stage(token, this._strategy)
       this._stage = stage
       const published = attempt?.watchPublish(stage, window.IVSBroadcastClient)
+      if (attempt && StageEvents?.STAGE_LEFT) {
+        stage.on(StageEvents.STAGE_LEFT, () => {
+          attempt.left = true
+          if (attempt.isCurrent() && attempt.state === "confirmed" && !this._publisherStartOperation) {
+            void this._publisherStageLeft(attempt, stage)
+          }
+        })
+      }
 
       if (StageEvents?.STAGE_CONNECTION_STATE_CHANGED) {
         stage.on(StageEvents.STAGE_CONNECTION_STATE_CHANGED, (state) => {
@@ -373,7 +395,7 @@ export default class extends Controller {
       await this._publisherStartOperation
       return
     }
-    if (this.publisherControlValue && skipFinish) this._publisherAttempt?.invalidate()
+    if (this.publisherControlValue) this._publisherAttempt?.invalidate()
 
     try {
       if (this._stage) {
@@ -424,7 +446,7 @@ export default class extends Controller {
   _applyPublisherRecovery(attempt) {
     this._publisherRecoveryPending = attempt.pending || attempt.needsReload
     if (Number.isSafeInteger(attempt.currentGeneration)) this.publisherGenerationValue = attempt.currentGeneration
-    if (attempt.state === "confirmed") {
+    if (attempt.result?.actual_publisher_user_id && ["live", "away"].includes(attempt.result.booth_status)) {
       this._resumable = true
       this._boothStatus = attempt.result.booth_status
     }
@@ -452,6 +474,88 @@ export default class extends Controller {
     } finally {
       this._publisherRecovering = false
       this._syncUI()
+    }
+  }
+
+  async _recoverPublisherOnEntry(attempt) {
+    await this.retryPublisherRecovery()
+    if (!attempt.isCurrent() || this._publisherRecoveryPending) return
+    if (this._boothStatus === "standby") this._startPreviewOnlyIfNeeded()
+    else if (this._shouldAutoResumeOnEntry()) await this._tryAutoResumeOnEntry()
+  }
+
+  async _publisherStageLeft(attempt, stage) {
+    if (this._publisherAttempt !== attempt || this._stage !== stage) return
+    attempt.invalidate()
+    this._publisherRecovering = true
+    this._broadcasting = false
+    this._resumable = true
+    this._cleanupStage()
+    this._syncUI()
+    try {
+      await this._cleanupMediaAndCanvas()
+      if (this._publisherAttempt !== attempt) return
+      this._setState("idle")
+      this._setError("配信接続が切れました。配信に戻るボタンで復帰できます。")
+    } finally {
+      if (this._publisherAttempt === attempt) {
+        this._publisherRecovering = false
+        this._syncUI()
+      }
+    }
+  }
+
+  async changeBoothStatus(event) {
+    if (!this.publisherControlValue) return
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    const attempt = this._publisherAttempt
+    const stage = this._stage
+    if (!attempt?.isCurrent() || !this._broadcasting || this._switchingVideoSource) return
+    const to = new URL(event.target.action, window.location.origin).searchParams.get("to")
+    if (!["live", "away"].includes(to)) return
+    const current = () => attempt.isCurrent() && this._stage === stage && !attempt.left
+    const previous = { boothStatus: this._boothStatus, mode: this._mode, source: this._publishedVideoSource, mic: this._micEnabled }
+    this._switchingVideoSource = true
+    this._clearError()
+    this._syncUI()
+    let saved = false
+    try {
+      await changePublisherStatus(this, attempt, to)
+      saved = true
+      if (!current()) return
+      await this._switchPublishedVideoSource(to === "away" ? "canvas" : "processed", attempt)
+      if (!current()) return
+      this._boothStatus = to
+      this._mode = to === "away" ? "away" : "normal"
+      if (to === "away") this._forceMicOffForAwayEntry()
+      else this._applyManualMicState()
+      this._applyCurrentMode()
+    } catch (error) {
+      if (!current()) return
+      if (saved) {
+        try {
+          await changePublisherStatus(this, attempt, previous.boothStatus)
+          if (!current()) return
+          if (previous.source) await this._switchPublishedVideoSource(previous.source, attempt)
+        } catch (_) {
+          if (!current()) return
+          // 本人の同じ配信へ復帰すると、サーバーの状態と映像を揃えて再確認できる。
+          await this._publisherStageLeft(attempt, stage)
+          return
+        }
+      }
+      if (!current()) return
+      this._boothStatus = previous.boothStatus
+      this._mode = previous.mode
+      this._micEnabled = previous.mic
+      this._applyMicTrackEnabled()
+      this._setError(this._humanizeError(error))
+    } finally {
+      if (current()) {
+        this._switchingVideoSource = false
+        this._syncUI()
+      }
     }
   }
 
@@ -587,6 +691,7 @@ export default class extends Controller {
   }
 
   async onBoothStatusPatched(event) {
+    if (this.publisherControlValue) return
     if (!event?.detail?.success) return
     if (this._switchingVideoSource) return
 
@@ -670,7 +775,8 @@ export default class extends Controller {
     }
   }
 
-  async _switchPublishedVideoSource(source) {
+  async _switchPublishedVideoSource(source, attempt = null) {
+    attempt?.assertCurrent()
     if (!this._broadcasting || !this._stage) return
     if (source === this._publishedVideoSource) return
 
@@ -689,6 +795,7 @@ export default class extends Controller {
 
     if (source === "processed") {
       await this._beautyProvider.ensurePublishTrack()
+      attempt?.assertCurrent()
 
       const providerTrack = this._beautyProvider.videoTrack
       const providerStageStream = this._beautyProvider.stageStream
@@ -701,6 +808,7 @@ export default class extends Controller {
       this._publishedVideoTrack = providerTrack
       this._publishedVideoSource = "processed"
       await this._refreshStageStrategy()
+      attempt?.assertCurrent()
       this._stopCanvasRenderLoop()
       return
     }
@@ -1247,7 +1355,7 @@ export default class extends Controller {
         this.startBtnTarget.classList.remove("d-none")
         this.endBtnTarget.classList.add("d-none")
       }
-      this.startBtnTarget.disabled = Boolean(this._publisherRecoveryPending)
+      this.startBtnTarget.disabled = Boolean(this._publisherRecoveryPending || this._publisherRecovering)
       const endLabel = this.endBtnTarget.querySelector(".app-footer-nav-label")
       if (endLabel) endLabel.textContent = starting ? "開始を取り消す" : "配信終了"
     }

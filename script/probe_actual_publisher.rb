@@ -52,6 +52,18 @@ begin
         { session_id: session.id, creator_id: session.started_by_cast_user_id, publisher_id: session.actual_publisher_user_id,
           source: session.actual_publisher_source, broadcast_started_at: session.broadcast_started_at, booth_status: session.booth.status,
           connections: session.stream_publisher_connections.count, confirmed_at: session.current_publisher_connection&.confirmed_at }
+      when "status"
+        updated = StreamSessions::StatusService.new(booth: session.booth, actor: publisher, to_status: input["to"],
+          stream_session_id: session.id, request_id: input["request_id"], generation: input["generation"]).call
+        { ok: true, booth_status: updated.status }
+      when "repeat_old_disconnect"
+        previous = session.stream_publisher_connections.find_by!(request_id: input["request_id"])
+        raise "replacement required" unless previous.disconnect_reason == "replace" && previous.released_at && previous.ivs_stage_arn == stage_arn
+        Aws::IVSRealTime::Client.new(region: "ap-northeast-1").disconnect_participant(stage_arn: stage_arn, participant_id: previous.ivs_participant_id)
+        { disconnected_participant_id: previous.ivs_participant_id }
+      when "external"
+        snapshot = Ivs::ParticipantSnapshotService.new(stage_arn: stage_arn).call
+        { participants: snapshot.participants.map { |participant| { participant_id: participant.participant_id, state: participant.state, published: participant.published } } }
       else
         raise ArgumentError, "unknown probe operation"
       end

@@ -309,15 +309,19 @@ export async function waitForBanubaRenderedNode(ctx) {
 }
 
 export async function destroyBanubaPlayer(ctx) {
+  const player = ctx._banubaPlayer
+  const provider = ctx._beautyProvider
   stopBanubaSurfaceMediaStreams(ctx)
 
-  if (ctx._banubaPlayer) {
+  if (player) {
     try {
-      if (typeof ctx._banubaPlayer.destroy === "function") {
-        await ctx._banubaPlayer.destroy()
+      if (typeof player.destroy === "function") {
+        await player.destroy()
       }
     } catch (_) {}
   }
+
+  if (ctx._banubaPlayer !== player || ctx._beautyProvider !== provider) return
 
   stopBanubaSurfaceMediaStreams(ctx)
 

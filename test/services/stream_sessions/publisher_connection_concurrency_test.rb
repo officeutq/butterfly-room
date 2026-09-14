@@ -40,6 +40,53 @@ class StreamSessions::PublisherConnectionConcurrencyTest < ActiveSupport::TestCa
     verify_confirmation_race(first: :cancel)
   end
 
+  test "R02 二端末から同じ世代で復帰しても新接続を一件だけ発行する" do
+    entered = Queue.new
+    continue_first = Queue.new
+    second_pid = Queue.new
+    threads = []
+    original = @ivs_client.method(:disconnect_participant)
+    with_publisher_client do
+      first = issue_token
+      stub_published_participant(first)
+      confirm_token(first)
+      started_at = @stream_session.reload.broadcast_started_at
+      @ivs_client.define_singleton_method(:disconnect_participant) do |**arguments|
+        response = original.call(**arguments)
+        entered << ActiveRecord::Base.connection.select_value("SELECT pg_backend_pid()")
+        Timeout.timeout(30) { continue_first.pop }
+        response
+      end
+      threads << claim_in_thread(@stream_session.id, @publisher.id, generation: 1)
+      first_pid = Timeout.timeout(10) { entered.pop }
+      threads << claim_in_thread(@stream_session.id, @publisher.id, generation: 1, pid_queue: second_pid)
+      pid = Timeout.timeout(10) { second_pid.pop }
+      refute_equal first_pid, pid
+      ActiveRecord::Base.uncached do
+        Timeout.timeout(10) do
+          loop do
+            break if ActiveRecord::Base.connection.select_value("SELECT wait_event_type FROM pg_stat_activity WHERE pid = #{Integer(pid)}") == "Lock"
+            sleep 0.01
+          end
+        end
+      end
+      continue_first << true
+      winner, loser = threads.map { |thread| Timeout.timeout(10) { thread.value } }
+      assert_equal "issued", winner[:state]
+      assert_equal "stale_publisher_request", loser[:error]
+      assert_equal 2, issued_count
+      assert_equal 1, disconnect_requests.size
+      assert_equal 1, StreamPublisherConnection.unreleased.where(user: @publisher).count
+      assert_equal winner[:request_id], @stream_session.reload.current_publisher_connection.request_id
+      assert_equal @publisher.id, @stream_session.actual_publisher_user_id
+      assert_equal started_at, @stream_session.broadcast_started_at
+    end
+  ensure
+    continue_first << true
+    threads.each { |thread| thread.join(10) || thread.kill }
+    @ivs_client.define_singleton_method(:disconnect_participant, original)
+  end
+
   private
 
   def verify_confirmation_race(first:)
@@ -162,11 +209,11 @@ class StreamSessions::PublisherConnectionConcurrencyTest < ActiveSupport::TestCa
     @ivs_client.define_singleton_method(:create_participant_token, original_mint)
   end
 
-  def claim_in_thread(session_id, actor_id, pid_queue: nil)
+  def claim_in_thread(session_id, actor_id, pid_queue: nil, generation: 0)
     Thread.new do
       ActiveRecord::Base.connection_pool.with_connection do |connection|
         pid_queue << connection.select_value("SELECT pg_backend_pid()") if pid_queue
-        issue_token(stream_session: StreamSession.find(session_id), actor: User.find(actor_id))
+        issue_token(stream_session: StreamSession.find(session_id), actor: User.find(actor_id), generation: generation)
       rescue StreamSessions::PublisherControl::Error => error
         { error: error.code }
       end

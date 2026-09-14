@@ -22,7 +22,7 @@ async function until(check) {
 function fixture(options = {}) {
   const stages = [], requests = []
   const records = new Map()
-  let generation = 0, reloads = 0, confirms = 0
+  let generation = options.initialGeneration || 0, reloads = 0, confirms = 0, statusCalls = 0
   let stateUnavailable = false, cancelPending = false
   class Stage {
     constructor(token, strategy) {
@@ -56,6 +56,10 @@ function fixture(options = {}) {
       requests.push({ path: route.pathname, params, method: request.method })
       if (route.pathname === "/token") {
         if (options.tokenRejected) return response({ error: "publisher_in_use", message: "開始処理中です" }, 409)
+        if (options.tokenUnavailableOnce) {
+          options.tokenUnavailableOnce = false
+          return response({ error: "publisher_state_unavailable", message: "以前の接続を確認できません" }, 503)
+        }
         assert.equal(params.expected_generation, generation)
         generation++
         const record = { request_id: params.request_id, generation, current_generation: generation, state: "issued", booth_status: "standby", stream_session_id: 7 }
@@ -74,6 +78,7 @@ function fixture(options = {}) {
         assert.equal(params.generation, record.generation)
         if (options.confirmFails) return response({ error: "publisher_state_unavailable", message: "確認できません" }, 503)
         Object.assign(record, { state: "confirmed", booth_status: "live", actual_publisher_user_id: 22, broadcast_started_at: "2026-09-14T01:00:00Z" })
+        if (options.confirmResponse) await options.confirmResponse.promise
         if (options.lostConfirmationResponse) throw new Error("network")
         return response(record)
       }
@@ -84,6 +89,14 @@ function fixture(options = {}) {
           Object.assign(record, { state: cancelPending ? "cancel_pending" : "cancelled", current_generation: generation, disconnect_pending: cancelPending })
         }
         return response(record, cancelPending ? 202 : 200)
+      }
+      if (route.pathname === "/status") {
+        statusCalls++
+        if (options.statusResponse) await options.statusResponse.promise
+        if (options.statusFailureOn === statusCalls) return response({ error: "publisher_state_unavailable", message: "確認できません" }, 503)
+        assert.equal(params.generation, record.generation)
+        record.booth_status = params.to
+        return response({ ok: true })
       }
       assert.fail(`unexpected request ${route.pathname}`)
     },
@@ -96,8 +109,8 @@ function fixture(options = {}) {
     vm.runInContext(source, context, { filename })
   }
   const controller = Object.assign(new context.PublisherController(), {
-    publisherControlValue: true, publisherGenerationValue: 0, streamSessionIdValue: 7,
-    tokenUrlValue: "/token", publisherStateUrlValue: "/state", startBroadcastUrlValue: "/confirm", cancelBroadcastUrlValue: "/cancel",
+    publisherControlValue: true, publisherGenerationValue: options.initialGeneration || 0, streamSessionIdValue: 7,
+    tokenUrlValue: "/token", publisherStateUrlValue: "/state", startBroadcastUrlValue: "/confirm", cancelBroadcastUrlValue: "/cancel", statusUrlValue: "/status",
     hasTokenUrlValue: true, providerValue: "banuba", banubaClientTokenValue: "test-config", _state: "idle", _mode: "normal", _boothStatus: "standby",
     _beautyProvider: { ensureInitialBeautyStateLoaded: async () => {}, start: async () => {}, ensurePublishTrack: async () => {}, videoTrack: { kind: "video" }, stageStream: { track: "processed" } },
     _audioTrack: { kind: "audio" }, _ensureAudioTrack: async () => {},
@@ -107,6 +120,7 @@ function fixture(options = {}) {
     async _cleanupMediaAndCanvas() { this.mediaCleanups = (this.mediaCleanups || 0) + 1 },
   })
   return { controller, stages, requests, records, syncActualUI: () => context.PublisherController.prototype._syncUI.call(controller),
+    restoreAttempt: attributes => { const Connection = vm.runInContext("PublisherConnection", context); return new Connection(controller, attributes) },
     get reloads() { return reloads }, get confirms() { return confirms },
     set stateUnavailable(value) { stateUnavailable = value }, set cancelPending(value) { cancelPending = value } }
 }
@@ -133,6 +147,153 @@ test("S03 join completion and a remote published event cannot confirm; local pub
   assert.deepEqual(f.requests.map(r => r.path), ["/token", "/confirm"])
   assert.equal(f.requests[1].params.request_id, f.requests[0].params.request_id)
 })
+
+test("R02 SDK automatic reconnection keeps its request; terminal leave exposes resume and a new SDK uses a new request", async () => {
+  const f = fixture()
+  const initial = f.controller.startBroadcast()
+  await until(() => f.stages.length === 1)
+  f.stages[0].publish()
+  await initial
+  const first = f.controller._publisherAttempt
+  f.stages[0].emit("connection", "disconnected")
+  f.stages[0].emit("connection", "connected")
+  assert.equal(f.controller._publisherAttempt, first)
+  assert.equal(f.requests.filter(r => r.path === "/token").length, 1)
+  f.stages[0].emit("left")
+  await until(() => !f.controller._publisherRecovering)
+  assert.equal(f.controller._broadcasting, false)
+  assert.equal(f.controller._resumable, true)
+  assert.equal(f.controller._stage, null)
+  const resume = f.controller.startBroadcast()
+  await until(() => f.stages.length === 2)
+  f.stages[1].publish()
+  await resume
+  assert.equal(f.controller._broadcasting, true)
+  assert.notEqual(f.controller._publisherAttempt.requestId, first.requestId)
+  assert.equal(f.controller.publisherGenerationValue, 2)
+})
+
+test("R02 explicit token issuance failure and missing saved request allow manual retry on the same generation without a fixed wait", async () => {
+  const f = fixture({ tokenUnavailableOnce: true, initialGeneration: 1 })
+  f.controller._resumable = true
+  f.controller._boothStatus = "live"
+  f.controller.autoResumeOnEntryValue = true
+  await f.controller._tryAutoResumeOnEntry()
+  assert.equal(f.controller._publisherRecoveryPending, false)
+  assert.equal(f.controller._resumable, true)
+  assert.equal(f.controller.publisherGenerationValue, 1)
+  assert.match(f.controller.error, /復帰に失敗/)
+  const retry = f.controller.startBroadcast()
+  await until(() => f.stages.length === 1)
+  f.stages[0].publish()
+  await retry
+  assert.equal(f.controller._broadcasting, true)
+  assert.equal(f.requests.filter(r => r.path === "/token").length, 2)
+})
+
+test("R02 reload recovery uses the stored own UUID and cancels its unconfirmed request before allowing start", async () => {
+  const f = fixture({ lostTokenResponse: true })
+  f.stateUnavailable = true
+  await f.controller.startBroadcast()
+  const requestId = f.requests[0].params.request_id
+  const stored = f.records.get(requestId)
+  f.controller._publisherAttempt = f.restoreAttempt({ requestId, generation: stored.generation, state: "issued", tokenRequested: true })
+  f.stateUnavailable = false
+  await f.controller.retryPublisherRecovery()
+  assert.equal(f.controller._publisherRecoveryPending, false)
+  assert.equal(f.controller.publisherGenerationValue, 2)
+  assert.deepEqual(f.requests.slice(-2).map(r => r.path), ["/state", "/cancel"])
+  assert.equal(f.requests.at(-1).params.request_id, requestId)
+  assert.equal(f.requests.filter(r => r.path === "/token").length, 1)
+})
+
+test("R01 away and return send the current identity and change media after the response", async () => {
+  const f = fixture()
+  const initial = f.controller.startBroadcast()
+  await until(() => f.stages.length === 1)
+  f.stages[0].publish()
+  await initial
+  const sources = []
+  f.controller._switchPublishedVideoSource = async source => { sources.push(source) }
+  f.controller._forceMicOffForAwayEntry = () => { f.controller._micEnabled = false }
+  for (const to of ["away", "live"]) {
+    let prevented = false
+    await f.controller.changeBoothStatus({ target: { action: `https://example.test/status?to=${to}` },
+      preventDefault() { prevented = true }, stopImmediatePropagation() {} })
+    assert.equal(prevented, true)
+    assert.equal(f.controller._boothStatus, to)
+    assert.equal(f.requests.at(-1).params.request_id, f.controller._publisherAttempt.requestId)
+    assert.equal(f.requests.at(-1).params.stream_session_id, 7)
+    assert.equal(f.requests.at(-1).params.generation, 1)
+  }
+  assert.deepEqual(sources, ["canvas", "processed"])
+  assert.equal(f.controller._switchingVideoSource, false)
+})
+
+test("R03 a delayed status response from an old screen cannot switch replacement media", async () => {
+  const response = deferred()
+  const f = fixture({ statusResponse: response })
+  const initial = f.controller.startBroadcast()
+  await until(() => f.stages.length === 1)
+  f.stages[0].publish()
+  await initial
+  let mediaChanges = 0
+  f.controller._switchPublishedVideoSource = async () => { mediaChanges++ }
+  const changing = f.controller.changeBoothStatus({ target: { action: "https://example.test/status?to=away" },
+    preventDefault() {}, stopImmediatePropagation() {} })
+  await until(() => f.requests.at(-1).path === "/status")
+  const previous = f.controller._publisherAttempt
+  previous.invalidate()
+  f.controller._publisherAttempt = { newScreen: true }
+  f.controller._stage = { newStage: true }
+  f.controller._boothStatus = "live"
+  response.resolve()
+  await changing
+  assert.equal(mediaChanges, 0)
+  assert.equal(f.controller._boothStatus, "live")
+})
+
+test("R02 terminal SDK leave during confirmation preserves the saved result but requires resume", async () => {
+  const confirmResponse = deferred()
+  const f = fixture({ confirmResponse })
+  const starting = f.controller.startBroadcast()
+  await until(() => f.stages.length === 1)
+  f.stages[0].publish()
+  await until(() => f.confirms === 1)
+  f.stages[0].emit("left")
+  confirmResponse.resolve()
+  await starting
+  assert.equal(f.controller._broadcasting, false)
+  assert.equal(f.controller._resumable, true)
+  assert.equal(f.controller._stage, null)
+  assert.equal(f.controller._publisherRecoveryPending, false)
+  assert.equal(f.requests.filter(r => r.path === "/cancel").length, 0)
+})
+
+for (const rollbackFails of [false, true]) {
+  test(`R01 media switch failure ${rollbackFails ? "requires resume when state recovery fails" : "restores the previous server state"}`, async () => {
+    const f = fixture({ statusFailureOn: rollbackFails ? 2 : 0 })
+    const initial = f.controller.startBroadcast()
+    await until(() => f.stages.length === 1)
+    f.stages[0].publish()
+    await initial
+    f.controller._switchPublishedVideoSource = async source => {
+      if (source === "canvas") throw new Error("canvas unavailable")
+    }
+    await f.controller.changeBoothStatus({ target: { action: "https://example.test/status?to=away" },
+      preventDefault() {}, stopImmediatePropagation() {} })
+    assert.deepEqual(f.requests.filter(r => r.path === "/status").map(r => r.params.to), ["away", "live"])
+    if (rollbackFails) {
+      assert.equal(f.controller._stage, null)
+      assert.equal(f.controller._broadcasting, false)
+      assert.equal(f.controller._resumable, true)
+    } else {
+      assert.equal(f.controller._boothStatus, "live")
+      assert.equal(f.controller._broadcasting, true)
+      assert.equal(f.controller._switchingVideoSource, false)
+    }
+  })
+}
 
 test("S04 camera failure before token issuance keeps preparation without inventing a cancellation", async () => {
   const f = fixture()

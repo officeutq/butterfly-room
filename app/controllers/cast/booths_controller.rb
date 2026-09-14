@@ -83,7 +83,7 @@ module Cast
         select_current_booth(@booth)
       end
 
-      @stream_session = @booth.current_stream_session
+        @stream_session = @booth.current_stream_session
 
       if @stream_session.blank?
         redirect_to cast_booths_path, alert: "配信セッションがありません（配信導線から入り直してください）"
@@ -124,6 +124,10 @@ module Cast
         else
           @stream_session.started_by_cast_user_id == current_user.id && (@booth.live? || @booth.away?)
         end
+      if StreamSessions::PublisherControl.enabled?
+        @publisher_connection = @stream_session.stream_publisher_connections.unreleased.find_by(
+          id: @stream_session.current_publisher_connection_id, user_id: current_user.id)
+      end
     end
 
     def edit
