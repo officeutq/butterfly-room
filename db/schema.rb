@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_14_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_14_070000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -121,16 +121,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_14_000000) do
     t.bigint "booth_id", null: false
     t.datetime "created_at", null: false
     t.datetime "deleted_at"
+    t.bigint "drink_order_id"
     t.string "kind", default: "chat", null: false
     t.jsonb "metadata", default: {}, null: false
     t.bigint "stream_session_id", null: false
     t.datetime "updated_at", null: false
-    t.bigint "user_id", null: false
+    t.bigint "user_id"
     t.index ["booth_id", "created_at"], name: "index_comments_on_booth_id_and_created_at"
     t.index ["booth_id"], name: "index_comments_on_booth_id"
+    t.index ["drink_order_id"], name: "index_comments_on_drink_order_id", unique: true, where: "(drink_order_id IS NOT NULL)"
     t.index ["stream_session_id", "created_at"], name: "index_comments_on_stream_session_id_and_created_at"
     t.index ["stream_session_id"], name: "index_comments_on_stream_session_id"
     t.index ["user_id"], name: "index_comments_on_user_id"
+    t.check_constraint "user_id IS NOT NULL OR COALESCE(kind::text = 'drink_consumed'::text AND metadata @> '{\"publisher_unknown\": true}'::jsonb, false)", name: "comments_user_or_unknown_consumption"
   end
 
   create_table "drink_items", force: :cascade do |t|
@@ -856,6 +859,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_14_000000) do
   add_foreign_key "comment_reports", "users", column: "reported_user_id"
   add_foreign_key "comment_reports", "users", column: "reporter_user_id"
   add_foreign_key "comments", "booths"
+  add_foreign_key "comments", "drink_orders"
   add_foreign_key "comments", "stream_sessions"
   add_foreign_key "comments", "users"
   add_foreign_key "drink_items", "stores"
