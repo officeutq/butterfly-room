@@ -13,6 +13,31 @@ module Cast
     def show
     end
 
+    def retry_publisher_disconnect
+      return head :not_found unless StreamSessions::PublisherControl.enabled?
+
+      booth = Booth.find(params[:id])
+      pending = Ivs::RetryPublisherDisconnectsService.new(booth: booth, actor: current_user).call
+      respond_to do |format|
+        format.json { render json: { disconnect_pending: pending }, status: pending ? :accepted : :ok }
+        format.any do
+          if pending
+            raise StreamSessions::PublisherControl::Error.new(code: "publisher_disconnect_pending",
+              message: "以前の配信接続の切断を確認しています。再確認してください", booth: booth, status: :accepted)
+          end
+          destination = if booth.archived?
+            dashboard_path
+          elsif booth.current_stream_session_id
+            live_cast_booth_path(booth)
+          else
+            cast_booth_path(booth)
+          end
+          redirect_to destination,
+            notice: "配信接続の切断を確認しました", status: :see_other
+        end
+      end
+    end
+
     def select_modal
       load_selectable_booths
 

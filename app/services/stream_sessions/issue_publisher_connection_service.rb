@@ -9,6 +9,8 @@ module StreamSessions
 
     def call
       @booth = @stream_session.booth
+      authorize!
+      Ivs::RetryPublisherDisconnectsService.new(booth: @booth, actor: @actor).ensure_disconnected!
       @booth.with_lock do
         @stream_session.lock!
         authorize!
@@ -74,7 +76,7 @@ module StreamSessions
     end
 
     def authorize!
-      return if Authorization::StreamSessionPolicy.new(@actor, @stream_session).publish_token?
+      return if PublisherControl.active_actor?(@actor) && Authorization::StreamSessionPolicy.new(@actor, @stream_session).publish_token?
 
       reject!("forbidden", "配信を操作する権限がありません", status: :forbidden)
     end

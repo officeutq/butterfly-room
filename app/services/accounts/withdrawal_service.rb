@@ -17,7 +17,9 @@ module Accounts
       result = nil
 
       ActiveRecord::Base.transaction do
-        user = User.lock.find(@user.id)
+        # 新規接続のuser外部キー参照を妨げず、User更新同士は直列化する。
+        # ブース取得後の最新の開始状態を処理し、開始側と逆順の待ちにしない。
+        user = User.lock(StreamSessions::PublisherControl.enabled? ? "FOR NO KEY UPDATE" : true).find(@user.id)
 
         if user.deleted?
           result = Result.new(user:, already_withdrawn: true)
@@ -65,11 +67,32 @@ module Accounts
 
     def clean_up_admin_stores!(user)
       stores = locked_admin_stores(user)
+      booths = if StreamSessions::PublisherControl.enabled?
+        Booth.where(store_id: stores.map(&:id)).order(:id).lock.to_a
+      end
 
       stores.each do |store|
-        next if other_active_admin_exists?(store, user)
+        if other_active_admin_exists?(store, user)
+          booths&.select { |booth| booth.store_id == store.id }&.each { |booth| stop_own_publisher!(booth, user) }
+          next
+        end
 
         close_store!(store, user)
+      end
+    end
+
+    def stop_own_publisher!(booth, user)
+      stream_session = StreamSession.find_by(id: booth.current_stream_session_id)
+      return unless stream_session && !stream_session.ended?
+
+      stream_session.lock!
+      connection = stream_session.stream_publisher_connections.lock.find_by(id: stream_session.current_publisher_connection_id)
+      if stream_session.actual_publisher?(user)
+        StreamSessions::EndService.new(stream_session: stream_session, actor: user,
+          generation: stream_session.publisher_generation, mode: :cleanup).call
+      elsif stream_session.publisher_recording_state == :not_started && connection&.user_id == user.id && connection.released_at.nil?
+        StreamSessions::CancelPublisherConnectionService.new(stream_session: stream_session, actor: user,
+          request_id: connection.request_id, generation: connection.generation).call
       end
     end
 
@@ -80,7 +103,8 @@ module Accounts
                     .order(:store_id)
                     .pluck(:store_id)
 
-      Store.where(id: store_ids).order(:id).lock.to_a
+      Store.where(id: store_ids).order(:id)
+        .lock(StreamSessions::PublisherControl.enabled? ? "FOR NO KEY UPDATE" : true).to_a
     end
 
     def other_active_admin_exists?(store, user)

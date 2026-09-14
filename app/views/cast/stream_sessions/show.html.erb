@@ -1,5 +1,12 @@
 <h1>配信リザルト</h1>
 
+<% if @disconnect_pending %>
+  <div class="alert alert-warning">
+    配信の終了と未消化ドリンクの返却は完了しました。映像の切断を再試行しています。
+    <%= button_to "再確認", retry_publisher_disconnect_cast_booth_path(@booth), class: "btn btn-outline-warning mt-2" %>
+  </div>
+<% end %>
+
 <div class="row g-4">
   <div class="col-12 col-lg-6">
     <div class="card h-100" data-bs-theme="light">

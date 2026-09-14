@@ -22,7 +22,8 @@ async function until(check) {
 function fixture(options = {}) {
   const stages = [], requests = []
   const records = new Map()
-  let generation = options.initialGeneration || 0, reloads = 0, confirms = 0, statusCalls = 0
+  let generation = options.initialGeneration || 0, reloads = 0, confirms = 0, statusCalls = 0, finishes = 0
+  const visits = []
   let stateUnavailable = false, cancelPending = false
   class Stage {
     constructor(token, strategy) {
@@ -48,13 +49,14 @@ function fixture(options = {}) {
   const response = (body, status = 200) => ({ ok: status < 400, status, json: async () => structuredClone(body) })
   const context = vm.createContext({
     console: { log() {}, warn() {} }, URL, crypto: { randomUUID }, Controller: class {}, syncMicUI() {},
-    window: { IVSBroadcastClient: sdk, location: { origin: "https://example.test", reload() { reloads++ } } },
+    window: { IVSBroadcastClient: sdk, location: { origin: "https://example.test", reload() { reloads++ }, assign(url) { visits.push(url) } } },
     document: { querySelector: () => ({ content: "csrf" }), removeEventListener() {} },
     fetch: async (url, request) => {
       const route = new URL(url, "https://example.test")
       const params = request.body ? JSON.parse(request.body) : Object.fromEntries(route.searchParams)
       requests.push({ path: route.pathname, params, method: request.method })
       if (route.pathname === "/token") {
+        if (options.tokenDisconnectPending) return response({ error: "publisher_disconnect_pending", message: "切断を確認しています" }, 202)
         if (options.tokenRejected) return response({ error: "publisher_in_use", message: "開始処理中です" }, 409)
         if (options.tokenUnavailableOnce) {
           options.tokenUnavailableOnce = false
@@ -98,6 +100,14 @@ function fixture(options = {}) {
         record.booth_status = params.to
         return response({ ok: true })
       }
+      if (route.pathname === "/finish") {
+        finishes++
+        if (options.staleFinish) return response({ error: "stale_publisher_request" }, 409)
+        if (options.finishResponse) await options.finishResponse.promise
+        if (options.lostFinishResponse && finishes === 1) throw new Error("network")
+        return response({ state: "ended", stream_session_id: 7, redirect_url: "/result/7", disconnect_pending: !!options.disconnectPending }, options.disconnectPending ? 202 : 200)
+      }
+      if (route.pathname === "/retry-disconnect") return response({ disconnect_pending: !!options.retryDisconnectPending })
       assert.fail(`unexpected request ${route.pathname}`)
     },
   })
@@ -110,7 +120,7 @@ function fixture(options = {}) {
   }
   const controller = Object.assign(new context.PublisherController(), {
     publisherControlValue: true, publisherGenerationValue: options.initialGeneration || 0, streamSessionIdValue: 7,
-    tokenUrlValue: "/token", publisherStateUrlValue: "/state", startBroadcastUrlValue: "/confirm", cancelBroadcastUrlValue: "/cancel", statusUrlValue: "/status",
+    tokenUrlValue: "/token", publisherStateUrlValue: "/state", startBroadcastUrlValue: "/confirm", cancelBroadcastUrlValue: "/cancel", statusUrlValue: "/status", retryPublisherDisconnectUrlValue: "/retry-disconnect",
     hasTokenUrlValue: true, providerValue: "banuba", banubaClientTokenValue: "test-config", _state: "idle", _mode: "normal", _boothStatus: "standby",
     _beautyProvider: { ensureInitialBeautyStateLoaded: async () => {}, start: async () => {}, ensurePublishTrack: async () => {}, videoTrack: { kind: "video" }, stageStream: { track: "processed" } },
     _audioTrack: { kind: "audio" }, _ensureAudioTrack: async () => {},
@@ -121,9 +131,122 @@ function fixture(options = {}) {
   })
   return { controller, stages, requests, records, syncActualUI: () => context.PublisherController.prototype._syncUI.call(controller),
     restoreAttempt: attributes => { const Connection = vm.runInContext("PublisherConnection", context); return new Connection(controller, attributes) },
+    visits, get finishes() { return finishes },
     get reloads() { return reloads }, get confirms() { return confirms },
     set stateUnavailable(value) { stateUnavailable = value }, set cancelPending(value) { cancelPending = value } }
 }
+
+test("E01 unstarted preparation finishes with generation zero and no participant request", async () => {
+  const f = fixture()
+  f.controller.finishUrlValue = "/finish"
+  await f.controller.endBroadcast()
+  assert.deepEqual(f.requests.map(r => r.path), ["/finish"])
+  assert.equal(f.requests[0].params.generation, 0)
+  assert.equal(f.requests[0].params.request_id, null)
+  assert.deepEqual(f.visits, ["/result/7"])
+})
+
+test("E05 an older pending disconnect blocks token issuance and can be rechecked before starting", async () => {
+  const options = { tokenDisconnectPending: true, retryDisconnectPending: true }
+  const f = fixture(options)
+  await f.controller.startBroadcast()
+  assert.equal(f.controller._publisherRecoveryPending, true)
+  assert.equal(f.stages.length, 0)
+  options.retryDisconnectPending = false
+  options.tokenDisconnectPending = false
+  await f.controller.retryPublisherRecovery()
+  assert.equal(f.controller._publisherRecoveryPending, false)
+  const starting = f.controller.startBroadcast()
+  await until(() => f.stages.length === 1)
+  f.stages[0].publish()
+  await starting
+  assert.equal(f.controller._broadcasting, true)
+  assert.equal(f.requests.filter(r => r.path === "/retry-disconnect").length, 2)
+})
+
+test("E01 preparation shows both start and preparation-end controls", () => {
+  const f = fixture()
+  const button = () => {
+    const classes = new Set()
+    const label = {}
+    return { label, dataset: {}, querySelector: () => label,
+      classList: { add: value => classes.add(value), remove: value => classes.delete(value), contains: value => classes.has(value),
+        toggle: (value, on) => on ? classes.add(value) : classes.delete(value) } }
+  }
+  Object.assign(f.controller, { hasStartBtnTarget: true, hasEndBtnTarget: true, startBtnTarget: button(), endBtnTarget: button() })
+  f.syncActualUI()
+  assert.equal(f.controller.startBtnTarget.classList.contains("d-none"), false)
+  assert.equal(f.controller.endBtnTarget.classList.contains("d-none"), false)
+  assert.equal(f.controller.endBtnTarget.label.textContent, "準備終了")
+})
+
+test("E05 lost end response keeps the same request, blocks start and retries that end", async () => {
+  const f = fixture({ lostFinishResponse: true })
+  f.controller.finishUrlValue = "/finish"
+  const starting = f.controller.startBroadcast()
+  await until(() => f.stages.length === 1)
+  f.stages[0].publish()
+  await starting
+  const attempt = f.controller._publisherAttempt
+  await f.controller.endBroadcast()
+  assert.equal(f.controller._publisherRecoveryPending, true)
+  assert.equal(f.controller._broadcasting, false)
+  assert.ok(f.stages[0].leaves > 0)
+  assert.equal(f.visits.length, 0)
+  await f.controller.startBroadcast()
+  assert.equal(f.stages.length, 1)
+  await f.controller.retryPublisherRecovery()
+  const endings = f.requests.filter(r => r.path === "/finish")
+  assert.equal(endings.length, 2)
+  assert.deepEqual(endings[0].params, endings[1].params)
+  assert.equal(endings[0].params.request_id, attempt.requestId)
+  assert.equal(endings[0].params.generation, 1)
+  assert.deepEqual(f.visits, ["/result/7"])
+})
+
+test("E05 external disconnect pending still completes the end and navigates to the result", async () => {
+  const f = fixture({ disconnectPending: true })
+  f.controller.finishUrlValue = "/finish"
+  await f.controller.endBroadcast()
+  assert.deepEqual(f.visits, ["/result/7"])
+  assert.equal(f.controller._boothStatus, "offline")
+})
+
+test("R03 a stale end is not rewritten to a newer request and requires reload", async () => {
+  const f = fixture({ staleFinish: true })
+  f.controller.finishUrlValue = "/finish"
+  await f.controller.endBroadcast()
+  await f.controller.retryPublisherRecovery()
+  assert.equal(f.finishes, 1)
+  assert.equal(f.reloads, 1)
+  assert.equal(f.visits.length, 0)
+})
+
+test("R03 a late end response after leaving cannot navigate or clean up a new connection", async () => {
+  const finishResponse = deferred()
+  const f = fixture({ finishResponse })
+  f.controller.finishUrlValue = "/finish"
+  const ending = f.controller.endBroadcast()
+  await until(() => f.finishes === 1)
+  f.controller.disconnect()
+  const replacement = { requestId: "new" }
+  f.controller._publisherAttempt = replacement
+  f.controller._broadcasting = true
+  finishResponse.resolve()
+  await ending
+  assert.equal(f.controller._publisherAttempt, replacement)
+  assert.equal(f.controller._broadcasting, true)
+  assert.equal(f.visits.length, 0)
+})
+
+test("E05 media cleanup failure does not prevent the server end", async () => {
+  const f = fixture()
+  f.controller.finishUrlValue = "/finish"
+  f.controller._cleanupMediaAndCanvas = async () => { throw new Error("media failed") }
+  await f.controller.endBroadcast()
+  assert.equal(f.finishes, 1)
+  assert.deepEqual(f.visits, ["/result/7"])
+})
 
 test("S03 join completion and a remote published event cannot confirm; local published confirms once with identity and processed video/audio", async () => {
   const f = fixture()

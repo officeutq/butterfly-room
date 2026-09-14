@@ -167,6 +167,7 @@ Rails.application.routes.draw do
 
       get :live, on: :member
       patch :status, on: :member
+      post :retry_publisher_disconnect, on: :member
       resources :stream_sessions, only: %i[index create], module: :booths
     end
 
@@ -212,6 +213,7 @@ Rails.application.routes.draw do
       member do
         patch :archive
         post :force_end
+        post :retry_publisher_disconnect
       end
     end
 

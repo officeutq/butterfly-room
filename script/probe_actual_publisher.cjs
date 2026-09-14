@@ -16,7 +16,7 @@ if (process.argv.length !== 3 || process.argv[2] !== "--run") {
 const execute = promisify(execFile)
 const runId = `issue1298-${randomUUID()}`
 const stageName = `br-local-${runId}`
-const resultPath = `tmp/issue1302-${runId}.json`
+const resultPath = `tmp/issue1303-${runId}.json`
 const events = []
 let stageArn, worker, browser, server, baseUrl
 const pending = []
@@ -46,7 +46,7 @@ function command(input) {
 
 async function main() {
   const created = await aws("create-stage", { name: stageName,
-    tags: { app: "butterfly-room", env: "local-probe", issue: "1298", probe_run: runId, implementation: "1302" } })
+    tags: { app: "butterfly-room", env: "local-probe", issue: "1298", probe_run: runId, implementation: "1303" } })
   stageArn = created.stage.arn
   record("stage_created", { stageArn })
   worker = spawn("docker", ["compose", "exec", "-T", "-e", "RAILS_ENV=test", "-e", "ACTUAL_PUBLISHER_CONTROL_ENABLED=true", "app",
@@ -201,6 +201,30 @@ async function main() {
   assert.equal(external.body.participants[0].published, true)
   assert.notEqual(external.body.participants[0].participant_id, recut.body.disconnected_participant_id)
   record("replacement_survives_old_disconnect", external.body)
+  const ending = await page.evaluate(async () => {
+    const { finishPublisher } = await import("/api_client.js")
+    const { ctx, attempt } = window.probe
+    ctx.finishUrlValue = "/finish"
+    window.probe.endedLeft = false
+    attempt.stage.on(window.IVSBroadcastClient.StageEvents.STAGE_LEFT, () => { window.probe.endedLeft = true })
+    const request = { request_id: attempt.requestId, generation: attempt.generation }
+    const beganAt = Date.now()
+    const result = await finishPublisher(ctx, request)
+    const repeat = await finishPublisher(ctx, request)
+    return { result, repeat, elapsedMs: Date.now() - beganAt }
+  })
+  assert.equal(ending.result.state, "ended")
+  assert.equal(ending.result.disconnect_pending, false)
+  assert.deepEqual(ending.repeat, ending.result)
+  await page.waitForFunction(() => window.probe.endedLeft, null, { timeout: 25000 })
+  record("ended_and_sdk_left", ending)
+  const ended = await command({ operation: "snapshot" })
+  assert.equal(ended.body.ended, true)
+  assert.equal(ended.body.booth_status, "offline")
+  assert.equal(ended.body.current_stream_session_id, null)
+  assert.equal(ended.body.publisher_id, ready.body.publisher_id)
+  assert.equal(ended.body.broadcast_started_at, after.body.broadcast_started_at)
+  record("ended_history_preserved", ended.body)
 }
 
 main().catch(error => { record("probe_error", { message: error.message }); process.exitCode = 1 }).finally(async () => {

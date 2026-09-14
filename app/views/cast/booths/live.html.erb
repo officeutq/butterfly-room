@@ -26,6 +26,7 @@
   data-ivs-publisher-stream-session-id-value="<%= @stream_session.id %>"
   data-ivs-publisher-publisher-state-url-value="<%= publisher_state_cast_stream_session_path(@stream_session) %>"
   data-ivs-publisher-cancel-broadcast-url-value="<%= cancel_broadcast_cast_stream_session_path(@stream_session) %>"
+  data-ivs-publisher-retry-publisher-disconnect-url-value="<%= retry_publisher_disconnect_cast_booth_path(@booth) %>"
   data-ivs-publisher-mirror-value="true"
   data-ivs-publisher-initial-mode-value="<%= @booth.away? ? "away" : "normal" %>"
   data-ivs-publisher-initial-booth-status-value="<%= @booth.status %>"
