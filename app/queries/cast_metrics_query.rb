@@ -81,7 +81,7 @@ class CastMetricsQuery
       .joins(:stream_session)
       .where(store_id: store.id)
       .where(occurred_at: from...to)
-      .group("stream_sessions.#{publisher_column}")
+      .group(StreamSession.arel_table[publisher_column])
       .sum(:points)
       .compact
   end
