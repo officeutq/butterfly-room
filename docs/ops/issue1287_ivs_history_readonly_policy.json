@@ -1,0 +1,29 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadIssue1287HistoricalPublisherEvidence",
+      "Effect": "Allow",
+      "Action": [
+        "ivs:GetStage",
+        "ivs:ListStageSessions",
+        "ivs:ListParticipants",
+        "ivs:GetParticipant",
+        "ivs:ListParticipantEvents"
+      ],
+      "Resource": [
+        "arn:aws:ivs:ap-northeast-1:137775584467:stage/f9zeDOigmiyI",
+        "arn:aws:ivs:ap-northeast-1:137775584467:stage/h419l0vAIL8Y",
+        "arn:aws:ivs:ap-northeast-1:137775584467:stage/g7TNL2OzqeB2",
+        "arn:aws:ivs:ap-northeast-1:137775584467:stage/90sOhPHQieFi",
+        "arn:aws:ivs:ap-northeast-1:137775584467:stage/Ab3dtIlYDTD8",
+        "arn:aws:ivs:ap-northeast-1:137775584467:stage/DLv2FeThqDm7",
+        "arn:aws:ivs:ap-northeast-1:137775584467:stage/dS7eo4ufIrQt",
+        "arn:aws:ivs:ap-northeast-1:137775584467:stage/hF0lb6efJ3dr",
+        "arn:aws:ivs:ap-northeast-1:137775584467:stage/VcLgLdwmgo1D",
+        "arn:aws:ivs:ap-northeast-1:137775584467:stage/YCzG0aZz9SCa",
+        "arn:aws:ivs:ap-northeast-1:137775584467:stage/Z6BsCsuOz3bX"
+      ]
+    }
+  ]
+}
