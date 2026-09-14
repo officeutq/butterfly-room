@@ -13,7 +13,7 @@ async function publisherJson(url, method, params) {
     ...(method === "GET" ? {} : { body: JSON.stringify(params) }),
   })
   const body = await resp.json()
-  if (!resp.ok) {
+  if (!resp.ok || (body.error && !body.state)) {
     const error = new Error(body.message || "配信操作を完了できませんでした。再確認してください。")
     error.status = resp.status
     error.code = body.error
@@ -44,6 +44,14 @@ export function changePublisherStatus(ctx, attempt, to) {
   return publisherJson(ctx.statusUrlValue, "PATCH", {
     stream_session_id: ctx.streamSessionIdValue, request_id: attempt.requestId, generation: attempt.generation, to,
   })
+}
+
+export function finishPublisher(ctx, request) {
+  return publisherJson(ctx.finishUrlValue, "POST", request)
+}
+
+export function retryPublisherDisconnect(ctx) {
+  return publisherJson(ctx.retryPublisherDisconnectUrlValue, "POST", {})
 }
 
 export async function fetchParticipantToken(ctx, role) {

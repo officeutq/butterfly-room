@@ -3,7 +3,9 @@
 # #1298 の調査用。Rails/DB は起動せず、AWS SDK の代替応答だけを使用する。
 # AWS の実接続・トークン失効・応答反映時間を検証するものではない。
 require "aws-sdk-ivsrealtime"
+require "active_support/all"
 require_relative "../app/services/ivs/client"
+require_relative "../app/services/ivs/participant_snapshot_service"
 
 sdk = Aws::IVSRealTime::Client.new(
   region: "ap-northeast-1",
@@ -29,13 +31,13 @@ rescue ArgumentError => e
   puts "#{label}: #{e.message}"
 end
 
-expect_argument_error("current list_participants", "missing required parameter params[:session_id]") do
-  wrapper.list_participants(stage_arn: stage_arn)
+expect_argument_error("legacy list_participants request", "missing required parameter params[:session_id]") do
+  sdk.list_participants(stage_arn: stage_arn)
 end
 
-expect_argument_error("current disconnect_participant", "unexpected value at params[:stage_session_id]") do
-  wrapper.disconnect_participant(
-    stage_arn: stage_arn, session_id: stage_session_id, participant_id: participant_id
+expect_argument_error("legacy disconnect_participant request", "unexpected value at params[:stage_session_id]") do
+  sdk.disconnect_participant(
+    stage_arn: stage_arn, stage_session_id: stage_session_id, participant_id: participant_id
   )
 end
 
@@ -60,6 +62,10 @@ participant = sdk.get_participant(
 ).participant
 abort "attribute mismatch" unless participant.attributes.fetch("user_id") == "456"
 puts "get_participant(stage_arn:, session_id:, participant_id:) -> attributes: OK"
+
+abort "wrapper attributes missing" unless wrapper.list_participants(stage_arn: stage_arn).first.attributes["user_id"] == "456"
+wrapper.disconnect_participant(stage_arn: stage_arn, participant_id: participant_id)
+puts "current Ivs::Client snapshot and disconnect accepted: OK"
 
 sdk.disconnect_participant(stage_arn: stage_arn, participant_id: participant_id)
 puts "disconnect_participant(stage_arn:, participant_id:) accepted by SDK validation: OK"

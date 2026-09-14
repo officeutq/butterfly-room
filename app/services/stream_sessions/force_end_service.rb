@@ -2,12 +2,19 @@
 
 module StreamSessions
   class ForceEndService
-    def initialize(stream_session:, actor:)
+    def initialize(stream_session:, actor:, generation: nil, cleanup: false)
       @stream_session = stream_session
       @actor = actor
+      @generation = generation
+      @cleanup = cleanup
     end
 
     def call
+      if PublisherControl.enabled?
+        return EndService.new(stream_session: @stream_session, actor: @actor,
+          generation: @generation, mode: @cleanup ? :cleanup : :force).call
+      end
+
       disconnect_publisher_participant
       ended_session = StreamSessions::EndService.new(
         stream_session: @stream_session,
@@ -43,14 +50,12 @@ module StreamSessions
 
       client.disconnect_participant(
         stage_arn: stage_arn,
-        session_id: target.stage_session_id,
         participant_id: target.participant_id
       )
 
       Rails.logger.info(
         "[ForceEnd] publisher participant disconnected " \
         "stream_session_id=#{@stream_session.id} " \
-        "stage_session_id=#{target.stage_session_id} " \
         "participant_id=#{target.participant_id}"
       )
     rescue Aws::IVSRealTime::Errors::ServiceError => e

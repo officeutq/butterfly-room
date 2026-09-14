@@ -142,7 +142,7 @@ class StreamSessions::PublisherConnectionsTest < ActiveSupport::TestCase
   test "S04 取消失敗は開始権を保持し同じ要求の再確認だけを切断する" do
     with_publisher_client do
       first = issue_token
-      @ivs_client.stub_responses(:disconnect_participant, [ "AccessDeniedException", {} ])
+      @ivs_client.stub_responses(:disconnect_participant, [ "AccessDeniedException", "AccessDeniedException", {} ])
       result = cancel_token(first)
       assert_equal "cancel_pending", result[:state]
       assert result[:disconnect_pending]
@@ -152,13 +152,13 @@ class StreamSessions::PublisherConnectionsTest < ActiveSupport::TestCase
       assert_equal 1, connection.disconnect_attempts
       assert_equal "Aws::IVSRealTime::Errors::AccessDeniedException", connection.last_disconnect_error
       assert connection.next_disconnect_retry_at > Time.current
-      assert_rejected("publisher_in_use") { issue_token(generation: 2) }
+      assert_rejected("publisher_disconnect_pending") { issue_token(generation: 2) }
       assert_equal "cancelled", cancel_token(first)[:state]
-      assert_equal 2, connection.reload.disconnect_attempts
+      assert_equal 3, connection.reload.disconnect_attempts
       assert connection.released_at
       assert_nil connection.last_disconnect_error
       assert_nil connection.next_disconnect_retry_at
-      assert_equal [ first[:participant_id], first[:participant_id] ], disconnect_requests.map { |r| r[:participant_id] }
+      assert_equal [ first[:participant_id] ] * 3, disconnect_requests.map { |r| r[:participant_id] }
     end
   end
 

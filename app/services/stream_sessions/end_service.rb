@@ -6,12 +6,20 @@ module StreamSessions
     class NotAuthorized < Error; end
     class AlreadyEnded < Error; end
 
-    def initialize(stream_session:, actor:)
+    def initialize(stream_session:, actor:, request_id: nil, generation: nil, mode: :normal)
       @stream_session = stream_session
       @actor = actor
+      @request_id = request_id
+      @generation = generation
+      @mode = mode
     end
 
     def call
+      if PublisherControl.enabled?
+        return EndPublisherService.new(stream_session: @stream_session, actor: @actor,
+          request_id: @request_id, generation: @generation, mode: @mode).call
+      end
+
       authorize!
 
       ended_session = nil

@@ -15,8 +15,13 @@ module Booths
     private
 
     def validate!
-      reject!("forbidden", "選択できないブースです", status: :forbidden) unless Authorization::BoothPolicy.new(@actor, @booth).update?
+      unless StreamSessions::PublisherControl.active_actor?(@actor) && Authorization::BoothPolicy.new(@actor, @booth).update?
+        reject!("forbidden", "選択できないブースです", status: :forbidden)
+      end
       reject!("not_joinable", "閉鎖済みのブースでは配信できません") if @booth.archived?
+      if Ivs::RetryPublisherDisconnectsService.pending(booth: @booth, actor: @actor).exists?
+        reject!("publisher_disconnect_pending", "以前の配信接続の切断を確認しています。再確認してください", status: :accepted)
+      end
       if StreamSession.actually_broadcasting_by(@actor).where.not(booth_id: @booth.id).exists?
         reject!("publisher_in_use", "他のブースで配信中のため開始できません")
       end

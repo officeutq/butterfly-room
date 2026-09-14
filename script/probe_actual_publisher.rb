@@ -51,7 +51,12 @@ begin
       when "snapshot"
         { session_id: session.id, creator_id: session.started_by_cast_user_id, publisher_id: session.actual_publisher_user_id,
           source: session.actual_publisher_source, broadcast_started_at: session.broadcast_started_at, booth_status: session.booth.status,
-          connections: session.stream_publisher_connections.count, confirmed_at: session.current_publisher_connection&.confirmed_at }
+          connections: session.stream_publisher_connections.count, confirmed_at: session.current_publisher_connection&.confirmed_at,
+          ended: session.ended?, current_stream_session_id: session.booth.current_stream_session_id }
+      when "finish"
+        ended = StreamSessions::EndService.new(stream_session: session, actor: publisher,
+          request_id: input["request_id"], generation: input["generation"]).call
+        StreamSessions::PublisherStateService.ended_payload(stream_session: ended).merge(redirect_url: "/probe-result")
       when "status"
         updated = StreamSessions::StatusService.new(booth: session.booth, actor: publisher, to_status: input["to"],
           stream_session_id: session.id, request_id: input["request_id"], generation: input["generation"]).call

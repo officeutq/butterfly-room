@@ -15,6 +15,7 @@ module Booths
 
     def call
       authorize!
+      Ivs::RetryPublisherDisconnectsService.new(booth: @booth, actor: @actor).ensure_disconnected! if StreamSessions::PublisherControl.enabled?
 
       Booth.transaction do
         booth = Booth.lock.find(@booth.id)

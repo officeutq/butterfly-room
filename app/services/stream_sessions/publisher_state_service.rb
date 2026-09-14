@@ -8,7 +8,7 @@ module StreamSessions
 
     def call
       booth = @stream_session.booth
-      unless Authorization::StreamSessionPolicy.new(@actor, @stream_session).publish_token?
+      unless PublisherControl.active_actor?(@actor) && Authorization::StreamSessionPolicy.new(@actor, @stream_session).publish_token?
         raise PublisherControl::Error.new(code: "forbidden", message: "配信を操作する権限がありません", booth: booth, status: :forbidden)
       end
 
@@ -23,6 +23,12 @@ module StreamSessions
     end
 
     # 認可済み・ロック済みの発行／取消からも同じ応答を返す。トークン文字列は含めない。
+    def self.ended_payload(stream_session:)
+      pending = stream_session.stream_publisher_connections.disconnect_pending.unreleased.exists?
+      { state: "ended", stream_session_id: stream_session.id, current_generation: stream_session.publisher_generation,
+        disconnect_pending: pending, message: pending ? "配信の終了と未消化ドリンクの返却は完了しました。映像の切断を再試行しています" : "今回の配信が終了しました" }
+    end
+
     def self.payload(connection:, stream_session:, booth: stream_session.booth)
       state =
         if stream_session.ended?

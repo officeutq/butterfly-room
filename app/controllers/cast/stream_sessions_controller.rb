@@ -49,6 +49,8 @@ module Cast
         )
 
       @booth = booth
+      @disconnect_pending = StreamSessions::PublisherControl.enabled? &&
+        @stream_session.stream_publisher_connections.disconnect_pending.unreleased.exists?
       @cast_user = @stream_session.started_by_cast_user
 
       @comment_count =
@@ -89,12 +91,29 @@ module Cast
     def finish
       ended_session = StreamSessions::EndService.new(
         stream_session: @stream_session,
-        actor: current_user
+        actor: current_user, request_id: params[:request_id], generation: params[:generation]
       ).call
 
+      if StreamSessions::PublisherControl.enabled?
+        result = StreamSessions::PublisherStateService.ended_payload(stream_session: ended_session)
+        destination = cast_stream_session_path(ended_session)
+        return respond_to do |format|
+          format.json do
+            flash[:notice] = result[:message]
+            render json: result.merge(redirect_url: destination), status: result[:disconnect_pending] ? :accepted : :ok
+          end
+          format.any { redirect_to destination, notice: result[:message], status: :see_other }
+        end
+      end
       redirect_to cast_stream_session_path(ended_session),
                   notice: "今回の配信が終了しました"
+    rescue StreamSessions::PublisherControl::Error => error
+      render_publisher_entry_error(error)
     rescue => e
+      if StreamSessions::PublisherControl.enabled? && request.format.json?
+        Rails.logger.error("publisher_end_failed stream_session_id=#{@stream_session.id} error=#{e.class.name}")
+        return render json: { error: "publisher_state_unavailable", message: "配信の終了結果を確認できません。再確認してください" }, status: :service_unavailable
+      end
       redirect_to live_cast_booth_path(@stream_session.booth_id), alert: e.message
     end
 
@@ -196,7 +215,7 @@ module Cast
     def authorize_stream_session_access!
       return if operable_booth_for_stream_session?(@stream_session.booth)
 
-      session.delete(:current_booth_id) unless StreamSessions::PublisherControl.enabled? && %w[publisher_state cancel_broadcast start_broadcast].include?(action_name)
+      session.delete(:current_booth_id) unless StreamSessions::PublisherControl.enabled? && %w[publisher_state cancel_broadcast start_broadcast finish].include?(action_name)
       head :forbidden
     end
 

@@ -11,7 +11,7 @@ module StreamSessions
       @booth = @stream_session.booth
       @booth.with_lock do
         @stream_session.lock!
-        unless Authorization::BoothPolicy.new(@actor, @booth).update?
+        unless PublisherControl.active_actor?(@actor) && Authorization::BoothPolicy.new(@actor, @booth).update?
           reject!("forbidden", "配信を操作する権限がありません", status: :forbidden)
         end
         stale! unless PublisherControl.valid_request_id?(@request_id) && @generation

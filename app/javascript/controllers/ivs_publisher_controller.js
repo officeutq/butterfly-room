@@ -1,6 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import { clearError, humanizeError, setError } from "controllers/ivs_publisher/errors"
-import { fetchParticipantToken, patchBoothStatus, patchBroadcastStartedAt, postFinish, reloadMetaDisplay, changePublisherStatus } from "controllers/ivs_publisher/api_client"
+import { fetchParticipantToken, patchBoothStatus, patchBroadcastStartedAt, postFinish, reloadMetaDisplay, changePublisherStatus, finishPublisher } from "controllers/ivs_publisher/api_client"
 import { syncCanvasResolutionToMeasured, startCanvasRenderLoop, stopCanvasRenderLoop } from "controllers/ivs_publisher/away_canvas"
 import { waitForBanubaRenderedNode } from "controllers/ivs_publisher/banuba_session"
 import { cleanupBanubaPublishTrack, cleanupCameraMedia, cleanupMediaAndCanvas, cleanupStage, ensureAudioTrack, ensureCameraVideoTrack, ensureCanvasPublishTrack } from "controllers/ivs_publisher/media_state"
@@ -47,6 +47,7 @@ export default class extends Controller {
     startBroadcastUrl: String,
     publisherStateUrl: String,
     cancelBroadcastUrl: String,
+    retryPublisherDisconnectUrl: String,
     publisherControl: { type: Boolean, default: false },
     publisherGeneration: Number,
     streamSessionId: Number,
@@ -82,6 +83,9 @@ export default class extends Controller {
     this._publisherStartOperation = null
     this._publisherRecoveryPending = false
     this._publisherRecovering = false
+    this._publisherEndRequest = null
+    this._publisherEnding = false
+    this._publisherEndNeedsReload = false
     this._stage = null
     this._strategy = null
 
@@ -198,6 +202,7 @@ export default class extends Controller {
   }
 
   disconnect() {
+    this._publisherEndRequest = null
     document.removeEventListener("turbo:before-cache", this._beforeCache)
 
     if (window.publisher === this) {
@@ -386,6 +391,7 @@ export default class extends Controller {
 
   async endBroadcast(opts = {}) {
     const { skipFinish = false } = opts
+    if (this.publisherControlValue && !skipFinish && !this._publisherStartOperation) return this._finishPublisher()
     this._setState("stopping")
     this.closeEffectPanel()
     this.closeBeautyPanel()
@@ -429,6 +435,54 @@ export default class extends Controller {
     }
   }
 
+  async _finishPublisher() {
+    if (this._publisherEnding) return
+    const attempt = this._publisherAttempt
+    const generation = this.publisherGenerationValue
+    const requestId = attempt?.generation === generation ? attempt.requestId :
+      (this.existingRequestGenerationValue === generation ? this.existingRequestIdValue : null)
+    this._publisherEndRequest ||= { request_id: requestId || null, generation }
+    const request = this._publisherEndRequest
+    this._publisherEnding = true
+    this._publisherRecovering = true
+    this._publisherRecoveryPending = true
+    this._setState("stopping")
+    this.closeEffectPanel()
+    this.closeBeautyPanel()
+    attempt?.invalidate()
+    this._cleanupStage()
+    this._broadcasting = false
+    this._syncUI()
+    try {
+      try { await this._cleanupMediaAndCanvas() } catch (_) {}
+      if (this._publisherEndRequest !== request) return
+      const result = await finishPublisher(this, request)
+      if (this._publisherEndRequest !== request) return
+      if (result.state !== "ended" || result.stream_session_id !== this.streamSessionIdValue || !result.redirect_url) {
+        throw new Error("publisher_end_response_mismatch")
+      }
+      this._boothStatus = "offline"
+      this._resumable = false
+      this._setState("idle")
+      this._clearError()
+      if (window.Turbo?.visit) window.Turbo.visit(result.redirect_url)
+      else window.location.assign(result.redirect_url)
+    } catch (error) {
+      if (this._publisherEndRequest !== request) return
+      this._publisherEndNeedsReload = error.status === 403 || error.code === "stale_publisher_request"
+      this._setState("error")
+      this._setError(this._publisherEndNeedsReload
+        ? "配信の状態が更新されています。画面を読み込み直してください。"
+        : "配信の終了結果を確認できませんでした。「再確認」で同じ配信の終了を確認してください。")
+    } finally {
+      if (this._publisherEndRequest === request) {
+        this._publisherEnding = false
+        this._publisherRecovering = false
+        this._syncUI()
+      }
+    }
+  }
+
   _completePublisherStart(attempt) {
     if (attempt) this.publisherGenerationValue = attempt.currentGeneration
     this._publisherRecoveryPending = false
@@ -460,6 +514,10 @@ export default class extends Controller {
   }
 
   async retryPublisherRecovery() {
+    if (this._publisherEndRequest) {
+      if (this._publisherEndNeedsReload) return window.location.reload()
+      return this._finishPublisher()
+    }
     const attempt = this._publisherAttempt
     if (!attempt || this._publisherStartOperation || this._publisherRecovering) return
     if (attempt.needsReload) return window.location.reload()
@@ -1353,16 +1411,17 @@ export default class extends Controller {
         this.endBtnTarget.classList.remove("d-none")
       } else {
         this.startBtnTarget.classList.remove("d-none")
-        this.endBtnTarget.classList.add("d-none")
+        this.endBtnTarget.classList.toggle("d-none", !(this.publisherControlValue && (this._boothStatus === "standby" || this._resumable)))
       }
       this.startBtnTarget.disabled = Boolean(this._publisherRecoveryPending || this._publisherRecovering)
+      this.endBtnTarget.disabled = Boolean(this._publisherRecoveryPending || this._publisherRecovering)
       const endLabel = this.endBtnTarget.querySelector(".app-footer-nav-label")
-      if (endLabel) endLabel.textContent = starting ? "開始を取り消す" : "配信終了"
+      if (endLabel) endLabel.textContent = starting ? "開始を取り消す" : (this._boothStatus === "standby" ? "準備終了" : "配信終了")
     }
     if (this.hasRetryPublisherBtnTarget) {
       this.retryPublisherBtnTarget.classList.toggle("d-none", !this._publisherRecoveryPending)
       this.retryPublisherBtnTarget.disabled = Boolean(this._publisherRecovering || starting)
-      this.retryPublisherBtnTarget.textContent = this._publisherAttempt?.needsReload ? "画面を更新" : "再確認"
+      this.retryPublisherBtnTarget.textContent = (this._publisherEndRequest ? this._publisherEndNeedsReload : this._publisherAttempt?.needsReload) ? "画面を更新" : "再確認"
     }
     if (this.hasErrorCloseBtnTarget) this.errorCloseBtnTarget.classList.toggle("d-none", Boolean(this._publisherRecoveryPending))
 

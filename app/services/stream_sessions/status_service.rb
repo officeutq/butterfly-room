@@ -75,7 +75,7 @@ module StreamSessions
           stream_session.publisher_generation == @generation && connection.released_at.nil? && connection.disconnect_requested_at.nil?
         raise PublisherControl::Error.new(code: "stale_publisher_request", message: "配信の状態が更新されています。画面を読み込み直してください", booth: booth)
       end
-      unless stream_session.actual_publisher?(@actor) && connection.user_id == @actor.id &&
+      unless PublisherControl.active_actor?(@actor) && stream_session.actual_publisher?(@actor) && connection.user_id == @actor.id &&
           Authorization::StreamSessionPolicy.new(@actor, stream_session).publish_token?
         raise PublisherControl::Error.new(code: "forbidden", message: "実際に配信している本人だけが状態を変更できます", booth: booth, status: :forbidden)
       end

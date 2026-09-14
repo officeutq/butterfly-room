@@ -21,10 +21,9 @@ class StreamSessions::ForceEndServiceTest < ActiveSupport::TestCase
       @participants
     end
 
-    def disconnect_participant(stage_arn:, session_id:, participant_id:)
+    def disconnect_participant(stage_arn:, participant_id:)
       @disconnect_participant_calls << {
         stage_arn: stage_arn,
-        session_id: session_id,
         participant_id: participant_id
       }
       nil
@@ -84,7 +83,7 @@ class StreamSessions::ForceEndServiceTest < ActiveSupport::TestCase
 
     disconnect_call = fake_client.disconnect_participant_calls.first
     assert_equal @booth.ivs_stage_arn, disconnect_call[:stage_arn]
-    assert_equal "stage-session-1", disconnect_call[:session_id]
+    refute disconnect_call.key?(:session_id)
     assert_equal "participant-1", disconnect_call[:participant_id]
 
     @stream_session.reload

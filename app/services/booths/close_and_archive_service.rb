@@ -13,16 +13,15 @@ module Booths
     end
 
     def call!
-      booth = Booth.find(@booth.id)
-      return Result.new(booth:, archived: false) if booth.archived?
-
-      end_stream_session_if_needed!(booth)
-
+      booth = @booth
       archived = false
 
       Booth.transaction do
         booth = Booth.lock.find(booth.id)
         next if booth.archived?
+
+        end_stream_session_if_needed!(booth)
+        booth.reload
 
         unless booth.offline? && booth.current_stream_session_id.nil?
           raise InconsistentState, "ブース##{booth.id}の配信状態が整っていないためアーカイブできません"
@@ -53,7 +52,9 @@ module Booths
 
         StreamSessions::ForceEndService.new(
           stream_session:,
-          actor: @actor
+          actor: @actor,
+          generation: stream_session.publisher_generation,
+          cleanup: true
         ).call
       else
         raise InconsistentState, "ブース##{booth.id}の状態を判定できません"

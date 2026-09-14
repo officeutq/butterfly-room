@@ -27,27 +27,12 @@ module Ivs
     end
 
     def list_participants(stage_arn:)
-      participants = []
-      next_token = nil
-
-      loop do
-        resp = @client.list_participants(
-          stage_arn: stage_arn,
-          next_token: next_token
-        )
-
-        participants.concat(resp.participants)
-        next_token = resp.next_token
-        break if next_token.blank?
-      end
-
-      participants
+      ParticipantSnapshotService.new(stage_arn: stage_arn, client: @client).call.participants
     end
 
-    def disconnect_participant(stage_arn:, session_id:, participant_id:)
+    def disconnect_participant(stage_arn:, participant_id:)
       @client.disconnect_participant(
         stage_arn: stage_arn,
-        stage_session_id: session_id,
         participant_id: participant_id
       )
     end

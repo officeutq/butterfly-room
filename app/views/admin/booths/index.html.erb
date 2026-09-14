@@ -97,6 +97,10 @@
             </div>
 
             <div class="mt-auto pt-3">
+              <% if @disconnect_pending_booth_ids&.include?(booth.id) %>
+                <div class="alert alert-warning small">映像の切断を再試行しています。確認が完了するまで、このブースの次の配信は開始できません。</div>
+                <%= button_to "再確認", retry_publisher_disconnect_admin_booth_path(booth), class: "btn btn-outline-warning btn-sm mb-2" %>
+              <% end %>
               <% if archived %>
                 <div class="text-muted small">閉鎖済みのため操作できません</div>
               <% else %>
@@ -121,6 +125,7 @@
                   <% if can_force_end %>
                     <%= button_to "強制終了",
                           force_end_admin_booth_path(booth),
+                          params: { stream_session_id: booth.current_stream_session_id, generation: booth.current_stream_session&.publisher_generation },
                           method: :post,
                           class: "btn btn-outline-danger btn-sm",
                           data: { turbo_confirm: "このブースの配信を強制終了します。よろしいですか？" } %>
@@ -129,6 +134,7 @@
                   <% if (booth.offline? && booth.current_stream_session_id.blank?) || booth.standby? %>
                     <%= button_to "閉鎖",
                           archive_admin_booth_path(booth),
+                          params: { stream_session_id: booth.current_stream_session_id.to_s, generation: booth.current_stream_session&.publisher_generation },
                           method: :patch,
                           class: "btn btn-outline-danger btn-sm",
                           data: { turbo_confirm: "このブースを閉鎖します。よろしいですか？" } %>

@@ -10,6 +10,10 @@
 #     schedule: at 5am every day
 
 production:
+  retry_pending_publisher_disconnects:
+    class: RetryPendingPublisherDisconnectsJob
+    queue: default
+    schedule: every minute
   image_attachment_staged_blob_cleanup:
     class: ImageAttachments::StagedBlobCleanupJob
     queue: default

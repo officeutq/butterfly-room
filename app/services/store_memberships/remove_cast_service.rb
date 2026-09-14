@@ -14,6 +14,12 @@ module StoreMemberships
     end
 
     def call!
+      StoreMembership.transaction { remove_membership! }
+    end
+
+    private
+
+    def remove_membership!
       membership = StoreMembership.find_by(id: @membership.id)
       return Result.new(archived_booths_count: 0, membership_removed: false) if membership.blank?
 
@@ -34,8 +40,6 @@ module StoreMemberships
         membership_removed: true
       )
     end
-
-    private
 
     def authorize!(membership)
       raise NotAuthorized if @actor.blank? || @actor.deleted?
