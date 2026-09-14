@@ -2,8 +2,28 @@
 
 module Cast
   class StreamSessionsController < Cast::BaseController
-    before_action :set_stream_session, only: %i[show finish pending_drink_orders meta_display metadata start_broadcast]
-    before_action :authorize_stream_session_access!, only: %i[show finish pending_drink_orders meta_display metadata start_broadcast]
+    before_action :set_stream_session, only: %i[show finish pending_drink_orders meta_display metadata start_broadcast publisher_state cancel_broadcast]
+    before_action :authorize_stream_session_access!, only: %i[show finish pending_drink_orders meta_display metadata start_broadcast publisher_state cancel_broadcast]
+
+    def publisher_state
+      return head :not_found unless StreamSessions::PublisherControl.enabled?
+
+      result = StreamSessions::PublisherStateService.new(stream_session: @stream_session,
+        actor: current_user, request_id: params[:request_id]).call
+      render json: result
+    end
+
+    def cancel_broadcast
+      return head :not_found unless StreamSessions::PublisherControl.enabled?
+
+      result = StreamSessions::CancelPublisherConnectionService.new(stream_session: @stream_session,
+        actor: current_user, request_id: params[:request_id], generation: params[:generation]).call
+      if result[:disconnect_pending]
+        render json: result.merge(error: "publisher_disconnect_pending", message: "開始の取消は接続の確認待ちです。再確認してください"), status: :accepted
+      else
+        render json: result
+      end
+    end
 
     def show
       booth = @stream_session.booth
@@ -170,7 +190,7 @@ module Cast
     def authorize_stream_session_access!
       return if operable_booth_for_stream_session?(@stream_session.booth)
 
-      session.delete(:current_booth_id)
+      session.delete(:current_booth_id) unless StreamSessions::PublisherControl.enabled? && %w[publisher_state cancel_broadcast].include?(action_name)
       head :forbidden
     end
 

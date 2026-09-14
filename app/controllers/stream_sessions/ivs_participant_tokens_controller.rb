@@ -22,6 +22,12 @@ module StreamSessions
       stream_session = find_stream_session_for(role)
       booth = stream_session.booth
 
+      if role == "publisher" && PublisherControl.enabled?
+        result = IssuePublisherConnectionService.new(stream_session: stream_session, actor: current_user,
+          request_id: params[:request_id], expected_generation: params[:expected_generation]).call
+        return render json: result
+      end
+
       # booth 固定 stage と stream_session の stage が一致しないのは不整合（事故/旧データ混在）
       # すぐに 409 で止める
       if booth.ivs_stage_arn.present? && stream_session.ivs_stage_arn != booth.ivs_stage_arn
@@ -71,6 +77,8 @@ module StreamSessions
         role: role,
         participant_token: token
       }
+    rescue PublisherControl::Error => error
+      render json: error.details.merge(error: error.code, message: error.message), status: error.status
     rescue ActiveRecord::RecordNotFound
       render json: { error: "not_found" }, status: :not_found
     rescue ActionController::ParameterMissing

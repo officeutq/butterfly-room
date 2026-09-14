@@ -9,7 +9,7 @@ module PublisherEntryErrors
 
   def render_publisher_entry_error(error)
     respond_to do |format|
-      format.json { render json: { error: error.code, message: error.message }, status: error.status }
+      format.json { render json: error.details.merge(error: error.code, message: error.message), status: error.status }
       format.any do
         @publisher_entry_error = error
         render "cast/booths/publisher_entry_error", formats: [ :html ], status: error.status

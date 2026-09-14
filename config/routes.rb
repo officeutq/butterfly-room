@@ -176,6 +176,8 @@ Rails.application.routes.draw do
       get  :meta_display, on: :member
       patch :metadata, on: :member
       patch :start_broadcast, on: :member
+      get :publisher_state, on: :member
+      post :cancel_broadcast, on: :member
     end
 
     resources :drink_orders, only: [] do

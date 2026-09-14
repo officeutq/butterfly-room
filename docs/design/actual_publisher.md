@@ -270,11 +270,15 @@ Yが不明な金額・時間はuser=NULLの「配信者不明」行へ集約し�
 
 ## 9. 実装順序・有効化・運用
 
-#1282で2節の保存領域・共通参照を追加。配信操作からの記録・制御への接続と、新方式の有効化は未実施。新列が空欄の既存データを維持する。
+#1282は2節の保存領域・共通参照を追加する範囲として完了。新列が空欄の既存データを維持する。新方式全体の有効化は未実施。
 
 #1299で準備入口に `Booths::ValidatePublisherEntryService` と `Ivs::ParticipantSnapshotService` を接続した。新規準備はStartService、既存準備はEnterAsCastService、配信画面の直リンクは認可後の同じ検証を使う。旧準備はID・X・タイトルを保持し、Yの他ブース配信・他人の配信・不整合を区別する。既にDBで整合する本人の復帰画面は追加の外部照会を行わず、トークン発行時の照合は後続Issueが担当する。
 
-全入口は `StreamSessions::PublisherControl.enabled?`（環境変数 `ACTUAL_PUBLISHER_CONTROL_ENABLED=true` の場合のみtrue、既定false）で揃える。新方式の照会失敗は503と同じ対象の「再確認」を表示し、成功までブース選択を書き換えない。配信準備POSTはURLのbooth_idを対象にし、現在選択中の別ブースへ読み替えない。情報閲覧・情報用選択で準備を作成せず、トークン・成功確定・再接続・終了の新経路はまだ未接続。
+全入口は `StreamSessions::PublisherControl.enabled?`（環境変数 `ACTUAL_PUBLISHER_CONTROL_ENABLED=true` の場合のみtrue、既定false）で揃える。新方式の照会失敗は503と同じ対象の「再確認」を表示し、成功までブース選択を書き換えない。配信準備POSTはURLのbooth_idを対象にし、現在選択中の別ブースへ読み替えない。情報閲覧・情報用選択で準備を作成せず、選択方式そのものは変更しない。
+
+#1300で新方式の発行・要求状態の取得・未確定要求の取消を接続。発行APIは `request_id` と `expected_generation`、取消APIは `request_id` と当該接続の `generation` を受け取る。状態応答は要求側のgenerationとセッションの `current_generation` を分け、取消で世代が進んでも元の要求を指定して再確認できる。トークンは再取得せず、同じIDの再送は `token_already_issued` と要求状態を返す。
+
+開始権・参加者IDの保存は発行Serviceの同じトランザクションで確定し、失敗側は勝者を変更しない。取消は保存したIDへの同期切断が成功するまで開始権を維持する。`Ivs::DisconnectPublisherConnectionService` は外部切断だけを行い、成功・失敗と再試行予定を保存する。切断待ちの定期ジョブ・終了経路との接続は#1303、成功確定は#1301、成功済みの再接続は#1302。共通の有効化は引き続き既定false。
 
 1. #1281：本書と関連仕様書・Issueを揃え、設計だけのPRを完了する。
 2. #1282：保存領域と参照APIだけを追加。既存レコードの状態・人物を変更しない。
