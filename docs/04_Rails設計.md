@@ -318,7 +318,7 @@
 
 ### 1.5.2 CastMetricsQuery（店舗管理）
 
-* store_ledger_entries と stream_sessions を集計してキャスト別に返す
+* store_ledger_entries と stream_sessions を集計して配信者別に返す。#1280の共通有効化後はactual_publisher_user_idを使い、所属中の担当者に加えて記録済み配信者（管理者・退会者・所属変更者を含む）を対象とする。不明分はcast_user=nilの行として末尾へ出し、合計から落とさない。期間・消化ポイント・配信時間・率・丸めは維持する
 
 ### 1.5.3 PresenceCountQuery
 
