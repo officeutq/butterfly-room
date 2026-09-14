@@ -2,6 +2,8 @@
 
 module Cast
   class BaseController < ApplicationController
+    include PublisherEntryErrors
+
     before_action -> { require_at_least!(:cast) }
     after_action :store_cast_return_to
 

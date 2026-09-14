@@ -7,7 +7,7 @@ module Cast
 
       booth = Booth.active.find_by(id: booth_id)
       if booth.blank?
-        session.delete(:current_booth_id)
+        session.delete(:current_booth_id) unless StreamSessions::PublisherControl.enabled?
         redirect_to cast_booths_path, alert: "ブースが見つかりません"
         return
       end
@@ -22,7 +22,7 @@ module Cast
         end
 
       unless allowed
-        session.delete(:current_booth_id)
+        session.delete(:current_booth_id) unless StreamSessions::PublisherControl.enabled?
         redirect_to cast_booths_path, alert: "選択できないブースです"
         return
       end
@@ -33,7 +33,7 @@ module Cast
         return
       end
 
-      session[:current_booth_id] = booth.id
+      session[:current_booth_id] = booth.id unless StreamSessions::PublisherControl.enabled?
 
       result = ::Booths::EnterAsCastService.new(
         booth: booth,
@@ -42,6 +42,7 @@ module Cast
 
       case result.action
       when :redirect_live
+        select_current_booth(result.booth) if StreamSessions::PublisherControl.enabled?
         redirect_to resolve_redirect_path(result.booth), notice: "ブースを選択しました"
       when :occupied_by_other
         redirect_to cast_booths_path, alert: "このブースはすでに配信中です"
@@ -51,7 +52,7 @@ module Cast
         redirect_to cast_booths_path, alert: "ブースを開けませんでした"
       end
     rescue ::Booths::EnterAsCastService::NotAuthorized
-      session.delete(:current_booth_id)
+      session.delete(:current_booth_id) unless StreamSessions::PublisherControl.enabled?
       redirect_to cast_booths_path, alert: "選択できないブースです"
     rescue ActionController::ParameterMissing
       redirect_to cast_booths_path, alert: "ブースを選択してください"

@@ -15,7 +15,12 @@ module Cast
       end
 
       def create
-        booth = current_booth
+        booth =
+          if StreamSessions::PublisherControl.enabled?
+            Booth.active.find(params[:booth_id])
+          else
+            current_booth
+          end
         if booth.blank?
           redirect_to cast_booths_path, alert: "選択できないブースです"
           return
@@ -28,6 +33,7 @@ module Cast
 
         case result.action
         when :redirect_live
+          select_current_booth(result.booth) if StreamSessions::PublisherControl.enabled?
           redirect_to live_cast_booth_path(result.booth), notice: "配信画面を開きました"
         when :occupied_by_other
           redirect_to cast_booths_path, alert: "このブースはすでに配信中です"

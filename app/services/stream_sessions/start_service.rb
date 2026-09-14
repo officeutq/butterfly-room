@@ -25,7 +25,11 @@ module StreamSessions
         raise BoothNotOffline, "booth is #{booth.status}" unless booth.offline?
         raise AnotherBoothAlreadyLive, "他のブースで配信中のため開始できません" if another_live_booth_exists?(booth)
 
-        raise BoothStageNotBound, "booth.ivs_stage_arn is blank" if booth.ivs_stage_arn.blank?
+        if PublisherControl.enabled?
+          Booths::ValidatePublisherEntryService.new(booth: booth, actor: @actor, allow_new: true).call
+        else
+          raise BoothStageNotBound, "booth.ivs_stage_arn is blank" if booth.ivs_stage_arn.blank?
+        end
 
         # NOTE:
         # Stage は booth 固定。stream_session は booth.ivs_stage_arn をコピーして保持するだけ。
@@ -70,6 +74,10 @@ module StreamSessions
     end
 
     def another_live_booth_exists?(booth)
+      if PublisherControl.enabled?
+        return StreamSession.actually_broadcasting_by(@actor).where.not(booth_id: booth.id).exists?
+      end
+
       Booth.active
            .joins(:current_stream_session)
            .where(stream_sessions: { started_by_cast_user_id: @actor.id })
