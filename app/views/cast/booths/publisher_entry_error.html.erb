@@ -1,0 +1,10 @@
+<%= turbo_frame_tag request.headers["Turbo-Frame"].presence || "publisher-entry-error" do %>
+  <div class="container py-4">
+    <div class="alert alert-warning" role="alert"><%= @publisher_entry_error.message %></div>
+    <% if @publisher_entry_error.status == :service_unavailable %>
+      <%= button_to "再確認", enter_as_cast_booth_path(@publisher_entry_error.booth),
+                    class: "btn btn-primary", data: { turbo_frame: "_top" } %>
+    <% end %>
+    <%= link_to "ダッシュボードへ", dashboard_path, class: "btn btn-outline-secondary mt-3", data: { turbo_frame: "_top" } %>
+  </div>
+<% end %>

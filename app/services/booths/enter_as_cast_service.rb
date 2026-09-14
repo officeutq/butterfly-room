@@ -22,6 +22,15 @@ module Booths
 
         current_stream_session = booth.current_stream_session
 
+        if StreamSessions::PublisherControl.enabled?
+          if booth.offline? && booth.current_stream_session_id.nil?
+            return handle_offline!(booth, current_stream_session)
+          end
+
+          ValidatePublisherEntryService.new(booth: booth, actor: @actor).call
+          return Result.new(action: :redirect_live, booth: booth, stream_session: current_stream_session)
+        end
+
         if booth.offline?
           return handle_offline!(booth, current_stream_session)
         end

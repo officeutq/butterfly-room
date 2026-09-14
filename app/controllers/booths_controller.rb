@@ -2,6 +2,7 @@
 
 class BoothsController < ApplicationController
   include StoreBanGuard
+  include PublisherEntryErrors
 
   LEGACY_OGP_VARIATION = {
     resize_to_fill: [ 1200, 630 ],
@@ -85,7 +86,7 @@ class BoothsController < ApplicationController
 
     if current_user.cast?
       if BoothCast.exists?(cast_user_id: current_user.id, booth_id: @booth.id)
-        set_current_context_for_booth!
+        set_current_context_for_booth! unless StreamSessions::PublisherControl.enabled?
 
         result = ::Booths::EnterAsCastService.new(
           booth: @booth,
@@ -94,6 +95,7 @@ class BoothsController < ApplicationController
 
         case result.action
         when :redirect_live
+          set_current_context_for_booth! if StreamSessions::PublisherControl.enabled?
           redirect_to live_cast_booth_path(result.booth)
         when :already_live_elsewhere
           redirect_back fallback_location: root_path, alert: "他のブースで配信中のため開始できません"
@@ -138,7 +140,7 @@ class BoothsController < ApplicationController
   def enter_as_cast
     require_at_least!(:cast)
 
-    set_current_context_for_booth!
+    set_current_context_for_booth! unless StreamSessions::PublisherControl.enabled?
 
     result = ::Booths::EnterAsCastService.new(
       booth: @booth,
@@ -147,6 +149,7 @@ class BoothsController < ApplicationController
 
     case result.action
     when :redirect_live
+      set_current_context_for_booth! if StreamSessions::PublisherControl.enabled?
       redirect_to live_cast_booth_path(result.booth)
     when :already_live_elsewhere
       redirect_back fallback_location: root_path, alert: "他のブースで配信中のため開始できません"

@@ -67,7 +67,7 @@ module Cast
         )
       end
     rescue ::Booths::EnterAsCastService::NotAuthorized
-      session.delete(:current_booth_id)
+      session.delete(:current_booth_id) unless StreamSessions::PublisherControl.enabled?
 
       if turbo_frame_request?
         flash[:alert] = "選択できないブースです"
@@ -78,6 +78,11 @@ module Cast
     end
 
     def live
+      if StreamSessions::PublisherControl.enabled?
+        ::Booths::ValidatePublisherEntryService.new(booth: @booth, actor: current_user).call
+        select_current_booth(@booth)
+      end
+
       @stream_session = @booth.current_stream_session
 
       if @stream_session.blank?
@@ -114,8 +119,11 @@ module Cast
       @banuba_effect_name = "beauty_base.zip"
 
       @auto_resume_publish =
-        @stream_session.started_by_cast_user_id == current_user.id &&
-        (@booth.live? || @booth.away?)
+        if StreamSessions::PublisherControl.enabled?
+          @stream_session.actual_publisher?(current_user) && @stream_session.publisher_recording_state == :recorded
+        else
+          @stream_session.started_by_cast_user_id == current_user.id && (@booth.live? || @booth.away?)
+        end
     end
 
     def edit
@@ -337,13 +345,13 @@ module Cast
         end
 
       unless allowed
-        session.delete(:current_booth_id)
+        session.delete(:current_booth_id) unless action_name == "live" && StreamSessions::PublisherControl.enabled?
         head :forbidden
         return
       end
 
       @booth = booth
-      select_current_booth(@booth)
+      select_current_booth(@booth) unless action_name == "live" && StreamSessions::PublisherControl.enabled?
     end
 
     def authorize_update!
