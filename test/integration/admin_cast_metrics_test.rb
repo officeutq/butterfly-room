@@ -44,6 +44,27 @@ class AdminCastMetricsTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "H04 実配信者と不明の行を表示し不明には人物の画像や役割を付けない" do
+    Time.use_zone(ZONE) do
+      with_env("ACTUAL_PUBLISHER_CONTROL_ENABLED" => "true") do
+        first = create_stream_session!(broadcast_started_at: Time.zone.local(2026, 7, 5, 20), ended_at: Time.zone.local(2026, 7, 5, 21))
+        first.update!(actual_publisher_user: @store_admin, actual_publisher_source: "ivs_verified",
+          actual_publisher_recorded_at: first.broadcast_started_at)
+        @store_admin.update!(display_name: "配信した管理者")
+        create_stream_session!(broadcast_started_at: Time.zone.local(2026, 7, 6, 20), ended_at: Time.zone.local(2026, 7, 6, 22))
+        sign_in @store_admin, scope: :user
+        select_current_store(@store)
+        get admin_cast_metrics_path(month: "2026-07")
+        assert_response :ok
+        cards = Nokogiri::HTML(response.body).css(".referral-code-card")
+        assert_equal 2, cards.size
+        assert_includes cards.first.text, "配信した管理者"
+        assert_includes cards.last.text, "配信者不明"
+        assert_empty cards.last.css("img, .badge")
+      end
+    end
+  end
+
   private
 
   def select_current_store(store)
