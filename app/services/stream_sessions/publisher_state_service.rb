@@ -23,7 +23,7 @@ module StreamSessions
     end
 
     # 認可済み・ロック済みの発行／取消からも同じ応答を返す。トークン文字列は含めない。
-    def self.payload(connection:, stream_session:)
+    def self.payload(connection:, stream_session:, booth: stream_session.booth)
       state =
         if stream_session.ended?
           "ended"
@@ -40,6 +40,8 @@ module StreamSessions
 
       { state: state, stream_session_id: stream_session.id, request_id: connection.request_id,
         generation: connection.generation, current_generation: stream_session.publisher_generation,
+        actual_publisher_user_id: stream_session.actual_publisher_user_id,
+        broadcast_started_at: stream_session.broadcast_started_at, booth_status: booth.status,
         disconnect_pending: connection.disconnect_requested_at.present? && connection.disconnected_at.nil? && connection.released_at.nil? }
     end
   end

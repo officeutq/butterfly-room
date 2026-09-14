@@ -32,7 +32,78 @@ class StreamSessions::PublisherConnectionConcurrencyTest < ActiveSupport::TestCa
     verify_concurrent_claims(second_session: second_booth.current_stream_session, second_actor: @publisher)
   end
 
+  test "R03 配信成功が先に確定すると待機していた取消は成功実績を消さない" do
+    verify_confirmation_race(first: :confirm)
+  end
+
+  test "R03 取消が先に確定すると待機していた成功通知は実績を作らない" do
+    verify_confirmation_race(first: :cancel)
+  end
+
   private
+
+  def verify_confirmation_race(first:)
+    entered = Queue.new
+    continue_first = Queue.new
+    second_pid = Queue.new
+    threads = []
+    operation = first == :confirm ? :get_participant : :disconnect_participant
+    original = @ivs_client.method(operation)
+    @ivs_client.define_singleton_method(operation) do |**arguments|
+      response = original.call(**arguments)
+      entered << ActiveRecord::Base.connection.select_value("SELECT pg_backend_pid()")
+      Timeout.timeout(30) { continue_first.pop }
+      response
+    end
+    with_publisher_client do
+      issued = issue_token
+      stub_published_participant(issued)
+      run = lambda do |action, pid_queue|
+        Thread.new do
+          ActiveRecord::Base.connection_pool.with_connection do |connection|
+            pid_queue << connection.select_value("SELECT pg_backend_pid()") if pid_queue
+            service = action == :confirm ? StreamSessions::ConfirmPublisherService : StreamSessions::CancelPublisherConnectionService
+            service.new(stream_session: StreamSession.find(@stream_session.id), actor: User.find(@publisher.id),
+              request_id: issued[:request_id], generation: issued[:generation]).call
+          rescue StreamSessions::PublisherControl::Error => error
+            { error: error.code }
+          end
+        end
+      end
+      threads << run.call(first, nil)
+      first_pid = Timeout.timeout(10) { entered.pop }
+      threads << run.call(first == :confirm ? :cancel : :confirm, second_pid)
+      pid = Timeout.timeout(10) { second_pid.pop }
+      refute_equal first_pid, pid
+      ActiveRecord::Base.uncached do
+        Timeout.timeout(10) do
+          loop do
+            break if ActiveRecord::Base.connection.select_value("SELECT wait_event_type FROM pg_stat_activity WHERE pid = #{Integer(pid)}") == "Lock"
+            sleep 0.01
+          end
+        end
+      end
+      continue_first << true
+      results = threads.map { |thread| Timeout.timeout(10) { thread.value } }
+      if first == :confirm
+        assert_equal [ "confirmed", "confirmed" ], results.map { |result| result[:state] }
+        assert_equal @publisher.id, @stream_session.reload.actual_publisher_user_id
+        assert @booth.reload.live?
+        assert_empty disconnect_requests
+      else
+        assert_equal "cancelled", results.first[:state]
+        assert_equal "stale_publisher_request", results.last[:error]
+        assert_nil @stream_session.reload.actual_publisher_user_id
+        assert_nil @stream_session.broadcast_started_at
+        assert @booth.reload.standby?
+        assert_equal 1, disconnect_requests.size
+      end
+    end
+  ensure
+    continue_first << true
+    threads.each { |thread| thread.join(10) || thread.kill }
+    @ivs_client.define_singleton_method(operation, original)
+  end
 
   def verify_concurrent_claims(second_session:, second_actor:)
     first_mint_entered = Queue.new
