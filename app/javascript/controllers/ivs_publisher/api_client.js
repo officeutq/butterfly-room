@@ -40,6 +40,12 @@ export function cancelPublisher(ctx, attempt) {
   return publisherJson(ctx.cancelBroadcastUrlValue, "POST", { request_id: attempt.requestId, generation: attempt.generation })
 }
 
+export function changePublisherStatus(ctx, attempt, to) {
+  return publisherJson(ctx.statusUrlValue, "PATCH", {
+    stream_session_id: ctx.streamSessionIdValue, request_id: attempt.requestId, generation: attempt.generation, to,
+  })
+}
+
 export async function fetchParticipantToken(ctx, role) {
   const resp = await fetch(ctx.tokenUrlValue, {
     method: "POST",

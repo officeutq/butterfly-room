@@ -2,16 +2,16 @@ import { issuePublisherToken, confirmPublisher, readPublisherState, cancelPublis
 
 // 1回の開始操作が所有する要求とSDKを保持する。画面の最新Stageへ読み替えない。
 export class PublisherConnection {
-  constructor(ctx) {
+  constructor(ctx, { requestId = crypto.randomUUID(), generation = null, state = "preparing", tokenRequested = false } = {}) {
     this.ctx = ctx
-    this.requestId = crypto.randomUUID()
+    this.requestId = requestId
     this.expectedGeneration = ctx.publisherGenerationValue
-    this.generation = null
+    this.generation = generation
     this.stage = null
-    this.state = "preparing"
+    this.state = state
     this.invalidated = false
     this.left = false
-    this.tokenRequested = false
+    this.tokenRequested = tokenRequested
   }
 
   isCurrent() {
@@ -19,13 +19,19 @@ export class PublisherConnection {
   }
 
   assertCurrent() {
-    if (!this.isCurrent()) throw new Error("publisher_attempt_cancelled")
+    if (!this.isCurrent() || this.left) throw new Error("publisher_attempt_cancelled")
   }
 
   async token() {
     this.assertCurrent()
     this.tokenRequested = true
-    const result = await issuePublisherToken(this.ctx, this)
+    let result
+    try {
+      result = await issuePublisherToken(this.ctx, this)
+    } catch (error) {
+      this.tokenError = error
+      throw error
+    }
     this.acceptState(result)
     if (!result.participant_token) throw new Error("publisher_token_missing")
     return result.participant_token
@@ -111,6 +117,13 @@ export class PublisherConnection {
       if (this.state !== "confirmed") this.leave()
     } catch (error) {
       this.leave()
+      if (error.code === "stale_publisher_request" && this.tokenError?.code === "publisher_state_unavailable" && this.generation === null) {
+        // 発行Serviceの失敗応答と、その要求が保存されていないことの両方を確認できた。
+        // 再接続前の実績・旧開始権はサーバーが保持しているので、同じ世代で手動再試行できる。
+        this.state = "cancelled"
+        this.currentGeneration = this.expectedGeneration
+        return
+      }
       // 古い画面や権限喪失の場合は、別要求を推測して取消・再発行しない。
       this.state = error.status === 403 || error.code === "stale_publisher_request" ? "stale" : "pending"
     }

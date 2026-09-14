@@ -18,6 +18,11 @@
   data-ivs-publisher-start-broadcast-url-value="<%= start_broadcast_cast_stream_session_path(@stream_session) %>"
   data-ivs-publisher-publisher-control-value="<%= StreamSessions::PublisherControl.enabled? %>"
   data-ivs-publisher-publisher-generation-value="<%= @stream_session.publisher_generation %>"
+  <% if @publisher_connection %>
+    data-ivs-publisher-existing-request-id-value="<%= @publisher_connection.request_id %>"
+    data-ivs-publisher-existing-request-generation-value="<%= @publisher_connection.generation %>"
+    data-ivs-publisher-existing-request-state-value="<%= StreamSessions::PublisherStateService.payload(connection: @publisher_connection, stream_session: @stream_session)[:state] %>"
+  <% end %>
   data-ivs-publisher-stream-session-id-value="<%= @stream_session.id %>"
   data-ivs-publisher-publisher-state-url-value="<%= publisher_state_cast_stream_session_path(@stream_session) %>"
   data-ivs-publisher-cancel-broadcast-url-value="<%= cancel_broadcast_cast_stream_session_path(@stream_session) %>"
@@ -160,7 +165,7 @@
                 <%= form_with url: status_cast_booth_path(@booth, to: :away),
                               method: :patch,
                               class: "live-ops-form",
-                              data: { action: "turbo:submit-end->ivs-publisher#onBoothStatusPatched" } do %>
+                              data: { action: "submit->ivs-publisher#changeBoothStatus turbo:submit-end->ivs-publisher#onBoothStatusPatched" } do %>
                   <button type="submit"
                           class="live-ops-btn"
                           data-ivs-publisher-target="cameraOffBtn"
@@ -173,7 +178,7 @@
                 <%= form_with url: status_cast_booth_path(@booth, to: :live),
                               method: :patch,
                               class: "live-ops-form",
-                              data: { action: "turbo:submit-end->ivs-publisher#onBoothStatusPatched" } do %>
+                              data: { action: "submit->ivs-publisher#changeBoothStatus turbo:submit-end->ivs-publisher#onBoothStatusPatched" } do %>
                   <button type="submit"
                           class="live-ops-btn"
                           data-ivs-publisher-target="cameraOnBtn"

@@ -81,6 +81,7 @@ export function cleanupCameraMedia(ctx) {
 }
 
 export async function cleanupMediaAndCanvas(ctx) {
+  const provider = ctx._beautyProvider
   stopCanvasRenderLoop(ctx)
   stopBanubaSurfaceMediaStreams(ctx)
 
@@ -98,9 +99,11 @@ export async function cleanupMediaAndCanvas(ctx) {
 
   cleanupBanubaPublishTrack(ctx)
 
-  if (ctx._beautyProvider && typeof ctx._beautyProvider.stop === "function") {
-    await ctx._beautyProvider.stop()
+  if (provider && typeof provider.stop === "function") {
+    await provider.stop()
   }
+
+  if (ctx._beautyProvider !== provider) return
 
   cleanupCameraMedia(ctx)
 

@@ -31,7 +31,11 @@ module StreamSessions
           end
           return PublisherStateService.payload(connection: connection, stream_session: @stream_session) if connection.confirmed_at
 
-          unless @stream_session.publisher_recording_state == :not_started
+          recording_state = @stream_session.publisher_recording_state
+          if recording_state == :recorded && (!@stream_session.actual_publisher?(@actor) || connection.user_id != @actor.id)
+            reject!("forbidden", "実際に配信している本人だけが復帰を取り消せます", status: :forbidden)
+          end
+          unless %i[not_started recorded].include?(recording_state)
             reject!("publisher_state_unavailable", "配信状態を確認できません。再確認してください", status: :service_unavailable)
           end
           @stream_session.update!(publisher_generation: connection.generation + 1)

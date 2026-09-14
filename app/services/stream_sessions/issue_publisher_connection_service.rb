@@ -18,15 +18,18 @@ module StreamSessions
         stale! unless @stream_session.publisher_generation == @expected_generation
         validate_target!
 
-        if StreamPublisherConnection.unreleased.where(user_id: @actor.id).exists? ||
-            StreamPublisherConnection.unreleased.where(booth_id: @booth.id).exists?
+        previous = @stream_session.stream_publisher_connections.lock.find_by(id: @stream_session.current_publisher_connection_id)
+        if StreamPublisherConnection.unreleased.where(user_id: @actor.id).where.not(id: previous&.id).exists? ||
+            StreamPublisherConnection.unreleased.where(booth_id: @booth.id).where.not(id: previous&.id).exists?
+          reject!("publisher_in_use", "配信の開始処理または接続の確認が進行中です")
+        end
+        if previous && previous.released_at.nil? && @stream_session.publisher_recording_state == :not_started
           reject!("publisher_in_use", "配信の開始処理または接続の確認が進行中です")
         end
 
-        Booths::ValidatePublisherEntryService.new(booth: @booth, actor: @actor).call
-        # 成功済みの再接続は#1302で旧参加者の切断と組み合わせる。
-        unless @stream_session.publisher_recording_state == :not_started
-          reject!("publisher_in_use", "配信中の接続から復帰してください")
+        Booths::ValidatePublisherEntryService.new(booth: @booth, actor: @actor, verify_connection: true).call
+        if @stream_session.publisher_recording_state == :recorded
+          replace_connection!(previous) if previous && previous.released_at.nil?
         end
 
         connection = @stream_session.stream_publisher_connections.create!(
@@ -52,6 +55,23 @@ module StreamSessions
     end
 
     private
+
+    def replace_connection!(connection)
+      unless @stream_session.actual_publisher?(@actor) && connection.user_id == @actor.id &&
+          connection.booth_id == @booth.id && connection.ivs_stage_arn == @booth.ivs_stage_arn &&
+          connection.generation == @stream_session.publisher_generation && connection.disconnect_requested_at.nil? &&
+          connection.ivs_participant_id.present?
+        reject!("publisher_state_unavailable", "以前の配信接続を確認できません。再確認してください", status: :service_unavailable)
+      end
+
+      connection.update!(disconnect_requested_at: Time.current, disconnect_reason: "replace")
+      disconnected = Ivs::DisconnectPublisherConnectionService.new(connection_id: connection.id).call
+      unless disconnected.released_at
+        reject!("publisher_state_unavailable", "以前の接続を切断できませんでした。もう一度復帰を試してください", status: :service_unavailable)
+      end
+      # 旧行の解放と新行の発行・保存は呼出元の同じトランザクション内。
+      # この後の発行／保存が失敗しても、旧開始権を保持した状態から同じIDへ再試行できる。
+    end
 
     def authorize!
       return if Authorization::StreamSessionPolicy.new(@actor, @stream_session).publish_token?

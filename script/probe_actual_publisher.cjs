@@ -1,4 +1,4 @@
-// #1298 の調査用権限を使い、#1301 の実装と実IVSを接続する。実行: node script/probe_actual_publisher.cjs --run
+// #1298 の調査用権限を使い、#1301・#1302 の実装と実IVSを接続する。実行: node script/probe_actual_publisher.cjs --run
 // test DBの専用データ、一時Stage、合成映像・音声のみ。トークンはパイプとメモリー以外へ出さない。
 const { spawn, execFile } = require("node:child_process")
 const { promisify } = require("node:util")
@@ -16,7 +16,7 @@ if (process.argv.length !== 3 || process.argv[2] !== "--run") {
 const execute = promisify(execFile)
 const runId = `issue1298-${randomUUID()}`
 const stageName = `br-local-${runId}`
-const resultPath = `tmp/issue1301-${runId}.json`
+const resultPath = `tmp/issue1302-${runId}.json`
 const events = []
 let stageArn, worker, browser, server, baseUrl
 const pending = []
@@ -46,7 +46,7 @@ function command(input) {
 
 async function main() {
   const created = await aws("create-stage", { name: stageName,
-    tags: { app: "butterfly-room", env: "local-probe", issue: "1298", probe_run: runId, implementation: "1301" } })
+    tags: { app: "butterfly-room", env: "local-probe", issue: "1298", probe_run: runId, implementation: "1302" } })
   stageArn = created.stage.arn
   record("stage_created", { stageArn })
   worker = spawn("docker", ["compose", "exec", "-T", "-e", "RAILS_ENV=test", "-e", "ACTUAL_PUBLISHER_CONTROL_ENABLED=true", "app",
@@ -90,7 +90,7 @@ async function main() {
   await page.evaluate(async () => {
     const { PublisherConnection } = await import("/publisher_connection.js")
     const ctx = { publisherGenerationValue: 0, tokenUrlValue: "/token", publisherStateUrlValue: "/state",
-      startBroadcastUrlValue: "/confirm", cancelBroadcastUrlValue: "/cancel" }
+      startBroadcastUrlValue: "/confirm", cancelBroadcastUrlValue: "/cancel", statusUrlValue: "/status" }
     const attempt = new PublisherConnection(ctx)
     ctx._publisherAttempt = attempt
     const token = await attempt.token()
@@ -104,9 +104,10 @@ async function main() {
     const oscillator = audio.createOscillator(), output = audio.createMediaStreamDestination()
     oscillator.connect(output); oscillator.start(); await audio.resume()
     const streams = [video.getVideoTracks()[0], output.stream.getAudioTracks()[0]].map(track => new sdk.LocalStageStream(track))
-    window.probe = { attempt, publishEnabled: false, timer, video, audio, oscillator }
+    window.probe = { attempt, ctx, publishEnabled: false, timer, video, audio, oscillator, oldLeft: false }
     const stage = new sdk.Stage(token, { stageStreamsToPublish: () => streams,
       shouldPublishParticipant: () => window.probe.publishEnabled, shouldSubscribeToParticipant: () => sdk.SubscribeType.NONE })
+    stage.on(sdk.StageEvents.STAGE_LEFT, () => { window.probe.oldLeft = true })
     window.probe.published = attempt.watchPublish(stage, sdk)
     attempt.joinPromise = stage.join()
     await attempt.joinPromise
@@ -153,6 +154,53 @@ async function main() {
   assert.equal(after.body.source, "ivs_verified")
   assert.equal(after.body.confirmed_at, after.body.broadcast_started_at)
   record("saved_once", after.body)
+  const reconnected = await page.evaluate(async () => {
+    const { PublisherConnection } = await import("/publisher_connection.js")
+    const { changePublisherStatus } = await import("/api_client.js")
+    const { attempt: previous, ctx } = window.probe
+    ctx.streamSessionIdValue = previous.result.stream_session_id
+    await changePublisherStatus(ctx, previous, "away")
+    ctx.publisherGenerationValue = previous.currentGeneration
+    const next = new PublisherConnection(ctx)
+    ctx._publisherAttempt = next
+    const beganAt = Date.now()
+    const token = await next.token()
+    const sdk = window.IVSBroadcastClient
+    // 既存の合成映像・音声を新しいStageへ送る。
+    const output = window.probe.audio.createMediaStreamDestination()
+    window.probe.oscillator.connect(output)
+    const streams = [window.probe.video.getVideoTracks()[0], output.stream.getAudioTracks()[0]].map(track => new sdk.LocalStageStream(track))
+    const stage = new sdk.Stage(token, { stageStreamsToPublish: () => streams, shouldPublishParticipant: () => true,
+      shouldSubscribeToParticipant: () => sdk.SubscribeType.NONE })
+    const published = next.watchPublish(stage, sdk)
+    next.joinPromise = stage.join()
+    await next.joinPromise
+    let timer
+    try {
+      await Promise.race([published, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("reconnect_observation_timeout")), 25000) })])
+    } finally { clearTimeout(timer) }
+    await next.confirm()
+    window.probe.attempt = next
+    return { elapsedMs: Date.now() - beganAt, oldRequestId: previous.requestId, newRequestId: next.requestId,
+      oldLeft: window.probe.oldLeft, result: next.result }
+  })
+  record("reconnected", reconnected)
+  assert.equal(reconnected.oldLeft, true)
+  assert.notEqual(reconnected.oldRequestId, reconnected.newRequestId)
+  assert.equal(reconnected.result.actual_publisher_user_id, ready.body.publisher_id)
+  assert.equal(reconnected.result.broadcast_started_at, confirmed.result.broadcast_started_at)
+  assert.equal(reconnected.result.stream_session_id, confirmed.result.stream_session_id)
+  assert.equal(reconnected.result.generation, 2)
+  const recut = await command({ operation: "repeat_old_disconnect", request_id: reconnected.oldRequestId })
+  assert.equal(recut.status, 200)
+  record("old_id_disconnected_again", recut.body)
+  const external = await command({ operation: "external" })
+  assert.equal(external.status, 200)
+  assert.equal(external.body.participants.length, 1)
+  assert.equal(external.body.participants[0].state, "CONNECTED")
+  assert.equal(external.body.participants[0].published, true)
+  assert.notEqual(external.body.participants[0].participant_id, recut.body.disconnected_participant_id)
+  record("replacement_survives_old_disconnect", external.body)
 }
 
 main().catch(error => { record("probe_error", { message: error.message }); process.exitCode = 1 }).finally(async () => {
