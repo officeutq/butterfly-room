@@ -2,8 +2,17 @@
 
 module Cast
   class StreamSessionsController < Cast::BaseController
-    before_action :set_stream_session, only: %i[show finish pending_drink_orders meta_display metadata start_broadcast publisher_state cancel_broadcast]
-    before_action :authorize_stream_session_access!, only: %i[show finish pending_drink_orders meta_display metadata start_broadcast publisher_state cancel_broadcast]
+    before_action :set_stream_session, only: %i[show share finish pending_drink_orders meta_display metadata start_broadcast publisher_state cancel_broadcast]
+    before_action :authorize_stream_session_access!, only: %i[show share finish pending_drink_orders meta_display metadata start_broadcast publisher_state cancel_broadcast]
+
+    def share
+      return head :not_found unless StreamSessions::PublisherControl.enabled?
+
+      render partial: "cast/booths/share_content", locals: {
+        share_text: view_context.stream_session_web_share_text(@stream_session),
+        share_url: share_booth_url(@stream_session.booth, stream: @stream_session.id)
+      }
+    end
 
     def publisher_state
       return head :not_found unless StreamSessions::PublisherControl.enabled?
@@ -51,7 +60,7 @@ module Cast
       @booth = booth
       @disconnect_pending = StreamSessions::PublisherControl.enabled? &&
         @stream_session.stream_publisher_connections.disconnect_pending.unreleased.exists?
-      @cast_user = @stream_session.started_by_cast_user
+      @cast_user = view_context.stream_session_publisher_user(@stream_session)
 
       @comment_count =
         comments_scope.where(kind: Comment::KIND_CHAT).count

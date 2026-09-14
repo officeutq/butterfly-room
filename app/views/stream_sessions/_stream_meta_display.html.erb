@@ -1,4 +1,4 @@
-<% user = stream_session.started_by_cast_user %>
+<% user = stream_session_publisher_user(stream_session) %>
 <% title_display = stream_session.title.presence || stream_session.booth.name %>
 <% show_viewer_count = local_assigns.fetch(:show_viewer_count, true) %>
 
@@ -16,9 +16,13 @@
 
   <!-- name -->
   <div class="meta-name">
+    <% if StreamSessions::PublisherControl.enabled? %>
+      <%= stream_session_publisher_link(stream_session, authenticated_viewer: local_assigns.fetch(:authenticated_viewer, true)) %>
+    <% else %>
     <%= link_to display_name_or_anonymous(user),
           user_path(user),
           class: "text-decoration-none text-reset" %>
+    <% end %>
   </div>
 
   <!-- title -->

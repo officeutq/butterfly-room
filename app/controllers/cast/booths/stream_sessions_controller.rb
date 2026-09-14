@@ -10,7 +10,7 @@ module Cast
           @booth
             .stream_sessions
             .ended
-            .includes(:started_by_cast_user)
+            .includes(StreamSessions::PublisherControl.enabled? ? { actual_publisher_user: { avatar_attachment: :blob } } : :started_by_cast_user)
             .order(started_at: :desc, id: :desc)
       end
 

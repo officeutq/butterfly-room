@@ -175,6 +175,7 @@ Rails.application.routes.draw do
       post :finish, on: :member
       get  :pending_drink_orders, on: :member
       get  :meta_display, on: :member
+      get  :share, on: :member
       patch :metadata, on: :member
       patch :start_broadcast, on: :member
       get :publisher_state, on: :member

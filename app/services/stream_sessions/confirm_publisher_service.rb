@@ -42,7 +42,13 @@ module StreamSessions
         end
         connection.update!(confirmed_at: now)
         @booth.update!(status: :live, last_online_at: now)
-        ActiveRecord.after_all_transactions_commit { StreamSessionNotifier.broadcast_stream_state(booth: @booth) }
+        ActiveRecord.after_all_transactions_commit do
+          begin
+            StreamSessionNotifier.broadcast_stream_state(booth: @booth)
+          rescue StandardError => error
+            Rails.logger.error("publisher_state_notification_failed stream_session_id=#{@stream_session.id} error=#{error.class.name}")
+          end
+        end
         PublisherStateService.payload(connection: connection, stream_session: @stream_session, booth: @booth)
       end
       result
