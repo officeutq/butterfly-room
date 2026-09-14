@@ -11,7 +11,20 @@
 
     <div class="vstack gap-2 pending-drink-orders-stack">
       <% pending.each do |order| %>
-        <% if order.id == head_id %>
+        <% if order.id == head_id && StreamSessions::PublisherControl.enabled? %>
+          <% publisher_id = stream_session.actual_publisher_user_id if stream_session.publisher_recording_state == :recorded && !stream_session.ended? && !stream_session.booth.archived? %>
+          <div data-controller="drink-consume" data-drink-consume-publisher-id-value="<%= publisher_id %>"
+               data-action="turbo:before-cache@document->drink-consume#reset">
+            <div hidden data-drink-consume-target="operation">
+              <%= button_to consume_cast_drink_order_path(order), method: :post, class: "cast-pending-drink-order-btn" do %>
+                <%= drink_item_display(order.drink_item, klass: "cast-pending-drink-order-display") %>
+              <% end %>
+            </div>
+            <div class="cast-pending-drink-order-disabled" data-drink-consume-target="display">
+              <%= drink_item_display(order.drink_item, icon_size: 32, klass: "pending-drink-item-display") %>
+            </div>
+          </div>
+        <% elsif order.id == head_id %>
           <%= button_to consume_cast_drink_order_path(order),
                 method: :post,
                 class: "cast-pending-drink-order-btn" do %>

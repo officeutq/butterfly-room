@@ -17,7 +17,8 @@ class Comment < ApplicationRecord
 
   belongs_to :stream_session
   belongs_to :booth
-  belongs_to :user
+  belongs_to :user, optional: true
+  belongs_to :drink_order, optional: true
 
   has_many :comment_reports, dependent: :restrict_with_error
   has_many :support_inquiries,
@@ -34,6 +35,11 @@ class Comment < ApplicationRecord
   validates :kind, presence: true, inclusion: { in: KINDS }
   validates :body, length: { maximum: 200 }, allow_nil: true
   validates :body, presence: true, if: :chat?
+  validates :user, presence: true, unless: :unknown_consumption?
+
+  def unknown_consumption?
+    kind == KIND_DRINK_CONSUMED && metadata_hash["publisher_unknown"] == true
+  end
 
   def chat?
     kind == KIND_CHAT

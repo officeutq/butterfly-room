@@ -6,6 +6,8 @@ module CommentsHelper
   end
 
   def comment_author_link(user, guest_viewer:, member_profile_ids: nil)
+    return "配信者不明" if user.nil?
+
     name = display_name_or_anonymous(user)
     return name if guest_viewer || user.deleted?
 
@@ -25,6 +27,14 @@ module CommentsHelper
         self_profile_link_url_value: user_path(user),
         action: "turbo:before-cache@document->self-profile-link#reset"
       }
+    end
+  end
+
+  def broadcaster_comment?(comment)
+    if StreamSessions::PublisherControl.enabled?
+      comment.stream_session.actual_publisher?(comment.user)
+    else
+      comment.user_id.present? && comment.user_id == comment.stream_session.started_by_cast_user_id
     end
   end
 end

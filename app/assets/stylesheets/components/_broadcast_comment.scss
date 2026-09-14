@@ -356,6 +356,12 @@ body.viewer-layout .comment-item.is-hidden-comment .comment-menu-item-viewer-nor
   display: none;
 }
 
+/* 本人専用項目はcomment-actionsが本人以外の表示内容から除去する。 */
+.comment-actions-popover .comment-menu-item-publisher,
+.comment-actions-popover .comment-menu-item-public {
+  display: block;
+}
+
 body.cast-live-layout .comment-actions-popover .comment-menu-item-cast-normal {
   display: block;
 }

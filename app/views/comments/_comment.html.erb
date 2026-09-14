@@ -1,10 +1,11 @@
 <% guest_viewer = local_assigns.fetch(:guest_viewer, false) %>
 <% member_profile_ids = local_assigns[:member_profile_ids] %>
+<% publisher_control = StreamSessions::PublisherControl.enabled? %>
 
 <div
   id="comment_<%= comment.id %>"
   class="comment comment-item
-    <%= "comment-from-broadcaster" if comment.user_id == comment.stream_session.started_by_cast_user_id %>
+    <%= "comment-from-broadcaster" if broadcaster_comment?(comment) %>
     <%= "is-hidden-comment" if comment.hidden? %>">
     <% case comment.kind %>
     <% when Comment::KIND_CHAT %>
@@ -36,7 +37,9 @@
         </div>
     <% end %>
 
-    <div class="comment-actions" data-controller="comment-actions">
+    <div class="comment-actions" data-controller="comment-actions"
+         data-comment-actions-publisher-control-value="<%= publisher_control %>"
+         data-comment-actions-publisher-id-value="<%= comment.stream_session.actual_publisher_user_id if publisher_control && !guest_viewer %>">
       <button
         class="btn btn-sm btn-link comment-actions-toggle"
         type="button"
@@ -55,6 +58,23 @@
                           class: "btn btn-sm btn-link comment-action-button text-danger",
                           data: { turbo_frame: "modal" } %>
             </div>
+          <% elsif publisher_control %>
+            <div class="comment-menu-item comment-menu-item-publisher" data-comment-moderator-action>
+              <% if comment.hidden? %>
+                <%= button_to "非表示を解除", unhide_stream_session_comment_path(comment.stream_session, comment),
+                              method: :patch, class: "btn btn-sm btn-link comment-action-button",
+                              form: { data: { turbo: true } } %>
+              <% else %>
+                <%= button_to "このコメントを非表示", hide_stream_session_comment_path(comment.stream_session, comment),
+                              method: :patch, class: "btn btn-sm btn-link comment-action-button",
+                              form: { data: { turbo: true } } %>
+              <% end %>
+            </div>
+              <div class="comment-menu-item comment-menu-item-public" <%= "data-comment-moderator-action" if comment.hidden? %>>
+                <%= button_to "このコメントを通報", report_stream_session_comment_path(comment.stream_session, comment),
+                              method: :post, class: "btn btn-sm btn-link comment-action-button text-danger",
+                              form: { data: { turbo: true } } %>
+              </div>
           <% else %>
             <div class="comment-menu-item comment-menu-item-cast-normal">
               <%= button_to "このコメントを非表示",

@@ -5,8 +5,12 @@ class Cast::DrinkOrdersController < ApplicationController
   before_action -> { require_at_least!(:cast) }
 
   def consume
-    result = DrinkOrders::ConsumeService.new(drink_order_id: params[:id]).call!
+    result = DrinkOrders::ConsumeService.new(drink_order_id: params[:id], actor: current_user).call!
     render json: { drink_order_id: result.drink_order.id }, status: :ok
+  rescue DrinkOrders::ConsumeService::ForbiddenError
+    render json: { error: "forbidden" }, status: :forbidden
+  rescue DrinkOrders::ConsumeService::SessionEndedError
+    render json: { error: "session_ended" }, status: :conflict
   rescue DrinkOrders::ConsumeService::NotHeadError
     render json: { error: "not_head" }, status: :conflict
   rescue DrinkOrders::ConsumeService::InvalidStatusError

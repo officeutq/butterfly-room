@@ -3,6 +3,7 @@ import * as bootstrap from "bootstrap"
 
 export default class extends Controller {
   static targets = ["toggle", "content"]
+  static values = { publisherControl: Boolean, publisherId: String }
 
   connect() {
     this.popover = null
@@ -39,11 +40,24 @@ export default class extends Controller {
       container: "body",
       fallbackPlacements: ["top", "bottom", "right", "left"],
       customClass: "comment-actions-popover",
-      content: this.contentTarget.innerHTML
+      content: this.popoverContent()
     })
 
     this.toggleTarget.addEventListener("shown.bs.popover", this.bindPopoverEvents, { once: true })
     this.popover.show()
+  }
+
+  popoverContent() {
+    if (!this.publisherControlValue) return this.contentTarget.innerHTML
+
+    // 同じ配信HTMLを受け取っても、本人専用の操作はその人のブラウザーだけに出す。
+    const content = document.createElement("div")
+    content.innerHTML = this.contentTarget.innerHTML
+    const viewerId = document.body.dataset.currentUserId
+    if (!viewerId || !this.publisherIdValue || viewerId !== this.publisherIdValue) {
+      content.querySelectorAll("[data-comment-moderator-action]").forEach((action) => action.remove())
+    }
+    return content.innerHTML
   }
 
   bindPopoverEvents() {
