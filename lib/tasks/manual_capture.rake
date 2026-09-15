@@ -330,7 +330,7 @@ module ManualCapture
         store: store,
         offline_booth: offline_booth,
         live_booth: live_booth.reload,
-        stream_session: stream_session
+        stream_session: stream_session.reload
       }
     end
 
@@ -348,6 +348,11 @@ module ManualCapture
         status: :live,
         started_at: live_started_at,
         broadcast_started_at: live_started_at,
+        actual_publisher_user: cast_user,
+        actual_publisher_source: "ivs_verified",
+        actual_publisher_recorded_at: live_started_at,
+        # 撮影専用の模擬記録。実IVS照合・配信接続の検証結果には使わない。
+        actual_publisher_evidence: { "fixture" => "manual_capture", "ivs_verified" => false },
         ended_at: nil,
         ivs_stage_arn: booth.ivs_stage_arn
       )

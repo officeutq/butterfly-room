@@ -129,6 +129,7 @@ data "aws_iam_policy_document" "app" {
     actions = [
       "ivs:CreateParticipantToken",
       "ivs:DisconnectParticipant",
+      "ivs:GetParticipant",
       "ivs:GetStage",
       "ivs:ListParticipants"
     ]

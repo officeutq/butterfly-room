@@ -122,7 +122,7 @@
 **入力**
 
 * booth_id
-* actor_cast_user_id
+* actor（認証済みの操作ユーザー）
 
 **処理（トランザクション）**
 
@@ -223,21 +223,20 @@
 
 **処理（トランザクション）**
 
-1. drink_orderをロック
+1. 共通有効化後はブース→配信セッション→注文をロックし、本人・現在参照・配信状態・配信権限を再確認。有効化前は既存の注文ロック経路
 2. status=pendingか確認
 3. `DrinkOrders::FifoGuard` で「先頭pending」か確認
 
    * クエリで先頭pending（created_at asc, id asc）を取り、id一致を検証
-4. drink_orderをconsumedに更新（consumed_at）
-5. `Wallets::ConsumeService`（reserved減算）
-   ※Holdした分を確定へ回す
+4. hold記録のポイントを読み、`Wallets::ConsumeService`でreserved減算・consume取引を記録
+5. drink_orderをconsumedに更新（consumed_at）
 6. store_ledger_entries作成（unique(drink_order_id)で二重計上防止）
-7. wallet_transaction(consume)記録（任意）
-8. Notifierで未消化キュー更新（replace）＋売上表示更新（任意）
+7. 共通有効化後は`ConsumptionCommentService`で実配信者の消化通知を同じトランザクション内に保存
+8. 最外側commit後に`NotifyDrinkConsumptionJob`で未消化キュー・財布・コメントを更新。再試行は表示通知のみ
 
 **出力**
 
-* consumed_order, new_wallet, store_points_delta
+* `Result(drink_order:, store_ledger_entry:)`
 
 **例外**
 

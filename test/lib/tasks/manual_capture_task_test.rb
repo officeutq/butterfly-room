@@ -64,6 +64,25 @@ class ManualCaptureTaskTest < ActiveSupport::TestCase
     end
   end
 
+  test "viewer screenshot data records its simulated publisher and remains idempotent" do
+    with_env("ACTUAL_PUBLISHER_CONTROL_ENABLED" => "true") do
+      result = ManualCapture::CustomerViewerDataBuilder.new.call!
+      session = result.fetch(:stream_session)
+      assert_equal session.started_by_cast_user_id, session.actual_publisher_user_id
+      assert_equal :recorded, session.publisher_recording_state
+      assert_equal session.actual_publisher_user, result.fetch(:live_booth).actual_publisher_user
+      assert_equal({ "fixture" => "manual_capture", "ivs_verified" => false }, session.actual_publisher_evidence)
+      assert_empty session.stream_publisher_connections
+      assert_no_difference "StreamSession.count" do
+        again = ManualCapture::CustomerViewerDataBuilder.new.call!
+        assert_equal session.id, again.fetch(:stream_session).id
+      end
+    end
+    assert_raises RuntimeError do
+      ManualCapture::CustomerViewerDataBuilder.new(rails_env: ActiveSupport::StringInquirer.new("production")).call!
+    end
+  end
+
   test "prepare archives extra manual cast booths without deleting them" do
     cast = User.create!(
       email: "manual+cast@example.test",
