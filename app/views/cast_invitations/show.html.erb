@@ -65,7 +65,14 @@
     </div>
 
   <% else %>
-    <% if @already_member %>
+    <% if @acceptance_restriction && @invitation.usable? %>
+      <div class="alert alert-warning" role="alert"><%= @acceptance_restriction %></div>
+      <div class="d-flex gap-2">
+        <%= link_to "再確認", cast_invitation_path(params[:token]), class: "btn btn-outline-primary" %>
+        <%= link_to "ダッシュボードへ", dashboard_path, class: "btn btn-outline-secondary" %>
+      </div>
+
+    <% elsif @already_member %>
       <div class="alert alert-success" role="alert">
         この店舗にはすでにキャストとして登録されています。
       </div>

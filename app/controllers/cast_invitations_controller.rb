@@ -23,19 +23,14 @@ class CastInvitationsController < ApplicationController
       membership_role: :cast
     )
 
-    if @already_member && @invitation.usable?
-      ActiveRecord::Base.transaction do
-        @invitation.lock!
-
-        if @invitation.usable?
-          @invitation.update!(
-            used_at: Time.current,
-            accepted_by_user: current_user
-          )
-        end
-      end
+    if @invitation.usable?
+      @already_member = StoreCastInvitations::AcceptInvitation.consume_if_already_member!(
+        invitation: @invitation, actor: current_user)
     end
 
+    render :show, status: :ok
+  rescue StoreCastInvitations::AcceptInvitation::NotAuthorized => e
+    @acceptance_restriction = e.message
     render :show, status: :ok
   end
 
