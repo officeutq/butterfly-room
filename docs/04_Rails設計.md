@@ -50,6 +50,8 @@
 
 ### ブース情報・編集・履歴の導線（#1248）
 
+以下は現行の#1248実装。#1271の[選択の共通契約](design/current_selection.md)では、後続#1273・#1274でsession保存と共通判定を接続し、URL・最小IDによる選択上書きを除去する。①②の固定・③の維持、店舗変更、招待・初回編集の対象を区別し、D01・D02は回答待ちとする。判定はService、session保存・応答はControllerの共通接続箇所に集約する。選択のためのDBテーブルや別の実配信者記録を作らない。古いフォームは対象を別店舗へ読み替えず、不一致を409として入力保持・再選択を案内する。#1271自体でアプリの動作を変更しない。
+
 * `Cast::Booths::StreamSessionsController#index` はURLの `booth_id` を認可し、有効な対象を選択中ブース・店舗へ反映する。閉鎖済みの履歴閲覧では選択を維持する。共通 `current_booth` の優先順位や配信開始用 `create` は変更しない。
 * 情報確認用の `select_modal` / `Cast::CurrentBoothsController#create` は配信開始Serviceを呼ばず、認可済み対象を選択して目的画面へ進む。通常の配信開始経路は既存Serviceを維持する。
 * `Cast::BoothsController#update` の通常保存後はHTML/JSONとも対象の `cast_booth_path` へ戻る。招待直後のホーム遷移を維持する。詳細は `07_モード導線設計.md` の6.1節を参照する。
