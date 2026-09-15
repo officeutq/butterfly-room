@@ -10,9 +10,9 @@ class StagingHeaderBadgeTest < ActionDispatch::IntegrationTest
 
       cast = User.create!(email: "staging-header@example.com", password: "password", role: :cast)
       sign_in cast
-      get cast_booths_path
+      get dashboard_path
       assert_response :success
-      assert_select "#app_header .header-title", text: "ブース一覧"
+      assert_select "#app_header .header-title", text: "ダッシュボード"
       assert_badge
     end
   end

@@ -8,7 +8,7 @@ module Cast
     before_action :check_selected_booth!, only: %i[show edit update live]
 
     def index
-      load_selectable_booths
+      redirect_to dashboard_path
     end
 
     def show
@@ -236,7 +236,6 @@ module Cast
       @booths = current_selection.booths
       @include_archived = current_user.at_least?(:store_admin)
       @current_booth_id = current_booth&.id
-      @confirm_switch_booth = false
       @return_to = params[:return_to].presence
       @return_to_key = params[:return_to_key].presence
     end

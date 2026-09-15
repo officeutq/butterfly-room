@@ -22,7 +22,7 @@ class CastInvitationManagementTest < ActionDispatch::IntegrationTest
     get new_admin_cast_invitation_path, headers: { "Turbo-Frame" => "modal" }
     follow_redirect!(headers: { "Turbo-Frame" => "modal" })
     assert_response :ok
-    assert_select "form[data-turbo-frame='modal']", count: 2
+    assert_select "form[data-turbo='false'] input[name='return_to_key'][value='cast_invitation']", count: 2
     post admin_current_store_path, params: { store_id: other.id, return_to_key: "cast_invitation" }, headers: { "Turbo-Frame" => "modal" }
     follow_redirect!(headers: { "Turbo-Frame" => "modal" })
     assert_select "[data-cast-invitation-store-id-value='#{other.id}']", count: 1

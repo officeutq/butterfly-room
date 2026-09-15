@@ -114,14 +114,13 @@
                         form: {
                           class: "d-inline",
                           data: {
-                            turbo_frame: "modal",
-                            turbo_confirm: enter_booth_switch_confirm_message(booth)
+                            turbo_frame: "modal"
                           }
                         } %>
 
-                  <%= link_to "このブースを選択して編集",
+                  <%= link_to "編集",
                         edit_cast_booth_path(booth),
-                        data: booth_navigation_link_data(booth),
+                        data: { turbo_prefetch: false },
                         class: "btn btn-outline-secondary btn-sm" %>
 
                   <% if can_force_end %>

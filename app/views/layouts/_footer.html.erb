@@ -33,15 +33,14 @@
                       method: :get,
                       class: "app-footer-nav-item app-footer-nav-item--live app-footer-nav-item--live-broadcast",
                       form: {
-                        class: "app-footer-nav-form",
-                        data: { turbo_confirm: enter_booth_switch_confirm_message(booth) }
+                        class: "app-footer-nav-form"
                       } do %>
                   <i class="bi bi-broadcast app-footer-nav-icon" aria-hidden="true"></i>
                   <span class="app-footer-nav-label">配信</span>
                 <% end %>
               <% else %>
                 <%= link_to select_modal_cast_booths_path(return_to_key: "booth_live"),
-                      data: { turbo_frame: "modal" },
+                      data: { turbo_frame: "modal", turbo_prefetch: false },
                       class: "app-footer-nav-item app-footer-nav-item--live app-footer-nav-item--live-broadcast" do %>
                   <i class="bi bi-broadcast app-footer-nav-icon" aria-hidden="true"></i>
                   <span class="app-footer-nav-label">配信</span>

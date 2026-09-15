@@ -99,21 +99,21 @@
                   <li>
                     <span class="dropdown-item-text small">
                       store:
-                      <% if current_user.at_least?(:store_admin) %>
+                      <% if current_selection.store_switchable? %>
                         <%= link_to select_modal_admin_stores_path(return_to: request.fullpath),
-                              data: { turbo_frame: "modal" },
+                              data: { turbo_frame: "modal", turbo_prefetch: false },
                               class: "link-secondary link-underline-opacity-0 link-underline-opacity-100-hover" do %>
                           <% if store.present? %>
-                            <strong><%= store.name.presence || "(no name)" %></strong>
+                            <strong data-selection-store-name><%= store.name.presence || "(no name)" %></strong>
                           <% else %>
-                            <span class="text-danger">未選択</span>
+                            <span class="text-danger" data-selection-store-name>未選択</span>
                           <% end %>
                         <% end %>
                       <% else %>
                         <% if store.present? %>
-                          <strong><%= store.name.presence || "(no name)" %></strong>
+                          <strong data-selection-store-name><%= store.name.presence || "(no name)" %></strong>
                         <% else %>
-                          <span class="text-danger">未選択</span>
+                          <span class="text-danger" data-selection-store-name>未選択</span>
                         <% end %>
                       <% end %>
                     </span>
@@ -123,14 +123,20 @@
                   <li>
                     <span class="dropdown-item-text small">
                       booth:
-                      <%= link_to select_modal_cast_booths_path(return_to: request.fullpath, source: "header"),
-                            data: { turbo_frame: "modal" },
+                      <% if current_selection.booth_switchable? %>
+                        <%= link_to select_modal_cast_booths_path(return_to: request.fullpath, source: "header"),
+                            data: { turbo_frame: "modal", turbo_prefetch: false },
                             class: "link-secondary link-underline-opacity-0 link-underline-opacity-100-hover" do %>
-                        <% if booth.present? %>
-                          <strong><%= booth.name.presence || "(no name)" %></strong>
-                        <% else %>
-                          <span class="text-danger">未選択</span>
+                          <% if booth.present? %>
+                            <strong data-selection-booth-name><%= booth.name.presence || "(no name)" %></strong>
+                          <% else %>
+                            <span class="text-danger" data-selection-booth-name>未選択</span>
+                          <% end %>
                         <% end %>
+                      <% elsif booth %>
+                        <strong data-selection-booth-name><%= booth.name.presence || "(no name)" %></strong>
+                      <% else %>
+                        <span class="text-danger" data-selection-booth-name>未選択</span>
                       <% end %>
                     </span>
                   </li>

@@ -23,7 +23,7 @@ class CastBoothSelectionReturnTest < ActionDispatch::IntegrationTest
     sign_in @cast, scope: :user
 
     get cast_booths_path(return_to: edit_cast_booth_path(@booth))
-    assert_response :success
+    assert_redirected_to dashboard_path
 
     post cast_current_booth_path, params: { booth_id: @booth.id, return_to: edit_cast_booth_path(@booth) }
     assert_response :redirect
@@ -34,7 +34,7 @@ class CastBoothSelectionReturnTest < ActionDispatch::IntegrationTest
     sign_in @store_admin, scope: :user
 
     get cast_booths_path(return_to_key: "booth_edit")
-    assert_response :success
+    assert_redirected_to dashboard_path
 
     post cast_current_booth_path, params: { booth_id: @booth.id, return_to_key: "booth_edit" }
     assert_response :redirect
@@ -45,7 +45,7 @@ class CastBoothSelectionReturnTest < ActionDispatch::IntegrationTest
     sign_in @cast, scope: :user
 
     get cast_booths_path(return_to_key: "booth_live")
-    assert_response :success
+    assert_redirected_to dashboard_path
 
     post cast_current_booth_path, params: { booth_id: @booth.id, return_to_key: "booth_live" }
     assert_response :redirect
@@ -67,7 +67,7 @@ class CastBoothSelectionReturnTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     get cast_booths_path
-    assert_response :success
+    assert_redirected_to dashboard_path
 
     post cast_current_booth_path,
          params: { booth_id: @booth.id },
