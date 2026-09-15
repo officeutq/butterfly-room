@@ -59,6 +59,7 @@
 | `StreamSession#actual_publisher_user` | 保存されたY。空欄をXやZへ置換しない。過去セッションにも使用 |
 | `StreamSession#actual_publisher?(user)` | userが存在し、保存済みYと一致する場合のみtrue。NULL同士を本人扱いしない |
 | `StreamSession.actually_broadcasting_by(user)` | Y一致、開始時刻あり、未終了、status=live、booth.current一致、boothがlive/away。準備は含めない |
+| `StreamSession.current_broadcast_for_selection(user)` | #1272の選択・招待用。整合する本人配信1件またはnilを返す。本人の矛盾する未終了記録・複数記録は`CurrentBroadcastInconsistent`。詳しくは[選択設計3節](current_selection.md) |
 | `Booth#actual_publisher_user` | 現在セッションが上記の実配信状態ならY。それ以外はNULL |
 | `StreamPublisherConnection.unreleased` | 開始処理・現在接続・切断待ちの開始権。本人配信中の判定に代用しない |
 | `StreamPublisherConnection.disconnect_pending` | 切断要求あり・切断成功なし。終了済み・閉鎖済み・退会済みも含める |
