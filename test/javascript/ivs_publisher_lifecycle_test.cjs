@@ -136,6 +136,39 @@ function fixture(options = {}) {
     set stateUnavailable(value) { stateUnavailable = value }, set cancelPending(value) { cancelPending = value } }
 }
 
+test("starting during preparation preview waits for media initialization before publishing", async () => {
+  const f = fixture()
+  const preview = deferred()
+  let starts = 0
+  f.controller._beautyProvider.start = async () => { starts++; await preview.promise }
+  const preparing = f.controller._startPreviewOnlyIfNeeded()
+  await until(() => starts === 1)
+  const starting = f.controller.startBroadcast()
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(starts, 1)
+  assert.equal(f.stages.length, 0)
+  assert.equal(f.requests.length, 0)
+  preview.resolve()
+  await preparing
+  await until(() => f.stages.length === 1)
+  f.stages[0].publish()
+  await starting
+  assert.equal(f.controller._broadcasting, true)
+  assert.equal(f.confirms, 1)
+})
+
+test("leaving while start waits for preview does not request a publisher token", async () => {
+  const f = fixture()
+  const preview = deferred()
+  f.controller._previewOperation = preview.promise
+  const starting = f.controller.startBroadcast()
+  f.controller.disconnect()
+  preview.resolve()
+  await starting
+  assert.equal(f.stages.length, 0)
+  assert.equal(f.requests.length, 0)
+})
+
 test("E01 unstarted preparation finishes with generation zero and no participant request", async () => {
   const f = fixture()
   f.controller.finishUrlValue = "/finish"
