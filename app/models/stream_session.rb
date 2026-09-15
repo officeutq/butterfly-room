@@ -1,6 +1,8 @@
 class StreamSession < ApplicationRecord
   ACTUAL_PUBLISHER_SOURCES = %w[ivs_verified legacy_creator_backfill evidence_backfill].freeze
 
+  class CurrentBroadcastInconsistent < StandardError; end
+
   belongs_to :booth
   belongs_to :store
   belongs_to :started_by_cast_user, class_name: "User"
@@ -31,6 +33,29 @@ class StreamSession < ApplicationRecord
   }
 
   delegate :current_stream_session_id, :status, to: :booth, prefix: true
+
+  def self.current_broadcast_for_selection(user)
+    return unless user&.id
+
+    uncached do
+      # 整合する配信だけを検索すると、本人ID付きの矛盾した未終了記録を見落とす。
+      records = left_joins(:booth).where(actual_publisher_user_id: user.id)
+        .where(<<~SQL.squish, live: statuses.fetch("live"), broadcasting: Booth.statuses.values_at("live", "away"))
+          stream_sessions.status = :live OR stream_sessions.ended_at IS NULL OR
+          (booths.current_stream_session_id = stream_sessions.id AND booths.status IN (:broadcasting))
+        SQL
+        .preload(:booth).limit(2).to_a
+      return if records.empty?
+
+      record = records.first
+      unless records.one? && record.live? && record.publisher_recording_state == :recorded &&
+          !record.booth.archived? && record.store_id == record.booth.store_id
+        raise CurrentBroadcastInconsistent, "本人の配信状態に不整合があります"
+      end
+
+      record
+    end
+  end
 
   def actual_publisher?(user)
     user&.id.present? && actual_publisher_user_id.present? && actual_publisher_user_id == user.id
