@@ -1,12 +1,12 @@
-# 旧配信の実配信者に関する証拠調査（#1287）
+# 旧履歴のDB調査と作成者補完への移行（#1287）
 
-2026-09-14時点の途中結果。**DB調査は実施済み、IVS履歴の調査は権限不足で未完了。証拠補正・作成者補完とも実環境へ未適用。** #1287と親 #1280 は完了していない。
+2026-09-15更新。**ユーザー判断により、旧履歴は作成者Xの実績として補完する方針に統一する。** IVSの過去履歴による人物調査・証拠補正・そのための権限追加は不要となった。DB読み取り調査と移行手順の整理は完了。実環境への補完適用・全体検証・有効化は #1288 に引き継ぎ、親 #1280 は継続する。
 
 ## 調査の区別
 
-準備作成者X、ブース担当者Z、実配信者Yを区別する。#1289の `legacy_creator_backfill` は合意した旧履歴の帰属方針であり、Yを立証する資料ではない。新しい `ivs_verified` と、後から証拠で補正する `evidence_backfill` とも区別する。
+準備作成者X、ブース担当者Z、実配信者Yを区別する。#1289の `legacy_creator_backfill` は合意した旧履歴の帰属方針であり、Yを立証する資料ではない。新しい配信で本人を確認して保存する `ivs_verified` と区別する。既存スキーマの `evidence_backfill` は互換用に保持し、今回の移行では設定しない。
 
-過去の誤帰属をまだ確認していない段階で「本番で別人の売上になっていた」と断定しない。取得不能・資料なし・複数候補・矛盾は別の調査結果として残し、XやZを実配信者と推定しない。
+X補完は合意した扱いであり、実際の人物を復元したという意味ではない。既存の対象条件を維持し、開始記録なし・未終了・設定済み・状態不整合等は補完しない。保存済みの消化通知・通常コメント・操作履歴の人物も変更しない。
 
 ## 読み取り専用のDB調査
 
@@ -35,7 +35,7 @@ docker compose exec -T -e PUBLISHER_AUDIT_EXPECTED_DATABASE=butterfly_room_devel
 
 ローカルの開始記録あり62件は消化ポイント25,301、開始記録なし645件は611,400。開始なしを未配信の証拠とせず、時刻を推定して補完対象へ混ぜない。ローカルには撮影用の架空Stage ARNを持つ記録もあり、実AWS参加の証拠と区別する。
 
-ID別の結果は`tmp/issue1287-inventory-local.json`・`tmp/issue1287-inventory-staging.json`・`tmp/issue1287-inventory-production.json`に保持。これは調査結果であり、補正を適用する固定一覧ではない。後続の適用一覧は新列導入後の変更前値も含めて別途確定する。
+ID別の結果は`tmp/issue1287-inventory-local.json`・`tmp/issue1287-inventory-staging.json`・`tmp/issue1287-inventory-production.json`に保持。これは調査結果であり、補完を適用する固定一覧ではない。後続の適用一覧は新列導入後の変更前値も含めて別途確定する。
 
 ## 利用可能な記録と限界
 
@@ -44,32 +44,15 @@ ID別の結果は`tmp/issue1287-inventory-local.json`・`tmp/issue1287-inventory
 - 実DBで、配信セッション参照付きの変更／エラーログは3環境とも0件。ステージングのログは検証用の過去日付も含むため、最古日時を本番稼働期間と読み替えない。
 - 本番・ステージングの現在のアプリコンテナ通常ログは、それぞれ2026-09-12 13:33:50／14:27:25 JST以降。今回の旧配信の日付を含まない。Dockerの`json-file`で、コンテナ個別の`max-size`／`max-file`指定は空、配置先の`log/`には`.keep`だけだった。別保管先や過去コンテナの完全な履歴を確認済みとは扱わない。
 
-## IVSで確認する根拠
+## 方針変更と権限待ちの解消
 
-[ListStageSessions](https://docs.aws.amazon.com/ivs/latest/RealTimeAPIReference/API_ListStageSessions.html)でStage内のIVSセッションを列挙し、[ListParticipants](https://docs.aws.amazon.com/ivs/latest/RealTimeAPIReference/API_ListParticipants.html)と[GetParticipant](https://docs.aws.amazon.com/ivs/latest/RealTimeAPIReference/API_GetParticipant.html)で参加者属性を照合する。すべてのページを取得し、RailsのセッションIDとIVSセッションIDを混同しない。
+2026-09-14にはIVSの過去履歴を読む `ListStageSessions` が権限不足となり、専用ポリシー追加案を用意していた。2026-09-15に旧履歴をX補完へ統一したため、その調査とポリシー追加案を取り下げた。IAMの権限変更は実行していない。この権限不足を #1288 へ進む条件として残さない。
 
-[Participant](https://docs.aws.amazon.com/ivs/latest/RealTimeAPIReference/API_Participant.html)の`published`は、そのIVSセッション内で配信したことがあるかを表す。現在接続中かとは別で、単独ではアプリの配信期間内に配信した時刻まで確定できない。[ListParticipantEvents](https://docs.aws.amazon.com/ivs/latest/RealTimeAPIReference/API_ListParticipantEvents.html)の時刻付きイベントも使い、Stage・IVSセッション・参加者・アプリセッション属性・認証人物・対象期間を対応付ける。`firstJoinTime`だけを配信開始時刻に置換しない。
+改修後の配信開始・再接続で使うIVSの本人照合・接続管理は既存の実装契約を維持する。過去履歴調査の廃止を理由に、現在の配信者の確認を省略しない。
 
-今回参照した公式の[監視ガイド](https://docs.aws.amazon.com/ivs/latest/RealTimeUserGuide/stage-health.html)と上記API文書からは、参加者履歴の固定保存日数の保証を確認できていない。「14日」等の別用途の値を保存期間として採用しない。実取得でどの日付まで戻れるかを記録し、API失敗・空一覧・Stage削除を「誰も配信していなかった」と扱わない。[EventBridge通知](https://docs.aws.amazon.com/ivs/latest/RealTimeUserGuide/eventbridge.html)には欠落・遅延・順序逆転があり得るため、通知なしだけで他の配信者を否定しない。
+## #1288へ引き継ぐ作業
 
-実取得した証拠を見て、単独の人物を裏付けられるケース、不明、複数候補・矛盾を分類する。証拠補正はその分類後に対象・根拠・変更前後・個人別影響を固定して実装・検証する。保存済み消化通知は種類と証拠を限定し、通常コメント・操作履歴は変更しない。現時点で補正値を仮定した汎用一括更新は追加していない。
-
-## 調査再開に必要な権限
-
-2026-09-14、以下の`ListStageSessions`が`AccessDeniedException`となった。
-
-- 読み取り用ロール`butterfly-room-inventory-readonly` → 本番のStage `f9zeDOigmiyI`。
-- ステージング用ロール`butterfly-room-staging-deployer` → Stage `g7TNL2OzqeB2`。
-
-以前追加された検証用Stageの権限は、これらの旧Stageの履歴調査を許可するものではない。DB調査のために追加権限が必要だったわけではない。
-
-追加案は [読み取り専用ポリシーJSON](../ops/issue1287_ivs_history_readonly_policy.json)。`butterfly-room-inventory-readonly`ロールに`ButterflyRoomIssue1287HistoryRead`というインラインポリシーとして追加すれば、一つの読み取り用プロファイルで調査できる。対象は開始記録がある旧配信の実ARN 11件（本番1・ステージング2・ローカル8）。作成・トークン発行・切断・削除・DB更新・IAM変更は許可しない。アプリ本体の実行権限変更とも別である。
-
-IAMコンソールで「ロール」→`butterfly-room-inventory-readonly`→「許可を追加」→「インラインポリシーを作成」→JSON欄に上記内容を設定する案を用意した。調査終了後はこの追加ポリシーだけを削除できる。エージェントは権限を変更していない。
-
-## 未完了の作業
-
-1. 読み取り権限の追加判断後、IVSの保存範囲と実際の履歴を確認する。
-2. 証拠で裏付けられた対象について、固定一覧による補正・中断再開・復旧を実装し、通常コメント・台帳等の非変更を検証する。証拠不足は不明のまま残す。
-3. 実環境への適用は新列導入後に具体的差分を確認し、判断を記録する。現時点では3環境とも未補正・未補完。
-4. #1288の全体検証・共通有効化へ進む。関連の店舗／ブース選択・招待Epicが未実装の場合は連携確認を未完了として残す。親 #1280 を先に閉じない。
+1. #1289の固定一覧方式で対象と除外を確認し、合意したX補完を適用する。現在の補完バッチの対象条件を変更しない。
+2. 表示・個人別集計が保存された人物へ揃い、店舗／ブース総額、台帳・返却・精算・保存済みコメントが変わらないことを確認する。
+3. 適用前後の件数・未適用・再開／復旧方法を環境別に記録する。現時点では3環境とも未補完であり、最新状態を適用直前に再確認する。
+4. 全体検証と共通有効化を行う。関連の店舗／ブース選択・招待Epicが未実装の場合は、その連携確認を未完了として残す。親 #1280 を先に閉じない。
