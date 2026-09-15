@@ -1,4 +1,6 @@
 class ApplicationController < ActionController::Base
+  include CurrentSelection
+
   GTM_CONTAINER_ID = "GTM-KNT7H4CG"
   STORE_LP_202607_ATTRIBUTION_SESSION_KEY = :store_lp_202607_attribution
   STORE_LP_202607_REF_SESSION_KEY = :store_lp_202607_ref
