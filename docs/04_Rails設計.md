@@ -9,13 +9,13 @@
 * **通知（Turbo Streams）は“結果に応じて”Notifierに集約**
 * **PresenceはServiceで抽象化**（DB→Redis差し替え可能に）
 
-### 実配信者記録の目標契約（#1280）
+### 実配信者記録の契約（#1280）
 
 [実配信者設計](design/actual_publisher.md) がD01〜D04と27ケースを定義する。`started_by_cast_user`は準備作成者として保持し、`actual_publisher_user`を成功実績に使う。開始権・参加者ID・切断待ちは`StreamPublisherConnection`へ分ける。モデルの共通参照だけでIVS通信を行わない。
 
 配信者トークン発行、配信成功確定、取消、本人再接続、終了は同設計4・5節のServiceへ集約する。Controllerは認可・入力・呼び出し・レスポンスのみ。通常・管理終了の返却はDB確定し、IVS切断失敗は保存した参加者IDへ別途再試行する。終了・残高通知とジョブ投入は、退会を含む最外側トランザクションの確定後に行う。
 
-旧準備の再利用、準備終了、手動閉鎖、既存の退会・所属解除を維持する。コメントの人物NULLは不明の消化通知だけに限定し、普通のコメントの利用者必須条件を保持する。表示・集計・限定履歴補完は同設計6節の契約とする。これらは個別実装・有効化前の設計である。
+旧準備の再利用、準備終了、手動閉鎖、既存の退会・所属解除を維持する。コメントの人物NULLは不明の消化通知だけに限定し、普通のコメントの利用者必須条件を保持する。表示・集計・限定履歴補完は同設計6節の契約とする。2026-09-15にstaging・本番で移行・有効化を完了した。[適用記録](ops/actual_publisher_rollout.md)で環境別の結果と確認範囲を管理する。
 
 * **認証は Devise（User）を採用**：`users` は email+password を基本とし、`role`（enum）で customer/cast/store_admin/system_admin を管理
 
@@ -122,7 +122,7 @@
 **入力**
 
 * booth_id
-* actor_cast_user_id
+* actor（認証済みの操作ユーザー）
 
 **処理（トランザクション）**
 
@@ -223,21 +223,20 @@
 
 **処理（トランザクション）**
 
-1. drink_orderをロック
+1. 共通有効化後はブース→配信セッション→注文をロックし、本人・現在参照・配信状態・配信権限を再確認。有効化前は既存の注文ロック経路
 2. status=pendingか確認
 3. `DrinkOrders::FifoGuard` で「先頭pending」か確認
 
    * クエリで先頭pending（created_at asc, id asc）を取り、id一致を検証
-4. drink_orderをconsumedに更新（consumed_at）
-5. `Wallets::ConsumeService`（reserved減算）
-   ※Holdした分を確定へ回す
+4. hold記録のポイントを読み、`Wallets::ConsumeService`でreserved減算・consume取引を記録
+5. drink_orderをconsumedに更新（consumed_at）
 6. store_ledger_entries作成（unique(drink_order_id)で二重計上防止）
-7. wallet_transaction(consume)記録（任意）
-8. Notifierで未消化キュー更新（replace）＋売上表示更新（任意）
+7. 共通有効化後は`ConsumptionCommentService`で実配信者の消化通知を同じトランザクション内に保存
+8. 最外側commit後に`NotifyDrinkConsumptionJob`で未消化キュー・財布・コメントを更新。再試行は表示通知のみ
 
 **出力**
 
-* consumed_order, new_wallet, store_points_delta
+* `Result(drink_order:, store_ledger_entry:)`
 
 **例外**
 

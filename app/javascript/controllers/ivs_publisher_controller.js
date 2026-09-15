@@ -261,6 +261,9 @@ export default class extends Controller {
     this._syncUI()
 
     try {
+      // 準備プレビュー中の開始操作で、画面加工を二重に初期化しない。
+      await this._previewOperation
+      attempt?.assertCurrent()
       await this._beautyProvider.ensureInitialBeautyStateLoaded()
       attempt?.assertCurrent()
       await this._beautyProvider.start()
@@ -947,6 +950,17 @@ export default class extends Controller {
   }
 
   async _startPreviewOnlyIfNeeded() {
+    if (this._previewOperation) return this._previewOperation
+    const operation = this._startPreviewOnly()
+    this._previewOperation = operation
+    try {
+      await operation
+    } finally {
+      if (this._previewOperation === operation) this._previewOperation = null
+    }
+  }
+
+  async _startPreviewOnly() {
     if (!this.hasTokenUrlValue) return
     if (this._stage || this._broadcasting) return
     if (this._previewOnly) return
