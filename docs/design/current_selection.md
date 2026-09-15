@@ -100,6 +100,27 @@
 
 共通の判定・業務処理はService（業務処理を集約するクラス）、sessionの読み書きとHTTP応答はController（リクエストを受ける層）の共通接続箇所へ集約する。既存の公開APIをそのまま使える箇所に、本人判定だけの中継クラスを増やさない。選択のためのDBテーブルや別の配信状態は追加しない。
 
+### 4.1 共通処理の呼び出し（#1273）
+
+`CurrentSelectionService.new(actor:, current_booth_id:, current_store_id:, purpose:, target_id:).call`で判定する。役割・所属・本人配信は呼び出すたびにDBから確認する。候補一覧は全権限範囲のまま返し、画面で閉鎖済みを非表示にしても判定の候補数を変えない。
+
+| `purpose` | 用途 |
+| --- | --- |
+| `normalize` | ログイン・通常アクセスで無効選択を整理し、本人配信・唯一候補を設定する。D01の別店舗管理中の未設定を維持 |
+| `require_booth` | ブースが必要な操作。D01の未設定から唯一の候補を所属店舗と組で設定。複数なら未設定を返し、呼び出し側でモーダルへ |
+| `require_store` | 店舗が必要な操作。店舗未設定・複数なら呼び出し側でモーダルへ。別店舗のブースは補完しない |
+| `select_booth` | 選択POSTの対象IDを候補と本人固定条件で再検証し、ブースと所属店舗を設定 |
+| `select_store` | 店舗選択POST。同一店舗はブースを保持し、変更なら5節D01に従って解除・再設定 |
+| `invitation_accepted` | 承認Service成功後のキャスト専用。結果のブースIDを渡してD02を適用。本人配信があれば拒否 |
+
+結果は`booth`・`store`・全候補`booths`・`stores`・本人`broadcast`・`error`を持つ。`success?`、`booth_switchable?`・`store_switchable?`、`booth_fixed?`・`store_fixed?`で各入口を揃える。`not_selectable`は不正／権限外の対象、`broadcast_fixed`は本人配信による変更拒否、`broadcast_inconsistent`は本人の不整合または固定先の権限喪失。DB例外は未配信へ変換せず呼び出し側へ伝える。
+
+`CurrentSelection`（Controllerの共通モジュール）の`resolve_current_selection`で保存済みIDを渡し、`save_current_selection`で成功した結果だけをsessionの2キーへ保存する。未設定は当該キーを削除し、他のログイン情報を保持する。拒否・判定失敗では保存しない。保存した結果を`@current_selection`へ保持し、ヘッダーと本文へ同じ結果を渡す。配信準備が必要な入口は既存Serviceの成功後に保存する。
+
+`purpose`は呼び出し側で固定し、HTTP入力の操作名をそのまま受け付けない。特に`invitation_accepted`は承認成功後にだけ呼び、招待の表示・失敗・再表示からは呼ばない。共通処理自体は配信準備・Stage作成・通知・画面遷移を行わない。
+
+#1273は共通判定と保存箇所を用意する段階。既存の選択入口・参照・画面は#1274以降で置換し、混在する旧動作を適用済みとしない。`test/services/current_selection_service_test.rb`と`test/controllers/concerns/current_selection_test.rb`で判定と保存を確認する。
+
 - ログイン、通常アクセスの固定補正と、ユーザーが候補を選ぶPOSTを分ける。先読み・候補表示GETを手動選択として扱わない。
 - `return_to_key`等の許可した画面種別から、確定した対象のpath helperで戻り先を組み立てる。古いAの`return_to`をそのまま使ってB選択後にAへ戻さない。
 - キャンセルでは選択・入力・画面を保持。未保存確認は選択POSTの前に行い、通信失敗でも旧画面を勝手に別対象へ描き替えない。
