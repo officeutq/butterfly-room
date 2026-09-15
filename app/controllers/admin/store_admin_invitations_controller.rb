@@ -3,6 +3,7 @@
 module Admin
   class StoreAdminInvitationsController < Admin::BaseController
     before_action :require_current_store!
+    before_action :require_form_store!, only: %i[create]
 
     def index
       @store_admin_invitations =

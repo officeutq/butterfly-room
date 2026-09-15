@@ -123,7 +123,7 @@
                   <li>
                     <span class="dropdown-item-text small">
                       booth:
-                      <%= link_to select_modal_cast_booths_path(return_to: request.fullpath),
+                      <%= link_to select_modal_cast_booths_path(return_to: request.fullpath, source: "header"),
                             data: { turbo_frame: "modal" },
                             class: "link-secondary link-underline-opacity-0 link-underline-opacity-100-hover" do %>
                         <% if booth.present? %>

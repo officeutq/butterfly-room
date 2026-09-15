@@ -15,16 +15,9 @@ module Cast
       end
 
       def create
-        booth =
-          if StreamSessions::PublisherControl.enabled?
-            Booth.active.find(params[:booth_id])
-          else
-            current_booth
-          end
-        if booth.blank?
-          redirect_to cast_booths_path, alert: "選択できないブースです"
-          return
-        end
+        booth = Booth.active.find(params[:booth_id])
+        return head :forbidden unless Authorization::BoothPolicy.new(current_user, booth).update?
+        return unless require_selected_booth!(booth, return_to_key: "booth_live", allow_selection: true)
 
         result = ::Booths::EnterAsCastService.new(
           booth: booth,
@@ -33,17 +26,16 @@ module Cast
 
         case result.action
         when :redirect_live
-          select_current_booth(result.booth) if StreamSessions::PublisherControl.enabled?
           redirect_to live_cast_booth_path(result.booth), notice: "配信画面を開きました"
         when :occupied_by_other
-          redirect_to cast_booths_path, alert: "このブースはすでに配信中です"
+          redirect_to cast_booth_path(booth), alert: "このブースはすでに配信中です"
         when :already_live_elsewhere
-          redirect_to cast_booths_path, alert: "他のブースで配信中のため開始できません"
+          redirect_to dashboard_path, alert: "他のブースで配信中のため開始できません"
         else
-          redirect_to cast_booths_path, alert: "配信導線の開始に失敗しました"
+          redirect_to cast_booth_path(booth), alert: "配信導線の開始に失敗しました"
         end
       rescue ::Booths::EnterAsCastService::NotAuthorized
-        redirect_to cast_booths_path, alert: "選択できないブースです"
+        redirect_to dashboard_path, alert: "選択できないブースです"
       end
 
       private
@@ -55,7 +47,9 @@ module Cast
           return
         end
 
-        select_current_booth(@booth) unless @booth.archived?
+        return if current_user.cast? && @booth.archived?
+
+        require_selected_booth!(@booth, return_to_key: "booth_stream_sessions")
       end
     end
   end

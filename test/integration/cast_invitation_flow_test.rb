@@ -158,6 +158,10 @@ class CastInvitationFlowTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "プロフィール編集"
 
     booth = Booth.order(:id).last
+    assert_equal "キャスト招待を承認しました。ブースを『#{store.name}』の『#{booth.name}』に切り替えました。", flash[:notice]
+    other = Booth.create!(store: store, name: "別タブで選択したブース")
+    BoothCast.create!(booth: other, cast_user: User.find_by!(email: "new_cast_user@example.com"))
+    post cast_current_booth_path, params: { booth_id: other.id, return_to_key: "booth_show" }
 
     patch profile_path, params: {
       user: {
@@ -168,6 +172,11 @@ class CastInvitationFlowTest < ActionDispatch::IntegrationTest
 
     assert_equal "新規キャスト名のブース", booth.reload.name
     assert_redirected_to edit_cast_booth_path(booth)
+    assert_equal other.id, session[:current_booth_id]
+    assert_equal "別タブで選択したブース", other.reload.name
+    follow_redirect!
+    assert_response :conflict
+    post cast_current_booth_path, params: { booth_id: booth.id, return_to_key: "booth_edit" }
     follow_redirect!
     assert_response :success
     assert_includes @response.body, "ブース編集"

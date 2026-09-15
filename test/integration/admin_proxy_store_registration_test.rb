@@ -36,7 +36,7 @@ class AdminProxyStoreRegistrationTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?]", new_admin_store_path, count: 0
   end
 
-  test "sales support company admin can create and switch to a regular proxy store" do
+  test "sales support company admin can create a regular proxy store while preserving the selected store" do
     sign_in @actor, scope: :user
 
     get new_admin_store_path
@@ -53,10 +53,13 @@ class AdminProxyStoreRegistrationTest < ActionDispatch::IntegrationTest
 
     store = Store.find_by!(name: "Created Proxy Store")
     assert_redirected_to edit_admin_store_path(store)
-    assert_equal store.id, session[:current_store_id].to_i
+    assert_equal @management_store.id, session[:current_store_id].to_i
     assert_nil session[:current_booth_id]
     assert_not store.sales_support_company?
     assert StoreMembership.admin_only.exists?(store: store, user: @actor)
+    follow_redirect!
+    assert_response :conflict
+    post admin_current_store_path, params: { store_id: store.id, return_to_key: "store_edit" }
     follow_redirect!
     assert_select "form[data-controller~='store-ai-autofill'][data-image-pair-form-always-submit-value='true']"
     assert_select "form[data-store-ai-autofill-image-url-value=?]", image_admin_store_ai_autofill_path(store)

@@ -4,6 +4,7 @@ module Admin
   class StoresController < Admin::BaseController
     before_action :set_store, only: %i[edit update]
     before_action :authorize_store_edit!, only: %i[edit update]
+    before_action -> { require_selected_store!(@store) }, only: %i[edit update]
     before_action :require_store_registration_proxy!, only: %i[new create]
     helper_method :store_edit_return_path
 
@@ -19,8 +20,7 @@ module Admin
       @form = Stores::ProxyRegistrationForm.new(proxy_store_params.merge(actor: current_user))
 
       if @form.save
-        session[:current_store_id] = @form.store.id
-        session.delete(:current_booth_id)
+        normalize_current_selection
         redirect_to edit_admin_store_path(@form.store), notice: "代行対象店舗を作成しました"
       else
         render :new, status: :unprocessable_entity
@@ -29,23 +29,15 @@ module Admin
 
     def select_modal
       load_selectable_stores
-
-      if @stores.size == 1
-        store = @stores.first
-        session[:current_store_id] = store.id
-        session.delete(:current_booth_id)
-
-        redirect_to resolve_select_modal_redirect_path(store.id), notice: "店舗を切り替えました"
-        return
-      end
-
-      if turbo_frame_request?
+      return render_selection_problem(selection_error_message) unless current_selection.success?
+      if current_store && (!current_selection.store_switchable? || params[:required].present?)
+        redirect_to selection_return_path(kind: :store)
+      elsif @stores.empty?
+        render_selection_problem("管理可能な店舗がありません")
+      elsif turbo_frame_request?
         render :select_modal, layout: false, status: :ok
       else
-        redirect_to admin_stores_path(
-          return_to: @return_to,
-          return_to_key: @return_to_key
-        )
+        redirect_to admin_stores_path(return_to: @return_to, return_to_key: @return_to_key)
       end
     end
 
@@ -105,77 +97,17 @@ module Admin
       raise ImageAttachments::MultipartPayload::Invalid, "画像送信パラメータが不正です。"
     end
 
-    def load_selectable_stores
-      @stores =
-        if current_user.system_admin?
-          Store.order(:id)
-        else
-          Store
-            .joins(:store_memberships)
-            .where(store_memberships: {
-              user_id: current_user.id,
-              membership_role: StoreMembership.membership_roles[:admin]
-            })
-            .distinct
-            .order(:id)
-        end
-      @stores = @stores.preload(thumbnail_attachment: :blob)
+    def render_selection_conflict_form(message)
+      @store.assign_attributes(store_params.except(:thumbnail, :remove_thumbnail))
+      @store.errors.add(:base, message)
+      render :edit, status: :conflict
+    end
 
-      @current_store_id = session[:current_store_id]
+    def load_selectable_stores
+      @stores = current_selection.stores
+      @current_store_id = current_store&.id
       @return_to = params[:return_to].presence
       @return_to_key = params[:return_to_key].presence
-    end
-
-    def resolve_select_modal_redirect_path(store_id)
-      store = Store.find_by(id: store_id)
-
-      key = @return_to_key
-      if key.present?
-        path = resolve_return_to_key(key, store)
-        return path if path.present?
-      end
-
-      rt = safe_return_to(@return_to)
-      return rt if rt.present?
-
-      if request.referer.to_s.start_with?(admin_stores_url)
-        return dashboard_path
-      end
-
-      session_rt = safe_return_to(session[:admin_return_to])
-      return session_rt if session_rt.present?
-
-      dashboard_path
-    end
-
-    def resolve_return_to_key(key, store)
-      return nil if store.blank?
-
-      case key.to_s
-      when "cast_invitation"
-        new_admin_cast_invitation_path
-      when "payout_account_edit"
-        edit_admin_payout_account_path
-      when "store_edit"
-        edit_admin_store_path(store)
-      else
-        nil
-      end
-    end
-
-    def safe_return_to(value)
-      s = value.to_s
-      return nil if s.blank?
-
-      return nil unless s.start_with?("/")
-      return nil if s.start_with?("//")
-      return nil if s.include?("\n") || s.include?("\r")
-      return nil if s.include?("\0")
-
-      return nil if s == "/admin/current_store"
-      return nil if s == "/admin/stores/select_modal"
-
-      s
     end
 
     def set_store

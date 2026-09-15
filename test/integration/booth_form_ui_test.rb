@@ -59,7 +59,7 @@ class BoothFormUiTest < ActionDispatch::IntegrationTest
     StoreMembership.create!(store:, user: admin, membership_role: :admin)
 
     sign_in admin, scope: :user
-    post admin_booths_path, params: {
+    post admin_booths_path, params: { selection_store_id: store.id,
       booth: { name: "a" * 101, description: "再試行する説明" }
     }
 

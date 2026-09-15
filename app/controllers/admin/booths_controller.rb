@@ -3,6 +3,7 @@
 module Admin
   class BoothsController < Admin::BaseController
     before_action :require_current_store!
+    before_action :require_form_store!, only: %i[create]
     before_action :set_booth, only: %i[archive force_end retry_publisher_disconnect]
 
     def index

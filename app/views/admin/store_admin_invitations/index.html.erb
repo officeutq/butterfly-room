@@ -10,6 +10,7 @@
       <%= button_to "招待URLを発行",
             admin_store_admin_invitations_path,
             method: :post,
+            params: { selection_store_id: current_store.id },
             class: "btn btn-primary" %>
 
       <% if current_user.store_registration_proxy_allowed? &&

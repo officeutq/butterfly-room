@@ -23,7 +23,7 @@ class AdminStoreAdminProxyRegistrationTest < ActionDispatch::IntegrationTest
 
     assert_difference "User.count", 1 do
       assert_difference "StoreMembership.count", 1 do
-        post admin_store_admin_proxy_registration_path, params: {
+        post admin_store_admin_proxy_registration_path, params: { selection_store_id: @store.id,
           store_admin_proxy_registration: {
             display_name: "Proxy Responsible",
             email: "proxy-responsible@example.com"
@@ -46,7 +46,7 @@ class AdminStoreAdminProxyRegistrationTest < ActionDispatch::IntegrationTest
     assert_response :forbidden
 
     assert_no_difference [ "User.count", "StoreMembership.count" ] do
-      post admin_store_admin_proxy_registration_path, params: {
+      post admin_store_admin_proxy_registration_path, params: { selection_store_id: @store.id,
         store_admin_proxy_registration: {
           display_name: "Denied",
           email: "denied-responsible@example.com"
@@ -62,7 +62,7 @@ class AdminStoreAdminProxyRegistrationTest < ActionDispatch::IntegrationTest
     post admin_current_store_path, params: { store_id: @store.id }
 
     assert_no_difference [ "User.count", "StoreMembership.count", "ActionMailer::Base.deliveries.size" ] do
-      post admin_store_admin_proxy_registration_path, params: {
+      post admin_store_admin_proxy_registration_path, params: { selection_store_id: @store.id,
         store_admin_proxy_registration: {
           display_name: "Wrong Role",
           email: customer.email

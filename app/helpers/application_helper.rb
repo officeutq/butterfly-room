@@ -179,54 +179,13 @@ module ApplicationHelper
     current_user&.store_admin? || store&.onboarding_active?
   end
 
-  # 参照表示用：可能な範囲で current_store / current_booth を解決する（副作用なし）
+  # ヘッダーと本文で同じ共通判定の結果を参照する。
   def layout_current_store
-    return nil unless user_signed_in?
-
-    # admin配下では既存の整合ロジックを優先
-    return current_store if respond_to?(:current_store)
-
-    # ★booth優先（07設計どおり）
-    booth = layout_current_booth
-    return booth.store if booth.present?
-
-    # fallback: session store（参照のみ）
-    store_id = session[:current_store_id]
-    return nil if store_id.blank?
-
-    store = Store.find_by(id: store_id)
-    return nil if store.blank?
-
-    return store if current_user.system_admin?
-    return store if current_user.at_least?(:store_admin) && current_user.admin_of_store?(store.id)
-
-    nil
+    current_store if user_signed_in?
   end
 
   def layout_current_booth
-    return nil unless user_signed_in?
-
-    # cast配下では既存メソッドがあるのでそれを優先（操作可能チェックも内包）
-    return current_booth if respond_to?(:current_booth)
-
-    booth_id = session[:current_booth_id]
-    return nil if booth_id.blank?
-
-    booth = Booth.find_by(id: booth_id)
-    return nil if booth.blank?
-
-    # system_admin は参照のみOK
-    return booth if current_user.system_admin?
-
-    # store_admin は自分の store の booth を参照OK
-    if current_user.at_least?(:store_admin) && current_user.admin_of_store?(booth.store_id)
-      return booth
-    end
-
-    # cast は所属 booth のみ参照OK
-    return booth if current_user.at_least?(:cast) && BoothCast.exists?(cast_user_id: current_user.id, booth_id: booth.id)
-
-    nil
+    current_booth if user_signed_in?
   end
 
   def layout_wallet_points

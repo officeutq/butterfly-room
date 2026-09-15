@@ -27,7 +27,7 @@ class AdminCastsInvitationIssuedUrlTest < ActionDispatch::IntegrationTest
   end
 
   test "issuing store_admin invitation saves issued_url and shows url + copy button in list" do
-    post admin_store_admin_invitations_path
+    post admin_store_admin_invitations_path, params: { selection_store_id: @store.id }
     assert_response :redirect
     follow_redirect!
     assert_response :ok

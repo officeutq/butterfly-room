@@ -93,6 +93,7 @@ class Cast::BoothInfoSharingTest < ActionDispatch::IntegrationTest
     booth_without_cast = Booth.create!(store: @store, name: "キャスト未設定ブース")
     sign_in store_admin, scope: :user
 
+    post cast_current_booth_path, params: { booth_id: booth_without_cast.id, return_to_key: "booth_show" }
     get cast_booth_path(booth_without_cast)
 
     assert_response :success

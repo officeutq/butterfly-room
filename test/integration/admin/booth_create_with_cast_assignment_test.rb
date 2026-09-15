@@ -37,7 +37,7 @@ class Admin::BoothCreateWithCastAssignmentTest < ActionDispatch::IntegrationTest
     StoreMembership.create!(store:, user: store_admin, membership_role: :admin)
 
     sign_in store_admin, scope: :user
-    post admin_booths_path, params: {
+    post admin_booths_path, params: { selection_store_id: store.id,
       booth: {
         name: "キャスト未設定ブース",
         description: "説明"
@@ -71,7 +71,7 @@ class Admin::BoothCreateWithCastAssignmentTest < ActionDispatch::IntegrationTest
     StoreMembership.create!(store:, user: cast, membership_role: :cast)
 
     sign_in store_admin, scope: :user
-    post admin_booths_path, params: {
+    post admin_booths_path, params: { selection_store_id: store.id,
       booth: {
         name: "初回紐づけブース",
         description: "説明"
@@ -99,7 +99,7 @@ class Admin::BoothCreateWithCastAssignmentTest < ActionDispatch::IntegrationTest
     StoreMembership.create!(store:, user: store_admin, membership_role: :admin)
 
     sign_in store_admin, scope: :user
-    post admin_booths_path, params: {
+    post admin_booths_path, params: { selection_store_id: store.id,
       booth: {
         name: "画像付き新規ブース",
         description: "説明",
@@ -139,7 +139,7 @@ class Admin::BoothCreateWithCastAssignmentTest < ActionDispatch::IntegrationTest
 
     sign_in store_admin, scope: :user
     assert_no_difference([ "Booth.count", "ActiveStorage::Blob.count" ]) do
-      post admin_booths_path, params: {
+      post admin_booths_path, params: { selection_store_id: store.id,
         booth: {
           name: "不正キャスト指定ブース",
           description: "説明",
@@ -168,7 +168,7 @@ class Admin::BoothCreateWithCastAssignmentTest < ActionDispatch::IntegrationTest
     sign_in store_admin, scope: :user
 
     post admin_booths_path,
-         params: {
+         params: { selection_store_id: store.id,
            booth: { name: "画像組新規ブース", description: "画像と紐づけを保存" },
            booth_cast: { cast_user_id: cast.id },
            image_pair: replace_pair_params
@@ -198,7 +198,7 @@ class Admin::BoothCreateWithCastAssignmentTest < ActionDispatch::IntegrationTest
     post admin_current_store_path, params: { store_id: store.id }
 
     post admin_booths_path,
-         params: {
+         params: { selection_store_id: store.id,
            booth: { name: "システム管理者画像組ブース" },
            image_pair: replace_pair_params
          },
@@ -224,7 +224,7 @@ class Admin::BoothCreateWithCastAssignmentTest < ActionDispatch::IntegrationTest
 
     assert_no_difference([ "Booth.count", "BoothCast.count", "ActiveStorage::Blob.count" ]) do
       post admin_booths_path,
-           params: {
+           params: { selection_store_id: store.id,
              booth: { name: "保存されない画像組ブース" },
              booth_cast: { cast_user_id: other_cast.id },
              image_pair: replace_pair_params
@@ -240,12 +240,12 @@ class Admin::BoothCreateWithCastAssignmentTest < ActionDispatch::IntegrationTest
   end
 
   test "new booth rejects legacy and image pair uploads together" do
-    store_admin, _store = create_store_admin("booth_pair_mixed")
+    store_admin, store = create_store_admin("booth_pair_mixed")
     sign_in store_admin, scope: :user
 
     assert_no_difference([ "Booth.count", "ActiveStorage::Blob.count" ]) do
       post admin_booths_path,
-           params: {
+           params: { selection_store_id: store.id,
              booth: {
                name: "保存されない混在ブース",
                thumbnail_image: image_upload("sample.jpg", "image/jpeg")

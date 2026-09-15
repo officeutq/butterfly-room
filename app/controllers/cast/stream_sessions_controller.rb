@@ -224,7 +224,6 @@ module Cast
     def authorize_stream_session_access!
       return if operable_booth_for_stream_session?(@stream_session.booth)
 
-      session.delete(:current_booth_id) unless StreamSessions::PublisherControl.enabled? && %w[publisher_state cancel_broadcast start_broadcast finish].include?(action_name)
       head :forbidden
     end
 

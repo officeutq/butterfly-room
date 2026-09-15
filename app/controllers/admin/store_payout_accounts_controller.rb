@@ -5,6 +5,7 @@ module Admin
     before_action :require_current_store!
     before_action :set_store
     before_action :authorize_store!
+    before_action :require_form_store!, only: %i[update]
 
     def edit
       @active_payout_account = @store.active_payout_account
@@ -62,6 +63,16 @@ module Admin
         :jp_bank_symbol,
         :jp_bank_number
       )
+    end
+
+    def render_selection_conflict_form(message)
+      return render "shared/selection_problem", status: :conflict unless @selection_form_store
+
+      @store = @selection_form_store
+      @active_payout_account = @store.active_payout_account
+      @payout_account = @store.store_payout_accounts.new(payout_account_params)
+      @payout_account.errors.add(:base, message)
+      render :edit, status: :conflict
     end
   end
 end

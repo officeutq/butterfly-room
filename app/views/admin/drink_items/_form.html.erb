@@ -2,6 +2,7 @@
               url: url,
               method: method,
               data: { action: "submit->drink-menu-scroll#store" } do |f| %>
+  <%= hidden_field_tag :selection_store_id, drink_item.store_id %>
   <div class="card drink-item-card drink-item-form-card <%= "text-muted drink-item-card-disabled" unless drink_item.enabled %>" data-bs-theme="light" data-onboarding-target-element="create-drink-card">
     <div class="card-body">
       <% if drink_item.errors.any? %>

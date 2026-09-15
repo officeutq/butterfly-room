@@ -17,20 +17,20 @@ class Admin::StoreEditReturnTest < ActionDispatch::IntegrationTest
 
     get edit_admin_store_path(@store, return_to: "store_detail")
 
+    assert_response :conflict
+    assert_equal selected_store.id, session[:current_store_id]
+    patch admin_store_path(@store), params: { return_to: "store_detail", store: { description: "更新後" } }, as: :json
+    assert_response :conflict
+    assert_nil @store.reload.description
+    assert_nil selected_store.reload.description
+    post admin_current_store_path, params: { store_id: @store.id }
+    get edit_admin_store_path(@store, return_to: "store_detail")
     assert_response :success
     assert_select "a.store-edit__back[href=?]", store_path(@store), count: 1
-    assert_select "form#store-edit-form[action=?]", admin_store_path(@store) do
-      assert_select "input[type=hidden][name=return_to][value=store_detail]", count: 1
-    end
-    assert_equal selected_store.id, @request.session[:current_store_id].to_i
-
     patch admin_store_path(@store), params: { return_to: "store_detail", store: { description: "更新後" } }, as: :json
-
     assert_response :success
     assert_equal store_path(@store), response.parsed_body["redirect_url"]
-    assert_equal selected_store.id, @request.session[:current_store_id].to_i
     assert_equal "更新後", @store.reload.description
-    assert_nil selected_store.reload.description
   end
 
   [ :html, :json ].each do |format|

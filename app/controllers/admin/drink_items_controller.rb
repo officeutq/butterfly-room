@@ -7,6 +7,7 @@ module Admin
 
     before_action :require_current_store!
     before_action :set_drink_item, only: %i[update destroy]
+    before_action :require_form_store!, only: %i[create]
 
     def index
       @drink_item = build_drink_item
@@ -78,13 +79,25 @@ module Admin
     private
 
     def set_drink_item
-      @drink_item = current_store.drink_items.with_attached_custom_icon.find(params[:id])
+      @drink_item = DrinkItem.with_attached_custom_icon.find(params[:id])
+      return head :forbidden unless current_selection.stores.any? { |store| store.id == @drink_item.store_id }
+
+      require_selected_store!(@drink_item.store)
     end
 
     def drink_item_params
       params.require(:drink_item)
             .permit(:name, :price_points, :position, :enabled, :icon_key, :custom_icon, :remove_custom_icon)
             .tap { |permitted| permitted.delete(:remove_custom_icon) }
+    end
+
+    def render_selection_conflict_form(message)
+      @drink_item ||= @selection_form_store&.drink_items&.new
+      return render "shared/selection_problem", status: :conflict unless @drink_item
+
+      @drink_item.assign_attributes(drink_item_params.except(:custom_icon)) if params[:drink_item].present?
+      @drink_item.errors.add(:base, message)
+      render :selection_conflict, status: :conflict
     end
 
     def load_drink_items(replace_item: nil)

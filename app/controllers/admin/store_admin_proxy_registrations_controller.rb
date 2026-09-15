@@ -4,6 +4,7 @@ module Admin
   class StoreAdminProxyRegistrationsController < Admin::BaseController
     before_action :require_current_store!
     before_action :require_store_admin_registration_proxy!
+    before_action :require_form_store!, only: %i[create]
 
     def new
       @form = StoreAdminRegistrations::ProxyForm.new(store: current_store, actor: current_user)

@@ -30,14 +30,15 @@ class SalesSupportCompanyProxyFlowTest < ActionDispatch::IntegrationTest
     store_b = Store.find_by!(name: "店舗B")
     assert_not store_b.sales_support_company?
     assert StoreMembership.admin_only.exists?(store: store_b, user: yamada)
-    assert_equal store_b.id, session[:current_store_id].to_i
+    assert_equal company_a.id, session[:current_store_id].to_i
+    post admin_current_store_path, params: { store_id: store_b.id }
 
     get admin_store_admin_invitations_path
     assert_response :success
     assert_select "a[href=?]", new_admin_store_admin_proxy_registration_path,
                   text: "店舗責任者を登録（代行用）"
 
-    post admin_store_admin_proxy_registration_path, params: {
+    post admin_store_admin_proxy_registration_path, params: { selection_store_id: store_b.id,
       store_admin_proxy_registration: {
         display_name: "B店長",
         email: "store-b-manager@example.com"

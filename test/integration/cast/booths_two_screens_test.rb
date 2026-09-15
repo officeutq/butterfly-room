@@ -39,10 +39,12 @@ class Cast::BoothsTwoScreensTest < ActionDispatch::IntegrationTest
     assert @booth.current_stream_session_id.present?
   end
 
-  test "offline: live redirects to cast booths index" do
-    get live_cast_booth_path(@booth)
-    assert_response :redirect
-    assert_redirected_to cast_booths_path
+  test "offline: explicit live entry prepares the selected booth" do
+    assert_difference "StreamSession.count", 1 do
+      get live_cast_booth_path(@booth)
+    end
+    assert_response :success
+    assert @booth.reload.standby?
   end
 
   test "standby: enter reuses existing session and redirects to live" do

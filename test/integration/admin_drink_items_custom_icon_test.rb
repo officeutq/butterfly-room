@@ -25,7 +25,7 @@ class AdminDrinkItemsCustomIconTest < ActionDispatch::IntegrationTest
 
   test "store admin can create drink item with custom_icon" do
     assert_difference("DrinkItem.count", 1) do
-      post admin_drink_items_path, params: {
+      post admin_drink_items_path, params: { selection_store_id: @store.id,
         drink_item: base_drink_item_params.merge(custom_icon: upload_png)
       }
     end
@@ -45,7 +45,7 @@ class AdminDrinkItemsCustomIconTest < ActionDispatch::IntegrationTest
       content: oversized_png_content
     ) do |upload|
       assert_no_difference("DrinkItem.count") do
-        post admin_drink_items_path, params: {
+        post admin_drink_items_path, params: { selection_store_id: @store.id,
           drink_item: base_drink_item_params.merge(custom_icon: upload)
         }
       end
@@ -63,7 +63,7 @@ class AdminDrinkItemsCustomIconTest < ActionDispatch::IntegrationTest
       content: svg_content
     ) do |upload|
       assert_no_difference("DrinkItem.count") do
-        post admin_drink_items_path, params: {
+        post admin_drink_items_path, params: { selection_store_id: @store.id,
           drink_item: base_drink_item_params.merge(custom_icon: upload)
         }
       end

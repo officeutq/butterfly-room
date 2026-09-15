@@ -27,11 +27,9 @@ class AdminStorePayoutAccountTest < ActionDispatch::IntegrationTest
     sign_in @store_admin, scope: :user
 
     post admin_current_store_path, params: { store_id: @store2.id, return_to_key: "payout_account_edit" }
-    assert_response :redirect
-    assert_redirected_to admin_stores_path
-    follow_redirect!
-    assert_response :success
-    assert_match "選択できない店舗です", response.body
+    assert_response :conflict
+    assert_match "選択できない対象です", response.body
+    assert_equal @store1.id, session[:current_store_id]
   end
 
   test "system_admin can access selected store payout_account edit" do
@@ -61,7 +59,7 @@ class AdminStorePayoutAccountTest < ActionDispatch::IntegrationTest
     post admin_current_store_path, params: { store_id: @store1.id }
     assert_response :redirect
 
-    patch admin_payout_account_path, params: {
+    patch admin_payout_account_path, params: { selection_store_id: @store1.id,
       store_payout_account: {
         bank_code: "0005",
         branch_code: "123",
@@ -131,7 +129,7 @@ class AdminStorePayoutAccountTest < ActionDispatch::IntegrationTest
     post admin_current_store_path, params: { store_id: @store1.id }
     assert_response :redirect
 
-    patch admin_payout_account_path, params: {
+    patch admin_payout_account_path, params: { selection_store_id: @store1.id,
       store_payout_account: {
         input_account_kind: "jp_bank",
         jp_bank_symbol: "11940",
