@@ -9,7 +9,21 @@ module StreamSessions
 
     def call
       @booth = @stream_session.booth
-      result = @booth.with_lock do
+      User.transaction do
+        # 招待承認・退会と同じ順序で、本人の開始成功確定を直列化する。
+        @actor = User.active.lock("FOR NO KEY UPDATE").find_by(id: @actor&.id)
+        reject!("forbidden", "配信を操作する権限がありません", status: :forbidden) unless @actor
+
+        confirm_under_actor_lock
+      end
+    rescue Ivs::ParticipantSnapshotService::Unavailable
+      unavailable!
+    end
+
+    private
+
+    def confirm_under_actor_lock
+      @booth.with_lock do
         @stream_session.lock!
         unless PublisherControl.active_actor?(@actor) && Authorization::StreamSessionPolicy.new(@actor, @stream_session).publish_token?
           reject!("forbidden", "配信を操作する権限がありません", status: :forbidden)
@@ -51,12 +65,7 @@ module StreamSessions
         end
         PublisherStateService.payload(connection: connection, stream_session: @stream_session, booth: @booth)
       end
-      result
-    rescue Ivs::ParticipantSnapshotService::Unavailable
-      unavailable!
     end
-
-    private
 
     def validate_target!(connection)
       unless @booth.current_stream_session_id == @stream_session.id && !@booth.archived? &&
