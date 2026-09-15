@@ -1,0 +1,21 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ObserveAndDisconnectTaggedProductionStageParticipants",
+      "Effect": "Allow",
+      "Action": [
+        "ivs:GetParticipant",
+        "ivs:ListParticipants",
+        "ivs:DisconnectParticipant"
+      ],
+      "Resource": "arn:aws:ivs:ap-northeast-1:137775584467:stage/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:ResourceTag/app": "butterfly-room",
+          "aws:ResourceTag/env": "br"
+        }
+      }
+    }
+  ]
+}
