@@ -290,7 +290,7 @@ IVS SDK のイベントとして、最低限以下の概念を扱う。
 
 ## 8. 実配信者と接続管理（#1280の目標仕様）
 
-保存列・API・27ケースは [実配信者設計](design/actual_publisher.md)、採用した外部契約は [実測資料](design/legacy_publisher_migration_research.md) を参照する。以下は個別実装の有効化前の設計である。
+保存列・API・27ケースは [実配信者設計](design/actual_publisher.md)、採用した外部契約は [実測資料](design/legacy_publisher_migration_research.md) を参照する。以下の契約は実装済みで、2026-09-15にstaging・本番で有効化した。環境ごとの実施内容・未実施の確認は [適用記録](ops/actual_publisher_rollout.md) を参照する。
 
 - publisherの発行要求は `request_id` と `expected_generation` を追加し、開始権を1件だけ確保する。参加者ID・期限・人物・対象をDBへ保存してからトークンを返す。発行だけでは実配信者・開始時刻・booth.liveを設定しない。
 - 自分のSDKの `published` イベント後に、`request_id` と `generation` を既存の開始確定APIへ送る。GetStage→ListParticipants全ページ→GetParticipant→GetStageで参加者属性・状態・対象を照合し、実配信者・初回時刻・liveを同じDBトランザクションで保存する。

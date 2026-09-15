@@ -7,11 +7,11 @@
 | 項目 | 状態 |
 | --- | --- |
 | 配信制御・人物表示・消化・集計・補完のコード | 各PRで統合済み、#1288で連携確認 |
-| 共通有効化 | stagingは9月15日にtrueへ変更し、app・workerを同じ版で再起動済み。本番は未変更・無効 |
-| 本番・stagingのDB調査 | stagingは新列導入・補完済み。本番は9月15日10時台の再確認で新列未導入、live/away=0。適用直前にも再確認する |
-| 旧履歴の適用 | ローカル62件・staging12件を適用済み。本番は未適用。restoreの実施確認はtest DBのみ |
+| 共通有効化 | 9月15日にstaging・本番ともtrueへ変更。各環境のapp・workerを同じ版で再起動し、設定と稼働を確認済み。ローカルwebはfalseのまま |
+| 本番・stagingのDB移行 | 両環境で直前のlive/away=0を確認し、新列導入・補完済み。旧準備はstaging2件・本番6件を保持 |
+| 旧履歴の適用 | ローカル62件・staging12件・本番1件を固定一覧で適用済み。restoreの実施確認はtest DBのみ |
 | ローカル固定一覧 | `tmp/publisher-backfill-local-20260914.json`。元の履歴・金額・通知と対象外672件の不変を確認。基準時刻・SHA・結果は補完手順に記録済み |
-| 実環境の固定一覧 | stagingは下記の固定一覧を適用済み。本番は新列導入後に作成する |
+| 実環境の固定一覧 | staging・本番とも下記の固定一覧を適用済み。バックアップ・一覧SHA・前後比較を環境別に保存 |
 | 実カメラ／マイク／画面加工 | stagingでブラウザーの模擬カメラ・音声と実DeepAR／実IVSを使用。物理カメラ／マイク・Banubaは未実施 |
 
 2026-09-15 09:53:59 JSTにstagingのDBを再度読み取り確認した。新列未導入、終了済み開始あり12件・未開始準備2件、live/away・消化台帳・消化通知は0。結果は`tmp/issue1288-inventory-staging.json`。有効化前の確認として扱い、デプロイ後の固定一覧・適用結果とは分ける。
@@ -44,13 +44,13 @@ stagingの`infra/terraform/environments/staging/iam.tf`の`UseTaggedStagingStage
 - ファイルSHA-256：`8b2791276d7968c3c1f4020313299f2e2d654e7b95b7c661148ed479fef3c432`
 - 対象ロール・現状との差・保存planのSHAを再確認し、0追加・1変更・0削除で適用成功。実アプリによる配信成功確定でも権限の利用を確認した。全体のNo changesを意味しない。
 
-本番の実行ロール`butterfly-room-ec2-role`は別管理。9月15日に利用可能なデプロイ用ロールで管理ポリシー`ButterflyRoomIvsRealTimeStagePolicy`の本文を読み取り、既存の権限はCreateStage・GetStage・TagResource・CreateParticipantTokenであることを確認した。ListParticipants・GetParticipant・DisconnectParticipantが不足している。
+本番の実行ロール`butterfly-room-ec2-role`は別管理。9月15日の追加前に、利用可能なデプロイ用ロールで管理ポリシー`ButterflyRoomIvsRealTimeStagePolicy`の本文を読み取り、既存の権限はCreateStage・GetStage・TagResource・CreateParticipantTokenであることを確認した。ListParticipants・GetParticipant・DisconnectParticipantが不足していた。
 
 追加用の[ポリシーJSON](actual_publisher_production_ivs_policy.json)は3権限だけを対象とし、東京リージョン・対象AWSアカウントのStage、タグ`app=butterfly-room`かつ`env=br`に限定する。`env=br`は本番で利用中の6 Stageのタグと、環境変数の未指定時の実装値を確認した結果であり、stagingのタグを流用しない。既存の管理ポリシーは変更しない。
 
-2026-09-15、作業用IAMユーザー`butterfly-room-local`から本番ロールへの`iam:PutRolePolicy`がAccessDeniedとなり、追加は未実施。本番のコード・DB・有効化設定も未変更。過去履歴の調査権限ではなく、今後の配信開始・再接続・終了に使うアプリ実行権限である。
+2026-09-15、作業用IAMユーザーの`iam:PutRolePolicy`がAccessDeniedとなったため、ユーザーがAWSコンソールから対象ロールへインラインポリシー`ButterflyRoomActualPublisherControl`を作成した。作成完了画面を確認し、その後に本番移行を実施した。作業用ユーザーへのIAM管理権限追加は行っていない。過去履歴の調査権限ではなく、今後の配信開始・再接続・終了に使うアプリ実行権限である。
 
-権限を持つ管理者の作業は、AWSコンソールのIAM→ロール→`butterfly-room-ec2-role`→許可を追加→インラインポリシーを作成→JSONに上記ファイルの全内容を貼り付け、名前`ButterflyRoomActualPublisherControl`で保存する。Codex側の作業用ユーザーへIAM管理権限を増やす必要はない。追加後にこちらで本文・実行ロールからの利用を確認し、バックアップ→コード・新列導入→固定一覧の確認・補完→有効化→検証へ進む。
+作業用ロールからの`iam:GetRolePolicy`も許可されていないため、追加済み本文のCLI再取得は未実施。代わりに本番アプリの実行ロールと実Stageで、接続した専用参加者へのListParticipants・GetParticipant・DisconnectParticipantがすべて成功することを確認した。保存した追加用JSON、ユーザーによる作成確認、実行時の検証を区別する。
 
 ## 2026-09-15 staging適用記録
 
@@ -65,6 +65,19 @@ stagingの`infra/terraform/environments/staging/iam.tf`の`UseTaggedStagingStage
 - 修正版で100pt消化・100pt返却、予約残高0。前の確認分も含む検証店舗の売上は200pt、テスト残高は800pt。売上台帳・消化通知・個人集計はY。検証スクリプトの共有確認は自動転送後の画面ではなく、転送前のHTTP本文にあるOGメタ情報を確認するよう修正した。
 - 実行結果`tmp/issue1288-staging-browser-result.json`、画面`tmp/issue1288-staging-live.png`・`tmp/issue1288-staging-result.png`。合成デバイスによる確認であり、物理カメラ／マイクの確認を代替したとは扱わない。修正版のCIは[34917239330](https://github.com/officeutq/butterfly-room/actions/runs/34917239330)でquality・testとも成功。
 - 検証後、専用2ブースを`CloseAndArchiveService`で閉鎖し、専用店舗を非公開・5ユーザーを利用停止・ドリンクを無効化した。準備17を正規終了し、終了済み配信15／16・接続4件・台帳200pt・返却記録・残高800ptを保持。IVSの接続中参加者0、DBのlive/away・切断待ち・未解放接続0を確認。結果は`tmp/issue1288-staging-cleanup-result.json`。元の未開始準備2件には触れていない。
+
+## 2026-09-15 本番適用記録
+
+- 対象はEC2 `i-0766ffc0f209e1de1`、DB `butterfly_room_production`。旧コード`f2b60b4cd33fd54c26f88988b7d5159c30d34bb7`から`e403f4470712f385dd17ec4f5f02ed70504afd20`へ更新した。stagingで確認した`e92d555`と`app/config/db/lib/script`の内容は同一。依存定義・Dockerfile等の不変を確認して既存イメージへ対象ソースを載せ、CSS・assetのビルドに成功した。
+- 新イメージは`sha256:2dfdee5839723bfb2f6981e0cdb7860613915f85d87c4fc25741aff2971cab68`。旧イメージを`butterfly_room:rollback-before-1288-20260915`として保持し、既存の未追跡ファイルのチェックサムも不変。不要なDockerイメージ削除や共有RDSの変更は行っていない。
+- バックアップ保管先は`/home/ec2-user/apps/backups/issue1288-20260915/`（ディレクトリ700、DB・環境設定・固定一覧は600）。`before.dump`は1,347,927 bytes、SHA-256 `447d85b3df5df403e2d52bf437376e8758114534c5155dfb5ee00dbba9dba2e9`。DB 18.3に対してホストのpg_dump 15.15を使わず、公式`postgres:18-alpine`の一時コマンドコンテナで対象DBだけを取得し、`pg_restore --list`成功。実DBへのrestoreは行っていない。元の設定は`env.before`へ保存。
+- 権限検証は02:44:04 UTCに成功。待機中の既存Stageで専用の1分トークンと合成映像を使い、実SDKのpublished、ListParticipantsによる発見、GetParticipantのCONNECTED・属性一致、DisconnectParticipantの成功とSDKの退出を確認した。トークンはメモリー内だけで扱い、保存・出力しない。Railsの配信・人物・金銭の検証データは作成していない。
+- 移行直前にもDBのlive/away・直近視聴者0、IVSの接続中参加者0を再確認。app・workerを停止し、`20260914000000`・`20260914070000`の2件のmigrationを実施した。未開始準備6件は維持した。
+- 固定一覧`manifest.json`のSHA-256は`dd40b8e4d2540d87c62f65699299dec4a20b6e1200b98371a976bb953e775a7f`、基準時刻2026-09-15 02:45:40.738621 UTC。対象はID 5、X=14の1件、0pt・158秒。6件は`not_ended`で除外。一覧とSHAの確認後、同じ一覧だけを適用し`applied=1`、失敗・競合なし。結果は`apply.jsonl`。
+- `.env.production`へ`ACTUAL_PUBLISHER_CONTROL_ENABLED=true`を設定し、appは02:46:29 UTC、workerは02:46:39 UTCに同じイメージで起動した。両コンテナのソースSHA・実行時フラグを確認し、02:46:40 UTCにHTTPS `/up`が200となった。
+- `before-inventory.json`と`after-inventory.json`で元の7行のX・状態・開始終了・更新時刻・現在参照・台帳と、消化通知が不変であることを照合。対象1件だけを`legacy_creator_backfill`としてXへ補完し、旧準備6件の新列は空欄のまま。`CastMetricsQuery`の全期間・全店舗合計はユーザー14の0pt・158秒だった。
+- 02:47:28 UTCまでの検証で、6 Stageの参加者照会成功・接続中0、切断待ち・未解放接続0。`/up`・トップ・ログイン画面は200。既存配信の共有情報は保存した配信者に一致した。`RetryPendingPublisherDisconnectsJob`の毎分登録、02:47:00 UTCの実行完了、worker系のheartbeatを確認した。結果は同ディレクトリの`verification.jsonl`。02:57:14 UTCにもheartbeatの更新と直近3回のジョブ完了、ジョブ失敗0、HTTPS 200を確認した。
+- 本番の確認範囲は実行権限、移行結果、画面・共有・個人集計、定期ジョブ。アプリの開始から消化・終了までの実IVS連携はstagingで確認しており、本番の利用者データをテスト目的で変更していない。物理カメラ／マイク・Banubaは未確認。
 
 ## 失敗時の確認と回復
 
