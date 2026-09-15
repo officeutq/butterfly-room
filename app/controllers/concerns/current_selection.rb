@@ -127,6 +127,7 @@ module CurrentSelection
     when "booth_edit"
       booth.archived? ? cast_booth_path(booth) : edit_cast_booth_path(booth)
     when "booth_live"
+      flash[:alert] = Booths::PrepareSelectedBoothService::CLOSED_MESSAGE if booth.archived?
       booth.archived? ? cast_booth_path(booth) : live_cast_booth_path(booth)
     when "booth_stream_sessions"
       cast_booth_stream_sessions_path(booth)
@@ -149,6 +150,7 @@ module CurrentSelection
   # 戻り先の画面種別を保持し、管理画面の対象IDだけ確定した選択に揃える。
   def selection_return_path(kind:, result: current_selection)
     key = params[:return_to_key].to_s
+    @selection_preparation_requested = key == "booth_live"
     return selection_booth_path(key, result.booth) if key.start_with?("booth_")
     return new_admin_cast_invitation_path if key == "cast_invitation"
     return edit_admin_payout_account_path if key == "payout_account_edit"
@@ -163,6 +165,7 @@ module CurrentSelection
 
     route = Rails.application.routes.recognize_path(path.split("?").first, method: :get)
     if route[:controller] == "cast/booths" && %w[show edit live].include?(route[:action])
+      @selection_preparation_requested = route[:action] == "live"
       selection_booth_path("booth_#{route[:action]}", result.booth)
     elsif route[:controller] == "cast/booths/stream_sessions" && route[:action] == "index"
       selection_booth_path("booth_stream_sessions", result.booth)
@@ -184,6 +187,19 @@ module CurrentSelection
     return if path.match?(/[\\\x00-\x20]/) || URI::DEFAULT_PARSER.unescape(path).match?(/[\\\x00-\x20]/)
 
     path
+  end
+
+  def prepare_selection_destination(kind:, result:)
+    destination = selection_return_path(kind: kind, result: result)
+    return destination unless @selection_preparation_requested && result.booth
+
+    entry = Booths::PrepareSelectedBoothService.new(booth: result.booth, actor: current_user).call
+    if entry.information_only
+      flash[:alert] = entry.message
+      cast_booth_path(entry.booth)
+    else
+      live_cast_booth_path(entry.booth)
+    end
   end
 
   def resolve_current_selection(purpose: :normalize, target_id: nil, actor: current_user)

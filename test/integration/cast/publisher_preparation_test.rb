@@ -43,7 +43,8 @@ class Cast::PublisherPreparationTest < ActionDispatch::IntegrationTest
       sign_out :user
       sign_in @creator, scope: :user
       get live_cast_booth_path(@booth)
-      assert_response :conflict
+      assert_redirected_to cast_booth_path(@booth)
+      follow_redirect!
       assert_select ".cast-live-screen", count: 0
       assert_includes response.body, "このブースはすでに他の人が配信中です"
       assert_empty @client.api_requests

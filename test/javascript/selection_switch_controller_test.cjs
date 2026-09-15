@@ -22,7 +22,7 @@ function setup({ confirm = true, response = { ok: true, json: async () => ({ red
   const submit = () => controller.submit({ preventDefault() {}, target: { action: "/cast/current_booth" } })
   const form = { method: "post", dataset: {}, elements: [], closest: () => null }
   forms.push(form)
-  return { controller, calls, visits, confirmations, form, buttons, submit, document }
+  return { controller, calls, visits, confirmations, form, buttons, submit, document, window: context.window }
 }
 
 test("dirty cancellation does not send selection or discard input", async () => {
@@ -98,4 +98,41 @@ test("store selection for cast invitation continues inside the modal and updates
   assert.equal(names.store.textContent, "店舗B")
   assert.equal(names.booth.textContent, "未選択")
   assert.equal(s.visits.length, 0)
+})
+
+test("selection waits for cancellation of the publisher start before POST", async () => {
+  const s = setup()
+  let release
+  const pending = new Promise(resolve => { release = resolve })
+  const steps = []
+  s.window.publisher = {
+    async prepareSelectionSwitch() { steps.push("prepare"); await pending },
+    async completeSelectionSwitch() { steps.push("dispose") },
+  }
+  const submit = s.submit()
+  assert.equal(s.calls.length, 0)
+  release()
+  await submit
+  assert.deepEqual(steps, ["prepare", "dispose"])
+  assert.equal(s.calls.length, 1)
+})
+
+test("unresolved publisher cancellation blocks selection and restores the original UI", async () => {
+  const s = setup()
+  let resumes = 0
+  s.window.publisher = {
+    async prepareSelectionSwitch() { throw new Error("配信接続の確認待ちです") },
+    resumeAfterSelectionFailure() { resumes++ },
+  }
+  await s.submit()
+  assert.equal(s.calls.length, 0)
+  assert.equal(resumes, 1)
+  assert.equal(s.controller.errorTarget.hidden, false)
+})
+
+test("a media disposal error after committed selection still leaves the old preparation screen", async () => {
+  const s = setup()
+  s.window.publisher = { async prepareSelectionSwitch() {}, async completeSelectionSwitch() { throw new Error("media") } }
+  await s.submit()
+  assert.deepEqual(s.visits, ["/cast/booths/2"])
 })

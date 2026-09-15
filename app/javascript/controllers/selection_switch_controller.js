@@ -21,7 +21,10 @@ export default class extends Controller {
     const form = event.target
     this.setBusy(true)
     this.errorTarget.hidden = true
+    const publisher = window.publisher
     try {
+      await publisher?.prepareSelectionSwitch()
+      if (this.disconnected) return
       const response = await fetch(form.action, {
         method: "POST",
         body: new FormData(form),
@@ -36,6 +39,9 @@ export default class extends Controller {
       if (!response.ok || !result.redirect_url) {
         throw new Error(result.message || "切り替えできませんでした。再度お試しください")
       }
+      // サーバーの選択確定後は、破棄処理の例外でも旧対象の画面へ戻さない。
+      try { await publisher?.completeSelectionSwitch() } catch (_) {}
+      if (this.disconnected) return
       window.Turbo.cache.clear()
       if (result.frame === "modal") {
         for (const kind of ["store", "booth"]) {
@@ -49,6 +55,7 @@ export default class extends Controller {
         window.Turbo.visit(result.redirect_url)
       }
     } catch (error) {
+      publisher?.resumeAfterSelectionFailure()
       this.errorTarget.textContent = error.message || "通信に失敗しました。再度お試しください"
       this.errorTarget.hidden = false
       this.setBusy(false)

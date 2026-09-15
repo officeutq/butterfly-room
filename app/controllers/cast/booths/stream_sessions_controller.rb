@@ -15,24 +15,20 @@ module Cast
       end
 
       def create
-        booth = Booth.active.find(params[:booth_id])
+        scope = current_user.at_least?(:store_admin) ? Booth.all : Booth.active
+        booth = scope.find(params[:booth_id])
         return head :forbidden unless Authorization::BoothPolicy.new(current_user, booth).update?
         return unless require_selected_booth!(booth, return_to_key: "booth_live", allow_selection: true)
 
-        result = ::Booths::EnterAsCastService.new(
+        result = ::Booths::PrepareSelectedBoothService.new(
           booth: booth,
           actor: current_user
         ).call
 
-        case result.action
-        when :redirect_live
-          redirect_to live_cast_booth_path(result.booth), notice: "配信画面を開きました"
-        when :occupied_by_other
-          redirect_to cast_booth_path(booth), alert: "このブースはすでに配信中です"
-        when :already_live_elsewhere
-          redirect_to dashboard_path, alert: "他のブースで配信中のため開始できません"
+        if result.information_only
+          redirect_to cast_booth_path(result.booth), alert: result.message
         else
-          redirect_to cast_booth_path(booth), alert: "配信導線の開始に失敗しました"
+          redirect_to live_cast_booth_path(result.booth), notice: "配信画面を開きました"
         end
       rescue ::Booths::EnterAsCastService::NotAuthorized
         redirect_to dashboard_path, alert: "選択できないブースです"
