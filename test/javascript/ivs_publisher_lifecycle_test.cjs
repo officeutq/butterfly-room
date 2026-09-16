@@ -278,7 +278,7 @@ test("E05 an older pending disconnect blocks token issuance and can be rechecked
   assert.equal(f.requests.filter(r => r.path === "/retry-disconnect").length, 2)
 })
 
-test("E01 preparation shows both start and preparation-end controls", () => {
+test("preparation hides end while start cancellation, broadcast end and resume controls remain available", () => {
   const f = fixture()
   const button = () => {
     const classes = new Set()
@@ -288,10 +288,38 @@ test("E01 preparation shows both start and preparation-end controls", () => {
         toggle: (value, on) => on ? classes.add(value) : classes.delete(value) } }
   }
   Object.assign(f.controller, { hasStartBtnTarget: true, hasEndBtnTarget: true, startBtnTarget: button(), endBtnTarget: button() })
-  f.syncActualUI()
-  assert.equal(f.controller.startBtnTarget.classList.contains("d-none"), false)
-  assert.equal(f.controller.endBtnTarget.classList.contains("d-none"), false)
-  assert.equal(f.controller.endBtnTarget.label.textContent, "準備終了")
+  const assertControls = (startLabel, endLabel) => {
+    f.syncActualUI()
+    assert.equal(f.controller.startBtnTarget.classList.contains("d-none"), startLabel === null)
+    assert.equal(f.controller.endBtnTarget.classList.contains("d-none"), endLabel === null)
+    if (startLabel) assert.equal(f.controller.startBtnTarget.label.textContent, startLabel)
+    if (endLabel) assert.equal(f.controller.endBtnTarget.label.textContent, endLabel)
+  }
+
+  assertControls("配信開始", null)
+
+  // プレビュー待ちも含め、開始途中の取消は引き続き操作できる。
+  f.controller._publisherStartOperation = Promise.resolve()
+  assertControls(null, "開始を取り消す")
+  f.controller._publisherStartOperation = null
+  for (const state of ["starting", "joining", "confirming"]) {
+    f.controller._state = state
+    assertControls(null, "開始を取り消す")
+  }
+
+  Object.assign(f.controller, { _state: "live", _broadcasting: true, _resumable: true })
+  for (const status of ["live", "away"]) {
+    f.controller._boothStatus = status
+    assertControls(null, "配信終了")
+  }
+  f.controller._broadcasting = false
+  assertControls("配信に戻る", "配信終了")
+
+  Object.assign(f.controller, { _state: "idle", _boothStatus: "standby", _resumable: false })
+  assertControls("配信開始", null)
+  f.controller.publisherControlValue = false
+  assertControls("配信開始", null)
+  assert.equal(f.requests.length, 0)
 })
 
 test("E05 lost end response keeps the same request, blocks start and retries that end", async () => {
