@@ -11,10 +11,6 @@ class CastInvitationManagementTest < ActionDispatch::IntegrationTest
   test "modal GET never issues and single unselected store uses existing automatic selection" do
     assert_no_difference "StoreCastInvitation.count" do
       get new_admin_cast_invitation_path, headers: { "Turbo-Frame" => "modal" }
-      assert_redirected_to select_modal_admin_stores_path(return_to_key: "cast_invitation")
-      follow_redirect!(headers: { "Turbo-Frame" => "modal" })
-      assert_redirected_to new_admin_cast_invitation_path
-      follow_redirect!(headers: { "Turbo-Frame" => "modal" })
       assert_response :ok
       assert_select "[data-controller='cast-invitation']", count: 1
     end

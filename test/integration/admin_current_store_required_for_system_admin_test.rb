@@ -11,15 +11,12 @@ class AdminCurrentStoreRequiredForSystemAdminTest < ActionDispatch::IntegrationT
     StoreMembership.create!(store: @store, user: @store_admin, membership_role: :admin)
   end
 
-  test "system_admin without current_store is redirected to /admin/stores on admin booths" do
+  test "system_admin with a sole store is automatically selected" do
     sign_in @system_admin, scope: :user
 
     get admin_booths_path
-    assert_response :redirect
-    assert_redirected_to admin_stores_path
-
-    follow_redirect!
     assert_response :success
+    assert_equal @store.id, session[:current_store_id]
   end
 
   test "system_admin with invalid current_store_id is corrected and redirected to /admin/stores" do
@@ -34,11 +31,9 @@ class AdminCurrentStoreRequiredForSystemAdminTest < ActionDispatch::IntegrationT
     @store.destroy!
 
     get admin_booths_path
-    assert_response :redirect
-    assert_redirected_to admin_stores_path
-
-    follow_redirect!
-    assert_response :success
+    assert_response :conflict
+    assert_nil session[:current_store_id]
+    assert_includes response.body, "管理可能な店舗がありません"
   end
 
   test "store_admin behavior is not broken (can access admin booths without explicit selection)" do

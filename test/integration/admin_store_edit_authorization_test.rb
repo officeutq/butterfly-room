@@ -47,10 +47,12 @@ class AdminStoreEditAuthorizationTest < ActionDispatch::IntegrationTest
 
   test "system_admin can edit/update any store" do
     sign_in @system_admin, scope: :user
+    post admin_current_store_path, params: { store_id: @store1.id }
 
     get edit_admin_store_path(@store1)
     assert_response :success
 
+    post admin_current_store_path, params: { store_id: @store2.id }
     patch admin_store_path(@store2), params: { store: { name: "sys updated" } }
     assert_response :redirect
     assert_redirected_to dashboard_path
@@ -59,6 +61,7 @@ class AdminStoreEditAuthorizationTest < ActionDispatch::IntegrationTest
 
   test "system_admin sees and can update sales support company setting" do
     sign_in @system_admin, scope: :user
+    post admin_current_store_path, params: { store_id: @store1.id }
 
     get edit_admin_store_path(@store1)
 

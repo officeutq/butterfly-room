@@ -1,0 +1,10 @@
+<% content_for :title, "選択対象の確認" %>
+<div class="container py-4">
+  <div class="alert alert-warning" role="alert"><%= @selection_message %></div>
+  <div class="d-flex gap-2">
+    <% if current_booth %>
+      <%= link_to "選択中のブース情報へ", cast_booth_path(current_booth), class: "btn btn-outline-primary", data: { turbo_prefetch: false } %>
+    <% end %>
+    <%= link_to "ダッシュボードへ", dashboard_path, class: "btn btn-outline-secondary" %>
+  </div>
+</div>

@@ -27,8 +27,7 @@ module Stores
         pending_payload = completion_tracking_payload(from: @store_registration_from)
 
         sign_in(@form.user) # Devise
-        session[:current_store_id] = @form.store.id
-        session.delete(:current_booth_id)
+        save_current_selection(resolve_current_selection(actor: @form.user))
         session[STORE_REGISTRATION_PENDING_SESSION_KEY] =
           pending_payload
             .merge("store_id" => @form.store.id)

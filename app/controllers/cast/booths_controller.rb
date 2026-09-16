@@ -5,6 +5,7 @@ module Cast
     before_action :set_booth, only: %i[live status edit update]
     before_action :set_booth_for_show, only: %i[show]
     before_action :authorize_update!, only: %i[edit update]
+    before_action :check_selected_booth!, only: %i[show edit update live]
 
     def index
       load_selectable_booths
@@ -39,79 +40,40 @@ module Cast
     end
 
     def select_modal
+      result = resolve_current_selection(purpose: params[:source] == "header" ? :normalize : :require_booth)
+      return render_selection_problem(selection_error_message(result)) unless save_current_selection(result)
       load_selectable_booths
-
-      booth = @booths.find { |b| b.live? || b.away? }
-      booth ||= @booths.first if @booths.size == 1
-
-      if booth.present?
-        if booth_information_selection?
-          redirect_after_booth_selection(booth)
-          return
-        end
-
-        result = ::Booths::EnterAsCastService.new(
-          booth: booth,
-          actor: current_user
-        ).call
-
-        case result.action
-        when :redirect_live
-          redirect_after_booth_selection(result.booth)
-        when :occupied_by_other
-          if turbo_frame_request?
-            flash[:alert] = "このブースはすでに配信中です"
-            render_select_modal_redirect(path: cast_booths_path)
-          else
-            redirect_to cast_booths_path, alert: "このブースはすでに配信中です"
-          end
-        when :already_live_elsewhere
-          if turbo_frame_request?
-            flash[:alert] = "他のブースで配信中のため開始できません"
-            render_select_modal_redirect(path: cast_booths_path)
-          else
-            redirect_to cast_booths_path, alert: "他のブースで配信中のため開始できません"
-          end
+      if current_booth && (!result.booth_switchable? || params[:source] != "header")
+        path = selection_return_path(kind: :booth)
+        if turbo_frame_request?
+          render_select_modal_redirect(path: path)
         else
-          if turbo_frame_request?
-            flash[:alert] = "ブースを開けませんでした"
-            render_select_modal_redirect(path: cast_booths_path)
-          else
-            redirect_to cast_booths_path, alert: "ブースを開けませんでした"
-          end
+          redirect_to path
         end
-        return
-      end
-
-      if turbo_frame_request?
+      elsif @booths.empty?
+        render_selection_problem("操作可能なブースがありません")
+      elsif turbo_frame_request?
         render :select_modal, layout: false, status: :ok
       else
-        redirect_to cast_booths_path(
-          return_to: @return_to,
-          return_to_key: @return_to_key
-        )
-      end
-    rescue ::Booths::EnterAsCastService::NotAuthorized
-      session.delete(:current_booth_id) unless StreamSessions::PublisherControl.enabled?
-
-      if turbo_frame_request?
-        flash[:alert] = "選択できないブースです"
-        render_select_modal_redirect(path: cast_booths_path)
-      else
-        redirect_to cast_booths_path, alert: "選択できないブースです"
+        @selection_modal_url = select_modal_cast_booths_path(request.query_parameters)
+        render "shared/selection_required"
       end
     end
 
     def live
+      if @booth.current_stream_session.nil?
+        entry = ::Booths::EnterAsCastService.new(booth: @booth, actor: current_user).call
+        return render_selection_problem("配信画面を開けませんでした") unless entry.action == :redirect_live
+        @booth = entry.booth
+      end
       if StreamSessions::PublisherControl.enabled?
         ::Booths::ValidatePublisherEntryService.new(booth: @booth, actor: current_user).call
-        select_current_booth(@booth)
       end
 
-        @stream_session = @booth.current_stream_session
+      @stream_session = @booth.current_stream_session
 
       if @stream_session.blank?
-        redirect_to cast_booths_path, alert: "配信セッションがありません（配信導線から入り直してください）"
+        redirect_to cast_booth_path(@booth), alert: "配信セッションがありません（配信導線から入り直してください）"
         return
       end
 
@@ -198,7 +160,8 @@ module Cast
       end
 
       redirect_path =
-        if session.delete(:redirect_to_home_after_cast_booth_update)
+        if session[:invitation_booth_edit_id].to_s == @booth.id.to_s && session.delete(:redirect_to_home_after_cast_booth_update)
+          session.delete(:invitation_booth_edit_id)
           root_path
         else
           cast_booth_path(@booth)
@@ -270,28 +233,10 @@ module Cast
     end
 
     def load_selectable_booths
-      @include_archived = ActiveModel::Type::Boolean.new.cast(params[:archived]) && !booth_information_selection?
-
-      @booths =
-        if current_user.system_admin?
-          Booth.all
-        elsif current_user.at_least?(:store_admin)
-          Booth.joins(store: :store_memberships)
-              .where(store_memberships: { user_id: current_user.id, membership_role: :admin })
-              .distinct
-        else
-          Booth.joins(:booth_casts)
-              .where(booth_casts: { cast_user_id: current_user.id })
-              .distinct
-        end
-
-      @booths = @booths.includes(:store, thumbnail_image_attachment: :blob)
-      @booths = @booths.active unless @include_archived
-      @booths = @booths.order(Arel.sql('"booths"."archived_at" ASC NULLS FIRST'), id: :desc)
-
-      @current_booth_id = session[:current_booth_id]
-      selected = current_booth if @current_booth_id.present?
-      @confirm_switch_booth = selected&.id == @current_booth_id.to_i && (selected.live? || selected.away?)
+      @booths = current_selection.booths
+      @include_archived = current_user.at_least?(:store_admin)
+      @current_booth_id = current_booth&.id
+      @confirm_switch_booth = false
       @return_to = params[:return_to].presence
       @return_to_key = params[:return_to_key].presence
     end
@@ -299,69 +244,6 @@ module Cast
     def render_select_modal_redirect(path:)
       @redirect_path = path
       render :select_modal_redirect, layout: false, status: :ok
-    end
-
-    def redirect_after_booth_selection(booth)
-      select_current_booth(booth)
-      path = resolve_select_modal_redirect_path(booth)
-      if turbo_frame_request?
-        flash[:notice] = "ブースを選択しました"
-        render_select_modal_redirect(path: path)
-      else
-        redirect_to path, notice: "ブースを選択しました"
-      end
-    end
-
-    def resolve_select_modal_redirect_path(booth)
-      key = @return_to_key
-      if key.present?
-        path = resolve_return_to_key(key, booth)
-        return path if path.present?
-      end
-
-      rt = safe_return_to(@return_to)
-      return rt if rt.present?
-
-      if request.referer.to_s.start_with?(cast_booths_url)
-        return dashboard_path
-      end
-
-      session_rt = safe_return_to(session[:cast_return_to])
-      return session_rt if session_rt.present?
-
-      dashboard_path
-    end
-
-    def resolve_return_to_key(key, booth)
-      return nil if booth.blank?
-
-      case key.to_s
-      when "booth_show"
-        cast_booth_path(booth)
-      when "booth_edit"
-        edit_cast_booth_path(booth)
-      when "booth_live"
-        live_cast_booth_path(booth)
-      when "booth_stream_sessions"
-        cast_booth_stream_sessions_path(booth)
-      else
-        nil
-      end
-    end
-
-    def safe_return_to(value)
-      s = value.to_s
-      return nil if s.blank?
-
-      return nil unless s.start_with?("/")
-      return nil if s.start_with?("//")
-      return nil if s.include?("\n") || s.include?("\r")
-      return nil if s.include?("\0")
-
-      return nil if s == "/cast/current_booth"
-      return nil if s == "/cast/booths/select_modal"
-
-      s
     end
 
     def set_booth
@@ -377,18 +259,28 @@ module Cast
         end
 
       unless allowed
-        session.delete(:current_booth_id) unless action_name == "live" && StreamSessions::PublisherControl.enabled?
         head :forbidden
         return
       end
 
       @booth = booth
-      select_current_booth(@booth) unless action_name == "live" && StreamSessions::PublisherControl.enabled?
     end
 
     def authorize_update!
       policy = Authorization::BoothPolicy.new(current_user, @booth)
       head :forbidden unless policy.update?
+    end
+
+    def check_selected_booth!
+      key = action_name == "update" ? "booth_edit" : "booth_#{action_name}"
+      require_selected_booth!(@booth, return_to_key: key)
+    end
+
+    def render_selection_conflict_form(message)
+      @booth.assign_attributes(params.fetch(:booth, {}).permit(:name, :description))
+      @booth.errors.add(:base, message)
+      load_cast_memberships_for_booth if current_user.at_least?(:store_admin)
+      render :edit, status: :conflict
     end
 
     def booth_params
@@ -437,7 +329,6 @@ module Cast
         end
 
       unless allowed
-        session.delete(:current_booth_id)
         head :forbidden
         return
       end

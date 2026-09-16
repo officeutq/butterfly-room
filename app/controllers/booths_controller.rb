@@ -86,7 +86,7 @@ class BoothsController < ApplicationController
 
     if current_user.cast?
       if BoothCast.exists?(cast_user_id: current_user.id, booth_id: @booth.id)
-        set_current_context_for_booth! unless StreamSessions::PublisherControl.enabled?
+        return unless require_selected_booth!(@booth, return_to_key: "booth_live", allow_selection: true)
 
         result = ::Booths::EnterAsCastService.new(
           booth: @booth,
@@ -95,7 +95,6 @@ class BoothsController < ApplicationController
 
         case result.action
         when :redirect_live
-          set_current_context_for_booth! if StreamSessions::PublisherControl.enabled?
           redirect_to live_cast_booth_path(result.booth)
         when :already_live_elsewhere
           redirect_back fallback_location: root_path, alert: "他のブースで配信中のため開始できません"
@@ -140,7 +139,9 @@ class BoothsController < ApplicationController
   def enter_as_cast
     require_at_least!(:cast)
 
-    set_current_context_for_booth! unless StreamSessions::PublisherControl.enabled?
+    return if performed?
+    return head :forbidden unless Authorization::BoothPolicy.new(current_user, @booth).update?
+    return unless require_selected_booth!(@booth, return_to_key: "booth_live", allow_selection: true)
 
     result = ::Booths::EnterAsCastService.new(
       booth: @booth,
@@ -149,7 +150,6 @@ class BoothsController < ApplicationController
 
     case result.action
     when :redirect_live
-      set_current_context_for_booth! if StreamSessions::PublisherControl.enabled?
       redirect_to live_cast_booth_path(result.booth)
     when :already_live_elsewhere
       redirect_back fallback_location: root_path, alert: "他のブースで配信中のため開始できません"
@@ -283,10 +283,5 @@ class BoothsController < ApplicationController
 
   def reject_banned_customer_for_booth!
     reject_banned_customer!(store: @booth.store)
-  end
-
-  def set_current_context_for_booth!
-    session[:current_booth_id] = @booth.id
-    session[:current_store_id] = @booth.store_id
   end
 end

@@ -44,15 +44,19 @@ class CastInvitationsController < ApplicationController
 
     result = StoreCastInvitations::AcceptInvitation.call!(invitation: @invitation, actor: current_user)
 
-    session[:current_booth_id] = result.booth.id
-    session[:current_store_id] = result.booth.store_id
+    selection = resolve_current_selection(purpose: :invitation_accepted, target_id: result.booth.id)
+    unless save_current_selection(selection)
+      return redirect_to dashboard_path, notice: "キャスト招待を承認しました", alert: selection_error_message(selection)
+    end
+    notice = "キャスト招待を承認しました。ブースを『#{result.booth.store.name}』の『#{result.booth.name}』に切り替えました。"
+    session[:invitation_booth_edit_id] = result.booth.id
 
     if session.delete(:just_registered_via_cast_invitation)
       session[:redirect_to_booth_edit_after_profile_update] = true
-      redirect_to edit_profile_path, notice: "キャスト招待を承認しました（#{@invitation.store.name}）"
+      redirect_to edit_profile_path, notice: notice
     else
       session[:redirect_to_home_after_cast_booth_update] = true
-      redirect_to edit_cast_booth_path(result.booth), notice: "キャスト招待を承認しました（#{@invitation.store.name}）"
+      redirect_to edit_cast_booth_path(result.booth), notice: notice
     end
   rescue StoreCastInvitations::AcceptInvitation::NotUsable => e
     redirect_to cast_invitation_path(params[:token]), alert: e.message

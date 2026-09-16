@@ -20,6 +20,7 @@
         ].join(" "),
         "booth-form-initial-dirty-value": @booth.errors.any?
       } do |f| %>
+  <%= hidden_field_tag :selection_store_id, @booth.store_id %>
   <%= render "booths/form",
             f: f,
             booth: @booth,

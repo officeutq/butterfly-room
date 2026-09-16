@@ -49,9 +49,7 @@ class StoreAdminInvitationsController < ApplicationController
 
     StoreAdminInvitations::AcceptInvitation.call!(invitation: @invitation, actor: current_user)
 
-    # ★current_store を招待対象に保証（重要）
-    session[:current_store_id] = @invitation.store_id
-    session.delete(:current_booth_id)
+    normalize_current_selection
 
     redirect_to dashboard_path, notice: "store_admin 招待を承認しました（#{@invitation.store.name}）"
   rescue StoreAdminInvitations::AcceptInvitation::NotUsable => e

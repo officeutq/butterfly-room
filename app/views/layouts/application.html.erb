@@ -48,6 +48,7 @@
     <%# --- Global Modal Frame (common) --- %>
     <turbo-frame
       id="modal"
+      <% if @selection_modal_url.present? %>src="<%= @selection_modal_url %>"<% end %>
       data-controller="modal"
       data-action="turbo:frame-load->modal#open">
     </turbo-frame>

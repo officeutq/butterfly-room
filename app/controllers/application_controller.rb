@@ -21,6 +21,8 @@ class ApplicationController < ActionController::Base
 
   before_action :authenticate_user!
   before_action :set_application_log_context
+  before_action :skip_prefetched_selection_operation
+  before_action :normalize_current_selection, if: :user_signed_in?
   before_action :set_default_meta_tags
 
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
@@ -38,11 +40,21 @@ class ApplicationController < ActionController::Base
   end
 
   helper_method :gtm_enabled?,
+                :current_selection, :current_booth, :current_store,
                 :gtm_container_id,
                 :staging_environment?,
                 :image_upload_verification_enabled?
 
   private
+
+  def skip_prefetched_selection_operation
+    return unless request.get? || request.head?
+    return unless %w[Sec-Purpose X-Sec-Purpose Purpose].any? { |key| request.headers[key].to_s.match?(/prefetch|prerender/) }
+    entry = (controller_path == "booths" && %w[enter enter_as_cast].include?(action_name)) ||
+      (controller_path == "cast/booths" && %w[live select_modal].include?(action_name)) ||
+      (controller_path == "admin/stores" && action_name == "select_modal")
+    head :no_content if entry
+  end
 
   def set_application_log_context
     Rails.error.set_context(log_source: "web", request_id: request.request_id, actor_user_id: current_user&.id)
@@ -310,58 +322,7 @@ class ApplicationController < ActionController::Base
   end
 
   def auto_set_current_store_and_booth_on_sign_in(user)
-    return if user.blank?
-
-    selectable_stores = selectable_stores_for_auto_current(user)
-    if selectable_stores.size == 1
-      session[:current_store_id] = selectable_stores.first.id
-    end
-
-    selectable_booths = selectable_booths_for_auto_current(user)
-    if selectable_booths.size == 1
-      booth = selectable_booths.first
-      session[:current_booth_id] = booth.id
-      session[:current_store_id] = booth.store_id
-    end
-  end
-
-  def selectable_stores_for_auto_current(user)
-    if user.system_admin?
-      Store.order(:id).to_a
-    elsif user.at_least?(:store_admin)
-      Store
-        .joins(:store_memberships)
-        .where(store_memberships: {
-          user_id: user.id,
-          membership_role: StoreMembership.membership_roles[:admin]
-        })
-        .distinct
-        .order(:id)
-        .to_a
-    else
-      []
-    end
-  end
-
-  def selectable_booths_for_auto_current(user)
-    booths =
-      if user.system_admin?
-        Booth.all
-      elsif user.at_least?(:store_admin)
-        Booth.joins(store: :store_memberships)
-             .where(store_memberships: { user_id: user.id, membership_role: :admin })
-             .distinct
-      elsif user.at_least?(:cast)
-        Booth.joins(:booth_casts)
-             .where(booth_casts: { cast_user_id: user.id })
-             .distinct
-      else
-        Booth.none
-      end
-
-    booths.active
-          .order(Arel.sql('"booths"."archived_at" ASC NULLS FIRST'), id: :desc)
-          .to_a
+    save_current_selection(resolve_current_selection(actor: user)) if user
   end
 
   def set_default_meta_tags

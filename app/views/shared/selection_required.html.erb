@@ -1,0 +1,6 @@
+<% content_for :title, "ブースを選択" %>
+<div class="container py-4">
+  <p>操作するブースを選択してください。</p>
+  <%= link_to "ブースを選択", @selection_modal_url, class: "btn btn-primary", data: { turbo_frame: "modal", turbo_prefetch: false } %>
+  <%= link_to "ダッシュボードへ", dashboard_path, class: "btn btn-outline-secondary" %>
+</div>

@@ -76,6 +76,7 @@
         <%= form_with model: @payout_account,
               url: admin_payout_account_path,
               method: :patch do |f| %>
+          <%= hidden_field_tag :selection_store_id, @store.id %>
 
           <% selected_kind = @payout_account.input_account_kind.presence || "bank" %>
 

@@ -57,7 +57,7 @@ class AdminBoothsIndexTest < ActionDispatch::IntegrationTest
 
     get admin_booths_path
     assert_response :redirect
-    assert_redirected_to admin_stores_path
+    assert_redirected_to select_modal_admin_stores_path(return_to: admin_booths_path, required: 1)
 
     post admin_current_store_path, params: { store_id: @store1.id }
     assert_response :redirect

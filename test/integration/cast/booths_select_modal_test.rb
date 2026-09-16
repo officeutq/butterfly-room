@@ -46,6 +46,7 @@ class Cast::BoothsSelectModalTest < ActionDispatch::IntegrationTest
     sign_in cast, scope: :user
 
     session = StreamSessions::StartService.new(booth: live_booth, actor: cast).call
+    session.update!(actual_publisher_user: cast, actual_publisher_source: "ivs_verified", actual_publisher_recorded_at: Time.current, broadcast_started_at: Time.current)
     live_booth.update!(status: :live)
 
     assert_no_difference "StreamSession.count" do
@@ -60,14 +61,14 @@ class Cast::BoothsSelectModalTest < ActionDispatch::IntegrationTest
     assert_equal session.id, live_booth.reload.current_stream_session_id
   end
 
-  test "1件: 自動選択され live に遷移" do
+  test "1件: 自動選択され live に遷移するが候補GETだけでは準備しない" do
     store = create_store!(name: "s")
     booth = create_booth!(store: store, name: "b")
 
     cast = create_cast_with_booths!(booths: [ booth ])
     sign_in cast, scope: :user
 
-    assert_difference "StreamSession.count", 1 do
+    assert_no_difference "StreamSession.count" do
       get select_modal_cast_booths_path(return_to_key: "booth_live")
     end
 
@@ -78,7 +79,7 @@ class Cast::BoothsSelectModalTest < ActionDispatch::IntegrationTest
     assert_equal store.id, @request.session[:current_store_id]
   end
 
-  test "0件: modal 表示" do
+  test "0件: modal を出さずダッシュボードで案内" do
     cast = User.create!(email: "cast_zero@example.com", password: "password", role: :cast)
     sign_in cast, scope: :user
 

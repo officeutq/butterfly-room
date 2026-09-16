@@ -123,6 +123,7 @@ class StorePublicationTest < ActionDispatch::IntegrationTest
       status: :offline,
       ivs_stage_arn: "arn:aws:ivsrealtime:ap-northeast-1:123456789012:stage/hidden"
     )
+    post cast_current_booth_path, params: { booth_id: offline_booth.id, return_to_key: "booth_show" }
     post enter_as_cast_booth_path(offline_booth)
     assert_redirected_to live_cast_booth_path(offline_booth)
 
@@ -168,6 +169,7 @@ class StorePublicationTest < ActionDispatch::IntegrationTest
   test "public records become visible after a store admin publishes the store" do
     sign_in @store_admin, scope: :user
 
+    post admin_current_store_path, params: { store_id: @unpublished_store.id }
     patch admin_store_path(@unpublished_store), params: {
       store: { name: @unpublished_store.name, published: "true" }
     }
@@ -181,6 +183,7 @@ class StorePublicationTest < ActionDispatch::IntegrationTest
   test "system_admin can change publication state" do
     sign_in @system_admin, scope: :user
 
+    post admin_current_store_path, params: { store_id: @unpublished_store.id }
     patch admin_store_path(@unpublished_store), params: {
       store: { name: @unpublished_store.name, published: "true" }
     }

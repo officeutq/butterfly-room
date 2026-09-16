@@ -25,6 +25,7 @@ class Cast::PublisherFullFlowTest < ActionDispatch::IntegrationTest
       before = @stream_session.attributes
       assert_nil @stream_session.actual_publisher_user_id
       assert_empty StreamSession.actually_broadcasting_by(@creator)
+      post cast_current_booth_path, params: { booth_id: @booth.id, return_to_key: "booth_show" }
       post enter_as_cast_booth_path(@booth)
       assert_redirected_to live_cast_booth_path(@booth)
       follow_redirect!

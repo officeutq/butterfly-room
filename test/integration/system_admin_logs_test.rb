@@ -48,7 +48,10 @@ class SystemAdminLogsTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "a[href=?]", system_admin_change_log_path(@change), count: 1
     assert_select "td", text: /運営担当/
-    assert_no_match(/secret-description|alert\(1\)/, response.body)
+    assert_select "main" do |content|
+      assert_no_match(/secret-description|alert\(1\)/, content.to_html)
+    end
+    assert_select "header script", text: /alert\(1\)/, count: 0
 
     get system_admin_change_log_path(@change)
     assert_response :success

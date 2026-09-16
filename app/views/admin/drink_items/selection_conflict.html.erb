@@ -1,0 +1,6 @@
+<% content_for :title, "ドリンクの保存を保留しています" %>
+<p><%= @drink_item.store.name %>の入力内容を保持しています。対象の店舗をヘッダーから選択してください。</p>
+<%= render "form", drink_item: @drink_item,
+      url: @drink_item.persisted? ? admin_drink_item_path(@drink_item) : admin_drink_items_path,
+      method: @drink_item.persisted? ? :patch : :post,
+      cancel_url: nil, submit_label: "保存" %>

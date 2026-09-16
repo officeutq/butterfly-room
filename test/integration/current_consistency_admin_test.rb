@@ -11,7 +11,7 @@ class CurrentConsistencyAdminTest < ActionDispatch::IntegrationTest
     Booth.create!(store: store, name: name, status: status, ivs_stage_arn: "arn:aws:ivs:ap-northeast-1:123456789012:stage/#{SecureRandom.hex(4)}")
   end
 
-  test "booth優先: cast/current_booth 後は store 不一致のままでも admin_root で補正される" do
+  test "ブース選択時に所属店舗も同時に確定し表示の補完に頼らない" do
     store1 = create_store!(name: "Store 1")
     store2 = create_store!(name: "Store 2")
 
@@ -24,6 +24,7 @@ class CurrentConsistencyAdminTest < ActionDispatch::IntegrationTest
 
     sign_in admin, scope: :user
 
+    post cast_current_booth_path, params: { booth_id: booth1.id, return_to_key: "booth_show" }
     post enter_as_cast_booth_path(booth1)
     assert_response :redirect
     assert_equal booth1.id, @request.session[:current_booth_id]
@@ -32,7 +33,7 @@ class CurrentConsistencyAdminTest < ActionDispatch::IntegrationTest
     post cast_current_booth_path, params: { booth_id: booth2.id }
     assert_response :redirect
     assert_equal booth2.id, @request.session[:current_booth_id]
-    assert_equal store1.id, @request.session[:current_store_id]
+    assert_equal store2.id, @request.session[:current_store_id]
 
     get admin_booths_path
     assert_response :success
@@ -84,6 +85,7 @@ class CurrentConsistencyAdminTest < ActionDispatch::IntegrationTest
 
     sign_in admin, scope: :user
 
+    post cast_current_booth_path, params: { booth_id: booth1.id, return_to_key: "booth_show" }
     post enter_as_cast_booth_path(booth1)
     assert_response :redirect
     assert_equal booth1.id, @request.session[:current_booth_id]
@@ -92,14 +94,14 @@ class CurrentConsistencyAdminTest < ActionDispatch::IntegrationTest
     post cast_current_booth_path, params: { booth_id: booth2.id }
     assert_response :redirect
     assert_equal booth2.id, @request.session[:current_booth_id]
-    assert_equal store1.id, @request.session[:current_store_id]
+    assert_equal store2.id, @request.session[:current_store_id]
 
     StoreMembership.delete(m2.id)
 
     get admin_booths_path
     assert_response :success
 
-    assert_nil @request.session[:current_booth_id]
+    assert_equal booth1.id, @request.session[:current_booth_id]
     assert_equal store1.id, @request.session[:current_store_id]
     assert_includes response.body, store1.name
   end

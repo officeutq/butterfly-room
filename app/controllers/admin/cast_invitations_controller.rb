@@ -29,6 +29,7 @@ module Admin
 
     def create
       store = authorized_store(params.require(:store_id))
+      return unless require_selected_store!(store)
       key = params.require(:request_key).to_s
       raise ArgumentError, "発行リクエストが不正です" unless key.match?(/\A[0-9a-f-]{36}\z/)
 
@@ -71,12 +72,7 @@ module Admin
 
     # ダッシュボードと同じく、最初の管理者所属への補完より先に選択を挟む。
     def entry_store
-      booth = helpers.layout_current_booth
-      return booth.store if booth
-      return if session[:current_store_id].blank?
-      authorized_store(session[:current_store_id])
-    rescue ActiveRecord::RecordNotFound
-      nil
+      current_store
     end
 
     def authorized_store(id)

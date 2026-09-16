@@ -48,7 +48,8 @@ class ProfilesController < ApplicationController
       if booth.present?
         # ★追加：初回プロフィール入力時のみブース名を補完
         if booth.name == "ななしさんのブース" && @user.display_name.present?
-          booth.update!(name: "#{@user.display_name}のブース")
+          Booths::UpdateService.new(booth: booth, attributes: { name: "#{@user.display_name}のブース" },
+            actor_user: current_user, source: "web", request_id: request.request_id).call
         end
 
         session[:redirect_to_home_after_cast_booth_update] = true
@@ -89,7 +90,7 @@ class ProfilesController < ApplicationController
   end
 
   def current_booth_for_invitation_flow
-    booth_id = session[:current_booth_id]
+    booth_id = session[:invitation_booth_edit_id]
     return nil if booth_id.blank?
 
     Booth.active.joins(:booth_casts)
