@@ -4,6 +4,9 @@ class StreamSessions::PresencesController < ApplicationController
   include StoreBanGuard
 
   before_action :authenticate_user!
+  # 視聴の生存通知はDBだけを更新し、別タブを含むブラウザーの選択を保存し直さない。
+  skip_before_action :normalize_current_selection
+  before_action -> { request.session_options[:skip] = true }
   before_action :set_stream_session
   before_action :reject_banned_customer_for_stream_session!
 

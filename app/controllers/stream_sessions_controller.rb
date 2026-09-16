@@ -4,6 +4,9 @@ class StreamSessionsController < ApplicationController
   include StoreBanGuard
 
   before_action :authenticate_user!
+  # 遅れて届く定期取得の応答で、切替前のログインsessionを再発行しない。
+  skip_before_action :normalize_current_selection
+  before_action -> { request.session_options[:skip] = true }
   before_action :set_stream_session
   before_action :reject_banned_customer_for_stream_session!
 
