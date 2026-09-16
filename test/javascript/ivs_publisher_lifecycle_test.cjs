@@ -21,6 +21,13 @@ async function until(check) {
 
 function fixture(options = {}) {
   const stages = [], requests = [], events = []
+  const retryDelays = [], retryTimers = new Map()
+  let nextTimerId = 0
+  const fireRetryTimer = id => {
+    const callback = retryTimers.get(id)
+    retryTimers.delete(id)
+    callback?.()
+  }
   const records = new Map()
   let generation = options.initialGeneration || 0, reloads = 0, confirms = 0, statusCalls = 0, finishes = 0
   const visits = []
@@ -49,6 +56,14 @@ function fixture(options = {}) {
   const response = (body, status = 200) => ({ ok: status < 400, status, json: async () => structuredClone(body) })
   const context = vm.createContext({
     console: { log() {}, warn() {} }, URL, crypto: { randomUUID }, Controller: class {}, syncMicUI() {},
+    setTimeout(callback, delay) {
+      const id = ++nextTimerId
+      retryDelays.push(delay)
+      retryTimers.set(id, callback)
+      if (!options.pauseConfirmationRetries) setImmediate(() => fireRetryTimer(id))
+      return id
+    },
+    clearTimeout(id) { retryTimers.delete(id) },
     CustomEvent: class { constructor(type) { this.type = type } },
     window: { IVSBroadcastClient: sdk, dispatchEvent(event) { events.push(event.type) }, location: { origin: "https://example.test", reload() { reloads++ }, assign(url) { visits.push(url) } } },
     document: { querySelector: () => ({ content: "csrf" }), removeEventListener() {} },
@@ -81,7 +96,8 @@ function fixture(options = {}) {
       if (route.pathname === "/confirm") {
         confirms++
         assert.equal(params.generation, record.generation)
-        if (options.confirmFails) return response({ error: "publisher_state_unavailable", message: "確認できません" }, 503)
+        if (options.confirmError) return response({ error: options.confirmError.code, message: "開始できません" }, options.confirmError.status)
+        if (options.confirmFails || confirms <= (options.confirmFailures || 0)) return response({ error: "publisher_state_unavailable", message: "確認できません" }, 503)
         Object.assign(record, { state: "confirmed", booth_status: "live", actual_publisher_user_id: 22, broadcast_started_at: "2026-09-14T01:00:00Z" })
         if (options.confirmResponse) await options.confirmResponse.promise
         if (options.lostConfirmationResponse) throw new Error("network")
@@ -132,12 +148,125 @@ function fixture(options = {}) {
     _reloadMetaDisplay: async () => {}, _clearError() { this.error = null }, _setError(message) { this.error = message }, _humanizeError: error => error.message,
     async _cleanupMediaAndCanvas() { this.mediaCleanups = (this.mediaCleanups || 0) + 1 },
   })
-  return { controller, stages, requests, records, events, syncActualUI: () => context.PublisherController.prototype._syncUI.call(controller),
+  return { controller, stages, requests, records, events, retryDelays, retryTimers,
+    fireRetryTimer, syncActualUI: () => context.PublisherController.prototype._syncUI.call(controller),
     restoreAttempt: attributes => { const Connection = vm.runInContext("PublisherConnection", context); return new Connection(controller, attributes) },
     visits, get finishes() { return finishes },
     get reloads() { return reloads }, get confirms() { return confirms },
     set stateUnavailable(value) { stateUnavailable = value }, set cancelPending(value) { cancelPending = value } }
 }
+
+test("temporary confirmation failures retry the same connection without issuing another token", async () => {
+  for (const confirmFailures of [1, 3]) {
+    const f = fixture({ confirmFailures })
+    const starting = f.controller.startBroadcast()
+    await until(() => f.stages.length === 1)
+    f.stages[0].publish()
+    await starting
+    assert.equal(f.controller._broadcasting, true)
+    assert.equal(f.controller.error, null)
+    assert.equal(f.confirms, confirmFailures + 1)
+    assert.deepEqual(f.retryDelays, [500, 1000, 2000].slice(0, confirmFailures))
+    assert.equal(f.requests.filter(r => r.path === "/token").length, 1)
+    assert.equal(f.requests.filter(r => r.path === "/cancel").length, 0)
+    const confirmations = f.requests.filter(r => r.path === "/confirm")
+    for (const request of confirmations) assert.deepEqual(request.params, confirmations[0].params)
+    assert.equal(f.stages.length, 1)
+    assert.equal(f.stages[0].leaves, 0)
+    assert.equal(f.records.size, 1)
+    assert.equal(f.retryTimers.size, 0)
+  }
+})
+
+test("confirmation retries are bounded and exhaustion cancels only the original request", async () => {
+  const f = fixture({ confirmFails: true })
+  const starting = f.controller.startBroadcast()
+  await until(() => f.stages.length === 1)
+  f.stages[0].publish()
+  await starting
+  assert.equal(f.confirms, 4)
+  assert.deepEqual(f.retryDelays, [500, 1000, 2000])
+  assert.equal(f.requests.filter(r => r.path === "/token").length, 1)
+  const cancellations = f.requests.filter(r => r.path === "/cancel")
+  assert.equal(cancellations.length, 1)
+  assert.deepEqual(cancellations[0].params, f.requests.find(r => r.path === "/confirm").params)
+  assert.equal(f.controller._publisherAttempt.state, "cancelled")
+  assert.equal(f.controller._publisherRecoveryPending, false)
+  assert.equal(!!f.controller._broadcasting, false)
+  assert.equal(f.controller.error, "確認できません")
+  assert.ok(f.stages[0].leaves > 0)
+})
+
+test("permission, stale, publication and unrelated server errors never enter confirmation retry", async () => {
+  for (const confirmError of [
+    { status: 403, code: "forbidden" }, { status: 409, code: "stale_publisher_request" },
+    { status: 409, code: "store_unpublished" }, { status: 409, code: "publisher_in_use" },
+    { status: 503, code: "other_error" }, { status: 500, code: "publisher_state_unavailable" },
+  ]) {
+    const f = fixture({ confirmError })
+    const starting = f.controller.startBroadcast()
+    await until(() => f.stages.length === 1)
+    f.stages[0].publish()
+    await starting
+    assert.equal(f.confirms, 1)
+    assert.deepEqual(f.retryDelays, [])
+    assert.equal(!!f.controller._broadcasting, false)
+  }
+})
+
+test("start cancellation interrupts the confirmation delay and prevents another confirmation", async () => {
+  const f = fixture({ confirmFails: true, pauseConfirmationRetries: true })
+  const starting = f.controller.startBroadcast()
+  await until(() => f.stages.length === 1)
+  f.stages[0].publish()
+  await until(() => f.retryTimers.size === 1)
+  assert.equal(f.controller._state, "confirming")
+  assert.equal(f.stages[0].leaves, 0)
+  await f.controller.startBroadcast()
+  const timerId = [...f.retryTimers.keys()][0]
+  const cancelling = f.controller.endBroadcast()
+  await Promise.all([starting, cancelling])
+  f.fireRetryTimer(timerId)
+  assert.equal(f.retryTimers.size, 0)
+  assert.equal(f.confirms, 1)
+  assert.equal(f.requests.filter(r => r.path === "/token").length, 1)
+  assert.equal(f.requests.filter(r => r.path === "/cancel").length, 1)
+  assert.equal(f.controller._publisherAttempt.state, "cancelled")
+})
+
+test("navigation during confirmation delay cannot confirm or disturb the next screen", async () => {
+  const f = fixture({ confirmFails: true, pauseConfirmationRetries: true })
+  const starting = f.controller.startBroadcast()
+  await until(() => f.stages.length === 1)
+  f.stages[0].publish()
+  await until(() => f.retryTimers.size === 1)
+  const timerId = [...f.retryTimers.keys()][0]
+  f.controller.disconnect()
+  const replacement = { leaves: 0, leave() { this.leaves++ } }
+  f.controller._publisherAttempt = { newScreen: true }
+  f.controller._stage = replacement
+  await starting
+  f.fireRetryTimer(timerId)
+  assert.equal(f.retryTimers.size, 0)
+  assert.equal(f.confirms, 1)
+  assert.equal(f.controller._stage, replacement)
+  assert.equal(replacement.leaves, 0)
+  assert.equal(f.requests.at(-1).path, "/cancel")
+})
+
+test("terminal SDK leave during a retry delay prevents re-confirmation", async () => {
+  const f = fixture({ confirmFails: true, pauseConfirmationRetries: true })
+  const starting = f.controller.startBroadcast()
+  await until(() => f.stages.length === 1)
+  f.stages[0].publish()
+  await until(() => f.retryTimers.size === 1)
+  f.stages[0].emit("left")
+  f.fireRetryTimer([...f.retryTimers.keys()][0])
+  await starting
+  assert.equal(f.confirms, 1)
+  assert.equal(f.controller._publisherAttempt.state, "cancelled")
+  assert.equal(!!f.controller._broadcasting, false)
+})
 
 test("selection locks when broadcast confirmation completes without waiting for another page visit", async () => {
   const confirmation = deferred()
