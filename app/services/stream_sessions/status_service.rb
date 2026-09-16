@@ -20,10 +20,11 @@ module StreamSessions
     def call
       authorize!
 
-      Booth.transaction do
+      Stores::PublicationGuard.with_lock(booth: @booth) do
         booth = Booth.lock.find(@booth.id)
 
         validate_publisher_request!(booth) if PublisherControl.enabled?
+        Stores::PublicationGuard.ensure_published!(booth: booth)
 
         raise NoCurrentSession if booth.current_stream_session_id.nil?
         raise InvalidTransition, "to_status must be live or away" unless %i[live away].include?(@to_status)

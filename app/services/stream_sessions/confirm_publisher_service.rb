@@ -14,7 +14,7 @@ module StreamSessions
         @actor = User.active.lock("FOR NO KEY UPDATE").find_by(id: @actor&.id)
         reject!("forbidden", "配信を操作する権限がありません", status: :forbidden) unless @actor
 
-        confirm_under_actor_lock
+        Stores::PublicationGuard.with_lock(booth: @booth) { confirm_under_actor_lock }
       end
     rescue Ivs::ParticipantSnapshotService::Unavailable
       unavailable!
@@ -28,6 +28,7 @@ module StreamSessions
         unless PublisherControl.active_actor?(@actor) && Authorization::StreamSessionPolicy.new(@actor, @stream_session).publish_token?
           reject!("forbidden", "配信を操作する権限がありません", status: :forbidden)
         end
+        Stores::PublicationGuard.ensure_published!(booth: @booth)
         stale! unless PublisherControl.valid_request_id?(@request_id) && @generation
         connection = @stream_session.stream_publisher_connections.lock.find_by(request_id: @request_id)
         unless connection && connection.user_id == @actor.id && connection.generation == @generation &&

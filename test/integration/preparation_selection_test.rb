@@ -5,7 +5,7 @@ class PreparationSelectionTest < ActionDispatch::IntegrationTest
     @actor = User.create!(email: "preparation-selection@example.com", password: "password", role: :store_admin)
     @other = User.create!(email: "preparation-other@example.com", password: "password", role: :cast)
     @a, @b = %w[A B].map do |name|
-      store = Store.create!(name: "準備店舗#{name}")
+      store = Store.create!(name: "準備店舗#{name}", published: true)
       StoreMembership.create!(store: store, user: @actor, membership_role: :admin)
       Booth.create!(store: store, name: "準備#{name}", ivs_stage_arn: "arn:aws:ivs:ap-northeast-1:123456789012:stage/#{name}")
     end
@@ -14,6 +14,23 @@ class PreparationSelectionTest < ActionDispatch::IntegrationTest
     @client.stub_responses(:get_stage, { stage: { arn: @b.ivs_stage_arn } })
     sign_in @actor
     post cast_current_booth_path, params: { booth_id: @a.id, return_to_key: "booth_show" }
+  end
+
+  test "非公開店舗のBも選択できるが準備せずブース情報で案内する" do
+    @b.store.update!(published: false)
+    new_control do
+      before = @preparation_a.attributes
+      assert_no_difference "StreamSession.count" do
+        switch_to_b
+        assert_response :success
+        assert_equal cast_booth_path(@b), response.parsed_body["redirect_url"]
+        assert_equal @b.id, @request.session[:current_booth_id]
+        get cast_booth_path(@b)
+        assert_includes response.body, "非公開店舗"
+      end
+      assert_equal before, @preparation_a.reload.attributes
+      assert_empty @client.api_requests
+    end
   end
 
   test "空きBを準備してから選択しAの準備とタイトルを保持する" do

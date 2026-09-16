@@ -4,7 +4,7 @@ require "test_helper"
 
 class CastBoothSelectionReturnTest < ActionDispatch::IntegrationTest
   setup do
-    @store = Store.create!(name: "store1")
+    @store = Store.create!(name: "store1", published: true)
     @booth = Booth.create!(
       store: @store,
       name: "booth1",

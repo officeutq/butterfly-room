@@ -10,7 +10,8 @@ module Booths
     end
 
     def call
-      @booth.with_lock do
+      Stores::PublicationGuard.with_lock(booth: @booth) do
+        @booth.lock!
         unless StreamSessions::PublisherControl.active_actor?(@actor) && Authorization::BoothPolicy.new(@actor, @booth).update?
           raise EnterAsCastService::NotAuthorized, "選択できないブースです"
         end
@@ -31,10 +32,12 @@ module Booths
         end
       end
     rescue StreamSessions::PublisherControl::Error => error
-      # 共通制御が拒否したうち、対象の実配信者が別人と確定した場合だけ情報確認へ進める。
+      # 非公開店舗、または対象の実配信者が別人と確定した場合は情報確認へ進める。
       # 本人の別ブース配信・不整合・通信失敗は成功として扱わない。
       stream = @booth.reload.current_stream_session
-      if error.code == "publisher_in_use" && stream&.publisher_recording_state == :recorded && !stream.actual_publisher?(@actor)
+      if error.code == "store_unpublished"
+        information(error.message)
+      elsif error.code == "publisher_in_use" && stream&.publisher_recording_state == :recorded && !stream.actual_publisher?(@actor)
         information(error.message)
       else
         raise

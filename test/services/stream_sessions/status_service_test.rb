@@ -4,7 +4,7 @@ require "test_helper"
 
 class StreamSessions::StatusServiceTest < ActiveSupport::TestCase
   test "cannot change standby booth to live when own other booth is live" do
-    store = Store.create!(name: "Test Store")
+    store = Store.create!(name: "Test Store", published: true)
     cast = User.create!(email: "status_live@example.com", password: "password", role: :cast)
 
     live_booth = Booth.create!(
@@ -49,7 +49,7 @@ class StreamSessions::StatusServiceTest < ActiveSupport::TestCase
   end
 
   test "cannot change standby booth to live when own other booth is away" do
-    store = Store.create!(name: "Test Store")
+    store = Store.create!(name: "Test Store", published: true)
     cast = User.create!(email: "status_away@example.com", password: "password", role: :cast)
 
     away_booth = Booth.create!(
@@ -94,7 +94,7 @@ class StreamSessions::StatusServiceTest < ActiveSupport::TestCase
   end
 
   test "can switch same booth from live to away and away to live" do
-    store = Store.create!(name: "Test Store")
+    store = Store.create!(name: "Test Store", published: true)
     cast = User.create!(email: "status_same_booth@example.com", password: "password", role: :cast)
 
     booth = Booth.create!(
@@ -120,7 +120,7 @@ class StreamSessions::StatusServiceTest < ActiveSupport::TestCase
   end
 
 test "go_live updates last_online_at" do
-  store = Store.create!(name: "Test Store")
+  store = Store.create!(name: "Test Store", published: true)
   cast = User.create!(email: "status_last_online_live@example.com", password: "password", role: :cast)
 
   booth = Booth.create!(
@@ -152,7 +152,7 @@ test "go_live updates last_online_at" do
 end
 
 test "go_away updates last_online_at" do
-  store = Store.create!(name: "Test Store")
+  store = Store.create!(name: "Test Store", published: true)
   cast = User.create!(email: "status_last_online_away@example.com", password: "password", role: :cast)
 
   booth = Booth.create!(
@@ -182,7 +182,7 @@ test "go_away updates last_online_at" do
 end
 
   test "back updates last_online_at" do
-    store = Store.create!(name: "Test Store")
+    store = Store.create!(name: "Test Store", published: true)
     cast = User.create!(email: "status_last_online_back@example.com", password: "password", role: :cast)
 
     booth = Booth.create!(

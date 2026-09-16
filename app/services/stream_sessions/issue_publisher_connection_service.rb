@@ -11,9 +11,11 @@ module StreamSessions
       @booth = @stream_session.booth
       authorize!
       Ivs::RetryPublisherDisconnectsService.new(booth: @booth, actor: @actor).ensure_disconnected!
-      @booth.with_lock do
+      Stores::PublicationGuard.with_lock(booth: @booth) do
+        @booth.lock!
         @stream_session.lock!
         authorize!
+        Stores::PublicationGuard.ensure_published!(booth: @booth)
         validate_request!
         existing = StreamPublisherConnection.find_by(request_id: @request_id)
         return_existing_request!(existing) if existing

@@ -22,15 +22,14 @@ module Ivs
       validate_joinable!
       authorize!
 
-      client = Aws::IVSRealTime::Client.new(region: ENV.fetch("AWS_REGION", "ap-northeast-1"))
-
-      resp = client.create_participant_token(
-        stage_arn: @stream_session.ivs_stage_arn,
-        capabilities: capabilities_for(@role),
-        attributes: attributes_for(@role)
-      )
-
-      resp.participant_token.token
+      if @role == ROLE_PUBLISHER
+        Stores::PublicationGuard.with_lock(booth: @stream_session.booth) do
+          Stores::PublicationGuard.ensure_published!(booth: @stream_session.booth)
+          issue_token
+        end
+      else
+        issue_token
+      end
     end
 
     def joinable?
@@ -54,6 +53,16 @@ module Ivs
     end
 
     private
+
+    def issue_token
+      client = Aws::IVSRealTime::Client.new(region: ENV.fetch("AWS_REGION", "ap-northeast-1"))
+      response = client.create_participant_token(
+        stage_arn: @stream_session.ivs_stage_arn,
+        capabilities: capabilities_for(@role),
+        attributes: attributes_for(@role)
+      )
+      response.participant_token.token
+    end
 
     def validate_role!
       return if [ ROLE_PUBLISHER, ROLE_VIEWER ].include?(@role)

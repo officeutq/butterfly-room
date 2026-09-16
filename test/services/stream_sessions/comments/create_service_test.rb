@@ -2,7 +2,7 @@ require "test_helper"
 
 class StreamSessions::Comments::CreateServiceTest < ActiveSupport::TestCase
   setup do
-    @store = Store.create!(name: "Test Store")
+    @store = Store.create!(name: "Test Store", published: true)
     @cast = User.create!(email: "cast_comment_service@example.com", password: "password", role: :cast)
     @customer = User.create!(email: "customer_comment_service@example.com", password: "password", role: :customer)
 

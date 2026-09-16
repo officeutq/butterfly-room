@@ -2,7 +2,7 @@ require "test_helper"
 
 class Booths::PublisherPreparationTest < ActiveSupport::TestCase
   setup do
-    @store = Store.create!(name: "Publisher preparation")
+    @store = Store.create!(name: "Publisher preparation", published: true)
     @creator = User.create!(email: "preparation_creator@example.com", password: "password", role: :cast)
     @publisher = User.create!(email: "preparation_publisher@example.com", password: "password", role: :store_admin)
     @outsider = User.create!(email: "preparation_outsider@example.com", password: "password", role: :store_admin)

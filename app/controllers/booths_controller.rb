@@ -83,6 +83,18 @@ class BoothsController < ApplicationController
       redirect_to booth_path(@booth)
       return
     end
+    Stores::PublicationGuard.ensure_published!(booth: @booth)
+
+    # 公開カードの閲覧は管理対象を切り替えない。明示的な配信操作はenter_as_castで照合する。
+    if current_booth && current_booth.id != @booth.id && @booth.store.published?
+      if turbo_frame_request?
+        @redirect_path = booth_path(@booth)
+        render "cast/booths/select_modal_redirect", layout: false, status: :ok
+      else
+        redirect_to booth_path(@booth)
+      end
+      return
+    end
 
     if current_user.cast?
       if BoothCast.exists?(cast_user_id: current_user.id, booth_id: @booth.id)

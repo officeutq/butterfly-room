@@ -18,10 +18,11 @@ module StreamSessions
       authorize!
       Ivs::RetryPublisherDisconnectsService.new(booth: @booth, actor: @actor).ensure_disconnected! if PublisherControl.enabled?
 
-      StreamSession.transaction do
+      Stores::PublicationGuard.with_lock(booth: @booth) do
         booth = Booth.lock.find(@booth.id)
 
         raise BoothArchived, "booth is archived" if booth.archived?
+        Stores::PublicationGuard.ensure_published!(booth: booth)
 
         raise BoothNotOffline, "booth is #{booth.status}" unless booth.offline?
         raise AnotherBoothAlreadyLive, "他のブースで配信中のため開始できません" if another_live_booth_exists?(booth)

@@ -75,7 +75,7 @@ class Cast::PublisherPreparationTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "S06 キャスト本人の公開入口でも失敗時に元の選択を維持する" do
+  test "S06 選択外の担当ブースの公開入口は照会せず視聴へ進み元の選択を維持する" do
     BoothCast.create!(booth: @selected_booth, cast_user: @creator)
     sign_out :user
     sign_in @creator, scope: :user
@@ -83,7 +83,7 @@ class Cast::PublisherPreparationTest < ActionDispatch::IntegrationTest
       select_previous_booth
       @client.stub_responses(:get_stage, "AccessDeniedException")
       get enter_booth_path(@booth)
-      assert_response :conflict
+      assert_redirected_to booth_path(@booth)
       assert_empty @client.api_requests
       assert_equal @selected_booth.id, @request.session[:current_booth_id]
       assert_equal @session.id, @booth.reload.current_stream_session_id
