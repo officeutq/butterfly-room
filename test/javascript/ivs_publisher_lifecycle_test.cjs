@@ -20,7 +20,7 @@ async function until(check) {
 }
 
 function fixture(options = {}) {
-  const stages = [], requests = []
+  const stages = [], requests = [], events = []
   const records = new Map()
   let generation = options.initialGeneration || 0, reloads = 0, confirms = 0, statusCalls = 0, finishes = 0
   const visits = []
@@ -49,7 +49,8 @@ function fixture(options = {}) {
   const response = (body, status = 200) => ({ ok: status < 400, status, json: async () => structuredClone(body) })
   const context = vm.createContext({
     console: { log() {}, warn() {} }, URL, crypto: { randomUUID }, Controller: class {}, syncMicUI() {},
-    window: { IVSBroadcastClient: sdk, location: { origin: "https://example.test", reload() { reloads++ }, assign(url) { visits.push(url) } } },
+    CustomEvent: class { constructor(type) { this.type = type } },
+    window: { IVSBroadcastClient: sdk, dispatchEvent(event) { events.push(event.type) }, location: { origin: "https://example.test", reload() { reloads++ }, assign(url) { visits.push(url) } } },
     document: { querySelector: () => ({ content: "csrf" }), removeEventListener() {} },
     fetch: async (url, request) => {
       const route = new URL(url, "https://example.test")
@@ -129,12 +130,40 @@ function fixture(options = {}) {
     _reloadMetaDisplay: async () => {}, _clearError() { this.error = null }, _setError(message) { this.error = message }, _humanizeError: error => error.message,
     async _cleanupMediaAndCanvas() { this.mediaCleanups = (this.mediaCleanups || 0) + 1 },
   })
-  return { controller, stages, requests, records, syncActualUI: () => context.PublisherController.prototype._syncUI.call(controller),
+  return { controller, stages, requests, records, events, syncActualUI: () => context.PublisherController.prototype._syncUI.call(controller),
     restoreAttempt: attributes => { const Connection = vm.runInContext("PublisherConnection", context); return new Connection(controller, attributes) },
     visits, get finishes() { return finishes },
     get reloads() { return reloads }, get confirms() { return confirms },
     set stateUnavailable(value) { stateUnavailable = value }, set cancelPending(value) { cancelPending = value } }
 }
+
+test("selection locks when broadcast confirmation completes without waiting for another page visit", async () => {
+  const confirmation = deferred()
+  const f = fixture({ confirmResponse: confirmation })
+  const starting = f.controller.startBroadcast()
+  await until(() => f.stages.length === 1)
+  assert.deepEqual(f.events, [])
+  f.stages[0].publish()
+  await until(() => f.confirms === 1)
+  assert.deepEqual(f.events, [])
+  confirmation.resolve()
+  await starting
+  assert.equal(f.controller._broadcasting, true)
+  assert.deepEqual(f.events, ["selection:locked"])
+  assert.deepEqual(f.visits, [])
+  assert.equal(f.stages[0].leaves, 0)
+})
+
+test("confirmed broadcast recovery locks selection while an unconfirmed cancellation keeps it available", async () => {
+  for (const options of [{ confirmFails: true }, { lostConfirmationResponse: true }]) {
+    const f = fixture(options)
+    const starting = f.controller.startBroadcast()
+    await until(() => f.stages.length === 1)
+    f.stages[0].publish()
+    await starting
+    assert.equal(f.events.includes("selection:locked"), !!options.lostConfirmationResponse)
+  }
+})
 
 test("selection holds new starts and disposes preparation preview only after selection succeeds", async () => {
   const f = fixture()

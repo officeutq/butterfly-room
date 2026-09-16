@@ -57,6 +57,58 @@ class CurrentSelectionUiTest < ActionDispatch::IntegrationTest
       follow_redirect!
       assert_select "turbo-frame#modal[src]", count: 0
     end
+
+    test "#{role}: 配信開始前のヘッダーから選択を開いても配信画面を再移動しない" do
+      actor = create_actor(role)
+      a = create_booth(actor, "A")
+      b = create_booth(actor, "B")
+      post cast_current_booth_path, params: { booth_id: b.id }, as: :json
+      get dashboard_path
+      assert_header_links(booth: 1, store: role == :cast ? 0 : 1)
+      assert_select "[data-selection-booth-name]", text: "B"
+      assert_select "#app_header[data-action='selection:locked@window->selection-lock#lock']"
+      assert_select "#app_header [data-selection-lock-target='link']", count: role == :cast ? 1 : 2
+
+      stream = StreamSessions::StartService.new(booth: a, actor: actor).call
+      stream.update!(actual_publisher_user: actor, actual_publisher_source: "ivs_verified",
+        actual_publisher_recorded_at: Time.current, broadcast_started_at: Time.current)
+      paths = [ select_modal_cast_booths_path(source: "header", return_to: live_cast_booth_path(a)) ]
+      paths << select_modal_admin_stores_path(return_to: live_cast_booth_path(a)) unless role == :cast
+
+      %i[live away].each do |status|
+        a.update!(status: status)
+        paths.each do |path|
+          before = [ a.reload.attributes, stream.reload.attributes ]
+          assert_no_difference "StreamSession.count" do
+            get path, headers: { "Turbo-Frame" => "modal" }
+          end
+          assert_response :success
+          assert_select "turbo-frame#modal .modal", count: 1
+          assert_select "[data-redirect-url]", count: 0
+          assert_select "form", count: 0
+          assert_select "[data-selection-lock-locked-value='true']", count: 1
+          assert_select "[data-selection-lock-store-name-value='店舗A'][data-selection-lock-booth-name-value='A']", count: 1
+          assert_includes response.body, "配信を終了してから切り替えてください"
+          assert_equal a.id, @request.session[:current_booth_id]
+          assert_equal a.store_id, @request.session[:current_store_id]
+          assert_equal before, [ a.reload.attributes, stream.reload.attributes ]
+        end
+      end
+
+      get paths.first
+      assert_response :conflict
+      assert_select "[data-redirect-url]", count: 0
+
+      # ヘッダー操作ではない、未選択の必要操作からの固定先への案内は維持する。
+      get select_modal_cast_booths_path(return_to_key: "booth_show"), headers: { "Turbo-Frame" => "modal" }
+      assert_select "[data-redirect-url='#{cast_booth_path(a)}']", count: 1
+
+      stream.update!(status: :ended, ended_at: Time.current)
+      a.update!(status: :offline, current_stream_session: nil)
+      get dashboard_path
+      assert_header_links(booth: 1, store: role == :cast ? 0 : 1)
+      assert_equal a.id, @request.session[:current_booth_id]
+    end
   end
 
   %i[store_admin system_admin].each do |role|

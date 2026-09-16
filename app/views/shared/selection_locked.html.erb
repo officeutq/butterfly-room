@@ -1,0 +1,19 @@
+<%= turbo_frame_tag "modal", data: { controller: "modal", action: "turbo:frame-load->modal#open" } do %>
+  <div class="modal fade" data-controller="selection-lock" data-selection-lock-locked-value="true"
+       data-selection-lock-store-name-value="<%= current_store.name.presence || "(no name)" %>"
+       data-selection-lock-booth-name-value="<%= current_booth.name.presence || "(no name)" %>"
+       tabindex="-1" aria-labelledby="selectionLockedLabel" aria-modal="true" role="dialog">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="selectionLockedLabel">配信中は切り替えできません</h1>
+          <button type="button" class="btn-close" aria-label="閉じる" data-action="click->modal#close"></button>
+        </div>
+        <div class="modal-body"><%= @selection_message %></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-action="click->modal#close">閉じる</button>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>

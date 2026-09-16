@@ -525,6 +525,7 @@ export default class extends Controller {
     this._previewOnly = false
     this._boothStatus = "live"
     this._mode = "normal"
+    if (this.publisherControlValue) window.dispatchEvent(new CustomEvent("selection:locked"))
     this._syncUI()
     this._applyCurrentMode()
     // 表示更新の失敗を配信開始失敗として取り消さない。
@@ -537,6 +538,7 @@ export default class extends Controller {
     if (attempt.result?.actual_publisher_user_id && ["live", "away"].includes(attempt.result.booth_status)) {
       this._resumable = true
       this._boothStatus = attempt.result.booth_status
+      window.dispatchEvent(new CustomEvent("selection:locked"))
     }
     this._broadcasting = false
   }

@@ -120,6 +120,15 @@ module CurrentSelection
     false
   end
 
+  def render_broadcast_selection_lock
+    @selection_message = "配信を終了してから切り替えてください"
+    if turbo_frame_request?
+      render "shared/selection_locked", layout: false
+    else
+      render_selection_problem(@selection_message)
+    end
+  end
+
   def selection_booth_path(key, booth)
     return dashboard_path unless booth
 
