@@ -108,28 +108,24 @@ class StorePublicationTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
-  test "authorized operators can use entry routes for an unpublished booth" do
-    sign_in @cast, scope: :user
-    get enter_booth_path(@unpublished_booth)
-    assert_redirected_to live_cast_booth_path(@unpublished_booth)
-
-    sign_in @store_admin, scope: :user
-    get enter_booth_path(@unpublished_booth)
-    assert_response :success
-
-    offline_booth = Booth.create!(
-      store: @unpublished_store,
-      name: "Hidden Offline Booth",
-      status: :offline,
-      ivs_stage_arn: "arn:aws:ivsrealtime:ap-northeast-1:123456789012:stage/hidden"
-    )
-    post cast_current_booth_path, params: { booth_id: offline_booth.id, return_to_key: "booth_show" }
-    post enter_as_cast_booth_path(offline_booth)
-    assert_redirected_to live_cast_booth_path(offline_booth)
-
-    sign_in @system_admin, scope: :user
-    get enter_booth_path(@unpublished_booth)
-    assert_response :success
+  test "非公開店舗は全役割で管理できるが配信入口には進めない" do
+    [ @cast, @store_admin, @system_admin ].each do |actor|
+      sign_in actor, scope: :user
+      post cast_current_booth_path, params: { booth_id: @unpublished_booth.id, return_to_key: "booth_show" }
+      get cast_booth_path(@unpublished_booth)
+      assert_response :success
+      assert_no_difference "StreamSession.count" do
+        get enter_booth_path(@unpublished_booth)
+        assert_response :conflict
+        assert_includes response.body, "非公開店舗"
+        post enter_as_cast_booth_path(@unpublished_booth)
+        assert_response :conflict
+        get live_cast_booth_path(@unpublished_booth)
+        assert_redirected_to cast_booth_path(@unpublished_booth)
+        follow_redirect!
+        assert_includes response.body, "非公開店舗"
+      end
+    end
   end
 
   test "an unrelated cast cannot use entry routes for an unpublished booth" do

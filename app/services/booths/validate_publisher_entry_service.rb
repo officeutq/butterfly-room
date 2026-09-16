@@ -9,7 +9,9 @@ module Booths
     end
 
     def call
-      @booth.with_lock { validate! }
+      Stores::PublicationGuard.with_lock(booth: @booth) do
+        @booth.with_lock { validate! }
+      end
     end
 
     private
@@ -19,6 +21,7 @@ module Booths
         reject!("forbidden", "選択できないブースです", status: :forbidden)
       end
       reject!("not_joinable", "閉鎖済みのブースでは配信できません") if @booth.archived?
+      Stores::PublicationGuard.ensure_published!(booth: @booth)
       if Ivs::RetryPublisherDisconnectsService.pending(booth: @booth, actor: @actor).exists?
         reject!("publisher_disconnect_pending", "以前の配信接続の切断を確認しています。再確認してください", status: :accepted)
       end

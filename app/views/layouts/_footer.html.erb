@@ -29,8 +29,8 @@
               <% booth = layout_current_booth %>
 
               <% if booth.present? && current_user.cast? %>
-                <%= button_to enter_booth_path(booth),
-                      method: :get,
+                <%= button_to enter_as_cast_booth_path(booth),
+                      method: :post,
                       class: "app-footer-nav-item app-footer-nav-item--live app-footer-nav-item--live-broadcast",
                       form: {
                         class: "app-footer-nav-form"

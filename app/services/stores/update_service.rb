@@ -5,6 +5,7 @@ module Stores
     class Error < StandardError; end
     class StaleImageError < Error; end
     class ImageUploadError < Error; end
+    class UnpublishBlocked < Error; end
 
     def initialize(
       store:,
@@ -40,6 +41,9 @@ module Stores
       else
         update_legacy_thumbnail(&record_change)
       end
+    rescue UnpublishBlocked
+      retain_attributes_for_errors
+      raise
     rescue ImageAttachments::UpdateService::Error,
            ImageAttachments::MultipartUpdateService::Error,
            ImageAttachments::PairValidator::Invalid,
@@ -65,7 +69,7 @@ module Stores
         purpose: :thumbnail,
         payload: @image_update,
         attributes: @attributes,
-        before_save: @change_tracker.method(:capture_before)
+        before_save: method(:before_store_save)
       ).call(&block)
     end
 
@@ -78,8 +82,27 @@ module Stores
         remove_attachment: @remove_legacy_thumbnail,
         max_width: 1920,
         max_height: 1080,
-        before_save: @change_tracker.method(:capture_before)
+        before_save: method(:before_store_save)
       ).call(&block)
+    end
+
+    # 画像の有無にかかわらず、更新側が店舗をロックした後・同じtransaction内で判定する。
+    # 配信側は店舗の共有ロックを先に取るため、発行途中の接続を見落とさない。
+    def before_store_save(store)
+      @change_tracker.capture_before(store)
+      return unless store.published? && @attributes.key?(:published) &&
+        ActiveModel::Type::Boolean.new.cast(@attributes[:published]) == false
+
+      booth_ids = store.booths.select(:id)
+      broadcasting = store.booths.where(status: %i[live away]).exists? ||
+        StreamSession.where(store_id: store.id, status: :live, ended_at: nil).where.not(broadcast_started_at: nil).exists?
+      starting = StreamPublisherConnection.unreleased.joins(:stream_session)
+        .where(booth_id: booth_ids, stream_sessions: { status: :live, ended_at: nil }).exists?
+      return unless broadcasting || starting
+
+      message = "配信中・離席中、または配信開始処理中のブースがあります。配信を終了するか開始を取り消してから非公開にしてください"
+      store.errors.add(:base, message)
+      raise UnpublishBlocked, message
     end
 
     def retain_attributes_for_errors

@@ -27,6 +27,73 @@ class StreamSessions::PublisherConnectionConcurrencyTest < ActiveSupport::TestCa
     verify_concurrent_claims(second_session: @stream_session, second_actor: @other_publisher)
   end
 
+  test "配信開始要求が先なら非公開化は発行完了を待ち開始中として拒否する" do
+    entered = Queue.new
+    proceed = Queue.new
+    waiting = Queue.new
+    threads = []
+    original = @ivs_client.method(:create_participant_token)
+    @ivs_client.define_singleton_method(:create_participant_token) do |**arguments|
+      response = original.call(**arguments)
+      entered << true
+      Timeout.timeout(30) { proceed.pop }
+      response
+    end
+    with_publisher_client do
+      threads << claim_in_thread(@stream_session.id, @publisher.id)
+      Timeout.timeout(10) { entered.pop }
+      threads << Thread.new do
+        ActiveRecord::Base.connection_pool.with_connection do |connection|
+          waiting << connection.select_value("SELECT pg_backend_pid()")
+          Stores::UpdateService.new(store: Store.find(@store.id), attributes: { published: false }).call
+        rescue Stores::UpdateService::UnpublishBlocked
+          :blocked
+        end
+      end
+      wait_for_database_lock(Timeout.timeout(10) { waiting.pop })
+      proceed << true
+      issued, publication = threads.map { |thread| Timeout.timeout(10) { thread.value } }
+      assert_equal "issued", issued[:state]
+      assert_equal :blocked, publication
+      assert @store.reload.published?
+      assert_equal 1, StreamPublisherConnection.unreleased.where(booth: @booth).count
+    end
+  ensure
+    proceed << true
+    threads.each { |thread| thread.join(10) || thread.kill }
+    @ivs_client.define_singleton_method(:create_participant_token, original)
+  end
+
+  test "非公開化が先なら配信開始要求は保存完了を待ちトークンを発行せず拒否する" do
+    entered = Queue.new
+    proceed = Queue.new
+    waiting = Queue.new
+    threads = []
+    with_publisher_client do
+      threads << Thread.new do
+        ActiveRecord::Base.connection_pool.with_connection do
+          Stores::UpdateService.new(store: Store.find(@store.id), attributes: { published: false }).call do
+            entered << true
+            Timeout.timeout(30) { proceed.pop }
+          end
+        end
+      end
+      Timeout.timeout(10) { entered.pop }
+      threads << claim_in_thread(@stream_session.id, @publisher.id, pid_queue: waiting)
+      wait_for_database_lock(Timeout.timeout(10) { waiting.pop })
+      proceed << true
+      publication, issued = threads.map { |thread| Timeout.timeout(10) { thread.value } }
+      refute publication.published?
+      assert_equal "store_unpublished", issued[:error]
+      refute @store.reload.published?
+      assert_empty @ivs_client.api_requests
+      assert_empty StreamPublisherConnection.where(booth: @booth)
+    end
+  ensure
+    proceed << true
+    threads.each { |thread| thread.join(10) || thread.kill }
+  end
+
   test "H01 表示通知が失敗しても開始成功とYを保持し再確認が同じ結果を返す" do
     original = StreamSessionNotifier.method(:broadcast_stream_state)
     StreamSessionNotifier.define_singleton_method(:broadcast_stream_state) { |booth:| raise IOError, "display unavailable" }

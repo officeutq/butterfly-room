@@ -11,6 +11,8 @@
 
 ### 実配信者記録の契約（#1280）
 
+2026-09-16ローカル追加：店舗公開状態と準備・開始の排他制御は`Stores::PublicationGuard`、通常編集での非公開化拒否は`Stores::UpdateService`の店舗ロック取得後の共通確認へ集約する。[実配信者設計1.1節](design/actual_publisher.md)を参照。
+
 [実配信者設計](design/actual_publisher.md) がD01〜D04と27ケースを定義する。`started_by_cast_user`は準備作成者として保持し、`actual_publisher_user`を成功実績に使う。開始権・参加者ID・切断待ちは`StreamPublisherConnection`へ分ける。モデルの共通参照だけでIVS通信を行わない。
 
 配信者トークン発行、配信成功確定、取消、本人再接続、終了は同設計4・5節のServiceへ集約する。Controllerは認可・入力・呼び出し・レスポンスのみ。通常・管理終了の返却はDB確定し、IVS切断失敗は保存した参加者IDへ別途再試行する。終了・残高通知とジョブ投入は、退会を含む最外側トランザクションの確定後に行う。

@@ -17,9 +17,10 @@ module Booths
       authorize!
       Ivs::RetryPublisherDisconnectsService.new(booth: @booth, actor: @actor).ensure_disconnected! if StreamSessions::PublisherControl.enabled?
 
-      Booth.transaction do
+      Stores::PublicationGuard.with_lock(booth: @booth) do
         booth = Booth.lock.find(@booth.id)
         raise ActiveRecord::RecordNotFound if booth.archived?
+        Stores::PublicationGuard.ensure_published!(booth: booth)
 
         current_stream_session = booth.current_stream_session
 

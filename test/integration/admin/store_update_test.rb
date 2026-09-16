@@ -313,6 +313,37 @@ class Admin::StoreUpdateTest < ActionDispatch::IntegrationTest
     assert_equal blob_count, ActiveStorage::Blob.count
   end
 
+  test "配信中は通常JSON更新でも非公開化を拒否し店舗の他の値を保存しない" do
+    admin, store = create_store_admin_and_store("publication_block", published: true)
+    Booth.create!(store: store, name: "配信中", status: :live)
+    sign_in admin, scope: :user
+    original_name = store.name
+    patch admin_store_path(store), params: { store: { published: false, name: "変更後" } }, as: :json
+    assert_response :unprocessable_entity
+    assert_includes response.parsed_body.fetch("message"), "配信を終了"
+    assert store.reload.published?
+    assert_equal original_name, store.name
+  end
+
+  test "配信中の非公開化は画像更新を伴っても拒否し画像と通常属性を保持する" do
+    admin, store = create_store_admin_and_store("publication_image_block", published: true)
+    install_pair(store)
+    original_ids = pair_ids(store.reload)
+    original_name = store.name
+    Booth.create!(store: store, name: "離席中", status: :away)
+    sign_in admin, scope: :user
+    assert_no_difference "ActiveStorage::Blob.count" do
+      patch admin_store_path(store), params: {
+        store: { published: false, name: "変更後" }, image_pair: replace_pair_params(store, color: "green")
+      }, headers: { "ACCEPT" => "application/json" }
+    end
+    assert_response :unprocessable_entity
+    assert_includes response.parsed_body.fetch("message"), "配信を終了"
+    assert store.reload.published?
+    assert_equal original_name, store.name
+    assert_equal original_ids, pair_ids(store)
+  end
+
   private
 
   def create_store_admin_and_store(prefix, **attributes)

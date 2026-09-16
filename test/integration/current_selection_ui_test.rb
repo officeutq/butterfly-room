@@ -96,7 +96,7 @@ class CurrentSelectionUiTest < ActionDispatch::IntegrationTest
   end
 
   def create_booth(actor, name, archived: false)
-    store = Store.create!(name: "店舗#{name}")
+    store = Store.create!(name: "店舗#{name}", published: true)
     StoreMembership.create!(store: store, user: actor, membership_role: :admin) if actor.store_admin?
     Booth.create!(store: store, name: name, ivs_stage_arn: "arn:aws:ivs:ap-northeast-1:123456789012:stage/#{name}",
       archived_at: archived ? Time.current : nil).tap do |booth|

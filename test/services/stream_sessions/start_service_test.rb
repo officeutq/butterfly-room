@@ -4,7 +4,7 @@ require "test_helper"
 
 class StreamSessions::StartServiceTest < ActiveSupport::TestCase
   test "cast cannot start stream when not belong to booth" do
-    store = Store.create!(name: "Test Store")
+    store = Store.create!(name: "Test Store", published: true)
 
     booth = Booth.create!(
       store: store,
@@ -26,7 +26,7 @@ class StreamSessions::StartServiceTest < ActiveSupport::TestCase
   end
 
   test "cast can start stream when belong to booth" do
-    store = Store.create!(name: "Test Store")
+    store = Store.create!(name: "Test Store", published: true)
 
     booth = Booth.create!(
       store: store,
@@ -51,7 +51,7 @@ class StreamSessions::StartServiceTest < ActiveSupport::TestCase
   end
 
   test "cast cannot start another booth when own other booth is live" do
-    store = Store.create!(name: "Test Store")
+    store = Store.create!(name: "Test Store", published: true)
     cast = User.create!(email: "cast_live@example.com", password: "password", role: :cast)
 
     live_booth = Booth.create!(
@@ -81,7 +81,7 @@ class StreamSessions::StartServiceTest < ActiveSupport::TestCase
   end
 
   test "cast cannot start another booth when own other booth is away" do
-    store = Store.create!(name: "Test Store")
+    store = Store.create!(name: "Test Store", published: true)
     cast = User.create!(email: "cast_away@example.com", password: "password", role: :cast)
 
     away_booth = Booth.create!(

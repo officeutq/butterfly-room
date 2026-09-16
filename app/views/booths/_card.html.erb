@@ -1,6 +1,6 @@
 <%# locals: booth:, booth_favorited:, store_favorited: %>
 <% open_in_modal =
-     user_signed_in? && (
+     user_signed_in? && (layout_current_booth.nil? || layout_current_booth.id == booth.id) && (
        current_user.system_admin? ||
        (current_user.store_admin? && current_user.admin_of_store?(booth.store_id))
      ) %>
