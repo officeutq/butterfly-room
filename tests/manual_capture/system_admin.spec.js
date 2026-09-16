@@ -1,6 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { expect, test } = require("@playwright/test");
+const { captureSelection, selectPrimaryStore } = require("./selection_helpers");
 
 const BASE_URL =
   process.env.MANUAL_CAPTURE_BASE_URL ||
@@ -43,7 +44,6 @@ test.beforeAll(() => {
 
   for (const section of sections) {
     const dir = path.join(SCREENSHOT_ROOT, section);
-    fs.rmSync(dir, { recursive: true, force: true });
     fs.mkdirSync(dir, { recursive: true });
   }
 
@@ -113,22 +113,7 @@ async function loginAsSystemAdmin(page) {
 }
 
 async function selectPrimaryManualStore(page) {
-  await gotoAndSettle(page, "/admin/stores");
-  await expect(page).toHaveURL(/\/admin\/stores/);
-  await expect(page.locator("body")).toContainText("店舗名");
-  await expect(page.locator("body")).toContainText("マニュアル撮影用店舗");
-  await capture(page, "admin_stores", "01_store_select.png");
-
-  const primaryRow = page
-    .locator("tr")
-    .filter({ has: page.locator("td", { hasText: /^マニュアル撮影用店舗$/ }) })
-    .first();
-  await expect(primaryRow).toBeVisible();
-  await Promise.all([
-    page.waitForURL(/\/dashboard/, { timeout: 20_000 }),
-    primaryRow.locator('input[type="submit"], button[type="submit"]').first().click(),
-  ]);
-  await settle(page);
+  await selectPrimaryStore(page);
   await capture(page, "admin_stores", "02_after_store_select_dashboard.png");
 }
 
@@ -163,6 +148,10 @@ async function fillFirstNonPromptOption(page, selector) {
 
 test("system_admin normal operation screenshots", async ({ page }) => {
   await loginAsSystemAdmin(page);
+  if (process.env.MANUAL_CAPTURE_SELECTION_ONLY === "1") {
+    await captureSelection(page, "system_admin", SCREENSHOT_ROOT);
+    return;
+  }
   await selectPrimaryManualStore(page);
 
   await gotoAndSettle(page, "/dashboard");
