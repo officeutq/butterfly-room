@@ -135,6 +135,17 @@ module CurrentSelection
     end
   end
 
+  def respond_selection_success(path, notice:)
+    flash[:notice] = notice
+    respond_to do |format|
+      format.json do
+        render json: { redirect_url: path, frame: params[:return_to_key] == "cast_invitation" ? "modal" : nil,
+          store_name: current_store&.name, booth_name: current_booth&.name }
+      end
+      format.html { redirect_to path, status: :see_other }
+    end
+  end
+
   # 戻り先の画面種別を保持し、管理画面の対象IDだけ確定した選択に揃える。
   def selection_return_path(kind:, result: current_selection)
     key = params[:return_to_key].to_s

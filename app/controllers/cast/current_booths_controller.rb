@@ -14,7 +14,7 @@ module Cast
         end
       end
       save_current_selection(result)
-      redirect_to destination, notice: "ブースを選択しました", status: :see_other
+      respond_selection_success(destination, notice: "ブースを選択しました")
     rescue ActionController::ParameterMissing
       render_selection_problem("ブースを選択してください")
     rescue ::Booths::EnterAsCastService::NotAuthorized

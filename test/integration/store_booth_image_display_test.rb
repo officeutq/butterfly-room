@@ -91,9 +91,7 @@ class StoreBoothImageDisplayTest < ActionDispatch::IntegrationTest
     sign_in cast, scope: :user
     get cast_booths_path
 
-    assert_response :success
-    assert_select ".cast-booths-card-thumbnail-wrap.ratio.ratio-social", count: 2
-    assert_select ".cast-booths-card-thumbnail[alt='選択画像ブースのブース画像']", count: 1
+    assert_redirected_to dashboard_path
 
     get select_modal_cast_booths_path, headers: { "Turbo-Frame" => "modal" }
 

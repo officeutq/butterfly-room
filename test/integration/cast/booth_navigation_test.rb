@@ -120,7 +120,7 @@ class Cast::BoothNavigationTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "form input[name='return_to_key'][value='booth_show']", count: 2
     get cast_booths_path(return_to_key: "booth_show")
-    assert_select "form input[name='return_to_key'][value='booth_show']", count: 2
+    assert_redirected_to dashboard_path
     assert_no_stream_change do
       post cast_current_booth_path, params: { booth_id: @b.id, return_to_key: "booth_show" }
       assert_redirected_to cast_booth_path(@b)

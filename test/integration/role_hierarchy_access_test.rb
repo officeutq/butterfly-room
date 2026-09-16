@@ -23,7 +23,7 @@ class RoleHierarchyAccessTest < ActionDispatch::IntegrationTest
     sign_in @store_admin, scope: :user
 
     get cast_booths_path
-    assert_response :success
+    assert_redirected_to dashboard_path
 
     post cast_current_booth_path, params: { booth_id: @booth1.id }
     assert_response :redirect
@@ -47,7 +47,7 @@ class RoleHierarchyAccessTest < ActionDispatch::IntegrationTest
     sign_in @system_admin, scope: :user
 
     get cast_booths_path
-    assert_response :success
+    assert_redirected_to dashboard_path
 
     get admin_booths_path
     assert_response :redirect

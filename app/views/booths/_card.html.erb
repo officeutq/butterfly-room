@@ -17,7 +17,7 @@
           form: {
             class: "d-block w-100 m-0",
             data: (
-              booth_entry_frame_data.merge(turbo_confirm: enter_booth_switch_confirm_message(booth))
+              booth_entry_frame_data
             )
           } do %>
       <% if booth.thumbnail_image.attached? %>
@@ -59,7 +59,7 @@
               form: {
                 class: "d-inline",
                 data: (
-                  booth_entry_frame_data.merge(turbo_confirm: enter_booth_switch_confirm_message(booth))
+                  booth_entry_frame_data
                 )
               } %>
       </div>

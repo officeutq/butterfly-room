@@ -11,6 +11,8 @@
     管理可能な店舗がありません。
   </div>
 <% else %>
+  <div data-controller="selection-switch" data-action="submit->selection-switch#submit">
+  <div class="alert alert-danger" role="alert" data-selection-switch-target="error" hidden></div>
   <table class="table align-middle">
     <thead>
       <tr>
@@ -33,6 +35,7 @@
             <% end %>
           </td>
           <td class="text-end">
+            <% if current_selection.store_switchable? %>
             <%= button_to "この店舗に切替",
                   admin_current_store_path,
                   method: :post,
@@ -41,10 +44,12 @@
                     return_to: @return_to,
                     return_to_key: @return_to_key
                   },
-                  class: "btn btn-primary btn-sm" %>
+                  class: "btn btn-primary btn-sm", form: { data: { turbo: false } } %>
+            <% end %>
           </td>
         </tr>
       <% end %>
     </tbody>
   </table>
+  </div>
 <% end %>
