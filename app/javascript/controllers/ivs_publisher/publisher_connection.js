@@ -124,8 +124,10 @@ export class PublisherConnection {
       if (this.state !== "confirmed") this.leave()
     } catch (error) {
       this.leave()
-      if (error.code === "stale_publisher_request" && this.tokenError?.code === "publisher_state_unavailable" && this.generation === null) {
-        // 発行Serviceの失敗応答と、その要求が保存されていないことの両方を確認できた。
+      if (error.code === "stale_publisher_request" && this.generation === null &&
+          ["publisher_state_unavailable", "store_unpublished"].includes(this.tokenError?.code)) {
+        // 発行失敗または非公開による拒否と、その要求が保存されていないことの両方を確認できた。
+        // 元の拒否理由を表示し、不要な再読み込み案内で置き換えない。
         // 再接続前の実績・旧開始権はサーバーが保持しているので、同じ世代で手動再試行できる。
         this.state = "cancelled"
         this.currentGeneration = this.expectedGeneration

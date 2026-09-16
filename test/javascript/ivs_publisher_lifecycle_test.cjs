@@ -57,6 +57,7 @@ function fixture(options = {}) {
       const params = request.body ? JSON.parse(request.body) : Object.fromEntries(route.searchParams)
       requests.push({ path: route.pathname, params, method: request.method })
       if (route.pathname === "/token") {
+        if (options.storeUnpublished) return response({ error: "store_unpublished", message: "非公開店舗のブースでは配信準備・配信開始はできません。店舗を公開してから操作してください" }, 409)
         if (options.tokenDisconnectPending) return response({ error: "publisher_disconnect_pending", message: "切断を確認しています" }, 202)
         if (options.tokenRejected) return response({ error: "publisher_in_use", message: "開始処理中です" }, 409)
         if (options.tokenUnavailableOnce) {
@@ -74,6 +75,7 @@ function fixture(options = {}) {
       const record = records.get(params.request_id)
       if (route.pathname === "/state") {
         if (stateUnavailable) throw new Error("network")
+        if (options.stateForbidden) return response({ error: "forbidden", message: "配信を操作する権限がありません" }, 403)
         return record ? response(record) : response({ error: "stale_publisher_request" }, 409)
       }
       if (route.pathname === "/confirm") {
@@ -715,6 +717,53 @@ test("R03 cancellation during token request handles the late response and never 
   assert.equal(f.confirms, 0)
   assert.equal(f.requests.at(-1).path, "/cancel")
   assert.equal(f.controller._publisherRecoveryPending, false)
+})
+
+test("unpublished store rejection displays its reason immediately and a later published retry uses a new request", async () => {
+  const options = { storeUnpublished: true, initialGeneration: 3 }
+  const f = fixture(options)
+  await f.controller.startBroadcast()
+  assert.equal(f.controller.error, "非公開店舗のブースでは配信準備・配信開始はできません。店舗を公開してから操作してください")
+  assert.equal(f.controller._publisherRecoveryPending, false)
+  assert.equal(f.controller._publisherAttempt.needsReload, false)
+  assert.equal(f.controller.publisherGenerationValue, 3)
+  assert.deepEqual(f.requests.map(r => r.path), ["/token", "/state"])
+  assert.equal(f.records.size, 0)
+  assert.equal(f.stages.length, 0)
+  assert.equal(f.confirms, 0)
+  assert.equal(f.finishes, 0)
+  assert.equal(f.reloads, 0)
+  assert.deepEqual(f.visits, [])
+  const rejectedRequestId = f.controller._publisherAttempt.requestId
+
+  options.storeUnpublished = false
+  const retry = f.controller.startBroadcast()
+  await until(() => f.stages.length === 1)
+  assert.notEqual(f.controller._publisherAttempt.requestId, rejectedRequestId)
+  f.stages[0].publish()
+  await retry
+  assert.equal(f.controller.error, null)
+  assert.equal(f.controller._broadcasting, true)
+  assert.equal(f.controller.publisherGenerationValue, 4)
+  assert.equal(f.records.size, 1)
+  assert.equal(f.requests.filter(r => r.path === "/cancel").length, 0)
+})
+
+test("unpublished rejection does not bypass an unavailable state check or lost permission", async () => {
+  for (const stateForbidden of [false, true]) {
+    const f = fixture({ storeUnpublished: true, stateForbidden })
+    f.stateUnavailable = !stateForbidden
+    await f.controller.startBroadcast()
+    assert.equal(f.controller._publisherRecoveryPending, true)
+    assert.equal(f.controller._publisherAttempt.needsReload, stateForbidden)
+    assert.equal(f.controller.error, stateForbidden
+      ? "配信の状態が更新されています。画面を読み込み直してください。"
+      : "配信接続の確認待ちです。再確認が完了してから配信を開始できます。")
+    await f.controller.startBroadcast()
+    assert.deepEqual(f.requests.map(r => r.path), ["/token", "/state"])
+    assert.equal(f.stages.length, 0)
+    assert.equal(f.records.size, 0)
+  }
 })
 
 test("S02 losing start never cancels another request and stale recovery asks to reload", async () => {
