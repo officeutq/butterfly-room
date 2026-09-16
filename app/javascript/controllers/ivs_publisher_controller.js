@@ -1456,12 +1456,12 @@ export default class extends Controller {
         this.endBtnTarget.classList.remove("d-none")
       } else {
         this.startBtnTarget.classList.remove("d-none")
-        this.endBtnTarget.classList.toggle("d-none", !(this.publisherControlValue && (this._boothStatus === "standby" || this._resumable)))
+        this.endBtnTarget.classList.toggle("d-none", !(this.publisherControlValue && this._resumable))
       }
       this.startBtnTarget.disabled = Boolean(this._selectionSwitchPending || this._publisherRecoveryPending || this._publisherRecovering)
       this.endBtnTarget.disabled = Boolean(this._selectionSwitchPending || this._publisherRecoveryPending || this._publisherRecovering)
       const endLabel = this.endBtnTarget.querySelector(".app-footer-nav-label")
-      if (endLabel) endLabel.textContent = starting ? "開始を取り消す" : (this._boothStatus === "standby" ? "準備終了" : "配信終了")
+      if (endLabel) endLabel.textContent = starting ? "開始を取り消す" : "配信終了"
     }
     if (this.hasRetryPublisherBtnTarget) {
       this.retryPublisherBtnTarget.classList.toggle("d-none", !this._publisherRecoveryPending)
