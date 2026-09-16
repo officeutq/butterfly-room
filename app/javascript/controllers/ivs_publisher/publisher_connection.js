@@ -71,8 +71,36 @@ export class PublisherConnection {
   async confirm() {
     this.assertCurrent()
     if (!this.published) throw new Error("publisher_not_published")
-    this.acceptState(await confirmPublisher(this.ctx, this))
-    if (this.state !== "confirmed") throw new Error("publisher_confirmation_missing")
+    const retryDelays = [500, 1000, 2000]
+    for (let retry = 0; ; retry++) {
+      this.assertCurrent()
+      try {
+        const result = await confirmPublisher(this.ctx, this)
+        this.assertCurrent()
+        this.acceptState(result)
+        if (this.state !== "confirmed") throw new Error("publisher_confirmation_missing")
+        return
+      } catch (error) {
+        this.assertCurrent()
+        if (error.status !== 503 || error.code !== "publisher_state_unavailable" || retry >= retryDelays.length) throw error
+        // 接続直後の一時的な照合失敗だけ、同じ要求・世代・SDKを保持して再確認する。
+        await this.waitToConfirm(retryDelays[retry])
+      }
+    }
+  }
+
+  waitToConfirm(delay) {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.cancelConfirmWait = null
+        resolve()
+      }, delay)
+      this.cancelConfirmWait = () => {
+        clearTimeout(timer)
+        this.cancelConfirmWait = null
+        reject(new Error("publisher_attempt_cancelled"))
+      }
+    })
   }
 
   acceptState(result) {
@@ -88,6 +116,7 @@ export class PublisherConnection {
 
   leave() {
     this.left = true
+    this.cancelConfirmWait?.()
     this.cancelPublishWait?.()
     const stage = this.stage
     if (!stage) return
