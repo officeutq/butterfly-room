@@ -4,6 +4,8 @@
 
 ブース・店舗の選択は#1255の[共通契約](design/current_selection.md)に従い、#1274〜#1276でローカル実装済み（ステージング・本番へ未反映）。選択側は#1280で実装済みのDB参照を利用し、準備作成者・未確定の開始権を本人配信と読み替えない。選択だけで準備・配信開始・終了を行わず、明示的な準備画面への移動で既存Serviceを呼ぶ。他者配信中や閉鎖済みは選択できても準備・開始できない。新方式の配信成功確定・世代・切断再試行の契約は維持する。
 
+選択側の本人判定は`StreamSession.current_broadcast_for_selection`、候補・固定・維持は`CurrentSelectionService`、session保存とHTTP応答は`CurrentSelection`に集約する。通常判定ではIVSへ問い合わせず、不整合を未配信へ読み替えない。準備切替は`Booths::PrepareSelectedBoothService`と実際の配信準備インスタンスを使う`selection_switch_controller.js`が接続する。初回開始の取消を確認できなければ選択POSTへ進まず、失敗時は元の画面・選択を保持する。配信成功時のヘッダー固定は`selection:locked`イベントで通知するが、許可・拒否の判断は各操作時の最新DBが担う。確認範囲は[ローカル検証](ops/current_selection_local_verification.md)を参照。
+
 本ドキュメントは、配信機能を **stream_session 単位**で成立させるための
 ルーム構造・責務分離・本番配信方式・制御（シグナリング）・最低限のメッセージ形式を定義する。
 
