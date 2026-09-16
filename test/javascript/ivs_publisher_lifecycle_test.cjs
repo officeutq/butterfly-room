@@ -136,6 +136,87 @@ function fixture(options = {}) {
     set stateUnavailable(value) { stateUnavailable = value }, set cancelPending(value) { cancelPending = value } }
 }
 
+test("selection holds new starts and disposes preparation preview only after selection succeeds", async () => {
+  const f = fixture()
+  const preview = deferred()
+  f.controller._previewOperation = preview.promise
+  f.controller._previewOnly = true
+  await f.controller.prepareSelectionSwitch()
+  await f.controller.startBroadcast()
+  assert.equal(f.requests.length, 0)
+  assert.equal(f.controller.mediaCleanups, undefined)
+  const completed = f.controller.completeSelectionSwitch()
+  assert.equal(f.controller.mediaCleanups, undefined)
+  preview.resolve()
+  await completed
+  assert.equal(f.controller.mediaCleanups, 1)
+  assert.equal(f.finishes, 0)
+})
+
+test("selection failure releases the start lock and keeps the existing preparation preview", async () => {
+  const f = fixture()
+  f.controller._previewOnly = true
+  await f.controller.prepareSelectionSwitch()
+  f.controller.resumeAfterSelectionFailure()
+  assert.equal(f.controller._selectionSwitchPending, false)
+  assert.equal(f.controller._previewOnly, true)
+  assert.equal(f.controller.mediaCleanups, undefined)
+  assert.equal(f.finishes, 0)
+})
+
+test("selection cancels the same in-flight token request before allowing a different booth", async () => {
+  const tokenResponse = deferred()
+  const f = fixture({ tokenResponse })
+  const start = f.controller.startBroadcast()
+  await until(() => f.requests.length === 1)
+  const switchPreparation = f.controller.prepareSelectionSwitch()
+  assert.equal(f.controller._selectionSwitchPending, true)
+  tokenResponse.resolve()
+  await Promise.all([start, switchPreparation])
+  assert.equal(f.controller._publisherAttempt.state, "cancelled")
+  assert.equal(f.requests.filter(r => r.path === "/cancel").length, 1)
+  assert.equal(f.confirms, 0)
+  assert.equal(f.finishes, 0)
+})
+
+test("selection cannot force-end a start that was confirmed while its response was pending", async () => {
+  const confirmResponse = deferred()
+  const f = fixture({ confirmResponse })
+  const start = f.controller.startBroadcast()
+  await until(() => f.stages.length === 1)
+  f.stages[0].publish()
+  await until(() => f.confirms === 1)
+  const switching = f.controller.prepareSelectionSwitch()
+  confirmResponse.resolve()
+  await Promise.all([start, switching])
+  assert.equal(f.controller._publisherAttempt.state, "confirmed")
+  assert.equal(f.controller._resumable, true)
+  assert.equal(f.finishes, 0)
+})
+
+test("confirmed broadcast remains connected while the server rechecks selection against current DB state", async () => {
+  const f = fixture()
+  const start = f.controller.startBroadcast()
+  await until(() => f.stages.length === 1)
+  f.stages[0].publish()
+  await start
+  await f.controller.prepareSelectionSwitch()
+  assert.equal(f.stages[0].leaves, 0)
+  assert.equal(f.controller._broadcasting, true)
+  assert.equal(f.finishes, 0)
+})
+
+test("selection waits for recovery when cancellation cannot be confirmed", async () => {
+  const f = fixture()
+  const start = f.controller.startBroadcast()
+  await until(() => f.stages.length === 1)
+  f.stateUnavailable = true
+  await assert.rejects(f.controller.prepareSelectionSwitch(), /確認待ち/)
+  await start
+  assert.equal(f.controller._publisherRecoveryPending, true)
+  assert.equal(f.finishes, 0)
+})
+
 test("starting during preparation preview waits for media initialization before publishing", async () => {
   const f = fixture()
   const preview = deferred()

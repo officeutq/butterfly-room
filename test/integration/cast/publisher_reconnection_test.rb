@@ -65,7 +65,8 @@ class Cast::PublisherReconnectionTest < ActionDispatch::IntegrationTest
       [ @creator, @other_publisher ].each do |actor|
         sign_in actor, scope: :user
         get live_cast_booth_path(@booth)
-        assert_response :conflict
+        assert_redirected_to cast_booth_path(@booth)
+        follow_redirect!
         assert_includes response.body, "このブースはすでに他の人が配信中です"
         post stream_session_ivs_participant_tokens_path(@stream_session), params: {
           role: "publisher", request_id: SecureRandom.uuid, expected_generation: 1 }, as: :json

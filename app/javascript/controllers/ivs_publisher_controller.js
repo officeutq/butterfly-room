@@ -227,7 +227,7 @@ export default class extends Controller {
   }
 
   async startBroadcast(opts = {}) {
-    if (this._publisherStartOperation || this._publisherRecoveryPending || this._publisherRecovering) return
+    if (this._selectionSwitchPending || this._publisherStartOperation || this._publisherRecoveryPending || this._publisherRecovering) return
     const operation = this._startBroadcast(opts)
     this._publisherStartOperation = operation
     try {
@@ -390,6 +390,37 @@ export default class extends Controller {
     }
 
     this._syncUI()
+  }
+
+  async prepareSelectionSwitch() {
+    this._selectionSwitchPending = true
+    this._syncUI()
+    // 確定済みの接続はここでは切らず、別端末での終了も含めサーバーの最新判定に従う。
+    if (this._broadcasting || this._resumable) return
+    if (this._publisherStartOperation) {
+      // この画面が所有する開始要求だけを既存の回復・取消処理で回収する。
+      await this.endBroadcast({ skipFinish: true })
+    }
+    if (this._resumable || this._publisherAttempt?.state === "confirmed") {
+      return
+    }
+    if (this._publisherRecoveryPending || this._publisherRecovering) {
+      throw new Error("配信接続の確認待ちです。再確認が完了してから切り替えてください")
+    }
+  }
+
+  async completeSelectionSwitch() {
+    // 選択失敗時のプレビューを維持し、成功時だけ離脱前に初期化完了と破棄を待つ。
+    await this._previewOperation
+    await this.endBroadcast({ skipFinish: true })
+  }
+
+  resumeAfterSelectionFailure() {
+    this._selectionSwitchPending = false
+    this._syncUI()
+    if (!this._resumable && !this._publisherRecoveryPending && !this._publisherRecovering && this._boothStatus === "standby") {
+      void this._startPreviewOnlyIfNeeded()
+    }
   }
 
   async endBroadcast(opts = {}) {
@@ -1427,8 +1458,8 @@ export default class extends Controller {
         this.startBtnTarget.classList.remove("d-none")
         this.endBtnTarget.classList.toggle("d-none", !(this.publisherControlValue && (this._boothStatus === "standby" || this._resumable)))
       }
-      this.startBtnTarget.disabled = Boolean(this._publisherRecoveryPending || this._publisherRecovering)
-      this.endBtnTarget.disabled = Boolean(this._publisherRecoveryPending || this._publisherRecovering)
+      this.startBtnTarget.disabled = Boolean(this._selectionSwitchPending || this._publisherRecoveryPending || this._publisherRecovering)
+      this.endBtnTarget.disabled = Boolean(this._selectionSwitchPending || this._publisherRecoveryPending || this._publisherRecovering)
       const endLabel = this.endBtnTarget.querySelector(".app-footer-nav-label")
       if (endLabel) endLabel.textContent = starting ? "開始を取り消す" : (this._boothStatus === "standby" ? "準備終了" : "配信終了")
     }

@@ -61,14 +61,12 @@ module Cast
     end
 
     def live
-      if @booth.current_stream_session.nil?
-        entry = ::Booths::EnterAsCastService.new(booth: @booth, actor: current_user).call
-        return render_selection_problem("配信画面を開けませんでした") unless entry.action == :redirect_live
-        @booth = entry.booth
+      entry = ::Booths::PrepareSelectedBoothService.new(booth: @booth, actor: current_user).call
+      if entry.information_only
+        redirect_to cast_booth_path(entry.booth), alert: entry.message
+        return
       end
-      if StreamSessions::PublisherControl.enabled?
-        ::Booths::ValidatePublisherEntryService.new(booth: @booth, actor: current_user).call
-      end
+      @booth = entry.booth
 
       @stream_session = @booth.current_stream_session
 
@@ -246,7 +244,8 @@ module Cast
     end
 
     def set_booth
-      booth = Booth.active.find(params[:id])
+      scope = action_name == "live" && current_user.at_least?(:store_admin) ? Booth.all : Booth.active
+      booth = scope.find(params[:id])
 
       allowed =
         if current_user.system_admin?
