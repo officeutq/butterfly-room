@@ -42,6 +42,8 @@ module Cast
     def select_modal
       result = resolve_current_selection(purpose: params[:source] == "header" ? :normalize : :require_booth)
       return render_selection_problem(selection_error_message(result)) unless save_current_selection(result)
+      return render_broadcast_selection_lock if result.broadcast && params[:source] == "header"
+
       load_selectable_booths
       if current_booth && (!result.booth_switchable? || params[:source] != "header")
         path = selection_return_path(kind: :booth)

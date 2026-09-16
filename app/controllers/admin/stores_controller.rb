@@ -30,6 +30,8 @@ module Admin
     def select_modal
       load_selectable_stores
       return render_selection_problem(selection_error_message) unless current_selection.success?
+      return render_broadcast_selection_lock if current_selection.broadcast && params[:required].blank?
+
       if current_store && (!current_selection.store_switchable? || params[:required].present?)
         redirect_to selection_return_path(kind: :store)
       elsif @stores.empty?

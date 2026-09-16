@@ -1,5 +1,6 @@
 <%# --- Header (common) --- %>
-<header id="app_header" class="border-bottom bg-body sticky-top">
+<header id="app_header" class="border-bottom bg-body sticky-top"
+        data-controller="selection-lock" data-action="selection:locked@window->selection-lock#lock">
   <div class="container-fluid app-header">
     <% if staging_environment? %>
       <span class="badge text-bg-warning header-environment-badge">staging</span>
@@ -101,7 +102,7 @@
                       store:
                       <% if current_selection.store_switchable? %>
                         <%= link_to select_modal_admin_stores_path(return_to: request.fullpath),
-                              data: { turbo_frame: "modal", turbo_prefetch: false },
+                              data: { turbo_frame: "modal", turbo_prefetch: false, selection_lock_target: "link" },
                               class: "link-secondary link-underline-opacity-0 link-underline-opacity-100-hover" do %>
                           <% if store.present? %>
                             <strong data-selection-store-name><%= store.name.presence || "(no name)" %></strong>
@@ -125,7 +126,7 @@
                       booth:
                       <% if current_selection.booth_switchable? %>
                         <%= link_to select_modal_cast_booths_path(return_to: request.fullpath, source: "header"),
-                            data: { turbo_frame: "modal", turbo_prefetch: false },
+                            data: { turbo_frame: "modal", turbo_prefetch: false, selection_lock_target: "link" },
                             class: "link-secondary link-underline-opacity-0 link-underline-opacity-100-hover" do %>
                           <% if booth.present? %>
                             <strong data-selection-booth-name><%= booth.name.presence || "(no name)" %></strong>
