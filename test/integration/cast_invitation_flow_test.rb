@@ -131,7 +131,7 @@ class CastInvitationFlowTest < ActionDispatch::IntegrationTest
   end
 
   test "new cast via invitation is redirected to profile edit, then booth edit, then home" do
-    store = Store.create!(name: "Invite Store")
+    store = Store.create!(name: "Invite Store", onboarding_step: :go_dashboard_for_drinks)
     inviter = User.create!(email: "inviter_cast4@example.com", password: "password", role: :store_admin)
     StoreMembership.create!(store: store, user: inviter, membership_role: :admin)
 
@@ -156,6 +156,7 @@ class CastInvitationFlowTest < ActionDispatch::IntegrationTest
     follow_redirect!
     assert_response :success
     assert_includes @response.body, "プロフィール編集"
+    assert_select "[data-controller~='onboarding']", count: 0
 
     booth = Booth.order(:id).last
     assert_equal "キャスト招待を承認しました。ブースを『#{store.name}』の『#{booth.name}』に切り替えました。", flash[:notice]
@@ -180,6 +181,7 @@ class CastInvitationFlowTest < ActionDispatch::IntegrationTest
     follow_redirect!
     assert_response :success
     assert_includes @response.body, "ブース編集"
+    assert_select "[data-controller~='onboarding']", count: 0
 
     patch cast_booth_path(booth), params: {
       booth: {
@@ -189,5 +191,13 @@ class CastInvitationFlowTest < ActionDispatch::IntegrationTest
     }
 
     assert_redirected_to root_path
+    follow_redirect!
+    assert_response :success
+    assert_select "[data-controller~='onboarding']", count: 0
+
+    get dashboard_path
+    assert_response :success
+    assert_select "[data-controller~='onboarding']", count: 0
+    assert_equal "go_dashboard_for_drinks", store.reload.onboarding_step
   end
 end

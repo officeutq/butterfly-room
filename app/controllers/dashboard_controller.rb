@@ -5,6 +5,6 @@ class DashboardController < ApplicationController
 
   def show
     store = current_store
-    Stores::AdvanceOnboarding.call!(store: store, action: :dashboard) if store
+    Stores::AdvanceOnboarding.call!(store: store, actor: current_user, action: :dashboard) if store
   end
 end
