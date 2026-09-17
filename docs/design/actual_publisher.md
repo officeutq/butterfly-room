@@ -57,6 +57,8 @@
 | `disconnected_at` | datetime、NULL可 | 保存したIDへの切断API成功を確認した時刻。leave・期限・詳細404で埋めない |
 | `released_at` | datetime、NULL可 | この開始権を解放した時刻。取消や終了のDB完了だけでは解放しない |
 | `disconnect_attempts` / `last_disconnect_error` / `next_disconnect_retry_at` | integer既定0 / string / datetime | 切断試行回数、例外クラス等の安全な理由、次回再試行時刻 |
+| `disconnect_failed_at` / `disconnect_in_flight_at` | datetime、NULL可 | 切断の最終失敗日時・通信前の試行予約。最終失敗後も成功と推測しない |
+| `confirmation_failure_reported_at` | datetime、NULL可 | 同一開始要求の確認失敗ログの重複防止 |
 | `created_at` / `updated_at` | datetime | 標準の記録時刻 |
 
 `released_at IS NULL` の行について、user_idごとに1件、stream_session_idごとに1件の部分一意索引を設ける。ブース固定Stage内の参加者IDにも一意索引を設ける。終了済みでも切断未完了なら開始権を保持する。成功済み配信の再接続では、切断意図の確定・旧行解放と新行作成を分ける。新発行が失敗しても確定済みの切断回数・結果を巻き戻さず、同じYが同じ配信実績へ再発行できる。
@@ -216,6 +218,8 @@ SDKの自然再接続は同じインスタンス・同じ要求のまま扱う�
 
 2026-09-17 / #1337：初回＋追加最大3回（合計4回）。初回失敗後の待機予定は0.5秒・1秒・2秒。全ての入口・古いジョブ・旧再確認API・次回配信入口で、同じ保存済み回数と予定を守る。待機中はDBロックを保持してsleepしない。最外側commit後に初回処理し、後続は `DisconnectPublisherConnectionJob` を予定時刻付きで投入する。API応答時間とジョブ待ち時間を含めた3.5秒以内の完了保証ではない。
 
+通信より前の別DB確定で試行回数を増やし、`disconnect_in_flight_at` と30秒後の応答確認期限を保存する。通信中にDBロックを保持しない。SDKの接続・応答待ちは各5秒。プロセス停止・応答保存失敗では予約した1回を消費したまま、期限後に `response_unconfirmed` として失敗を処理する。送信前に停止した場合も、安全側に回数を消費する。古い応答は予約番号が進んでいれば結果を上書きしない。通信前の予約と結果保存の間に終了・強制終了が走っても同じ接続・回数を共有する。
+
 4回目の失敗で `disconnect_failed_at` を設定、次回時刻をNULLにし、自動再投入を停止する。`disconnected_at`・`released_at` は未設定のまま維持する。`disconnect_state` は `not_requested` / `retrying` / `failed` / `disconnected`。終了応答も最終失敗と再試行中を分ける。参加者不在・応答消失・トークン期限で成功を補完しない。
 
 毎分の `RetryPendingPublisherDisconnectsJob` は最終失敗でない未解決行だけを回収する。導入前に4回以上試行済みの行は、5回目を呼ばず最終失敗とログへ移す。旧予定ジョブも同じ上限を守る。再読込・ログイン・次回開始で回数を戻さない。失敗したままの同じ人物／ブースの次回開始を保留する。終了・返却は妨げず、取消の切断待ち中も現在世代による通常終了を認める。
@@ -224,7 +228,7 @@ AWS SDKの内蔵再試行は `retry_limit: 0, max_attempts: 1` で無効化す�
 
 最終失敗の遷移につき一度、`Rails.error` へ重要度error・`RetryExhausted` を報告する。エラーログには人物・店舗・配信セッション・要求UUID、通常ログには接続ID・切断理由・安全な原因クラスを残す。AWS応答本文・トークンは保存しない。ログ保存失敗時も終了・返却を戻さず、既存の代替ログを利用する。
 
-#1339で専用再確認ボタン・旧Web経路を撤去した。状態取得のGETは認可済みDBを読むだけでAWS切断を実行しない。最終失敗の運用復旧手順は#1340で整備し、通常操作から無制限に再試行させない。本変更は環境への反映済みを意味しない。
+#1339で専用再確認ボタン・旧Web経路を撤去した。状態取得のGETは認可済みDBを読むだけでAWS切断を実行しない。最終失敗の運用復旧は[上限到達後の手順](../ops/publisher_retry_recovery.md)に従い、通常操作から無制限に再試行させない。本変更は環境への反映済みを意味しない。
 
 ## 6. D04：表示・コメント・集計・過去補正
 
@@ -336,7 +340,7 @@ Yが不明な金額・時間はuser=NULLの「配信者不明」行へ集約し�
 
 #1299で準備入口に `Booths::ValidatePublisherEntryService` と `Ivs::ParticipantSnapshotService` を接続した。新規準備はStartService、既存準備はEnterAsCastService、配信画面の直リンクは認可後の同じ検証を使う。旧準備はID・X・タイトルを保持し、Yの他ブース配信・他人の配信・不整合を区別する。既にDBで整合する本人の復帰画面は追加の外部照会を行わず、トークン発行時の照合は後続Issueが担当する。
 
-全入口は `StreamSessions::PublisherControl.enabled?`（環境変数 `ACTUAL_PUBLISHER_CONTROL_ENABLED=true` の場合のみtrue、既定false）で揃える。新方式の照会失敗は503と同じ対象の「再確認」を表示し、成功までブース選択を書き換えない。配信準備POSTはURLのbooth_idを対象にし、現在選択中の別ブースへ読み替えない。情報閲覧・情報用選択で準備を作成せず、選択方式そのものは変更しない。
+全入口は `StreamSessions::PublisherControl.enabled?`（環境変数 `ACTUAL_PUBLISHER_CONTROL_ENABLED=true` の場合のみtrue、既定false）で揃える。新方式の照会失敗は503で理由とダッシュボードへの戻り先を表示し、成功までブース選択を書き換えない。配信準備POSTはURLのbooth_idを対象にし、現在選択中の別ブースへ読み替えない。情報閲覧・情報用選択で準備を作成せず、選択方式そのものは変更しない。
 
 #1300で新方式の発行・要求状態の取得・未確定要求の取消を接続。発行APIは `request_id` と `expected_generation`、取消APIは `request_id` と当該接続の `generation` を受け取る。状態応答は要求側のgenerationとセッションの `current_generation` を分け、取消で世代が進んでも元の要求を指定して再確認できる。トークンは再取得せず、同じIDの再送は `token_already_issued` と要求状態を返す。
 
@@ -344,7 +348,7 @@ Yが不明な金額・時間はuser=NULLの「配信者不明」行へ集約し�
 
 #1301で `ConfirmPublisherService` とSDKの自己publishedイベントを接続した。開始確定は保存済み要求・IVS参加者を照合してY・初回時刻・booth.live・接続確認日時を同時保存する。同一要求の再確認は外部照会なしで保存結果を返す。新方式のStatusServiceは本人Yの現在要求によるlive/awayだけを許し、識別情報のない旧PATCHやstandbyからの別PATCHによる開始を拒否する。
 
-ブラウザーは `PublisherConnection` に要求UUIDとSDK参照を保持する。開始中の「開始を取り消す」、応答消失後の同じ要求の確認・未確定接続だけの取消、確認待ちの「再確認」を接続した。確認不能な間は新規開始を無効にし、旧要求・権限喪失は「画面を更新」を案内する。DB確定済みなら接続を継続し、退出済みなら本人復帰として扱う。画面離脱後に遅れてjoinが完了しても捕捉した旧SDKだけを退出し、新画面の映像・SDKを片付けない。確定後の表示更新失敗を開始失敗として取り消さない。
+ブラウザーは `PublisherConnection` に要求UUIDとSDK参照を保持する。開始中の「開始を取り消す」、応答消失後の同じ要求の確認・未確定接続だけの取消、確認待ちの回復を接続した。#1338・#1339で有限な自動処理へ変更し、専用再確認ボタンを撤去した。確認不能な間は新規開始を無効にし、旧要求・権限喪失は「画面を更新」を案内する。DB確定済みなら接続を継続し、退出済みなら本人復帰として扱う。画面離脱後に遅れてjoinが完了しても捕捉した旧SDKだけを退出し、新画面の映像・SDKを片付けない。確定後の表示更新失敗を開始失敗として取り消さない。
 
 2026-09-14の#1301実IVS確認では、SDK 1.30.0の合成映像・音声、隔離したtest DB、一時Stageで、参加のみでは実績なし／早すぎる確定は503／自己published後の照合・保存／同一要求の再確定で人物・時刻・接続数が不変を確認した。publishedから保存応答までは今回の1回で約1.31秒であり、応答時間の保証値ではない。調査用ページの文字コード不足による初回SDK読込失敗はアプリの成功結果に含めない。両実行のStage削除（GetStageで404）とtestデータ削除を確認。再現は `node script/probe_actual_publisher.cjs --run`（Dockerのtest DB・#1298のタグ限定AWS権限が必要）。映像加工の実機確認・本番権限・全体有効化は#1288で確認する。
 
@@ -356,7 +360,7 @@ Yが不明な金額・時間はuser=NULLの「配信者不明」行へ集約し�
 
 2026-09-14の#1302実IVS確認では、同じtestセッションでlive→away→旧ID切断→新IDによる配信成功を確認。今回の再発行開始から再確定は約1.72秒（固定待機なし、保証値ではない）。Y・X・初回時刻・セッションIDを維持し、旧IDを再度切断しても新IDはCONNECTED/published=trueを維持した。一時Stageの削除をGetStageの404で確認し、testデータも削除済み。上記の再現スクリプトを再接続まで拡張した。
 
-#1303でEndServiceから新経路のEndPublisherServiceへ接続し、通常・強制・準備終了、手動閉鎖、退会・所属解除に対象・世代検証を追加した。返却と終了を一度だけ確定し、通知・切断再試行ジョブは最外側commit後。毎分の回収ジョブは投入失敗もDBの切断待ちから回復する。準備・開始前や明示的な再確認は予定時刻を待たず保存済みIDだけ再試行する。管理画面は閉鎖済みも再確認可能。終了結果の通信が途切れたブラウザーは同じ要求で終了を再確認し、新しい開始を保留する。映像寸法や加工設定は変更しない。共通有効化は#1288まで既定falseを維持する。
+#1303でEndServiceから新経路のEndPublisherServiceへ接続し、通常・強制・準備終了、手動閉鎖、退会・所属解除に対象・世代検証を追加した。返却と終了を一度だけ確定し、通知・切断再試行ジョブは最外側commit後。毎分の回収ジョブは投入失敗もDBの切断待ちから回復する。#1337〜#1340で全入口を同じ上限・待機予定へ揃えた。管理画面は閉鎖済みも状態表示だけとし、最終失敗は運用復旧で扱う。終了結果の通信が途切れたブラウザーは同じ要求で終了を再確認し、新しい開始を保留する。映像寸法や加工設定は変更しない。共通有効化は#1288まで既定falseを維持する。
 
 | #1303の呼出元 | 入出力・失敗時の接続 | 確認 |
 | --- | --- | --- |
@@ -365,7 +369,7 @@ Yが不明な金額・時間はuser=NULLの「配信者不明」行へ集約し�
 | `Admin::BoothsController#archive` → `Booths::ArchiveService` | オフライン／準備だけ許可。準備は正規終了し同じロック内で閉鎖。古い対象・世代は拒否 | E03、閉鎖と開始確定の実DB競合 |
 | `RemoveCastService` → `CloseAndArchiveService` → `ForceEndService` | 所属解除の外側トランザクション内で対象ブースをロックし、取得したセッション・generationをcleanupとして渡す。配信中も既存どおり自動終了 | E04、閉鎖範囲と切断失敗後の所属解除 |
 | `WithdrawalService` → 上記の整理／本人終了・取消 | 共同管理店舗の本人配信／未確定接続だけ処理。Userの論理退会も同じトランザクション。通知失敗で返却をやり直さない | E04/E05、確定と退会の両順序、新規発行との競合、外側rollback・通知失敗 |
-| 取消・終了 → `DisconnectPublisherConnectionService` → ジョブ／毎分回収 | 保存済みIDへの切断のみ。ジョブは次回時刻を尊重、明示再確認は即時。同じuser/booth以外の開始には影響しない | E05、投入失敗・退会／閉鎖後の切断、旧IDの再切断 |
+| 取消・終了 → `DisconnectPublisherConnectionService` → ジョブ／毎分回収 | 保存済みIDへの切断のみ。ジョブ・各入口は回数と次回時刻を尊重し、上限で停止。同じuser/booth以外の開始には影響しない | E05、投入失敗・退会／閉鎖後の切断、旧IDの再切断 |
 
 旧方式の`ForceEndService`が使う`Ivs::Client`も、GetStage→全ページのListParticipants→GetParticipantで属性を取得し、DisconnectParticipantへはstage_arn/participant_idだけを渡す形へ修正した。#1298の旧引数エラーは調査時点の根拠として保持し、`probe_ivs_participant_api.rb`は旧引数の拒否と修正済み呼出しを区別して検証する。
 

@@ -26,7 +26,7 @@ module StreamSessions
     def self.ended_payload(stream_session:)
       connections = stream_session.stream_publisher_connections.disconnect_pending.unreleased
       pending = connections.exists?
-      failed = connections.where.not(disconnect_failed_at: nil).or(connections.where("disconnect_attempts >= ?", StreamPublisherConnection::MAX_DISCONNECT_ATTEMPTS)).exists?
+      failed = connections.where.not(disconnect_failed_at: nil).or(connections.where(disconnect_in_flight_at: nil).where("disconnect_attempts >= ?", StreamPublisherConnection::MAX_DISCONNECT_ATTEMPTS)).exists?
       { state: "ended", stream_session_id: stream_session.id, current_generation: stream_session.publisher_generation,
         disconnect_pending: pending, disconnect_state: failed ? "failed" : (pending ? "retrying" : "disconnected"),
         message: if failed

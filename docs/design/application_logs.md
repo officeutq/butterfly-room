@@ -133,3 +133,5 @@ appとworkerの両方を同じコードへ更新し、ErrorSubscriber登録を�
 ## 配信開始確認の最終失敗（#1338）
 
 ブラウザーの追加3回後の開始確認失敗を、本人の現在の未確定要求に限定して受信する。`StreamSessions::ReportPublisherConfirmationFailureService::RetryExhausted` をerrorで記録し、保存済み接続の要求UUID・人物・店舗・配信セッションで切断失敗と照合する。任意のブラウザー例外本文は受け付けない。成功済みを失敗として記録せず、取消や通信障害との競合で記録できない場合も成功した配信・業務状態を戻さない。
+
+#1340の追加検証：AWS通信前に試行予約を確定する。応答保存がDBエラーになった場合は `DisconnectPublisherConnectionService::PersistenceFailed` を記録し、予約の消費を維持する。運用による明示的な1回の再実行も失敗した場合は `RecoveryFailed` を記録する。運用の再実行は通常ジョブの上限リセットや終了・返却の再実行を伴わない。
