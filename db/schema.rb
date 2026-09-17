@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_14_070000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_17_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -264,6 +264,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_14_070000) do
     t.index ["display_blob_id"], name: "index_image_upload_verification_runs_on_display_blob_id"
     t.index ["source_blob_id"], name: "index_image_upload_verification_runs_on_source_blob_id"
     t.index ["user_id"], name: "index_image_upload_verification_runs_on_user_id"
+  end
+
+  create_table "ivs_disconnect_limits", id: :string, force: :cascade do |t|
+    t.datetime "next_available_at", null: false
   end
 
   create_table "lp_analytics_events", force: :cascade do |t|
@@ -667,6 +671,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_14_070000) do
     t.datetime "confirmed_at"
     t.datetime "created_at", null: false
     t.integer "disconnect_attempts", default: 0, null: false
+    t.datetime "disconnect_failed_at"
     t.string "disconnect_reason"
     t.datetime "disconnect_requested_at"
     t.datetime "disconnected_at"

@@ -58,7 +58,7 @@ module StreamSessions
 
       connection = @stream_session.stream_publisher_connections.lock.find_by(id: @stream_session.current_publisher_connection_id)
       # 再試行ジョブは接続行だけを更新するため、取消済みの参照が残る場合がある。
-      if connection&.disconnect_reason == "cancel" && connection.released_at && connection.generation + 1 == expected
+      if connection&.disconnect_reason == "cancel" && connection.generation + 1 == expected
         connection = nil
       end
       if connection

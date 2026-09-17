@@ -27,6 +27,39 @@ class StreamSessions::PublisherConnectionConcurrencyTest < ActiveSupport::TestCa
     verify_concurrent_claims(second_session: @stream_session, second_actor: @other_publisher)
   end
 
+  test "重複した切断ジョブは別DB接続でも同じ参加者を一度だけ切断する" do
+    entered = Queue.new
+    proceed = Queue.new
+    threads = []
+    with_publisher_client do
+      issued = issue_token
+      connection = StreamPublisherConnection.find_by!(request_id: issued[:request_id])
+      connection.update!(disconnect_requested_at: Time.current, disconnect_reason: "cancel")
+      original = @ivs_client.method(:disconnect_participant)
+      @ivs_client.define_singleton_method(:disconnect_participant) do |**arguments|
+        entered << true
+        Timeout.timeout(10) { proceed.pop }
+        original.call(**arguments)
+      end
+      2.times do |index|
+        threads << Thread.new do
+          ActiveRecord::Base.connection_pool.with_connection do
+            Ivs::DisconnectPublisherConnectionService.new(connection_id: connection.id).call
+          end
+        end
+        Timeout.timeout(10) { entered.pop } if index.zero?
+      end
+      proceed << true
+      threads.each { |thread| Timeout.timeout(10) { thread.value } }
+      assert_equal 1, connection.reload.disconnect_attempts
+      assert connection.released_at
+      assert_equal [ issued[:participant_id] ], disconnect_requests.pluck(:participant_id)
+    end
+  ensure
+    proceed << true
+    threads.each { |thread| thread.join(10) || thread.kill }
+  end
+
   test "配信開始要求が先なら非公開化は発行完了を待ち開始中として拒否する" do
     entered = Queue.new
     proceed = Queue.new
@@ -355,7 +388,13 @@ class StreamSessions::PublisherConnectionConcurrencyTest < ActiveSupport::TestCa
       threads << run.call(first, nil)
       Timeout.timeout(10) { entered.pop }
       threads << run.call(first == :confirm ? :withdraw : :confirm, waiting)
-      wait_for_database_lock(Timeout.timeout(10) { waiting.pop })
+      pid = Timeout.timeout(10) { waiting.pop }
+      if first == :confirm
+        wait_for_database_lock(pid)
+      else
+        # 取消のDB確定後にAWS切断するので、確認要求は退会済みを即座に拒否する。
+        assert_equal "forbidden", Timeout.timeout(10) { threads.last.value }[:error]
+      end
       proceed << true
       results = threads.map { |thread| Timeout.timeout(10) { thread.value } }
       assert @publisher.reload.deleted?

@@ -24,9 +24,18 @@ module StreamSessions
 
     # 認可済み・ロック済みの発行／取消からも同じ応答を返す。トークン文字列は含めない。
     def self.ended_payload(stream_session:)
-      pending = stream_session.stream_publisher_connections.disconnect_pending.unreleased.exists?
+      connections = stream_session.stream_publisher_connections.disconnect_pending.unreleased
+      pending = connections.exists?
+      failed = connections.where.not(disconnect_failed_at: nil).or(connections.where("disconnect_attempts >= ?", StreamPublisherConnection::MAX_DISCONNECT_ATTEMPTS)).exists?
       { state: "ended", stream_session_id: stream_session.id, current_generation: stream_session.publisher_generation,
-        disconnect_pending: pending, message: pending ? "配信の終了と未消化ドリンクの返却は完了しました。映像の切断を再試行しています" : "今回の配信が終了しました" }
+        disconnect_pending: pending, disconnect_state: failed ? "failed" : (pending ? "retrying" : "disconnected"),
+        message: if failed
+          "配信の終了と未消化ドリンクの返却は完了しました。配信接続の切断を確認できませんでした。"
+                 elsif pending
+          "配信の終了と未消化ドリンクの返却は完了しました。配信接続の切断を再試行しています。"
+                 else
+          "今回の配信が終了しました"
+                 end }
     end
 
     def self.payload(connection:, stream_session:, booth: stream_session.booth)
@@ -48,7 +57,8 @@ module StreamSessions
         generation: connection.generation, current_generation: stream_session.publisher_generation,
         actual_publisher_user_id: stream_session.actual_publisher_user_id,
         broadcast_started_at: stream_session.broadcast_started_at, booth_status: booth.status,
-        disconnect_pending: connection.disconnect_requested_at.present? && connection.disconnected_at.nil? && connection.released_at.nil? }
+        disconnect_pending: connection.disconnect_requested_at.present? && connection.disconnected_at.nil? && connection.released_at.nil?,
+        disconnect_state: connection.disconnect_state }
     end
   end
 end

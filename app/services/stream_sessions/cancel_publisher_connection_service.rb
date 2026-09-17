@@ -9,6 +9,7 @@ module StreamSessions
 
     def call
       @booth = @stream_session.booth
+      connection = nil
       @booth.with_lock do
         @stream_session.lock!
         unless PublisherControl.active_actor?(@actor) && Authorization::BoothPolicy.new(@actor, @booth).update?
@@ -43,9 +44,14 @@ module StreamSessions
         end
 
         connection = Ivs::DisconnectPublisherConnectionService.new(connection_id: connection.id).call
-        @stream_session.update!(current_publisher_connection: nil) if connection.released_at
-        PublisherStateService.payload(connection: connection, stream_session: @stream_session)
+        ActiveRecord.after_all_transactions_commit do
+          if connection.reload.released_at
+            StreamSession.where(id: @stream_session.id, current_publisher_connection_id: connection.id,
+              publisher_generation: connection.generation + 1).update_all(current_publisher_connection_id: nil)
+          end
+        end
       end
+      PublisherStateService.payload(connection: connection.reload, stream_session: @stream_session.reload)
     end
 
     private

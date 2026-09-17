@@ -1,0 +1,2 @@
+class IvsDisconnectLimit < ApplicationRecord
+end
