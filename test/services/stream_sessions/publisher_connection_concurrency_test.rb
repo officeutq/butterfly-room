@@ -180,14 +180,8 @@ class StreamSessions::PublisherConnectionConcurrencyTest < ActiveSupport::TestCa
       threads << claim_in_thread(@stream_session.id, @publisher.id, generation: 1, pid_queue: second_pid)
       pid = Timeout.timeout(10) { second_pid.pop }
       refute_equal first_pid, pid
-      ActiveRecord::Base.uncached do
-        Timeout.timeout(10) do
-          loop do
-            break if ActiveRecord::Base.connection.select_value("SELECT wait_event_type FROM pg_stat_activity WHERE pid = #{Integer(pid)}") == "Lock"
-            sleep 0.01
-          end
-        end
-      end
+      # 試行予約はcommit済み。通信中はDBロックを保持せず、別端末は確認待ちを返す。
+      assert_equal "publisher_disconnect_pending", Timeout.timeout(10) { threads.last.value }[:error]
       continue_first << true
       results = threads.map { |thread| Timeout.timeout(10) { thread.value } }
       winner = results.find { |result| result[:state] == "issued" }
@@ -292,10 +286,10 @@ class StreamSessions::PublisherConnectionConcurrencyTest < ActiveSupport::TestCa
       end
       assert_equal 1, notifications.count { |n| n.first == :ended }
       assert_equal 1, notifications.count { |n| n.first == :state }
-      assert_equal [ @stream_session.reload.current_publisher_connection_id ], jobs
+      assert_equal [ @stream_session.reload.current_publisher_connection_id ] * 2, jobs
       end_operation.call
       assert_equal 2, notifications.size
-      assert_equal 1, jobs.size
+      assert_equal 2, jobs.size
       notifications.clear
       jobs.clear
       connection = @stream_session.current_publisher_connection
@@ -341,7 +335,8 @@ class StreamSessions::PublisherConnectionConcurrencyTest < ActiveSupport::TestCa
           { error: error.code }
         end
       end
-      wait_for_database_lock(Timeout.timeout(10) { waiting.pop })
+      Timeout.timeout(10) { waiting.pop }
+      assert_equal "stale_publisher_request", Timeout.timeout(10) { threads.last.value }[:error]
       proceed << true
       closed, rejected = threads.map { |thread| Timeout.timeout(10) { thread.value } }
       assert closed.archived?
@@ -468,13 +463,10 @@ class StreamSessions::PublisherConnectionConcurrencyTest < ActiveSupport::TestCa
       threads << run.call(first == :confirm ? :cancel : :confirm, second_pid)
       pid = Timeout.timeout(10) { second_pid.pop }
       refute_equal first_pid, pid
-      ActiveRecord::Base.uncached do
-        Timeout.timeout(10) do
-          loop do
-            break if ActiveRecord::Base.connection.select_value("SELECT wait_event_type FROM pg_stat_activity WHERE pid = #{Integer(pid)}") == "Lock"
-            sleep 0.01
-          end
-        end
+      if first == :confirm
+        wait_for_database_lock(pid)
+      else
+        assert_equal "stale_publisher_request", Timeout.timeout(10) { threads.last.value }[:error]
       end
       continue_first << true
       results = threads.map { |thread| Timeout.timeout(10) { thread.value } }

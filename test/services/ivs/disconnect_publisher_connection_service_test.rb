@@ -130,4 +130,82 @@ class Ivs::DisconnectPublisherConnectionServiceTest < ActiveSupport::TestCase
       assert_nil Ivs::ReserveDisconnectSlotService.call(stage_arn: @booth.ivs_stage_arn)
     end
   end
+
+  test "切断成功後のDB保存失敗でも通信前に保存した回数を失わない" do
+    callback = ->(record) { raise ActiveRecord::StatementInvalid, "simulated write failure" if record.disconnected_at }
+    with_publisher_client do
+      issued = issue_token
+      StreamPublisherConnection.set_callback(:update, :after, callback)
+      cancel_token(issued)
+      StreamPublisherConnection.skip_callback(:update, :after, callback)
+      connection = StreamPublisherConnection.find_by!(request_id: issued[:request_id])
+      assert_equal 1, connection.disconnect_attempts
+      assert connection.disconnect_in_flight_at
+      assert_nil connection.released_at
+      assert_equal 1, disconnect_requests.size
+      travel_to(connection.next_disconnect_retry_at + 1.second) { DisconnectPublisherConnectionJob.perform_now(connection.id) }
+      assert_nil connection.reload.disconnect_in_flight_at
+      assert_equal 1, disconnect_requests.size
+      assert_equal "response_unconfirmed", connection.last_disconnect_error
+      travel_to(connection.next_disconnect_retry_at + 1.second) { DisconnectPublisherConnectionJob.perform_now(connection.id) }
+      assert_equal 2, connection.reload.disconnect_attempts
+      assert connection.released_at
+    end
+  ensure
+    StreamPublisherConnection.skip_callback(:update, :after, callback, raise: false)
+  end
+
+  test "運用復旧は未解決の保存済み対象だけに一回実行し失敗でも上限を戻さない" do
+    with_publisher_client do
+      issued = issue_token
+      @ivs_client.stub_responses(:disconnect_participant, "AccessDeniedException")
+      cancel_token(issued)
+      connection = StreamPublisherConnection.find_by!(request_id: issued[:request_id])
+      3.times do
+        travel_to(connection.reload.next_disconnect_retry_at, with_usec: true) { DisconnectPublisherConnectionJob.perform_now(connection.id) }
+      end
+      failed_at = connection.reload.disconnect_failed_at
+      service = Ivs::DisconnectPublisherConnectionService.new(connection_id: connection.id)
+      assert_raises(ArgumentError) { service.recover_once(request_id: SecureRandom.uuid, participant_id: connection.ivs_participant_id) }
+      service.recover_once(request_id: connection.request_id, participant_id: connection.ivs_participant_id)
+      assert_equal 5, connection.reload.disconnect_attempts
+      assert_equal "failed", connection.disconnect_state
+      assert_nil connection.next_disconnect_retry_at
+      DisconnectPublisherConnectionJob.perform_now(connection.id)
+      assert_equal 5, disconnect_requests.size
+      @ivs_client.stub_responses(:disconnect_participant, {})
+      service.recover_once(request_id: connection.request_id, participant_id: connection.ivs_participant_id)
+      assert_equal 6, connection.reload.disconnect_attempts
+      assert_equal "disconnected", connection.disconnect_state
+      assert_equal failed_at, connection.disconnect_failed_at
+      assert_nil @stream_session.reload.actual_publisher_user_id
+      refute @stream_session.ended?
+    end
+  end
+
+  test "全試行の応答保存が失敗しても通信前の予約により5回目を呼ばない" do
+    callback = ->(record) { raise ActiveRecord::StatementInvalid, "simulated write failure" if record.disconnected_at }
+    with_publisher_client do
+      issued = issue_token
+      connection = StreamPublisherConnection.find_by!(request_id: issued[:request_id])
+      StreamPublisherConnection.set_callback(:update, :after, callback)
+      cancel_token(issued)
+      4.times do |index|
+        assert_equal index + 1, connection.reload.disconnect_attempts
+        assert connection.disconnect_in_flight_at
+        assert_equal "retrying", connection.disconnect_state
+        travel_to(connection.next_disconnect_retry_at + 1.second) { DisconnectPublisherConnectionJob.perform_now(connection.id) }
+        connection.reload
+        next if index == 3
+
+        travel_to(connection.next_disconnect_retry_at + 1.second) { DisconnectPublisherConnectionJob.perform_now(connection.id) }
+      end
+      assert_equal "failed", connection.reload.disconnect_state
+      assert_nil connection.released_at
+      3.times { DisconnectPublisherConnectionJob.perform_now(connection.id) }
+      assert_equal 4, disconnect_requests.size
+    end
+  ensure
+    StreamPublisherConnection.skip_callback(:update, :after, callback, raise: false)
+  end
 end

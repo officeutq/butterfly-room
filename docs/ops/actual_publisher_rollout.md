@@ -87,7 +87,7 @@ stagingの`infra/terraform/environments/staging/iam.tf`の`UseTaggedStagingStage
 | --- | --- |
 | 開始結果不明 | 同じrequest_idで状態確認。確定済みなら本人復帰、未確定なら同じ要求の取消。別IDの発行を連打しない |
 | IVS照会不能・属性不一致 | 対象Stage・セッション・保存した参加者IDを確認。空きやXの配信と推測せず、正常な別対象まで止めない |
-| 終了後の切断待ち | DB ended・返却済みを保持し、画面の再確認／定期ジョブで保存した参加者だけ再切断。終了・返却・売上を再実行しない |
+| 終了後の切断待ち | DB ended・返却済みを保持。#1336適用後は初回＋追加3回まで自動切断し、上限後は[運用復旧手順](publisher_retry_recovery.md)へ。専用再確認ボタンは廃止。終了・返却・売上を再実行しない |
 | 通知失敗 | 保存済みコメントIDの`NotifyDrinkConsumptionJob`だけ再実行。消化APIを再実行しない |
 | 補完途中の停止 | 同じ固定一覧・SHAでapplyを再開。件数を増やす再planを行わない |
 | 補完の復旧 | 同じ一覧でrestore。適用後値が一致する行だけ新列を戻す。変更済み行は上書きしない |

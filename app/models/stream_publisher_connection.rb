@@ -21,7 +21,7 @@ class StreamPublisherConnection < ApplicationRecord
   def disconnect_state
     return "disconnected" if disconnected_at && released_at
     return "not_requested" unless disconnect_requested_at && released_at.nil?
-    return "failed" if disconnect_failed_at || disconnect_attempts >= MAX_DISCONNECT_ATTEMPTS
+    return "failed" if disconnect_failed_at || (disconnect_attempts >= MAX_DISCONNECT_ATTEMPTS && disconnect_in_flight_at.nil?)
 
     "retrying"
   end
