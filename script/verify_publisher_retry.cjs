@@ -25,6 +25,7 @@ assert.equal(existing.stdout.trim(), "", "既存の専用DBにはschemaを再投
 const envArgs = Object.entries({
   RAILS_ENV: "test", DATABASE_URL: dbUrl, DATABASE_URL_TEST: dbUrl,
   ACTUAL_PUBLISHER_CONTROL_ENABLED: "true", APP_ENV: "test", APP_HOST: "127.0.0.1", APP_PORT: "3014",
+  BEAUTY_PROVIDER: "banuba", BANUBA_CLIENT_TOKEN: "verification",
   AWS_ACCESS_KEY_ID: "verification", AWS_SECRET_ACCESS_KEY: "verification", AWS_SESSION_TOKEN: "",
   AWS_PROFILE: "", AWS_EC2_METADATA_DISABLED: "true", AWS_SDK_CONFIG_OPT_OUT: "true",
 }).flatMap(([key, value]) => ["-e", `${key}=${value}`]);
@@ -93,7 +94,7 @@ async function start(context, sessionId, generation = 0) {
   try {
     ready = await pending();
     assert(ready.ready);
-    browser = await chromium.launch({ headless: true });
+    browser = await chromium.launch({ headless: true, args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"] });
     report.browser = `Chromium ${browser.version()}`;
     const admin = await browser.newContext({ baseURL: base, viewport: { width: 1440, height: 1000 }, locale: "ja-JP" });
     await login(admin, ready.users.system_admin);
@@ -223,6 +224,7 @@ async function start(context, sessionId, generation = 0) {
       console.log(`${key}: ${scenario.role} ${scenario.mode}, failures=${scenario.failures}: passed`);
       await context.close();
     }
+    await require("./publisher_retry_browser.cjs")({ browser, base, command, login, ready, out, report });
     report.cleanup = await command("cleanup");
     assert.equal(report.cleanup.unreleased, 0);
     assert.equal(report.cleanup.live, 0);
