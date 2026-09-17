@@ -106,7 +106,8 @@ class Cast::PublisherPreparationTest < ActionDispatch::IntegrationTest
       @client.stub_responses(:get_stage, "AccessDeniedException")
       post cast_booth_stream_sessions_path(@booth)
       assert_response :service_unavailable
-      assert_select "form[action='#{enter_as_cast_booth_path(@booth)}']"
+      assert_select "button", text: "再確認", count: 0
+      assert_select "a[href='#{dashboard_path}']"
       assert_equal @booth.id, @request.session[:current_booth_id]
       assert_nil @selected_booth.reload.current_stream_session_id
       post enter_as_cast_booth_path(@booth), as: :json

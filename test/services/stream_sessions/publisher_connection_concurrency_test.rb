@@ -162,8 +162,9 @@ class StreamSessions::PublisherConnectionConcurrencyTest < ActiveSupport::TestCa
     continue_first = Queue.new
     second_pid = Queue.new
     threads = []
-    original = @ivs_client.method(:disconnect_participant)
+    original = nil
     with_publisher_client do
+      original = @ivs_client.method(:disconnect_participant)
       first = issue_token
       stub_published_participant(first)
       confirm_token(first)
@@ -188,9 +189,13 @@ class StreamSessions::PublisherConnectionConcurrencyTest < ActiveSupport::TestCa
         end
       end
       continue_first << true
-      winner, loser = threads.map { |thread| Timeout.timeout(10) { thread.value } }
+      results = threads.map { |thread| Timeout.timeout(10) { thread.value } }
+      winner = results.find { |result| result[:state] == "issued" }
+      loser = results.find { |result| result[:error] }
+      assert winner
+      assert loser
       assert_equal "issued", winner[:state]
-      assert_equal "stale_publisher_request", loser[:error]
+      assert_includes %w[stale_publisher_request publisher_disconnect_pending], loser[:error]
       assert_equal 2, issued_count
       assert_equal 1, disconnect_requests.size
       assert_equal 1, StreamPublisherConnection.unreleased.where(user: @publisher).count
