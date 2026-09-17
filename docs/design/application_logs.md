@@ -129,3 +129,7 @@ appとworkerの両方を同じコードへ更新し、ErrorSubscriber登録を�
 ## 配信切断の最終失敗（#1337）
 
 初回＋追加3回の切断失敗は `Ivs::DisconnectPublisherConnectionService::RetryExhausted` を `Rails.error` に重要度error・捕捉済みとして報告する。接続の `disconnect_failed_at` により同じ最終失敗の通常再実行・閲覧からの重複を防ぐ。ログのrequest_idは配信接続の要求UUID、関連人物は保存済みuser_id、店舗・配信セッションも保存済み接続から決める。原因クラスと切断理由は接続記録・接続ID付き通常ログで照合し、AWS例外本文は保存しない。エラーログの保存障害では従来の `error_log_write_failed` を使い、切断の未確認記録や確定済み終了・返却を変更しない。
+
+## 配信開始確認の最終失敗（#1338）
+
+ブラウザーの追加3回後の開始確認失敗を、本人の現在の未確定要求に限定して受信する。`StreamSessions::ReportPublisherConfirmationFailureService::RetryExhausted` をerrorで記録し、保存済み接続の要求UUID・人物・店舗・配信セッションで切断失敗と照合する。任意のブラウザー例外本文は受け付けない。成功済みを失敗として記録せず、取消や通信障害との競合で記録できない場合も成功した配信・業務状態を戻さない。

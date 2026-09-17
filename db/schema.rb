@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_17_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_17_010000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -668,6 +668,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_17_000000) do
 
   create_table "stream_publisher_connections", force: :cascade do |t|
     t.bigint "booth_id", null: false
+    t.datetime "confirmation_failure_reported_at"
     t.datetime "confirmed_at"
     t.datetime "created_at", null: false
     t.integer "disconnect_attempts", default: 0, null: false

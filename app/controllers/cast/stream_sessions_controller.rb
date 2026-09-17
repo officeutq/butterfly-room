@@ -2,8 +2,16 @@
 
 module Cast
   class StreamSessionsController < Cast::BaseController
-    before_action :set_stream_session, only: %i[show share finish pending_drink_orders meta_display metadata start_broadcast publisher_state cancel_broadcast]
-    before_action :authorize_stream_session_access!, only: %i[show share finish pending_drink_orders meta_display metadata start_broadcast publisher_state cancel_broadcast]
+    before_action :set_stream_session, only: %i[show share finish pending_drink_orders meta_display metadata start_broadcast publisher_state cancel_broadcast publisher_confirmation_failure]
+    before_action :authorize_stream_session_access!, only: %i[show share finish pending_drink_orders meta_display metadata start_broadcast publisher_state cancel_broadcast publisher_confirmation_failure]
+
+    def publisher_confirmation_failure
+      return head :not_found unless StreamSessions::PublisherControl.enabled?
+
+      StreamSessions::ReportPublisherConfirmationFailureService.new(stream_session: @stream_session,
+        actor: current_user, request_id: params[:request_id], generation: params[:generation]).call
+      head :no_content
+    end
 
     def share
       return head :not_found unless StreamSessions::PublisherControl.enabled?

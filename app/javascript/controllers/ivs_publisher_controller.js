@@ -47,6 +47,7 @@ export default class extends Controller {
     startBroadcastUrl: String,
     publisherStateUrl: String,
     cancelBroadcastUrl: String,
+    publisherConfirmationFailureUrl: String,
     retryPublisherDisconnectUrl: String,
     publisherControl: { type: Boolean, default: false },
     publisherGeneration: Number,
@@ -405,7 +406,7 @@ export default class extends Controller {
       return
     }
     if (this._publisherRecoveryPending || this._publisherRecovering) {
-      throw new Error("配信接続の確認待ちです。再確認が完了してから切り替えてください")
+      throw new Error("配信接続の状態を確認できませんでした。時間をおいて画面を読み込み直してください")
     }
   }
 
@@ -546,7 +547,9 @@ export default class extends Controller {
   _showPublisherRecovery(attempt) {
     this._setError(attempt.needsReload
       ? "配信の状態が更新されています。画面を読み込み直してください。"
-      : "配信接続の確認待ちです。再確認が完了してから配信を開始できます。")
+      : attempt.result?.disconnect_state === "failed"
+        ? "配信接続の切断を確認できませんでした。運用担当者へお問い合わせください。"
+        : "配信接続の状態を確認できませんでした。時間をおいて画面を読み込み直してください。")
   }
 
   async retryPublisherRecovery() {
