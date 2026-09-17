@@ -62,6 +62,7 @@ module Ivs
 
         if connection.released_at
           connection.save!
+          ActiveRecord.after_all_transactions_commit { StreamSessionNotifier.broadcast_publisher_disconnect(connection) }
         elsif connection.disconnect_attempts >= StreamPublisherConnection::MAX_DISCONNECT_ATTEMPTS
           exhaust!(connection)
         else
@@ -82,6 +83,7 @@ module Ivs
       connection.next_disconnect_retry_at = nil
       connection.save!
       ActiveRecord.after_all_transactions_commit do
+        StreamSessionNotifier.broadcast_publisher_disconnect(connection)
         # 任意のAWS応答本文を例外メッセージ・エラーログへ渡さない。
         Rails.logger.error("publisher_disconnect_exhausted connection_id=#{connection.id} reason=#{connection.disconnect_reason} " \
           "error=#{connection.last_disconnect_error}")

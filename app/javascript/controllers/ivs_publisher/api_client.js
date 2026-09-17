@@ -61,8 +61,8 @@ export function finishPublisher(ctx, request) {
   return publisherJson(ctx.finishUrlValue, "POST", request)
 }
 
-export function retryPublisherDisconnect(ctx) {
-  return publisherJson(ctx.retryPublisherDisconnectUrlValue, "POST", {})
+export function readPublisherDisconnectState(ctx) {
+  return publisherJson(ctx.publisherDisconnectStateUrlValue, "GET", {})
 }
 
 export async function fetchParticipantToken(ctx, role) {
