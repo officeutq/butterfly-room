@@ -25,18 +25,16 @@ class Ivs::PublisherDisconnectRunnerTest < ActiveSupport::TestCase
     end
   end
 
-  test "環境 DBまたは保存済み参加者の指定が違う場合はAWSを呼ばない" do
+  test "環境の指定が違う場合はAWSを呼ばない" do
     with_publisher_client do
       issued = issue_token
       connection = StreamPublisherConnection.find_by!(request_id: issued[:request_id])
-      capture_io do
-        error = assert_raises(SystemExit) do
-          run_script("--connection-id", connection.id.to_s, "--apply", "--environment", "not-test",
-            "--database", ApplicationRecord.connection_db_config.database, "--request-id", connection.request_id,
-            "--participant-id", connection.ivs_participant_id, "--stage-arn", connection.ivs_stage_arn)
-        end
-        assert_equal 1, error.status
+      error = assert_raises(SystemExit) do
+        run_script("--connection-id", connection.id.to_s, "--apply", "--environment", "not-test",
+          "--database", ApplicationRecord.connection_db_config.database, "--request-id", connection.request_id,
+          "--participant-id", connection.ivs_participant_id, "--stage-arn", connection.ivs_stage_arn)
       end
+      assert_equal 1, error.status
       assert_empty disconnect_requests
       assert_equal 0, connection.reload.disconnect_attempts
     end
