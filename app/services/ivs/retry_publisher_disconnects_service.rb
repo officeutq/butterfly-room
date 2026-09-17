@@ -27,7 +27,9 @@ module Ivs
       return unless call
 
       raise StreamSessions::PublisherControl::Error.new(code: "publisher_disconnect_pending",
-        message: "以前の配信接続の切断を確認しています。再確認してください", booth: @booth, status: :accepted)
+        message: self.class.pending(booth: @booth, actor: @actor).any? { |connection| connection.disconnect_state == "failed" } ?
+          "以前の配信接続の切断を確認できませんでした。運用担当者へお問い合わせください" :
+          "以前の配信接続の切断を確認しています。しばらくお待ちください", booth: @booth, status: :accepted)
     end
   end
 end

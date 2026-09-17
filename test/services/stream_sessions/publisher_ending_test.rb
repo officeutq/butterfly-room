@@ -95,7 +95,7 @@ class StreamSessions::PublisherEndingTest < ActiveSupport::TestCase
     end
   end
 
-  test "E05 DB失敗は終了返却を戻し同じ参加者への再切断から回復する" do
+  test "E05 DB失敗は終了返却を戻しAWSを切断せず後続の終了で回復する" do
     with_publisher_client do
       issued = begin_broadcast
       create_drinks
@@ -105,10 +105,11 @@ class StreamSessions::PublisherEndingTest < ActiveSupport::TestCase
       assert @pending.reload.pending?
       assert @booth.reload.live?
       assert_nil @stream_session.current_publisher_connection.reload.disconnect_requested_at
+      assert_empty disconnect_requests
       @hold = WalletTransaction.create!(wallet: @wallet, ref: @pending, kind: :hold, points: -100, occurred_at: Time.current)
       finish(**issued.slice(:request_id, :generation))
       assert @pending.reload.refunded?
-      assert_equal [ issued[:participant_id] ] * 2, disconnect_requests.pluck(:participant_id)
+      assert_equal [ issued[:participant_id] ], disconnect_requests.pluck(:participant_id)
     end
   end
 
@@ -249,7 +250,7 @@ class StreamSessions::PublisherEndingTest < ActiveSupport::TestCase
     end
   end
 
-  test "E05 明示的な再確認は予定時刻を待たず同じIDだけを切断し別ブースへ広げない" do
+  test "E05 旧再確認経路も予定時刻を守り別ブースへ広げない" do
     with_publisher_client do
       first = issue_token
       @ivs_client.stub_responses(:disconnect_participant, "AccessDeniedException")
@@ -257,7 +258,11 @@ class StreamSessions::PublisherEndingTest < ActiveSupport::TestCase
       other = build_prepared_booth("unrelated")
       assert_equal "issued", issue_token(actor: @other_publisher, stream_session: other.current_stream_session)[:state]
       @ivs_client.stub_responses(:disconnect_participant, {})
-      refute Ivs::RetryPublisherDisconnectsService.new(booth: @booth, actor: @publisher).call
+      assert Ivs::RetryPublisherDisconnectsService.new(booth: @booth, actor: @publisher).call
+      connection = @stream_session.reload.current_publisher_connection
+      travel_to(connection.next_disconnect_retry_at + 1.second) do
+        refute Ivs::RetryPublisherDisconnectsService.new(booth: @booth, actor: @publisher).call
+      end
       second = issue_token(generation: 2)
       assert_equal "issued", second[:state]
       assert_equal [ first[:participant_id] ] * 2, disconnect_requests.pluck(:participant_id)

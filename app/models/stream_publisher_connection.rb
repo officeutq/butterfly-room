@@ -1,5 +1,6 @@
 class StreamPublisherConnection < ApplicationRecord
   DISCONNECT_REASONS = %w[cancel replace end].freeze
+  MAX_DISCONNECT_ATTEMPTS = 4
 
   belongs_to :stream_session
   belongs_to :booth
@@ -15,6 +16,15 @@ class StreamPublisherConnection < ApplicationRecord
 
   scope :unreleased, -> { where(released_at: nil) }
   scope :disconnect_pending, -> { where.not(disconnect_requested_at: nil).where(disconnected_at: nil) }
+  scope :disconnect_retryable, -> { disconnect_pending.unreleased.where(disconnect_failed_at: nil) }
+
+  def disconnect_state
+    return "disconnected" if disconnected_at && released_at
+    return "not_requested" unless disconnect_requested_at && released_at.nil?
+    return "failed" if disconnect_failed_at || disconnect_attempts >= MAX_DISCONNECT_ATTEMPTS
+
+    "retrying"
+  end
 
   before_destroy :preserve_connection_history
 

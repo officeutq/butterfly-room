@@ -68,21 +68,24 @@ class StreamSessions::PublisherReconnectionTest < ActiveSupport::TestCase
       original = historical_values
       @ivs_client.stub_responses(:disconnect_participant, "AccessDeniedException")
       error = assert_raises(StreamSessions::PublisherControl::Error) { issue_token(generation: 1) }
-      assert_equal "publisher_state_unavailable", error.code
+      assert_equal "publisher_disconnect_pending", error.code
       assert_equal 1, issued_count
       assert_equal original, historical_values
       previous = @stream_session.reload.current_publisher_connection
       assert_equal first[:request_id], previous.request_id
       assert_nil previous.released_at
-      assert_nil previous.disconnect_requested_at
+      assert previous.disconnect_requested_at
+      assert_equal 1, previous.disconnect_attempts
       @ivs_client.stub_responses(:disconnect_participant, {})
-      assert_equal "issued", issue_token(generation: 1)[:state]
+      travel_to(previous.next_disconnect_retry_at + 1.second) do
+        assert_equal "issued", issue_token(generation: 1)[:state]
+      end
       assert_equal 2, disconnect_requests.size
       assert_equal original, historical_values
     end
   end
 
-  test "R02 切断後の発行失敗とDB保存失敗でも旧開始権を保ち同じ参加者IDへ再試行する" do
+  test "R02 切断後の発行失敗とDB保存失敗でも切断済み記録を戻さず同じ実績へ再発行する" do
     callback = ->(record) { raise ActiveRecord::RecordInvalid, record if record.generation > 1 }
     with_publisher_client do
       first = begin_broadcast
@@ -94,14 +97,14 @@ class StreamSessions::PublisherReconnectionTest < ActiveSupport::TestCase
       assert_raises(StreamSessions::PublisherControl::Error) { issue_token(generation: 1) }
       assert_equal 1, @stream_session.reload.publisher_generation
       assert_equal first[:request_id], @stream_session.current_publisher_connection.request_id
-      assert_nil @stream_session.current_publisher_connection.released_at
+      assert @stream_session.current_publisher_connection.released_at
       assert_equal 1, @stream_session.stream_publisher_connections.count
       assert_equal original, historical_values
       @ivs_client.stub_responses(:create_participant_token, { participant_token: {
         token: "retry-token", participant_id: "retry-participant", expiration_time: 1.hour.from_now } })
       second = issue_token(generation: 1)
       assert_equal "issued", second[:state]
-      assert_equal [ first[:participant_id] ] * 3, disconnect_requests.pluck(:participant_id)
+      assert_equal [ first[:participant_id] ], disconnect_requests.pluck(:participant_id)
       assert_equal original, historical_values
     end
   ensure

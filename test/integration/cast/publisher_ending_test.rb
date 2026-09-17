@@ -47,7 +47,10 @@ class Cast::PublisherEndingTest < ActionDispatch::IntegrationTest
       assert_response :ok
       assert_select "form[action='#{retry_publisher_disconnect_cast_booth_path(@booth)}']"
       @ivs_client.stub_responses(:disconnect_participant, {})
-      post retry_publisher_disconnect_cast_booth_path(@booth), as: :json
+      connection = @stream_session.reload.current_publisher_connection
+      travel_to(connection.next_disconnect_retry_at + 1.second) do
+        post retry_publisher_disconnect_cast_booth_path(@booth), as: :json
+      end
       assert_response :ok
       assert_equal false, response.parsed_body["disconnect_pending"]
     end
@@ -86,7 +89,10 @@ class Cast::PublisherEndingTest < ActionDispatch::IntegrationTest
       assert_response :ok
       assert_select "form[action='#{retry_publisher_disconnect_admin_booth_path(@booth)}']"
       @ivs_client.stub_responses(:disconnect_participant, {})
-      post retry_publisher_disconnect_admin_booth_path(@booth), as: :json
+      connection = @stream_session.reload.current_publisher_connection
+      travel_to(connection.next_disconnect_retry_at + 1.second) do
+        post retry_publisher_disconnect_admin_booth_path(@booth), as: :json
+      end
       assert_response :ok
       assert_equal false, response.parsed_body["disconnect_pending"]
     end

@@ -153,7 +153,9 @@ class StreamSessions::PublisherConnectionsTest < ActiveSupport::TestCase
       assert_equal "Aws::IVSRealTime::Errors::AccessDeniedException", connection.last_disconnect_error
       assert connection.next_disconnect_retry_at > Time.current
       assert_rejected("publisher_disconnect_pending") { issue_token(generation: 2) }
-      assert_equal "cancelled", cancel_token(first)[:state]
+      assert_equal 1, connection.reload.disconnect_attempts
+      travel_to(connection.next_disconnect_retry_at + 1.second) { assert_equal "cancel_pending", cancel_token(first)[:state] }
+      travel_to(connection.reload.next_disconnect_retry_at + 1.second) { assert_equal "cancelled", cancel_token(first)[:state] }
       assert_equal 3, connection.reload.disconnect_attempts
       assert connection.released_at
       assert_nil connection.last_disconnect_error

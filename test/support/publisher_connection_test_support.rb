@@ -9,6 +9,7 @@ module PublisherConnectionTestSupport
     @booth = build_prepared_booth("first-#{suffix}")
     @stream_session = @booth.current_stream_session
     @ivs_client = Aws::IVSRealTime::Client.new(stub_responses: true)
+    @disconnected_participant_ids = []
     @ivs_client.stub_responses(:get_stage, ->(context) { { stage: { arn: context.params[:arn] } } })
     sequence = 0
     mutex = Mutex.new
@@ -30,11 +31,20 @@ module PublisherConnectionTestSupport
 
   def with_publisher_client(enabled: "true")
     original_constructor = Aws::IVSRealTime::Client.method(:new)
+    original_slot = Ivs::ReserveDisconnectSlotService.method(:call)
+    Ivs::ReserveDisconnectSlotService.define_singleton_method(:call) { |**_options| nil }
     client = @ivs_client
+    original_disconnect = client.method(:disconnect_participant)
+    disconnected = @disconnected_participant_ids
+    client.define_singleton_method(:disconnect_participant) do |**arguments|
+      original_disconnect.call(**arguments).tap { disconnected << arguments[:participant_id] }
+    end
     Aws::IVSRealTime::Client.define_singleton_method(:new) { |**_options| client }
     with_env("ACTUAL_PUBLISHER_CONTROL_ENABLED" => enabled) { yield }
   ensure
     Aws::IVSRealTime::Client.define_singleton_method(:new, original_constructor)
+    Ivs::ReserveDisconnectSlotService.define_singleton_method(:call, original_slot)
+    client.define_singleton_method(:disconnect_participant, original_disconnect)
   end
 
   def issue_token(actor: @publisher, stream_session: @stream_session, request_id: SecureRandom.uuid, generation: 0)
@@ -60,7 +70,9 @@ module PublisherConnectionTestSupport
       attributes: { "role" => "publisher", "stream_session_id" => @stream_session.id.to_s, "user_id" => @publisher.id.to_s }.merge(attributes) }
     participants = [ participant, *extra_participants ]
     @ivs_client.stub_responses(:get_stage, { stage: { arn: @booth.ivs_stage_arn, active_session_id: "ivs-session" } })
-    @ivs_client.stub_responses(:list_participants, { participants: participants.map { |entry| entry.except(:attributes) } })
+    @ivs_client.stub_responses(:list_participants, ->(_context) {
+      { participants: participants.reject { |entry| @disconnected_participant_ids.include?(entry[:participant_id]) }.map { |entry| entry.except(:attributes) } }
+    })
     @ivs_client.stub_responses(:get_participant, ->(context) {
       { participant: participants.find { |entry| entry[:participant_id] == context.params[:participant_id] } }
     })
