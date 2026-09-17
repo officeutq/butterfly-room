@@ -29,7 +29,7 @@ function fixture(options = {}) {
     callback?.()
   }
   const records = new Map()
-  let generation = options.initialGeneration || 0, reloads = 0, confirms = 0, statusCalls = 0, finishes = 0
+  let generation = options.initialGeneration || 0, reloads = 0, confirms = 0, statusCalls = 0, finishes = 0, stateReads = 0, cancels = 0, disconnectReads = 0
   const visits = []
   let stateUnavailable = false, cancelPending = false
   class Stage {
@@ -89,10 +89,15 @@ function fixture(options = {}) {
       }
       const record = records.get(params.request_id)
       if (route.pathname === "/state") {
-        if (stateUnavailable) throw new Error("network")
+        stateReads++
+        if (stateUnavailable || stateReads <= (options.stateFailures || 0)) throw new Error("network")
         if (options.stateForbidden) return response({ error: "forbidden", message: "配信を操作する権限がありません" }, 403)
+        if (record?.state === "cancel_pending" && options.resolveCancellation && stateReads >= options.resolveCancellation) {
+          Object.assign(record, { state: "cancelled", disconnect_pending: false, disconnect_state: "disconnected" })
+        }
         return record ? response(record) : response({ error: "stale_publisher_request" }, 409)
       }
+      if (route.pathname === "/confirmation-failure") return response({}, 204)
       if (route.pathname === "/confirm") {
         confirms++
         assert.equal(params.generation, record.generation)
@@ -104,6 +109,8 @@ function fixture(options = {}) {
         return response(record)
       }
       if (route.pathname === "/cancel") {
+        cancels++
+        if (cancels <= (options.cancelFailures || 0)) throw new Error("network")
         assert.equal(params.generation, record.generation)
         if (record.state !== "confirmed") {
           if (record.state === "issued") generation++
@@ -126,7 +133,10 @@ function fixture(options = {}) {
         if (options.lostFinishResponse && finishes === 1) throw new Error("network")
         return response({ state: "ended", stream_session_id: 7, redirect_url: "/result/7", disconnect_pending: !!options.disconnectPending }, options.disconnectPending ? 202 : 200)
       }
-      if (route.pathname === "/retry-disconnect") return response({ disconnect_pending: !!options.retryDisconnectPending })
+      if (route.pathname === "/retry-disconnect") {
+        disconnectReads++
+        return response({ disconnect_pending: !!options.retryDisconnectPending || disconnectReads <= (options.retryDisconnectFailures || 0) })
+      }
       assert.fail(`unexpected request ${route.pathname}`)
     },
   })
@@ -140,6 +150,7 @@ function fixture(options = {}) {
   const controller = Object.assign(new context.PublisherController(), {
     publisherControlValue: true, publisherGenerationValue: options.initialGeneration || 0, streamSessionIdValue: 7,
     tokenUrlValue: "/token", publisherStateUrlValue: "/state", startBroadcastUrlValue: "/confirm", cancelBroadcastUrlValue: "/cancel", statusUrlValue: "/status", retryPublisherDisconnectUrlValue: "/retry-disconnect",
+    publisherConfirmationFailureUrlValue: "/confirmation-failure",
     hasTokenUrlValue: true, providerValue: "banuba", banubaClientTokenValue: "test-config", _state: "idle", _mode: "normal", _boothStatus: "standby",
     _beautyProvider: { ensureInitialBeautyStateLoaded: async () => {}, start: async () => {}, ensurePublishTrack: async () => {}, videoTrack: { kind: "video" }, stageStream: { track: "processed" } },
     _audioTrack: { kind: "audio" }, _ensureAudioTrack: async () => {},
@@ -371,7 +382,7 @@ test("selection waits for recovery when cancellation cannot be confirmed", async
   const start = f.controller.startBroadcast()
   await until(() => f.stages.length === 1)
   f.stateUnavailable = true
-  await assert.rejects(f.controller.prepareSelectionSwitch(), /確認待ち/)
+  await assert.rejects(f.controller.prepareSelectionSwitch(), /確認できませんでした/)
   await start
   assert.equal(f.controller._publisherRecoveryPending, true)
   assert.equal(f.finishes, 0)
@@ -420,15 +431,12 @@ test("E01 unstarted preparation finishes with generation zero and no participant
   assert.deepEqual(f.visits, ["/result/7"])
 })
 
-test("E05 an older pending disconnect blocks token issuance and can be rechecked before starting", async () => {
-  const options = { tokenDisconnectPending: true, retryDisconnectPending: true }
+test("E05 an older disconnect is checked automatically before allowing a fresh start", async () => {
+  const options = { tokenDisconnectPending: true, retryDisconnectFailures: 1 }
   const f = fixture(options)
   await f.controller.startBroadcast()
-  assert.equal(f.controller._publisherRecoveryPending, true)
   assert.equal(f.stages.length, 0)
-  options.retryDisconnectPending = false
   options.tokenDisconnectPending = false
-  await f.controller.retryPublisherRecovery()
   assert.equal(f.controller._publisherRecoveryPending, false)
   const starting = f.controller.startBroadcast()
   await until(() => f.stages.length === 1)
@@ -770,7 +778,7 @@ test("S05 confirmation response loss retains the same SDK after recovering the c
   assert.equal(f.controller._broadcasting, true)
 })
 
-test("S05 DB confirmation failure leaves SDK and pending external cancellation blocks new starts until manual retry succeeds", async () => {
+test("S05 cancellation remaining unconfirmed stays blocked and a repeated recovery cannot reset the budget", async () => {
   const f = fixture({ confirmFails: true })
   f.cancelPending = true
   const starting = f.controller.startBroadcast()
@@ -779,15 +787,16 @@ test("S05 DB confirmation failure leaves SDK and pending external cancellation b
   await starting
   assert.ok(f.stages[0].leaves > 0)
   assert.equal(f.controller._publisherRecoveryPending, true)
-  assert.match(f.controller.error, /確認待ち/)
+  assert.match(f.controller.error, /確認できませんでした/)
   f.controller.closeError()
-  assert.match(f.controller.error, /確認待ち/)
+  assert.match(f.controller.error, /確認できませんでした/)
   await f.controller.startBroadcast()
   assert.equal(f.requests.filter(r => r.path === "/token").length, 1)
+  const count = f.requests.length
   f.cancelPending = false
   await f.controller.retryPublisherRecovery()
-  assert.equal(f.controller._publisherRecoveryPending, false)
-  assert.equal(f.controller.error, null)
+  assert.equal(f.controller._publisherRecoveryPending, true)
+  assert.equal(f.requests.length, count)
   assert.equal(f.controller.publisherGenerationValue, 2)
 })
 
@@ -803,9 +812,11 @@ test("S06 unknown result keeps SDK identity, leaves locally, and retries only th
   assert.ok(f.stages[0].leaves > 0)
   await f.controller.startBroadcast()
   assert.equal(f.stages.length, 1)
+  const count = f.requests.length
   f.stateUnavailable = false
   await f.controller.retryPublisherRecovery()
-  assert.equal(f.controller._publisherRecoveryPending, false)
+  assert.equal(f.controller._publisherRecoveryPending, true)
+  assert.equal(f.requests.length, count)
   assert.equal(f.requests.at(-1).params.request_id, f.requests[0].params.request_id)
 })
 
@@ -887,9 +898,9 @@ test("unpublished rejection does not bypass an unavailable state check or lost p
     assert.equal(f.controller._publisherAttempt.needsReload, stateForbidden)
     assert.equal(f.controller.error, stateForbidden
       ? "配信の状態が更新されています。画面を読み込み直してください。"
-      : "配信接続の確認待ちです。再確認が完了してから配信を開始できます。")
+      : "配信接続の状態を確認できませんでした。時間をおいて画面を読み込み直してください。")
     await f.controller.startBroadcast()
-    assert.deepEqual(f.requests.map(r => r.path), ["/token", "/state"])
+    assert.deepEqual(f.requests.map(r => r.path), ["/token", ...Array(stateForbidden ? 1 : 4).fill("/state")])
     assert.equal(f.stages.length, 0)
     assert.equal(f.records.size, 0)
   }
@@ -928,4 +939,33 @@ test("S04/S06 pending confirmation exposes cancellation; unresolved recovery kee
   assert.equal(f.controller.retryPublisherBtnTarget.classList.contains("d-none"), false)
   assert.equal(f.controller.retryPublisherBtnTarget.disabled, false)
   assert.equal(f.controller.errorCloseBtnTarget.classList.contains("d-none"), true)
+})
+
+
+test("state and cancellation communication recover automatically with a fixed per-stage budget", async () => {
+  const f = fixture({ confirmFails: true, stateFailures: 2, cancelFailures: 1, resolveCancellation: 5 })
+  f.cancelPending = true
+  const starting = f.controller.startBroadcast()
+  await until(() => f.stages.length === 1)
+  f.stages[0].publish()
+  await starting
+  assert.equal(f.controller._publisherAttempt.state, "cancelled")
+  assert.equal(f.controller._publisherRecoveryPending, false)
+  assert.equal(f.requests.filter(r => r.path === "/confirmation-failure").length, 1)
+  assert.equal(f.requests.filter(r => r.path === "/token").length, 1)
+  assert.equal(f.requests.filter(r => r.path === "/cancel").length, 2)
+  assert.equal(f.requests.filter(r => r.path === "/state").length, 5)
+  const requestId = f.requests[0].params.request_id
+  assert.ok(f.requests.every(r => r.params.request_id === requestId))
+})
+
+test("a server-confirmed result is preserved and never reported as a failed start", async () => {
+  const f = fixture({ lostConfirmationResponse: true, stateFailures: 2 })
+  const starting = f.controller.startBroadcast()
+  await until(() => f.stages.length === 1)
+  f.stages[0].publish()
+  await starting
+  assert.equal(f.controller._broadcasting, true)
+  assert.equal(f.stages[0].leaves, 0)
+  assert.equal(f.requests.filter(r => ["/confirmation-failure", "/cancel"].includes(r.path)).length, 0)
 })

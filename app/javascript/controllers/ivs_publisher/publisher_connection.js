@@ -1,4 +1,4 @@
-import { issuePublisherToken, confirmPublisher, readPublisherState, cancelPublisher, retryPublisherDisconnect } from "controllers/ivs_publisher/api_client"
+import { issuePublisherToken, confirmPublisher, readPublisherState, cancelPublisher, retryPublisherDisconnect, reportPublisherConfirmationFailure } from "controllers/ivs_publisher/api_client"
 
 // 1回の開始操作が所有する要求とSDKを保持する。画面の最新Stageへ読み替えない。
 export class PublisherConnection {
@@ -82,7 +82,11 @@ export class PublisherConnection {
         return
       } catch (error) {
         this.assertCurrent()
-        if (error.status !== 503 || error.code !== "publisher_state_unavailable" || retry >= retryDelays.length) throw error
+        if (error.status !== 503 || error.code !== "publisher_state_unavailable") throw error
+        if (retry >= retryDelays.length) {
+          this.confirmationExhausted = true
+          throw error
+        }
         // 接続直後の一時的な照合失敗だけ、同じ要求・世代・SDKを保持して再確認する。
         await this.waitToConfirm(retryDelays[retry])
       }
@@ -131,7 +135,33 @@ export class PublisherConnection {
     this.leave()
   }
 
-  async recover() {
+  recover() {
+    // 共用ボタンや複数の呼出元から同じ段階を巡回して、上限を増やさない。
+    this.recovery ||= this.performRecovery()
+    return this.recovery
+  }
+
+  // 画面離脱後も元のUUIDだけを回収する。新画面の要求やSDKは参照しない。
+  async recoveryStep(operation, pending = () => false) {
+    const delays = [500, 1000, 2000]
+    for (let retry = 0; ; retry++) {
+      try {
+        const result = await operation()
+        if (!pending(result) || retry >= delays.length) return result
+      } catch (error) {
+        if (error.message === "publisher_attempt_cancelled" || (error.status && error.status < 500) || retry >= delays.length) throw error
+      }
+      await new Promise(resolve => setTimeout(resolve, delays[retry]))
+    }
+  }
+
+  async reportConfirmationFailure() {
+    if (!this.confirmationExhausted || this.failureReported || this.state === "confirmed") return
+    this.failureReported = true
+    try { await reportPublisherConfirmationFailure(this.ctx, this) } catch (_) {}
+  }
+
+  async performRecovery() {
     if (!this.tokenRequested) {
       this.state = "cancelled"
       this.currentGeneration = this.expectedGeneration
@@ -140,19 +170,27 @@ export class PublisherConnection {
     try {
       if (this.tokenError?.code === "publisher_disconnect_pending" && this.generation === null) {
         this.leave()
-        const result = await retryPublisherDisconnect(this.ctx)
+        const result = await this.recoveryStep(() => retryPublisherDisconnect(this.ctx), result => result.disconnect_pending && result.disconnect_state !== "failed")
+        this.result = result
         this.state = result.disconnect_pending ? "pending" : "cancelled"
         this.currentGeneration = this.expectedGeneration
         return
       }
-      this.acceptState(await readPublisherState(this.ctx, this))
+      this.acceptState(await this.recoveryStep(() => readPublisherState(this.ctx, this)))
+      if (this.state !== "confirmed") this.leave()
+      await this.reportConfirmationFailure()
       if (this.state === "issued" || this.state === "cancel_pending") {
         this.leave()
-        this.acceptState(await cancelPublisher(this.ctx, this))
+        this.acceptState(await this.recoveryStep(() => cancelPublisher(this.ctx, this)))
+        if (this.state === "cancel_pending" && this.result.disconnect_state !== "failed") {
+          this.acceptState(await this.recoveryStep(() => readPublisherState(this.ctx, this), result =>
+            result.state === "cancel_pending" && result.disconnect_state !== "failed"))
+        }
       }
       if (this.state !== "confirmed") this.leave()
     } catch (error) {
       this.leave()
+      await this.reportConfirmationFailure()
       if (error.code === "stale_publisher_request" && this.generation === null &&
           ["publisher_state_unavailable", "store_unpublished"].includes(this.tokenError?.code)) {
         // 発行失敗または非公開による拒否と、その要求が保存されていないことの両方を確認できた。

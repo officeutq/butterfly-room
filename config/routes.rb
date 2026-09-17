@@ -180,6 +180,7 @@ Rails.application.routes.draw do
       patch :start_broadcast, on: :member
       get :publisher_state, on: :member
       post :cancel_broadcast, on: :member
+      post :publisher_confirmation_failure, on: :member
     end
 
     resources :drink_orders, only: [] do

@@ -9,6 +9,7 @@ async function publisherJson(url, method, params) {
   }
   const resp = await fetch(url, {
     method, credentials: "same-origin",
+    ...(typeof AbortSignal !== "undefined" ? { signal: AbortSignal.timeout(15000) } : {}),
     headers: { "Content-Type": "application/json", "Accept": "application/json", "X-CSRF-Token": csrfToken() },
     ...(method === "GET" ? {} : { body: JSON.stringify(params) }),
   })
@@ -38,6 +39,16 @@ export function readPublisherState(ctx, attempt) {
 
 export function cancelPublisher(ctx, attempt) {
   return publisherJson(ctx.cancelBroadcastUrlValue, "POST", { request_id: attempt.requestId, generation: attempt.generation })
+}
+
+export async function reportPublisherConfirmationFailure(ctx, attempt) {
+  const resp = await fetch(ctx.publisherConfirmationFailureUrlValue, {
+    method: "POST", credentials: "same-origin",
+    headers: { "Content-Type": "application/json", "Accept": "application/json", "X-CSRF-Token": csrfToken() },
+    body: JSON.stringify({ request_id: attempt.requestId, generation: attempt.generation }),
+    ...(typeof AbortSignal !== "undefined" ? { signal: AbortSignal.timeout(15000) } : {}),
+  })
+  return resp.ok
 }
 
 export function changePublisherStatus(ctx, attempt, to) {
