@@ -36,7 +36,7 @@ class Cast::PublisherEndingTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "E05 切断失敗は202と返却完了を案内しリザルトから再確認できる" do
+  test "E05 切断失敗は202と返却完了を案内しリザルトのDB状態を取得できる" do
     with_publisher_client do
       issued = begin_broadcast
       @ivs_client.stub_responses(:disconnect_participant, "AccessDeniedException")
@@ -45,11 +45,13 @@ class Cast::PublisherEndingTest < ActionDispatch::IntegrationTest
       assert_equal true, response.parsed_body["disconnect_pending"]
       get cast_stream_session_path(@stream_session)
       assert_response :ok
-      assert_select "form[action='#{retry_publisher_disconnect_cast_booth_path(@booth)}']"
+      assert_select "[data-controller='publisher-disconnect-status']"
+      assert_select "button", text: "再確認", count: 0
       @ivs_client.stub_responses(:disconnect_participant, {})
       connection = @stream_session.reload.current_publisher_connection
       travel_to(connection.next_disconnect_retry_at + 1.second) do
-        post retry_publisher_disconnect_cast_booth_path(@booth), as: :json
+        DisconnectPublisherConnectionJob.perform_now(connection.id)
+        get disconnect_state_cast_stream_session_path(@stream_session), as: :json
       end
       assert_response :ok
       assert_equal false, response.parsed_body["disconnect_pending"]
@@ -78,7 +80,7 @@ class Cast::PublisherEndingTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "E05 閉鎖後も管理画面に切断待ちと再確認を表示する" do
+  test "E05 閉鎖後も管理画面に切断状態を表示する" do
     with_publisher_client do
       issue_token
       @ivs_client.stub_responses(:disconnect_participant, "AccessDeniedException")
@@ -87,41 +89,70 @@ class Cast::PublisherEndingTest < ActionDispatch::IntegrationTest
       assert @booth.reload.archived?
       get admin_booths_path(archived: 1)
       assert_response :ok
-      assert_select "form[action='#{retry_publisher_disconnect_admin_booth_path(@booth)}']"
+      assert_select "[data-controller='publisher-disconnect-status']"
+      assert_select "button", text: "再確認", count: 0
       @ivs_client.stub_responses(:disconnect_participant, {})
       connection = @stream_session.reload.current_publisher_connection
       travel_to(connection.next_disconnect_retry_at + 1.second) do
-        post retry_publisher_disconnect_admin_booth_path(@booth), as: :json
+        DisconnectPublisherConnectionJob.perform_now(connection.id)
+        get publisher_disconnect_state_cast_booth_path(@booth), as: :json
       end
       assert_response :ok
       assert_equal false, response.parsed_body["disconnect_pending"]
     end
   end
 
-  test "E05 切断待ちの準備画面は開始させず同じブースの再確認を表示する" do
+  test "E05 切断待ちの準備画面は開始させず同じブースの切断状態を表示する" do
     with_publisher_client do
       issued = issue_token
       @ivs_client.stub_responses(:disconnect_participant, "AccessDeniedException")
       cancel_token(issued)
       get live_cast_booth_path(@booth)
       assert_response :accepted
-      assert_select "form[action='#{retry_publisher_disconnect_cast_booth_path(@booth)}']"
+      assert_select "[data-controller='publisher-disconnect-status']"
+      assert_select "button", text: "再確認", count: 0
       refute @stream_session.reload.ended?
     end
   end
 
-  test "再確認は他店から拒否し切断意図のない他人の接続を切断しない" do
+  test "状態取得は他店から拒否しAWS切断を実行しない" do
     with_publisher_client do
       begin_broadcast
-      post retry_publisher_disconnect_admin_booth_path(@booth), as: :json
+      get publisher_disconnect_state_cast_booth_path(@booth), as: :json
       assert_response :ok
       assert_empty disconnect_requests
       outsider = User.create!(email: "ending-outsider@example.com", password: "password", role: :cast)
       sign_in outsider, scope: :user
-      post retry_publisher_disconnect_cast_booth_path(@booth), as: :json
+      get publisher_disconnect_state_cast_booth_path(@booth), as: :json
       assert_response :forbidden
       assert_empty disconnect_requests
     end
+  end
+
+  test "最終失敗後のリザルトと管理画面は返却完了とエラーを示し旧再確認APIは廃止する" do
+    with_publisher_client do
+      issued = begin_broadcast
+      @ivs_client.stub_responses(:disconnect_participant, "AccessDeniedException")
+      post finish_cast_stream_session_path(@stream_session), params: issued.slice(:request_id, :generation), as: :json
+      connection = @stream_session.reload.current_publisher_connection
+      3.times do
+        travel_to(connection.reload.next_disconnect_retry_at, with_usec: true) { DisconnectPublisherConnectionJob.perform_now(connection.id) }
+      end
+      get cast_stream_session_path(@stream_session)
+      assert_select ".alert-danger", text: /配信の終了と未消化ドリンクの返却は完了しました。配信接続の切断を確認できませんでした。/
+      assert_select "button", text: "再確認", count: 0
+      get disconnect_state_cast_stream_session_path(@stream_session), as: :json
+      assert_equal "failed", response.parsed_body["disconnect_state"]
+      get admin_booths_path
+      assert_select ".alert-danger", text: /配信接続の切断を確認できませんでした/
+      [ "/cast/booths/#{@booth.id}/retry_publisher_disconnect", "/admin/booths/#{@booth.id}/retry_publisher_disconnect" ].each do |path|
+        post path, as: :json
+        assert_response :not_found
+      end
+      assert_equal 4, disconnect_requests.size
+    end
+  ensure
+    ErrorLog.where(stream_session_id: @stream_session.id).delete_all
   end
 
   private

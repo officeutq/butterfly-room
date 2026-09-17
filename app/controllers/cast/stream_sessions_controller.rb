@@ -2,8 +2,15 @@
 
 module Cast
   class StreamSessionsController < Cast::BaseController
-    before_action :set_stream_session, only: %i[show share finish pending_drink_orders meta_display metadata start_broadcast publisher_state cancel_broadcast publisher_confirmation_failure]
-    before_action :authorize_stream_session_access!, only: %i[show share finish pending_drink_orders meta_display metadata start_broadcast publisher_state cancel_broadcast publisher_confirmation_failure]
+    before_action :set_stream_session, only: %i[show share finish pending_drink_orders meta_display metadata start_broadcast publisher_state cancel_broadcast publisher_confirmation_failure disconnect_state]
+    before_action :authorize_stream_session_access!, only: %i[show share finish pending_drink_orders meta_display metadata start_broadcast publisher_state cancel_broadcast publisher_confirmation_failure disconnect_state]
+
+    def disconnect_state
+      return head :not_found unless StreamSessions::PublisherControl.enabled?
+      return head :conflict unless @stream_session.ended?
+
+      render json: StreamSessions::PublisherStateService.ended_payload(stream_session: @stream_session)
+    end
 
     def publisher_confirmation_failure
       return head :not_found unless StreamSessions::PublisherControl.enabled?
@@ -36,7 +43,7 @@ module Cast
       result = StreamSessions::CancelPublisherConnectionService.new(stream_session: @stream_session,
         actor: current_user, request_id: params[:request_id], generation: params[:generation]).call
       if result[:disconnect_pending]
-        render json: result.merge(error: "publisher_disconnect_pending", message: "開始の取消は接続の確認待ちです。再確認してください"), status: :accepted
+        render json: result.merge(error: "publisher_disconnect_pending", message: "開始を取り消しました。配信接続の切断結果を確認しています"), status: :accepted
       else
         render json: result
       end
@@ -116,10 +123,10 @@ module Cast
         destination = cast_stream_session_path(ended_session)
         return respond_to do |format|
           format.json do
-            flash[:notice] = result[:message]
+            flash[:notice] = "配信の終了と未消化ドリンクの返却が完了しました"
             render json: result.merge(redirect_url: destination), status: result[:disconnect_pending] ? :accepted : :ok
           end
-          format.any { redirect_to destination, notice: result[:message], status: :see_other }
+          format.any { redirect_to destination, notice: "配信の終了と未消化ドリンクの返却が完了しました", status: :see_other }
         end
       end
       redirect_to cast_stream_session_path(ended_session),
@@ -129,7 +136,7 @@ module Cast
     rescue => e
       if StreamSessions::PublisherControl.enabled? && request.format.json?
         Rails.logger.error("publisher_end_failed stream_session_id=#{@stream_session.id} error=#{e.class.name}")
-        return render json: { error: "publisher_state_unavailable", message: "配信の終了結果を確認できません。再確認してください" }, status: :service_unavailable
+        return render json: { error: "publisher_state_unavailable", message: "配信の終了結果を確認できませんでした。時間をおいて画面を読み込み直してください" }, status: :service_unavailable
       end
       redirect_to live_cast_booth_path(@stream_session.booth_id), alert: e.message
     end

@@ -1,10 +1,11 @@
 <h1>配信リザルト</h1>
 
-<% if @disconnect_pending %>
-  <div class="alert alert-warning">
-    配信の終了と未消化ドリンクの返却は完了しました。映像の切断を再試行しています。
-    <%= button_to "再確認", retry_publisher_disconnect_cast_booth_path(@booth), class: "btn btn-outline-warning mt-2" %>
-  </div>
+<% if StreamSessions::PublisherControl.enabled? %>
+  <%= turbo_stream_from [@stream_session, :publisher_disconnect] %>
+  <%= render "shared/publisher_disconnect_status",
+        status: StreamSessions::PublisherStateService.ended_payload(stream_session: @stream_session),
+        target_id: "publisher_disconnect_session_#{@stream_session.id}",
+        state_url: disconnect_state_cast_stream_session_path(@stream_session) %>
 <% end %>
 
 <div class="row g-4">

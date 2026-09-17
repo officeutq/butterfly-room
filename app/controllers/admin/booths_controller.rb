@@ -4,7 +4,7 @@ module Admin
   class BoothsController < Admin::BaseController
     before_action :require_current_store!
     before_action :require_form_store!, only: %i[create]
-    before_action :set_booth, only: %i[archive force_end retry_publisher_disconnect]
+    before_action :set_booth, only: %i[archive force_end]
 
     def index
       @include_archived = ActiveModel::Type::Boolean.new.cast(params[:archived])
@@ -130,7 +130,7 @@ module Admin
         ::Booths::ArchiveService.new(booth: @booth, actor: current_user,
           stream_session_id: params[:stream_session_id], generation: params[:generation]).call!
         pending = StreamPublisherConnection.disconnect_pending.unreleased.where(booth: @booth).exists?
-        message = pending ? "ブースを閉鎖しました。映像の切断を再試行しています" : "ブースを閉鎖しました"
+        message = pending ? "ブースを閉鎖しました。配信接続の切断結果はブース欄で確認できます" : "ブースを閉鎖しました"
         return redirect_to admin_booths_path, notice: message, status: :see_other
       end
       policy = Authorization::BoothPolicy.new(current_user, @booth)
@@ -197,22 +197,6 @@ module Admin
       head :forbidden
     rescue => e
       redirect_to admin_booths_path, alert: e.message
-    end
-
-    def retry_publisher_disconnect
-      return head :not_found unless StreamSessions::PublisherControl.enabled?
-      return head :forbidden unless Authorization::BoothPolicy.new(current_user, @booth).update?
-
-      pending = Ivs::RetryPublisherDisconnectsService.new(booth: @booth, actor: current_user).call
-      respond_to do |format|
-        format.json { render json: { disconnect_pending: pending }, status: pending ? :accepted : :ok }
-        format.any do
-          redirect_to admin_booths_path(archived: @booth.archived? ? 1 : nil), status: :see_other,
-            notice: pending ? "映像の切断を再試行しています。再確認してください" : "配信接続の切断を確認しました"
-        end
-      end
-    rescue StreamSessions::PublisherControl::Error => error
-      respond_publisher_error(error)
     end
 
     private

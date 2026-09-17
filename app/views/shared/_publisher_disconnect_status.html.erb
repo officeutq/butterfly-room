@@ -1,0 +1,9 @@
+<%# locals: status:, target_id:, state_url: %>
+<div id="<%= target_id %>"
+     data-controller="publisher-disconnect-status"
+     data-publisher-disconnect-status-url-value="<%= state_url %>"
+     data-publisher-disconnect-status-state-value="<%= status[:disconnect_state] %>"
+     class="alert <%= status[:disconnect_state] == 'failed' ? 'alert-danger' : 'alert-warning' %> <%= 'd-none' unless status[:disconnect_pending] %>"
+     role="status">
+  <%= status[:message] %>
+</div>

@@ -19,7 +19,6 @@ export default class extends Controller {
     "state",
     "startBtn",
     "endBtn",
-    "retryPublisherBtn",
     "summaryPanel",
     "metaPanel",
     "drinkPanel",
@@ -48,7 +47,7 @@ export default class extends Controller {
     publisherStateUrl: String,
     cancelBroadcastUrl: String,
     publisherConfirmationFailureUrl: String,
-    retryPublisherDisconnectUrl: String,
+    publisherDisconnectStateUrl: String,
     publisherControl: { type: Boolean, default: false },
     publisherGeneration: Number,
     streamSessionId: Number,
@@ -471,7 +470,7 @@ export default class extends Controller {
   }
 
   async _finishPublisher() {
-    if (this._publisherEnding) return
+    if (this._publisherEnding || this._publisherEndRequest) return
     const attempt = this._publisherAttempt
     const generation = this.publisherGenerationValue
     const requestId = attempt?.generation === generation ? attempt.requestId :
@@ -491,7 +490,22 @@ export default class extends Controller {
     try {
       try { await this._cleanupMediaAndCanvas() } catch (_) {}
       if (this._publisherEndRequest !== request) return
-      const result = await finishPublisher(this, request)
+      let result
+      const delays = [500, 1000, 2000]
+      for (let retry = 0; ; retry++) {
+        if (this._publisherEndRequest !== request) return
+        try {
+          result = await finishPublisher(this, request)
+          if (result.state !== "ended" || result.stream_session_id !== this.streamSessionIdValue || !result.redirect_url) {
+            throw new Error("publisher_end_response_mismatch")
+          }
+          break
+        } catch (error) {
+          if (this._publisherEndRequest !== request) return
+          if ((error.status && error.status < 500) || retry >= delays.length) throw error
+          await new Promise(resolve => setTimeout(resolve, delays[retry]))
+        }
+      }
       if (this._publisherEndRequest !== request) return
       if (result.state !== "ended" || result.stream_session_id !== this.streamSessionIdValue || !result.redirect_url) {
         throw new Error("publisher_end_response_mismatch")
@@ -508,7 +522,7 @@ export default class extends Controller {
       this._setState("error")
       this._setError(this._publisherEndNeedsReload
         ? "配信の状態が更新されています。画面を読み込み直してください。"
-        : "配信の終了結果を確認できませんでした。「再確認」で同じ配信の終了を確認してください。")
+        : "配信の終了結果を確認できませんでした。時間をおいて画面を読み込み直してください。")
     } finally {
       if (this._publisherEndRequest === request) {
         this._publisherEnding = false
@@ -552,14 +566,10 @@ export default class extends Controller {
         : "配信接続の状態を確認できませんでした。時間をおいて画面を読み込み直してください。")
   }
 
-  async retryPublisherRecovery() {
-    if (this._publisherEndRequest) {
-      if (this._publisherEndNeedsReload) return window.location.reload()
-      return this._finishPublisher()
-    }
+  async recoverPublisherOnEntry() {
     const attempt = this._publisherAttempt
     if (!attempt || this._publisherStartOperation || this._publisherRecovering) return
-    if (attempt.needsReload) return window.location.reload()
+    if (attempt.needsReload) return
     this._publisherRecovering = true
     this._syncUI()
     try {
@@ -575,7 +585,7 @@ export default class extends Controller {
   }
 
   async _recoverPublisherOnEntry(attempt) {
-    await this.retryPublisherRecovery()
+    await this.recoverPublisherOnEntry()
     if (!attempt.isCurrent() || this._publisherRecoveryPending) return
     if (this._boothStatus === "standby") this._startPreviewOnlyIfNeeded()
     else if (this._shouldAutoResumeOnEntry()) await this._tryAutoResumeOnEntry()
@@ -1464,14 +1474,10 @@ export default class extends Controller {
         this.endBtnTarget.classList.toggle("d-none", !(this.publisherControlValue && this._resumable))
       }
       this.startBtnTarget.disabled = Boolean(this._selectionSwitchPending || this._publisherRecoveryPending || this._publisherRecovering)
-      this.endBtnTarget.disabled = Boolean(this._selectionSwitchPending || this._publisherRecoveryPending || this._publisherRecovering)
+      this.endBtnTarget.disabled = Boolean(this._selectionSwitchPending || this._publisherRecovering || this._publisherEndRequest ||
+        (this._publisherRecoveryPending && (!this._resumable || this._publisherAttempt?.needsReload)))
       const endLabel = this.endBtnTarget.querySelector(".app-footer-nav-label")
       if (endLabel) endLabel.textContent = starting ? "開始を取り消す" : "配信終了"
-    }
-    if (this.hasRetryPublisherBtnTarget) {
-      this.retryPublisherBtnTarget.classList.toggle("d-none", !this._publisherRecoveryPending)
-      this.retryPublisherBtnTarget.disabled = Boolean(this._publisherRecovering || starting)
-      this.retryPublisherBtnTarget.textContent = (this._publisherEndRequest ? this._publisherEndNeedsReload : this._publisherAttempt?.needsReload) ? "画面を更新" : "再確認"
     }
     if (this.hasErrorCloseBtnTarget) this.errorCloseBtnTarget.classList.toggle("d-none", Boolean(this._publisherRecoveryPending))
 

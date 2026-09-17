@@ -100,8 +100,11 @@
 
             <div class="mt-auto pt-3">
               <% if @disconnect_pending_booth_ids&.include?(booth.id) %>
-                <div class="alert alert-warning small">映像の切断を再試行しています。確認が完了するまで、このブースの次の配信は開始できません。</div>
-                <%= button_to "再確認", retry_publisher_disconnect_admin_booth_path(booth), class: "btn btn-outline-warning btn-sm mb-2" %>
+                <%= turbo_stream_from [booth, :publisher_disconnect] %>
+                <%= render "shared/publisher_disconnect_status",
+                      status: Ivs::RetryPublisherDisconnectsService.state_for(StreamPublisherConnection.disconnect_pending.unreleased.where(booth: booth)),
+                      target_id: "publisher_disconnect_booth_#{booth.id}",
+                      state_url: publisher_disconnect_state_cast_booth_path(booth) %>
               <% end %>
               <% if archived %>
                 <div class="text-muted small">閉鎖済みのため操作できません</div>

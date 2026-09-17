@@ -26,7 +26,7 @@
   data-ivs-publisher-stream-session-id-value="<%= @stream_session.id %>"
   data-ivs-publisher-publisher-state-url-value="<%= publisher_state_cast_stream_session_path(@stream_session) %>"
   data-ivs-publisher-cancel-broadcast-url-value="<%= cancel_broadcast_cast_stream_session_path(@stream_session) %>"
-  data-ivs-publisher-retry-publisher-disconnect-url-value="<%= retry_publisher_disconnect_cast_booth_path(@booth) %>"
+  data-ivs-publisher-publisher-disconnect-state-url-value="<%= publisher_disconnect_state_cast_booth_path(@booth) %>"
   data-ivs-publisher-publisher-confirmation-failure-url-value="<%= publisher_confirmation_failure_cast_stream_session_path(@stream_session) %>"
   data-ivs-publisher-mirror-value="true"
   data-ivs-publisher-initial-mode-value="<%= @booth.away? ? "away" : "normal" %>"
@@ -75,9 +75,6 @@
           role="alert"
           data-ivs-publisher-target="error">
           <span data-ivs-publisher-target="errorMessage"></span>
-          <button type="button" class="btn btn-sm btn-outline-danger ms-2 d-none"
-                  data-ivs-publisher-target="retryPublisherBtn"
-                  data-action="ivs-publisher#retryPublisherRecovery">再確認</button>
           <button
             type="button"
             class="btn-close"

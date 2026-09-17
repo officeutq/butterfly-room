@@ -130,10 +130,10 @@ function fixture(options = {}) {
         finishes++
         if (options.staleFinish) return response({ error: "stale_publisher_request" }, 409)
         if (options.finishResponse) await options.finishResponse.promise
-        if (options.lostFinishResponse && finishes === 1) throw new Error("network")
+        if (options.finishAlwaysFails || (options.lostFinishResponse && finishes === 1)) throw new Error("network")
         return response({ state: "ended", stream_session_id: 7, redirect_url: "/result/7", disconnect_pending: !!options.disconnectPending }, options.disconnectPending ? 202 : 200)
       }
-      if (route.pathname === "/retry-disconnect") {
+      if (route.pathname === "/disconnect-state") {
         disconnectReads++
         return response({ disconnect_pending: !!options.retryDisconnectPending || disconnectReads <= (options.retryDisconnectFailures || 0) })
       }
@@ -149,7 +149,7 @@ function fixture(options = {}) {
   }
   const controller = Object.assign(new context.PublisherController(), {
     publisherControlValue: true, publisherGenerationValue: options.initialGeneration || 0, streamSessionIdValue: 7,
-    tokenUrlValue: "/token", publisherStateUrlValue: "/state", startBroadcastUrlValue: "/confirm", cancelBroadcastUrlValue: "/cancel", statusUrlValue: "/status", retryPublisherDisconnectUrlValue: "/retry-disconnect",
+    tokenUrlValue: "/token", publisherStateUrlValue: "/state", startBroadcastUrlValue: "/confirm", cancelBroadcastUrlValue: "/cancel", statusUrlValue: "/status", publisherDisconnectStateUrlValue: "/disconnect-state",
     publisherConfirmationFailureUrlValue: "/confirmation-failure",
     hasTokenUrlValue: true, providerValue: "banuba", banubaClientTokenValue: "test-config", _state: "idle", _mode: "normal", _boothStatus: "standby",
     _beautyProvider: { ensureInitialBeautyStateLoaded: async () => {}, start: async () => {}, ensurePublishTrack: async () => {}, videoTrack: { kind: "video" }, stageStream: { track: "processed" } },
@@ -443,7 +443,7 @@ test("E05 an older disconnect is checked automatically before allowing a fresh s
   f.stages[0].publish()
   await starting
   assert.equal(f.controller._broadcasting, true)
-  assert.equal(f.requests.filter(r => r.path === "/retry-disconnect").length, 2)
+  assert.equal(f.requests.filter(r => r.path === "/disconnect-state").length, 2)
 })
 
 test("preparation hides end while start cancellation, broadcast end and resume controls remain available", () => {
@@ -502,10 +502,9 @@ test("E05 lost end response keeps the same request, blocks start and retries tha
   assert.equal(f.controller._publisherRecoveryPending, true)
   assert.equal(f.controller._broadcasting, false)
   assert.ok(f.stages[0].leaves > 0)
-  assert.equal(f.visits.length, 0)
+  assert.deepEqual(f.visits, ["/result/7"])
   await f.controller.startBroadcast()
   assert.equal(f.stages.length, 1)
-  await f.controller.retryPublisherRecovery()
   const endings = f.requests.filter(r => r.path === "/finish")
   assert.equal(endings.length, 2)
   assert.deepEqual(endings[0].params, endings[1].params)
@@ -526,9 +525,10 @@ test("R03 a stale end is not rewritten to a newer request and requires reload", 
   const f = fixture({ staleFinish: true })
   f.controller.finishUrlValue = "/finish"
   await f.controller.endBroadcast()
-  await f.controller.retryPublisherRecovery()
+  await f.controller.endBroadcast()
   assert.equal(f.finishes, 1)
-  assert.equal(f.reloads, 1)
+  assert.equal(f.reloads, 0)
+  assert.match(f.controller.error, /読み込み直し/)
   assert.equal(f.visits.length, 0)
 })
 
@@ -632,7 +632,7 @@ test("R02 reload recovery uses the stored own UUID and cancels its unconfirmed r
   const stored = f.records.get(requestId)
   f.controller._publisherAttempt = f.restoreAttempt({ requestId, generation: stored.generation, state: "issued", tokenRequested: true })
   f.stateUnavailable = false
-  await f.controller.retryPublisherRecovery()
+  await f.controller.recoverPublisherOnEntry()
   assert.equal(f.controller._publisherRecoveryPending, false)
   assert.equal(f.controller.publisherGenerationValue, 2)
   assert.deepEqual(f.requests.slice(-2).map(r => r.path), ["/state", "/cancel"])
@@ -794,7 +794,7 @@ test("S05 cancellation remaining unconfirmed stays blocked and a repeated recove
   assert.equal(f.requests.filter(r => r.path === "/token").length, 1)
   const count = f.requests.length
   f.cancelPending = false
-  await f.controller.retryPublisherRecovery()
+  await f.controller.recoverPublisherOnEntry()
   assert.equal(f.controller._publisherRecoveryPending, true)
   assert.equal(f.requests.length, count)
   assert.equal(f.controller.publisherGenerationValue, 2)
@@ -814,7 +814,7 @@ test("S06 unknown result keeps SDK identity, leaves locally, and retries only th
   assert.equal(f.stages.length, 1)
   const count = f.requests.length
   f.stateUnavailable = false
-  await f.controller.retryPublisherRecovery()
+  await f.controller.recoverPublisherOnEntry()
   assert.equal(f.controller._publisherRecoveryPending, true)
   assert.equal(f.requests.length, count)
   assert.equal(f.requests.at(-1).params.request_id, f.requests[0].params.request_id)
@@ -912,11 +912,11 @@ test("S02 losing start never cancels another request and stale recovery asks to 
   assert.deepEqual(f.requests.map(r => r.path), ["/token", "/state"])
   assert.equal(f.controller._publisherRecoveryPending, true)
   assert.match(f.controller.error, /読み込み直し/)
-  await f.controller.retryPublisherRecovery()
-  assert.equal(f.reloads, 1)
+  await f.controller.recoverPublisherOnEntry()
+  assert.equal(f.reloads, 0)
 })
 
-test("S04/S06 pending confirmation exposes cancellation; unresolved recovery keeps retry visible and new starts disabled", async () => {
+test("S04/S06 pending confirmation exposes cancellation; unresolved recovery keeps new starts disabled without a retry button", async () => {
   const f = fixture({ confirmFails: true })
   function button() {
     const classes = new Set()
@@ -924,8 +924,8 @@ test("S04/S06 pending confirmation exposes cancellation; unresolved recovery kee
       classList: { add: value => classes.add(value), remove: value => classes.delete(value),
         toggle: (value, on) => on ? classes.add(value) : classes.delete(value), contains: value => classes.has(value) } }
   }
-  Object.assign(f.controller, { hasStartBtnTarget: true, hasEndBtnTarget: true, hasRetryPublisherBtnTarget: true, hasErrorCloseBtnTarget: true,
-    startBtnTarget: button(), endBtnTarget: button(), retryPublisherBtnTarget: button(), errorCloseBtnTarget: button() })
+  Object.assign(f.controller, { hasStartBtnTarget: true, hasEndBtnTarget: true, hasErrorCloseBtnTarget: true,
+    startBtnTarget: button(), endBtnTarget: button(), errorCloseBtnTarget: button() })
   const starting = f.controller.startBroadcast()
   await until(() => f.stages.length === 1)
   f.syncActualUI()
@@ -936,8 +936,7 @@ test("S04/S06 pending confirmation exposes cancellation; unresolved recovery kee
   await starting
   f.syncActualUI()
   assert.equal(f.controller.startBtnTarget.disabled, true)
-  assert.equal(f.controller.retryPublisherBtnTarget.classList.contains("d-none"), false)
-  assert.equal(f.controller.retryPublisherBtnTarget.disabled, false)
+  assert.equal(typeof f.controller.retryPublisherRecovery, "undefined")
   assert.equal(f.controller.errorCloseBtnTarget.classList.contains("d-none"), true)
 })
 
@@ -968,4 +967,17 @@ test("a server-confirmed result is preserved and never reported as a failed star
   assert.equal(f.controller._broadcasting, true)
   assert.equal(f.stages[0].leaves, 0)
   assert.equal(f.requests.filter(r => ["/confirmation-failure", "/cancel"].includes(r.path)).length, 0)
+})
+
+
+test("end result confirmation stops after three automatic retries without success navigation", async () => {
+  const f = fixture({ finishAlwaysFails: true })
+  f.controller.finishUrlValue = "/finish"
+  await f.controller.endBroadcast()
+  assert.equal(f.finishes, 4)
+  assert.deepEqual(f.retryDelays, [500, 1000, 2000])
+  assert.equal(f.visits.length, 0)
+  assert.match(f.controller.error, /終了結果を確認できませんでした/)
+  await f.controller.endBroadcast()
+  assert.equal(f.finishes, 4)
 })

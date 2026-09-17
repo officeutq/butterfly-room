@@ -5,9 +5,9 @@
      class="alert mb-0 <%= forced ? "alert-danger" : "alert-secondary" %>"
      role="alert"
      <% if forced %>
-       data-controller="auto-redirect"
-       data-auto-redirect-url-value="<%= cast_stream_session_path(stream_session) %>"
-       data-auto-redirect-delay-value="1000"
+       data-controller="publisher-ended"
+       data-publisher-ended-url-value="<%= cast_stream_session_path(stream_session) %>"
+       data-publisher-ended-session-id-value="<%= stream_session.id %>"
      <% end %>>
   <% if forced %>
     強制終了されました。

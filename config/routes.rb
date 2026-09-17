@@ -167,7 +167,7 @@ Rails.application.routes.draw do
 
       get :live, on: :member
       patch :status, on: :member
-      post :retry_publisher_disconnect, on: :member
+      get :publisher_disconnect_state, on: :member
       resources :stream_sessions, only: %i[index create], module: :booths
     end
 
@@ -179,6 +179,7 @@ Rails.application.routes.draw do
       patch :metadata, on: :member
       patch :start_broadcast, on: :member
       get :publisher_state, on: :member
+      get :disconnect_state, on: :member
       post :cancel_broadcast, on: :member
       post :publisher_confirmation_failure, on: :member
     end
@@ -215,7 +216,6 @@ Rails.application.routes.draw do
       member do
         patch :archive
         post :force_end
-        post :retry_publisher_disconnect
       end
     end
 

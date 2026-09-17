@@ -1,4 +1,4 @@
-import { issuePublisherToken, confirmPublisher, readPublisherState, cancelPublisher, retryPublisherDisconnect, reportPublisherConfirmationFailure } from "controllers/ivs_publisher/api_client"
+import { issuePublisherToken, confirmPublisher, readPublisherState, cancelPublisher, readPublisherDisconnectState, reportPublisherConfirmationFailure } from "controllers/ivs_publisher/api_client"
 
 // 1回の開始操作が所有する要求とSDKを保持する。画面の最新Stageへ読み替えない。
 export class PublisherConnection {
@@ -170,7 +170,7 @@ export class PublisherConnection {
     try {
       if (this.tokenError?.code === "publisher_disconnect_pending" && this.generation === null) {
         this.leave()
-        const result = await this.recoveryStep(() => retryPublisherDisconnect(this.ctx), result => result.disconnect_pending && result.disconnect_state !== "failed")
+        const result = await this.recoveryStep(() => readPublisherDisconnectState(this.ctx), result => result.disconnect_pending && result.disconnect_state !== "failed")
         this.result = result
         this.state = result.disconnect_pending ? "pending" : "cancelled"
         this.currentGeneration = this.expectedGeneration
