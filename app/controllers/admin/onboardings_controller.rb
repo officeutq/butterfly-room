@@ -7,8 +7,8 @@ module Admin
     def skip
       store = params[:store_id].present? ? Store.find(params[:store_id]) : current_store
       return head :not_found unless store
-      return head :forbidden unless current_user.system_admin? || current_user.admin_of_store?(store.id)
-      Stores::AdvanceOnboarding.call!(store: store, action: :skip)
+      return head :forbidden unless Stores::AdvanceOnboarding.allowed?(store: store, actor: current_user)
+      Stores::AdvanceOnboarding.call!(store: store, actor: current_user, action: :skip)
       head :ok
     end
 

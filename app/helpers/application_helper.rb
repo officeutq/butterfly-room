@@ -176,7 +176,7 @@ module ApplicationHelper
     return false if controller_path == "admin/store_registration_setups"
     return false if controller_path == "stores/registrations" && action_name == "thanks"
 
-    current_user&.store_admin? || store&.onboarding_active?
+    store&.onboarding_active? && Stores::AdvanceOnboarding.allowed?(store: store, actor: current_user)
   end
 
   # ヘッダーと本文で同じ共通判定の結果を参照する。

@@ -1,6 +1,14 @@
 module Stores
   class AdvanceOnboarding
-    def self.call!(store:, action:)
+    def self.allowed?(store:, actor:)
+      return false unless store && actor && !actor.deleted? && actor.at_least?(:store_admin)
+
+      actor.system_admin? || actor.admin_of_store?(store.id)
+    end
+
+    def self.call!(store:, actor:, action:)
+      return unless allowed?(store: store, actor: actor)
+
       store.with_lock do
         case action
         when :dashboard then store.advance_onboarding_to_setup_drinks!
