@@ -258,6 +258,9 @@ module Cast
     end
 
     def check_selected_booth!
+      # 閉鎖済みの担当ブースは履歴と同じ閲覧範囲。キャストの選択候補には戻さない。
+      return if action_name == "show" && current_user.cast? && @booth.archived?
+
       key = action_name == "update" ? "booth_edit" : "booth_#{action_name}"
       require_selected_booth!(@booth, return_to_key: key)
     end

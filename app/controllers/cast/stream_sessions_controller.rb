@@ -22,6 +22,7 @@ module Cast
 
     def share
       return head :not_found unless StreamSessions::PublisherControl.enabled?
+      return head :not_found if @stream_session.booth.archived?
 
       render partial: "cast/booths/share_content", locals: {
         share_text: view_context.stream_session_web_share_text(@stream_session),
