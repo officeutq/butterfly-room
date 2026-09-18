@@ -150,7 +150,7 @@ TODO: 店舗管理者を追加できる条件と、退職・担当変更時の�
 ![ドリンク新規作成入力済み](images/store_admin/drink_items/02_new_filled.png)
 
 2. 「新規作成」を押します。
-3. 保存後、一覧に新しいドリンクが表示されます。
+3. 保存後、店舗情報へ戻り、新しいドリンクが表示されます。
 
 ![ドリンク作成後の一覧反映](images/store_admin/drink_items/03_after_create.png)
 

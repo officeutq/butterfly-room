@@ -17,7 +17,7 @@ class ApplicationLoggingTest < ActionDispatch::IntegrationTest
     sign_in @admin, scope: :user
     request_id = SecureRandom.uuid
     patch admin_store_path(@store), params: { store: { name: "更新後" }, actor_user_id: 999 }, headers: { "X-Request-ID" => request_id }
-    assert_redirected_to dashboard_path
+    assert_redirected_to admin_store_path(@store)
     entry = ChangeLog.where(target_type: "Store", target_id: @store.id).sole
     assert_equal @admin.id, entry.actor_user_id
     assert_equal request_id, entry.request_id
@@ -33,7 +33,7 @@ class ApplicationLoggingTest < ActionDispatch::IntegrationTest
       sign_out customer
       sign_in @admin, scope: :user
       patch admin_store_path(@store), params: { store: { name: "" } }
-      assert_redirected_to edit_admin_store_path(@store)
+      assert_response :unprocessable_entity
     end
     assert_equal "更新前", @store.reload.name
   end

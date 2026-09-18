@@ -20,7 +20,7 @@ class Admin::StoreEditUiTest < ActionDispatch::IntegrationTest
     ) do
       assert_select ".store-edit__action-bar", count: 1 do
         assert_select ".container.store-edit__action-bar-inner", count: 1 do
-          assert_select "a.store-edit__back[href='#{dashboard_path}']", text: /戻る/, count: 1
+          assert_select "a.store-edit__back[href='#{admin_store_path(store)}']", text: /戻る/, count: 1
           assert_select "input.store-edit__save[type='submit'][value='保存'][disabled]", count: 1
         end
       end
