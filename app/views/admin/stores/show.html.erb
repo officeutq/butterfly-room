@@ -1,0 +1,56 @@
+<% content_for :title, "店舗情報" %>
+
+<div class="store-show">
+  <%= render "stores/hero", store: @store %>
+
+  <div class="container store-show-container">
+    <div class="store-show-header">
+      <p class="small text-muted mb-2">店舗情報</p>
+      <h1 class="store-show-title mb-3"><%= @store.name %></h1>
+      <span class="badge <%= @store.published? ? 'text-bg-success' : 'text-bg-secondary' %>">
+        <%= @store.published? ? "公開中" : "非公開" %>
+      </span>
+    </div>
+
+    <section class="mt-4" aria-labelledby="store-basic-information-title">
+      <h2 id="store-basic-information-title" class="h5 mb-3">店舗基本情報</h2>
+      <%= render "stores/basic_information", store: @store %>
+    </section>
+
+    <section class="mt-4" aria-labelledby="store-drink-menu-title">
+      <h2 id="store-drink-menu-title" class="h5 mb-3">ドリンクメニュー</h2>
+      <% if @drink_items.empty? %>
+        <p class="text-muted mb-0">ドリンクメニューはまだ登録されていません。</p>
+      <% else %>
+        <ul class="row g-3 list-unstyled mb-0">
+          <% @drink_items.each do |item| %>
+            <li class="col-12 col-md-6" data-drink-item-id="<%= item.id %>">
+              <div class="border rounded-3 p-3 h-100 d-flex align-items-start gap-3">
+                <div class="flex-shrink-0"><%= drink_icon(item, size: 56) %></div>
+                <div class="min-w-0 flex-grow-1">
+                  <div class="fw-semibold text-break mb-1"><%= item.name %></div>
+                  <div class="mb-2"><%= number_with_delimiter(item.price_points) %> pt</div>
+                  <span class="badge <%= item.enabled? ? 'text-bg-success' : 'text-bg-secondary' %>">
+                    <%= item.enabled? ? "有効" : "無効" %>
+                  </span>
+                </div>
+              </div>
+            </li>
+          <% end %>
+        </ul>
+      <% end %>
+    </section>
+
+    <section class="mt-5" aria-labelledby="store-payout-account-title">
+      <h2 id="store-payout-account-title" class="h5 mb-3">振込先口座</h2>
+      <% if @store.payout_account_configured? %>
+        <p><span class="badge text-bg-success">設定済み</span></p>
+        <div class="border rounded-3 p-3 text-break">
+          <%= render "admin/store_payout_accounts/details", store: @store, payout_account: @active_payout_account %>
+        </div>
+      <% else %>
+        <p class="text-muted mb-0">未設定</p>
+      <% end %>
+    </section>
+  </div>
+</div>

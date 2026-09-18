@@ -191,7 +191,7 @@ Rails.application.routes.draw do
 
   # --- Store Admin ---
   namespace :admin do
-    resources :stores, only: %i[index new create edit update] do
+    resources :stores, only: %i[index show new create edit update] do
       resource :ai_autofill, only: :create, controller: "store_ai_autofills" do
         post :image
       end

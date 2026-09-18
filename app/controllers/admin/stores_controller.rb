@@ -2,14 +2,19 @@
 
 module Admin
   class StoresController < Admin::BaseController
-    before_action :set_store, only: %i[edit update]
-    before_action :authorize_store_edit!, only: %i[edit update]
-    before_action -> { require_selected_store!(@store) }, only: %i[edit update]
+    before_action :set_store, only: %i[show edit update]
+    before_action :authorize_store!, only: %i[show edit update]
+    before_action -> { require_selected_store!(@store) }, only: %i[show edit update]
     before_action :require_store_registration_proxy!, only: %i[new create]
     helper_method :store_edit_return_path
 
     def index
       load_selectable_stores
+    end
+
+    def show
+      @drink_items = @store.drink_items.with_attached_custom_icon.ordered
+      @active_payout_account = @store.active_payout_account
     end
 
     def new
@@ -123,7 +128,7 @@ module Admin
       dashboard_path
     end
 
-    def authorize_store_edit!
+    def authorize_store!
       return if current_user.system_admin?
 
       ok = StoreMembership.admin_only.exists?(user_id: current_user.id, store_id: @store.id)
