@@ -2,9 +2,10 @@
 
 module Admin
   class BoothsController < Admin::BaseController
-    before_action :require_current_store!
+    before_action :require_current_store!, except: %i[archive force_end]
     before_action :require_form_store!, only: %i[create]
     before_action :set_booth, only: %i[archive force_end]
+    before_action :check_selected_booth!, only: %i[archive force_end]
 
     def index
       @include_archived = ActiveModel::Type::Boolean.new.cast(params[:archived])
@@ -97,11 +98,15 @@ module Admin
           raise StreamSessions::PublisherControl::Error.new(code: "stale_publisher_request",
             message: "配信の状態が更新されています。画面を読み込み直してください", booth: @booth)
         end
+        unless stream_session.ended? || (!@booth.archived? && (@booth.live? || @booth.away?))
+          raise StreamSessions::PublisherControl::Error.new(code: "not_joinable",
+            message: "配信中・離席中の配信だけ強制終了できます", booth: @booth)
+        end
         ended = StreamSessions::ForceEndService.new(stream_session: stream_session, actor: current_user, generation: params[:generation]).call
         result = StreamSessions::PublisherStateService.ended_payload(stream_session: ended)
         return respond_to do |format|
           format.json { render json: result, status: result[:disconnect_pending] ? :accepted : :ok }
-          format.any { redirect_to admin_booths_path, notice: result[:message], status: :see_other }
+          format.any { redirect_to cast_booth_path(@booth), notice: result[:message], status: :see_other }
         end
       end
       policy = Authorization::BoothPolicy.new(current_user, @booth)
@@ -109,20 +114,20 @@ module Admin
 
       stream_session = StreamSession.find_by(id: @booth.current_stream_session_id)
       if stream_session.blank?
-        redirect_to admin_booths_path, alert: "配信セッションが見つかりません（既に終了済みの可能性があります）"
+        redirect_to cast_booth_path(@booth), alert: "配信セッションが見つかりません（既に終了済みの可能性があります）"
         return
       end
 
       StreamSessions::ForceEndService.new(stream_session: stream_session, actor: current_user).call
-      redirect_to admin_booths_path, notice: "配信を強制終了しました"
+      redirect_to cast_booth_path(@booth), notice: "配信を強制終了しました"
     rescue StreamSessions::PublisherControl::Error => error
       respond_publisher_error(error)
     rescue StreamSessions::EndService::AlreadyEnded
-      redirect_to admin_booths_path, alert: "既に配信は終了しています"
+      redirect_to cast_booth_path(@booth), alert: "既に配信は終了しています"
     rescue StreamSessions::EndService::NotAuthorized
       head :forbidden
     rescue => e
-      redirect_to admin_booths_path, alert: e.message
+      redirect_to cast_booth_path(@booth), alert: e.message
     end
 
     def archive
@@ -130,8 +135,8 @@ module Admin
         ::Booths::ArchiveService.new(booth: @booth, actor: current_user,
           stream_session_id: params[:stream_session_id], generation: params[:generation]).call!
         pending = StreamPublisherConnection.disconnect_pending.unreleased.where(booth: @booth).exists?
-        message = pending ? "ブースを閉鎖しました。配信接続の切断結果はブース欄で確認できます" : "ブースを閉鎖しました"
-        return redirect_to admin_booths_path, notice: message, status: :see_other
+        message = pending ? "ブースを閉鎖しました。配信接続の切断結果はブース情報で確認できます" : "ブースを閉鎖しました"
+        return redirect_to cast_booth_path(@booth), notice: message, status: :see_other
       end
       policy = Authorization::BoothPolicy.new(current_user, @booth)
       head :forbidden and return unless policy.update?
@@ -139,28 +144,28 @@ module Admin
       booth = Booth.lock.find(@booth.id)
 
       if booth.archived?
-        redirect_to admin_booths_path, alert: "ブース##{booth.id}（#{booth.name}）は既にアーカイブされています。"
+        redirect_to cast_booth_path(@booth), alert: "ブース##{booth.id}（#{booth.name}）は既にアーカイブされています。"
         return
       end
 
       case booth.status.to_sym
       when :offline
         if booth.current_stream_session_id.present?
-          redirect_to admin_booths_path,
+          redirect_to cast_booth_path(@booth),
                       alert: "ブース##{booth.id}（#{booth.name}）は配信セッション情報が残っているため、安全にアーカイブできません。状態を確認してください。"
           return
         end
 
       when :standby
         if booth.current_stream_session_id.blank?
-          redirect_to admin_booths_path,
+          redirect_to cast_booth_path(@booth),
                       alert: "ブース##{booth.id}（#{booth.name}）は standby ですが配信セッション情報が見つからないため、安全にアーカイブできません。状態を確認してください。"
           return
         end
 
         stream_session = StreamSession.find_by(id: booth.current_stream_session_id)
         if stream_session.blank?
-          redirect_to admin_booths_path,
+          redirect_to cast_booth_path(@booth),
                       alert: "ブース##{booth.id}（#{booth.name}）の配信セッションが見つからないため、安全にアーカイブできません。状態を確認してください。"
           return
         end
@@ -169,34 +174,34 @@ module Admin
         booth = Booth.lock.find(@booth.id)
 
         if booth.current_stream_session_id.present? || !booth.offline?
-          redirect_to admin_booths_path,
+          redirect_to cast_booth_path(@booth),
                       alert: "ブース##{booth.id}（#{booth.name}）の終了処理後に状態が整わなかったため、アーカイブできませんでした。"
           return
         end
 
       when :live, :away
-        redirect_to admin_booths_path,
+        redirect_to cast_booth_path(@booth),
                     alert: "ブース##{booth.id}（#{booth.name}）は配信中のためアーカイブできません。先に配信を終了してください。"
         return
 
       else
-        redirect_to admin_booths_path,
+        redirect_to cast_booth_path(@booth),
                     alert: "ブース##{booth.id}（#{booth.name}）の状態を判定できないため、アーカイブできません。"
         return
       end
 
       booth.update!(archived_at: Time.current)
 
-      redirect_to admin_booths_path, notice: "ブースをアーカイブしました"
+      redirect_to cast_booth_path(@booth), notice: "ブースをアーカイブしました"
     rescue StreamSessions::PublisherControl::Error => error
       respond_publisher_error(error)
     rescue StreamSessions::EndService::AlreadyEnded
-      redirect_to admin_booths_path,
+      redirect_to cast_booth_path(@booth),
                   alert: "配信セッションは既に終了済みですが、状態が整っていないためアーカイブできません。状態を確認してください。"
     rescue StreamSessions::EndService::NotAuthorized
       head :forbidden
     rescue => e
-      redirect_to admin_booths_path, alert: e.message
+      redirect_to cast_booth_path(@booth), alert: e.message
     end
 
     private
@@ -204,7 +209,7 @@ module Admin
     def respond_publisher_error(error)
       respond_to do |format|
         format.json { render json: { error: error.code, message: error.message }, status: error.status }
-        format.any { redirect_to admin_booths_path, alert: error.message, status: :see_other }
+        format.any { redirect_to cast_booth_path(@booth), alert: error.message, status: :see_other }
       end
     end
 
@@ -238,10 +243,14 @@ module Admin
         if current_user.system_admin?
           Booth.all
         else
-          current_store.booths
+          Booth.where(store_id: current_user.store_memberships.admin_only.select(:store_id))
         end
 
       @booth = scope.find(params[:id])
+    end
+
+    def check_selected_booth!
+      require_selected_booth!(@booth)
     end
 
     def authorize_create!

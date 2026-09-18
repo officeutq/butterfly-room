@@ -104,7 +104,7 @@
                 <%= render "shared/publisher_disconnect_status",
                       status: Ivs::RetryPublisherDisconnectsService.state_for(StreamPublisherConnection.disconnect_pending.unreleased.where(booth: booth)),
                       target_id: "publisher_disconnect_booth_#{booth.id}",
-                      state_url: publisher_disconnect_state_cast_booth_path(booth) %>
+                      state_url: publisher_disconnect_state_cast_booth_path(booth, scope: "booth") %>
               <% end %>
               <% if archived %>
                 <div class="text-muted small">閉鎖済みのため操作できません</div>

@@ -87,7 +87,8 @@ class Cast::PublisherEndingTest < ActionDispatch::IntegrationTest
       patch archive_admin_booth_path(@booth), params: { stream_session_id: @stream_session.id, generation: 1 }
       assert_response :see_other
       assert @booth.reload.archived?
-      get admin_booths_path(archived: 1)
+      assert_redirected_to cast_booth_path(@booth)
+      follow_redirect!
       assert_response :ok
       assert_select "[data-controller='publisher-disconnect-status']"
       assert_select "button", text: "再確認", count: 0
@@ -143,7 +144,7 @@ class Cast::PublisherEndingTest < ActionDispatch::IntegrationTest
       assert_select "button", text: "再確認", count: 0
       get disconnect_state_cast_stream_session_path(@stream_session), as: :json
       assert_equal "failed", response.parsed_body["disconnect_state"]
-      get admin_booths_path
+      get cast_booth_path(@booth)
       assert_select ".alert-danger", text: /配信接続の切断を確認できませんでした/
       [ "/cast/booths/#{@booth.id}/retry_publisher_disconnect", "/admin/booths/#{@booth.id}/retry_publisher_disconnect" ].each do |path|
         post path, as: :json

@@ -12,12 +12,16 @@ module Cast
     end
 
     def show
+      if current_user.at_least?(:store_admin) && StreamSessions::PublisherControl.enabled?
+        @disconnect_status = Ivs::RetryPublisherDisconnectsService.new(booth: @booth, actor: current_user).state(booth_only: true)
+      end
     end
 
     def publisher_disconnect_state
       return head :not_found unless StreamSessions::PublisherControl.enabled?
 
-      result = Ivs::RetryPublisherDisconnectsService.new(booth: Booth.find(params[:id]), actor: current_user).state
+      result = Ivs::RetryPublisherDisconnectsService.new(booth: Booth.find(params[:id]), actor: current_user)
+        .state(booth_only: params[:scope] == "booth")
       render json: result
     end
 

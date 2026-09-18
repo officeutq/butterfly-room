@@ -14,7 +14,7 @@ class StreamSessionNotifier
     Turbo::StreamsChannel.broadcast_replace_to([ booth, :publisher_disconnect ],
       target: "publisher_disconnect_booth_#{booth.id}", partial: "shared/publisher_disconnect_status",
       locals: { status: Ivs::RetryPublisherDisconnectsService.state_for(StreamPublisherConnection.disconnect_pending.unreleased.where(booth: booth)),
-        target_id: "publisher_disconnect_booth_#{booth.id}", state_url: routes.publisher_disconnect_state_cast_booth_path(booth) })
+        target_id: "publisher_disconnect_booth_#{booth.id}", state_url: routes.publisher_disconnect_state_cast_booth_path(booth, scope: "booth") })
   rescue StandardError => error
     Rails.logger.error("publisher_disconnect_notification_failed connection_id=#{connection.id} error=#{error.class.name}")
   end

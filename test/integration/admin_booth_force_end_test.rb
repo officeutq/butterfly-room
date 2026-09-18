@@ -44,7 +44,7 @@ class AdminBoothForceEndTest < ActionDispatch::IntegrationTest
 
     post force_end_admin_booth_path(@booth1)
     assert_response :redirect
-    assert_redirected_to admin_booths_path
+    assert_redirected_to cast_booth_path(@booth1)
 
     @booth1.reload
     @session1.reload
@@ -69,9 +69,10 @@ class AdminBoothForceEndTest < ActionDispatch::IntegrationTest
     assert_response :redirect
     assert_redirected_to dashboard_path
 
+    post cast_current_booth_path, params: { booth_id: @booth2.id, source: "header" }
     post force_end_admin_booth_path(@booth2)
     assert_response :redirect
-    assert_redirected_to admin_booths_path
+    assert_redirected_to cast_booth_path(@booth2)
 
     @booth2.reload
     @session2.reload
@@ -132,10 +133,11 @@ class AdminBoothForceEndTest < ActionDispatch::IntegrationTest
 
     Ivs::Client.factory = ->(region:) { fake_client }
 
+    post cast_current_booth_path, params: { booth_id: @booth2.id, source: "header" }
     post force_end_admin_booth_path(@booth2)
 
     assert_response :redirect
-    assert_redirected_to admin_booths_path
+    assert_redirected_to cast_booth_path(@booth2)
 
     assert_equal 1, fake_client.list_participants_calls.size
     assert_equal 1, fake_client.disconnect_participant_calls.size
