@@ -46,7 +46,7 @@ class Cast::BoothNavigationTest < ActionDispatch::IntegrationTest
       select_booth(@a)
       if role == :cast
         get cast_booth_path(@b)
-        assert_response :conflict
+        assert_response :success
       else
         select_booth(@b)
         get cast_booth_path(@b)
@@ -55,6 +55,9 @@ class Cast::BoothNavigationTest < ActionDispatch::IntegrationTest
       get cast_booth_stream_sessions_path(@b)
       assert_response :success
       assert_includes response.body, "Archived History B"
+      assert_select "a[href=?]", cast_booth_path(@b), text: "ブース情報へ戻る"
+      get cast_booth_path(@b)
+      assert_response :success
       assert_selection(role == :cast ? @a : @b)
       get edit_cast_booth_path(@b)
       assert_response :not_found
