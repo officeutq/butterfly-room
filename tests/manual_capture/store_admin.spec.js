@@ -112,9 +112,12 @@ test("store_admin normal operation screenshots", async ({ page }) => {
   await gotoAndSettle(page, "/dashboard");
   await submitAndWaitForURL(
     page,
-    'a:has-text("店舗設定編集")',
-    /\/admin\/stores\/\d+\/edit/
+    'a:has-text("店舗情報")',
+    /\/admin\/stores\/\d+$/
   );
+  const informationPath = new URL(page.url()).pathname;
+  await capture(page, "stores", "00_information.png");
+  await submitAndWaitForURL(page, 'a:has-text("店舗情報を編集")', /\/admin\/stores\/\d+\/edit/);
   await expect(page.locator('input[name="store[name]"]')).toBeVisible();
   await capture(page, "stores", "02_edit_form.png");
 
@@ -133,7 +136,7 @@ test("store_admin normal operation screenshots", async ({ page }) => {
   await submitAndWaitForURL(
     page,
     'form[action*="/admin/stores/"] input[type="submit"], form[action*="/admin/stores/"] button[type="submit"]',
-    /\/dashboard/
+    /\/admin\/stores\/\d+$/
   );
   await expect(page.locator("body")).toContainText("店舗情報を更新しました");
   await capture(page, "stores", "04_after_update_dashboard.png");
@@ -199,7 +202,8 @@ test("store_admin normal operation screenshots", async ({ page }) => {
   await expect(page.locator("body")).toContainText("招待を発行しました");
   await capture(page, "invitations", "05_store_admin_invitation_issued.png");
 
-  await gotoAndSettle(page, "/admin/drink_items");
+  await gotoAndSettle(page, informationPath);
+  await submitAndWaitForURL(page, 'a:has-text("ドリンクメニューを編集")', /\/admin\/drink_items/);
   await expect(page.locator('form[action="/admin/drink_items"]')).toBeVisible();
   await capture(page, "drink_items", "01_index.png");
   await page
@@ -228,7 +232,8 @@ test("store_admin normal operation screenshots", async ({ page }) => {
   await expect(page.locator("body")).toContainText("通報");
   await capture(page, "comment_reports", "01_index.png");
 
-  await gotoAndSettle(page, "/admin/payout_account/edit");
+  await gotoAndSettle(page, informationPath);
+  await submitAndWaitForURL(page, 'a:has-text("振込先口座を編集")', /\/admin\/payout_account\/edit/);
   await expect(page.locator('form[action="/admin/payout_account"]')).toBeVisible();
   await capture(page, "payout_account", "01_edit_form.png");
   await page.locator('input#account_kind_bank').check();

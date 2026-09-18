@@ -2,10 +2,10 @@
 
 module Admin
   class StorePayoutAccountsController < Admin::BaseController
+    before_action :require_form_store!, only: %i[edit update], if: -> { action_name == "update" || params[:selection_store_id].present? }
     before_action :require_current_store!
     before_action :set_store
     before_action :authorize_store!
-    before_action :require_form_store!, only: %i[update]
 
     def edit
       @active_payout_account = @store.active_payout_account
@@ -36,10 +36,17 @@ module Admin
         @payout_account.save!
       end
 
-      redirect_to edit_admin_payout_account_path, notice: "精算・振込設定を更新しました"
+      destination = params[:return_to] == "store_information" ? admin_store_path(@store) : edit_admin_payout_account_path
+      redirect_to destination, notice: "精算・振込設定を更新しました"
     end
 
     private
+
+    helper_method :payout_account_return_path
+
+    def payout_account_return_path
+      params[:return_to] == "store_information" ? admin_store_path(@store) : dashboard_path
+    end
 
     def set_store
       @store = current_store

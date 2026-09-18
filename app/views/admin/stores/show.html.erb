@@ -13,12 +13,19 @@
     </div>
 
     <section class="mt-4" aria-labelledby="store-basic-information-title">
-      <h2 id="store-basic-information-title" class="h5 mb-3">店舗基本情報</h2>
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h2 id="store-basic-information-title" class="h5 mb-0">店舗基本情報</h2>
+        <%= link_to "店舗情報を編集", edit_admin_store_path(@store), class: "btn btn-outline-secondary btn-sm", data: { turbo_prefetch: false } %>
+      </div>
       <%= render "stores/basic_information", store: @store %>
     </section>
 
     <section class="mt-4" aria-labelledby="store-drink-menu-title">
-      <h2 id="store-drink-menu-title" class="h5 mb-3">ドリンクメニュー</h2>
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h2 id="store-drink-menu-title" class="h5 mb-0">ドリンクメニュー</h2>
+        <%= link_to "ドリンクメニューを編集", admin_drink_items_path(selection_store_id: @store.id, return_to: "store_information"),
+              class: "btn btn-outline-secondary btn-sm", data: { turbo_prefetch: false, onboarding_target_element: "store-drinks-edit" } %>
+      </div>
       <% if @drink_items.empty? %>
         <p class="text-muted mb-0">ドリンクメニューはまだ登録されていません。</p>
       <% else %>
@@ -42,7 +49,11 @@
     </section>
 
     <section class="mt-5" aria-labelledby="store-payout-account-title">
-      <h2 id="store-payout-account-title" class="h5 mb-3">振込先口座</h2>
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h2 id="store-payout-account-title" class="h5 mb-0">振込先口座</h2>
+        <%= link_to "振込先口座を編集", edit_admin_payout_account_path(selection_store_id: @store.id, return_to: "store_information"),
+              class: "btn btn-outline-secondary btn-sm", data: { turbo_prefetch: false } %>
+      </div>
       <% if @store.payout_account_configured? %>
         <p><span class="badge text-bg-success">設定済み</span></p>
         <div class="border rounded-3 p-3 text-break">

@@ -48,7 +48,7 @@ class StoreFaqTest < ActionDispatch::IntegrationTest
     get stores_faq_path
 
     assert_response :success
-    assert_includes response.body, "ダッシュボードの「振込先口座設定」から、振込先口座を登録・変更できます。"
+    assert_includes response.body, "ダッシュボードの「店舗情報」を開き、「振込先口座を編集」から、振込先口座を登録・変更できます。"
     assert_includes response.body, "そのキャスト専用のブースが自動で作成されます。"
     assert_includes response.body, "配信を終了したうえでアーカイブされます。"
     assert_includes response.body, "「非公開」に設定した店舗と所属ブースは、一般ユーザー向け画面に表示されません。"

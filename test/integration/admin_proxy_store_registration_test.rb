@@ -52,18 +52,20 @@ class AdminProxyStoreRegistrationTest < ActionDispatch::IntegrationTest
     end
 
     store = Store.find_by!(name: "Created Proxy Store")
-    assert_redirected_to edit_admin_store_path(store)
+    assert_redirected_to edit_admin_store_path(store, return_to: "proxy_registration")
     assert_equal @management_store.id, session[:current_store_id].to_i
     assert_nil session[:current_booth_id]
     assert_not store.sales_support_company?
     assert StoreMembership.admin_only.exists?(store: store, user: @actor)
     follow_redirect!
     assert_response :conflict
-    post admin_current_store_path, params: { store_id: store.id, return_to_key: "store_edit" }
+    post admin_current_store_path, params: { store_id: store.id, return_to: edit_admin_store_path(store, return_to: "proxy_registration") }
     follow_redirect!
     assert_select "form[data-controller~='store-ai-autofill'][data-image-pair-form-always-submit-value='true']"
     assert_select "form[data-store-ai-autofill-image-url-value=?]", image_admin_store_ai_autofill_path(store)
     assert_select "[data-store-ai-autofill-target='modal']", count: 0
+    assert_select "input[name=return_to][value=proxy_registration]", count: 1
+    assert_select "a.store-edit__back[href=?]", dashboard_path
     assert_nil session[ApplicationController::STORE_REGISTRATION_PENDING_SESSION_KEY]
 
     token = Stores::AiAutofill::ImageSources.verifier.generate(
@@ -72,6 +74,10 @@ class AdminProxyStoreRegistrationTest < ActionDispatch::IntegrationTest
     )
     post image_admin_store_ai_autofill_path(store), params: { image_token: token }, as: :json
     assert_response :no_content
+
+    patch admin_store_path(store), params: { return_to: "proxy_registration", store: { description: "代行編集" } }, as: :json
+    assert_response :ok
+    assert_equal dashboard_path, response.parsed_body.fetch("redirect_url")
   end
 
   test "regular store admins and system_admin are forbidden" do

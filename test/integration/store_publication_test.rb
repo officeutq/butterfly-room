@@ -169,7 +169,7 @@ class StorePublicationTest < ActionDispatch::IntegrationTest
     patch admin_store_path(@unpublished_store), params: {
       store: { name: @unpublished_store.name, published: "true" }
     }
-    assert_redirected_to dashboard_path
+    assert_redirected_to admin_store_path(@unpublished_store)
     assert @unpublished_store.reload.published?
 
     get root_path, params: { mode: "stores" }
@@ -184,7 +184,7 @@ class StorePublicationTest < ActionDispatch::IntegrationTest
       store: { name: @unpublished_store.name, published: "true" }
     }
 
-    assert_redirected_to dashboard_path
+    assert_redirected_to admin_store_path(@unpublished_store)
     assert @unpublished_store.reload.published?
   end
 end

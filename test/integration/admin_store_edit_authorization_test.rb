@@ -55,7 +55,7 @@ class AdminStoreEditAuthorizationTest < ActionDispatch::IntegrationTest
     post admin_current_store_path, params: { store_id: @store2.id }
     patch admin_store_path(@store2), params: { store: { name: "sys updated" } }
     assert_response :redirect
-    assert_redirected_to dashboard_path
+    assert_redirected_to admin_store_path(@store2)
     assert_equal "sys updated", @store2.reload.name
   end
 
@@ -69,11 +69,11 @@ class AdminStoreEditAuthorizationTest < ActionDispatch::IntegrationTest
     assert_select "input[name='store[sales_support_company]']"
 
     patch admin_store_path(@store1), params: { store: { sales_support_company: "1" } }
-    assert_redirected_to dashboard_path
+    assert_redirected_to admin_store_path(@store1)
     assert @store1.reload.sales_support_company?
 
     patch admin_store_path(@store1), params: { store: { sales_support_company: "0" } }
-    assert_redirected_to dashboard_path
+    assert_redirected_to admin_store_path(@store1)
     assert_not @store1.reload.sales_support_company?
   end
 
@@ -86,7 +86,7 @@ class AdminStoreEditAuthorizationTest < ActionDispatch::IntegrationTest
     assert_select "input[name='store[sales_support_company]']", count: 0
 
     patch admin_store_path(@store1), params: { store: { sales_support_company: "1" } }
-    assert_redirected_to dashboard_path
+    assert_redirected_to admin_store_path(@store1)
     assert_not @store1.reload.sales_support_company?
   end
 
@@ -106,7 +106,7 @@ class AdminStoreEditAuthorizationTest < ActionDispatch::IntegrationTest
     }
 
     assert_response :redirect
-    assert_redirected_to dashboard_path
+    assert_redirected_to admin_store_path(@store1)
 
     @store1.reload
     assert_equal "store1 updated", @store1.name
@@ -132,7 +132,7 @@ class AdminStoreEditAuthorizationTest < ActionDispatch::IntegrationTest
       }
     end
 
-    assert_redirected_to dashboard_path
+    assert_redirected_to admin_store_path(@store1)
 
     @store1.reload
     assert @store1.thumbnail.attached?
@@ -148,7 +148,7 @@ class AdminStoreEditAuthorizationTest < ActionDispatch::IntegrationTest
       patch admin_store_path(@store1), params: { store: { remove_thumbnail: "1" } }
     end
 
-    assert_redirected_to dashboard_path
+    assert_redirected_to admin_store_path(@store1)
     assert_not @store1.reload.thumbnail.attached?
     assert_not ActiveStorage::Blob.exists?(old_blob.id)
   end
@@ -164,7 +164,7 @@ class AdminStoreEditAuthorizationTest < ActionDispatch::IntegrationTest
       }
     }
 
-    assert_redirected_to edit_admin_store_path(@store1)
+    assert_response :unprocessable_entity
 
     @store1.reload
     assert_equal "store1", @store1.name
@@ -179,7 +179,7 @@ class AdminStoreEditAuthorizationTest < ActionDispatch::IntegrationTest
       patch admin_store_path(@store1), params: { store: { name: "画像未変更店舗" } }
     end
 
-    assert_redirected_to dashboard_path
+    assert_redirected_to admin_store_path(@store1)
     assert_equal old_blob.id, @store1.reload.thumbnail.blob.id
   end
 
@@ -216,7 +216,7 @@ class AdminStoreEditAuthorizationTest < ActionDispatch::IntegrationTest
     }
 
     assert_response :redirect
-    assert_redirected_to dashboard_path
+    assert_redirected_to admin_store_path(@store1)
 
     @store1.reload
     assert_equal "store1 updated", @store1.name

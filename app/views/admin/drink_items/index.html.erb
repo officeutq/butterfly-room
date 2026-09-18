@@ -1,5 +1,7 @@
 <% content_for :title, "ドリンクメニュー" %>
 
+<%= link_to "店舗情報へ戻る", admin_store_path(current_store), class: "btn btn-outline-secondary mb-3", data: { turbo_prefetch: false } %>
+
 <div class="row g-3" data-controller="drink-menu-scroll">
   <% @drink_items.each do |item| %>
     <% editing = @editing_drink_item_id == item.id %>
@@ -10,7 +12,7 @@
                    drink_item: item,
                    url: admin_drink_item_path(item),
                    method: :patch,
-                   cancel_url: admin_drink_items_path,
+                   cancel_url: admin_drink_items_path(**store_information_return_options(item.store)),
                    submit_label: "編集して保存" %>
       <% else %>
         <%= render "card", drink_item: item %>

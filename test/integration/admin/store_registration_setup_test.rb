@@ -316,7 +316,7 @@ class Admin::StoreRegistrationSetupTest < ActionDispatch::IntegrationTest
       }
     end
 
-    assert_redirected_to dashboard_path
+    assert_redirected_to admin_store_path(store)
     assert store.reload.published?
     assert_equal pending, @request.session[ApplicationController::STORE_REGISTRATION_PENDING_SESSION_KEY]
     assert_nil @request.session[ApplicationController::STORE_REGISTRATION_COMPLETION_SESSION_KEY]

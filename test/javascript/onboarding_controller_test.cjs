@@ -53,6 +53,22 @@ test("completed skipped and unset stores have no tutorial", () => {
   }
 })
 
+test("drink setup follows the information card then edit button then existing form without advancing progress", () => {
+  const { c, document } = setup()
+  c.stepValue = "setup_drinks"
+  for (const target of ["store-information-card", "store-drinks-edit", "create-drink-card", "update-drink-submit"]) {
+    document.querySelector = (selector) => selector.includes(`"${target}"`) ? {} : null
+    assert.equal(c.stepConfig().target, target)
+    assert.equal(c.stepValue, "setup_drinks")
+  }
+  document.querySelector = () => null
+  let highlighted = false
+  c.applyHighlight = () => { highlighted = true }
+  c.render()
+  assert.equal(highlighted, false)
+  assert.equal(c.stepValue, "setup_drinks")
+})
+
 test("reconnecting clears stale modal suspension", () => {
   const { c, events } = setup()
   events.get("app-modal:opening")()

@@ -43,6 +43,9 @@
                         method: :patch,
                         class: "d-inline-block",
                         data: { action: "submit->drink-menu-scroll#store" } do |f| %>
+            <%= hidden_field_tag :selection_store_id, drink_item.store_id %>
+            <%= hidden_field_tag :return_to, "store_information" if params[:return_to] == "store_information" %>
+            <%= hidden_field_tag :menu_action, "toggle" %>
             <%= f.hidden_field :name, value: drink_item.name %>
             <%= f.hidden_field :price_points, value: drink_item.price_points %>
             <%= f.hidden_field :position, value: drink_item.position %>
@@ -65,7 +68,7 @@
         <div class="col-8 col-sm-9">
           <div class="d-flex justify-content-end gap-2 flex-wrap mt-3">
             <%= link_to "編集",
-                        admin_drink_items_path(editing_id: drink_item.id),
+                        admin_drink_items_path(editing_id: drink_item.id, **store_information_return_options(drink_item.store)),
                         class: "btn btn-sm btn-outline-primary",
                         data: { action: "click->drink-menu-scroll#store" } %>
           </div>

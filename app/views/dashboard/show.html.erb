@@ -116,26 +116,21 @@
       </div>
 
       <div class="col-12 col-md-6 col-xl-4">
-        <% if store.present? %>
-          <%= link_to edit_admin_store_path(store), class: "text-decoration-none" do %>
-            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
-              <div class="card-body">
-                <h5 class="card-title mb-2">店舗設定編集</h5>
-                <p class="card-text mb-0">店舗情報を編集します</p>
-              </div>
+        <% information_path = store ? admin_store_path(store) : select_modal_admin_stores_path(return_to_key: "store_show", required: 1) %>
+        <%= link_to information_path,
+              data: { turbo_frame: (store ? nil : "modal"), turbo_prefetch: false }, class: "text-decoration-none" do %>
+          <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light"
+               data-onboarding-target-element="store-information-card">
+            <div class="card-body">
+              <h5 class="card-title mb-2">
+                店舗情報
+                <% if store&.payout_account_unconfigured? %>
+                  <span class="badge text-bg-warning ms-2">振込先口座未設定</span>
+                <% end %>
+              </h5>
+              <p class="card-text mb-0">店舗情報・ドリンクメニュー・振込先口座の確認と編集を行います</p>
             </div>
-          <% end %>
-        <% else %>
-          <%= link_to select_modal_admin_stores_path(return_to_key: "store_edit"),
-                      data: { turbo_frame: "modal", turbo_prefetch: false },
-                      class: "text-decoration-none" do %>
-            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
-              <div class="card-body">
-                <h5 class="card-title mb-2">店舗設定編集</h5>
-                <p class="card-text mb-0">店舗情報を編集します</p>
-              </div>
-            </div>
-          <% end %>
+          </div>
         <% end %>
       </div>
 
@@ -237,33 +232,6 @@
 
       <div class="col-12 col-md-6 col-xl-4">
         <% if store.present? %>
-          <%= link_to admin_drink_items_path,
-                      class: "text-decoration-none" do %>
-            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin"
-                data-bs-theme="light"
-                data-onboarding-target-element="setup-drinks-card">
-              <div class="card-body">
-                <h5 class="card-title mb-2">ドリンクメニュー</h5>
-                <p class="card-text mb-0">ドリンクメニューを管理します</p>
-              </div>
-            </div>
-          <% end %>
-        <% else %>
-          <%= link_to select_modal_admin_stores_path(return_to: admin_drink_items_path),
-                      data: { turbo_frame: "modal", turbo_prefetch: false },
-                      class: "text-decoration-none" do %>
-            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
-              <div class="card-body">
-                <h5 class="card-title mb-2">ドリンクメニュー</h5>
-                <p class="card-text mb-0">ドリンクメニューを管理します</p>
-              </div>
-            </div>
-          <% end %>
-        <% end %>
-      </div>
-
-      <div class="col-12 col-md-6 col-xl-4">
-        <% if store.present? %>
           <%= link_to admin_comment_reports_path, class: "text-decoration-none" do %>
             <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
               <div class="card-body">
@@ -280,35 +248,6 @@
               <div class="card-body">
                 <h5 class="card-title mb-2">通報一覧</h5>
                 <p class="card-text mb-0">コメント通報の確認を行います</p>
-              </div>
-            </div>
-          <% end %>
-        <% end %>
-      </div>
-
-      <div class="col-12 col-md-6 col-xl-4">
-        <% if store.present? %>
-          <%= link_to edit_admin_payout_account_path, class: "text-decoration-none" do %>
-            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
-              <div class="card-body">
-                <h5 class="card-title mb-2">
-                  振込先口座設定
-                  <% if store.payout_account_unconfigured? %>
-                    <span class="badge text-bg-warning ms-2">未設定</span>
-                  <% end %>
-                </h5>
-                <p class="card-text mb-0">店舗への振込先口座を設定します</p>
-              </div>
-            </div>
-          <% end %>
-        <% else %>
-          <%= link_to select_modal_admin_stores_path(return_to_key: "payout_account_edit"),
-                      data: { turbo_frame: "modal", turbo_prefetch: false },
-                      class: "text-decoration-none" do %>
-            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
-              <div class="card-body">
-                <h5 class="card-title mb-2">振込先口座設定</h5>
-                <p class="card-text mb-0">店舗への振込先口座を設定します</p>
               </div>
             </div>
           <% end %>

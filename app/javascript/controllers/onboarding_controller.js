@@ -150,9 +150,17 @@ export default class extends Controller {
           }
         }
 
+        if (document.querySelector('[data-onboarding-target-element="store-drinks-edit"]')) {
+          return {
+            target: "store-drinks-edit",
+            message: "『ドリンクメニューを編集』を押して、ドリンクを追加・編集しましょう。",
+            imageUrl: this.setupDrinksImageUrlValue
+          }
+        }
+
         return {
-          target: "setup-drinks-card",
-          message: "ドリンク設定を確認しましょう。いくつかデフォルトのドリンクが登録されています。編集・追加もできます！",
+          target: "store-information-card",
+          message: "次はドリンク設定です。『店舗情報』を開いてください。",
           imageUrl: this.inviteCastImageUrlValue
         }
 
@@ -164,7 +172,8 @@ export default class extends Controller {
   shouldAutoScroll(targetName) {
     return [
       "footer-cast-invite",
-      "setup-drinks-card",
+      "store-information-card",
+      "store-drinks-edit",
       "create-drink-card",
       "footer-dashboard"
     ].includes(targetName)
