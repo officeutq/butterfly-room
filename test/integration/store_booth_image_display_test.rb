@@ -61,7 +61,7 @@ class StoreBoothImageDisplayTest < ActionDispatch::IntegrationTest
     assert_not_includes response.body, "booth-source"
   end
 
-  test "admin cards and store and booth selection modals use the social ratio presentation" do
+  test "store and booth selection modals use the social ratio presentation" do
     store = Store.create!(name: "選択画像店舗", published: true)
     second_store = Store.create!(name: "選択画像店舗2", published: true)
     booth = Booth.create!(store:, name: "選択画像ブース", status: :offline)
@@ -75,11 +75,10 @@ class StoreBoothImageDisplayTest < ActionDispatch::IntegrationTest
 
     sign_in system_admin, scope: :user
     post admin_current_store_path, params: { store_id: store.id }
-    get admin_booths_path
-
+    get select_modal_cast_booths_path(source: "header"), headers: { "Turbo-Frame" => "modal" }
     assert_response :success
-    assert_select ".admin-booths-card-thumbnail-wrap.ratio.ratio-social", count: 2
-    assert_select ".admin-booths-card-thumbnail[alt='選択画像ブースのブース画像']", count: 1
+    assert_select ".booth-select-thumbnail[src*='selection-booth'][alt='選択画像ブースのブース画像']", count: 1
+    assert_not_includes response.body, "selection-booth-source"
 
     get select_modal_admin_stores_path, headers: { "Turbo-Frame" => "modal" }
 

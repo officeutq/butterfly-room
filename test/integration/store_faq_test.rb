@@ -79,7 +79,7 @@ class StoreFaqTest < ActionDispatch::IntegrationTest
     end
     assert_select "#store-faq-category-store-management details.store-faq__question", count: 2
     assert_select "#faq-q18", text: /「店舗ページを見る」で進むと、キャスト招待からドリンク設定までのチュートリアルが始まります。/
-    assert_select "#faq-q38", text: /「ブース管理」で対象ブースの「配信\/視聴」/
+    assert_select "#faq-q38", text: /ヘッダーで対象ブースを選択し、トップページでそのブースのカードを開いて/
     assert_select "#faq-q47", text: /「店舗情報を保存して公開する」を押すと、店舗情報が公開されます。/
   end
 

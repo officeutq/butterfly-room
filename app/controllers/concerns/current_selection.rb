@@ -197,7 +197,7 @@ module CurrentSelection
       options[:return_to] = "store_information" if query["return_to"] == "store_information"
       route[:controller] == "admin/drink_items" ? admin_drink_items_path(**options) : edit_admin_payout_account_path(**options)
     elsif %w[cast/current_booths admin/current_stores].include?(route[:controller]) ||
-        (%w[cast/booths admin/stores].include?(route[:controller]) && %w[index select_modal].include?(route[:action]))
+        (%w[cast/booths admin/booths admin/stores].include?(route[:controller]) && %w[index select_modal].include?(route[:action]))
       dashboard_path
     else
       path

@@ -49,15 +49,15 @@ class RoleHierarchyAccessTest < ActionDispatch::IntegrationTest
     get cast_booths_path
     assert_redirected_to dashboard_path
 
-    get admin_booths_path
+    get new_admin_booth_path
     assert_response :redirect
-    assert_redirected_to select_modal_admin_stores_path(return_to: admin_booths_path, required: 1)
+    assert_redirected_to select_modal_admin_stores_path(return_to: new_admin_booth_path, required: 1)
 
     post admin_current_store_path, params: { store_id: @store1.id }
     assert_response :redirect
     assert_redirected_to dashboard_path
 
-    get admin_booths_path
+    get new_admin_booth_path
     assert_response :success
   end
 

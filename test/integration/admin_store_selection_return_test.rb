@@ -12,7 +12,7 @@ class AdminStoreSelectionReturnTest < ActionDispatch::IntegrationTest
     StoreMembership.create!(store: @store, user: @store_admin, membership_role: :admin)
   end
 
-  test "return_to: selecting store redirects back to the admin page" do
+  test "旧管理一覧への戻り先はダッシュボードに置き換える" do
     sign_in @store_admin, scope: :user
 
     get admin_stores_path(return_to: admin_booths_path)
@@ -20,7 +20,7 @@ class AdminStoreSelectionReturnTest < ActionDispatch::IntegrationTest
 
     post admin_current_store_path, params: { store_id: @store.id, return_to: admin_booths_path }
     assert_response :redirect
-    assert_redirected_to admin_booths_path
+    assert_redirected_to dashboard_path
   end
 
   test "return_to_key: payout_account_edit redirects to the current_store scoped page" do

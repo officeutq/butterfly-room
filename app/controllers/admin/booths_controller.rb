@@ -2,27 +2,13 @@
 
 module Admin
   class BoothsController < Admin::BaseController
-    before_action :require_current_store!, except: %i[archive force_end]
+    before_action :require_current_store!, only: %i[new create]
     before_action :require_form_store!, only: %i[create]
     before_action :set_booth, only: %i[archive force_end]
     before_action :check_selected_booth!, only: %i[archive force_end]
 
     def index
-      @include_archived = ActiveModel::Type::Boolean.new.cast(params[:archived])
-
-      scope =
-        current_store
-          .booths
-          .includes({ thumbnail_image_attachment: :blob }, booth_casts: :cast_user)
-
-      scope = scope.active unless @include_archived
-
-      @booths = scope.order(Arel.sql('"booths"."archived_at" ASC NULLS FIRST'), id: :desc)
-      if StreamSessions::PublisherControl.enabled?
-        @booths = @booths.includes(:current_stream_session)
-        @disconnect_pending_booth_ids = StreamPublisherConnection.disconnect_pending.unreleased.where(booth_id: @booths.select(:id)).distinct.pluck(:booth_id)
-      end
-      @current_booth_id = session[:current_booth_id]
+      redirect_to dashboard_path
     end
 
     def new
@@ -264,18 +250,6 @@ module Admin
 
     def booth_cast_params
       params.require(:booth_cast).permit(:cast_user_id)
-    end
-
-    def resolved_return_to
-      path = params[:return_to].to_s
-
-      return admin_booths_path if path.blank?
-      return admin_booths_path unless path.start_with?("/")
-      return admin_booths_path if path.start_with?("//")
-      return admin_booths_path if path.include?("\n") || path.include?("\r")
-      return admin_booths_path if path.include?("\0")
-
-      path
     end
 
     def load_cast_memberships

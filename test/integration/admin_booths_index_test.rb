@@ -1,97 +1,61 @@
-# frozen_string_literal: true
-
 require "test_helper"
 
 class AdminBoothsIndexTest < ActionDispatch::IntegrationTest
-  setup do
-    @store1 = Store.create!(name: "store1")
-    @store2 = Store.create!(name: "store2")
-
-    @store_admin  = User.create!(email: "admin@example.com", password: "password", role: :store_admin)
-    @system_admin = User.create!(email: "sys@example.com", password: "password", role: :system_admin)
-
-    StoreMembership.create!(store: @store1, user: @store_admin, membership_role: :admin)
-
-    @booth1_active = Booth.create!(store: @store1, name: "booth1", status: :offline)
-    @booth1_arch   = Booth.create!(store: @store1, name: "booth1_arch", status: :offline, archived_at: Time.current)
-
-    @booth2_active = Booth.create!(store: @store2, name: "booth2", status: :offline)
-    @booth2_arch   = Booth.create!(store: @store2, name: "booth2_arch", status: :offline, archived_at: Time.current)
-  end
-
-  test "store_admin: index shows only current_store booths (active only by default) and booth name links to enter in modal" do
-    sign_in @store_admin, scope: :user
-
-    get admin_booths_path
-    assert_response :success
-
-    assert_select ".admin-booths-card", minimum: 1
-
-    assert_select "h2", text: @booth1_active.name, count: 1
-    assert_select "h2", text: @booth1_arch.name, count: 0
-    assert_select "h2", text: @booth2_active.name, count: 0
-    assert_select "h2", text: @booth2_arch.name, count: 0
-
-    assert_select "form[action=?]", enter_booth_path(@booth1_active), minimum: 1 do
-      assert_select "button", text: "配信/視聴"
+  %i[store_admin system_admin].each do |role|
+    test "#{role}: 旧一覧は店舗未選択でも選択を要求せずダッシュボードへ戻す" do
+      actor = User.create!(email: "old-index-#{role}@example.com", password: "password", role: role)
+      sign_in actor
+      [ 0, 1, 2 ].each do |count|
+        if count.positive?
+          store = Store.create!(name: "店舗#{count}")
+          StoreMembership.create!(store: store, user: actor, membership_role: :admin)
+          Booth.create!(store: store, name: "ブース#{count}", archived_at: count == 2 ? Time.current : nil)
+        end
+        [ admin_booths_path, admin_booths_path(archived: 1, return_to: cast_booths_path) ].each do |path|
+          get path
+          assert_redirected_to dashboard_path
+          selection = [ @request.session[:current_store_id], @request.session[:current_booth_id] ]
+          follow_redirect!
+          assert_response :success
+          assert_select ".admin-booths-card, turbo-frame#modal[src]", count: 0
+          assert_select ".card-title", text: "ブース管理", count: 0
+          assert_equal selection, [ @request.session[:current_store_id], @request.session[:current_booth_id] ]
+        end
+      end
     end
-
-    assert_select "a", text: "詳細", count: 0
   end
 
-  test "store_admin: archived=1 includes archived booths in current_store scope" do
-    sign_in @store_admin, scope: :user
-
-    get admin_booths_path(archived: 1)
-    assert_response :success
-
-    assert_select "h2", text: @booth1_active.name, count: 1
-    assert_select "h2", text: @booth1_arch.name, count: 1
-
-    assert_select "h2", text: @booth2_active.name, count: 0
-    assert_select "h2", text: @booth2_arch.name, count: 0
-  end
-
-  test "system_admin: index requires current_store and shows only that store booths" do
-    sign_in @system_admin, scope: :user
-
-    get admin_booths_path
-    assert_response :redirect
-    assert_redirected_to select_modal_admin_stores_path(return_to: admin_booths_path, required: 1)
-
-    post admin_current_store_path, params: { store_id: @store1.id }
-    assert_response :redirect
-    assert_redirected_to dashboard_path
-
-    get admin_booths_path
-    assert_response :success
-
-    assert_select "h2", text: @booth1_active.name, count: 1
-    assert_select "h2", text: @booth1_arch.name, count: 0
-
-    assert_select "h2", text: @booth2_active.name, count: 0
-    assert_select "h2", text: @booth2_arch.name, count: 0
-
-    assert_select "form[action=?]", enter_booth_path(@booth1_active), minimum: 1 do
-      assert_select "button", text: "配信/視聴"
+  test "複数店舗・ブースの未選択と有効な閉鎖済み選択を旧一覧で変更しない" do
+    actor = User.create!(email: "old-index-selection@example.com", password: "password", role: :system_admin)
+    booths = 2.times.map do |i|
+      Booth.create!(store: Store.create!(name: "店舗#{i}"), name: "閉鎖#{i}", archived_at: Time.current)
     end
-
-    assert_select "a", text: "詳細", count: 0
+    sign_in actor
+    get admin_booths_path
+    assert_redirected_to dashboard_path
+    assert_nil @request.session[:current_store_id]
+    assert_nil @request.session[:current_booth_id]
+    post cast_current_booth_path, params: { booth_id: booths.last.id, source: "header" }, as: :json
+    assert_response :success
+    get admin_booths_path(archived: 1)
+    assert_redirected_to dashboard_path
+    assert_equal booths.last.id, @request.session[:current_booth_id]
+    assert_equal booths.last.store_id, @request.session[:current_store_id]
+    post admin_current_store_path, params: { store_id: booths.last.store_id, return_to: admin_booths_path(archived: 1) }, as: :json
+    assert_equal dashboard_path, response.parsed_body["redirect_url"]
+    post cast_current_booth_path, params: { booth_id: booths.first.id, source: "header", return_to: admin_booths_path }, as: :json
+    assert_equal dashboard_path, response.parsed_body["redirect_url"]
   end
 
-  test "system_admin: archived=1 includes archived booths in current_store scope" do
-    sign_in @system_admin, scope: :user
-
-    post admin_current_store_path, params: { store_id: @store1.id }
-    assert_response :redirect
-    assert_redirected_to dashboard_path
-
-    get admin_booths_path(archived: 1)
-    assert_response :success
-
-    assert_select "h2", text: @booth1_active.name, count: 1
-    assert_select "h2", text: @booth1_arch.name, count: 1
-    assert_select "h2", text: @booth2_active.name, count: 0
-    assert_select "h2", text: @booth2_arch.name, count: 0
+  test "旧一覧は認証と管理者の役割を要求する" do
+    get admin_booths_path
+    assert_redirected_to new_user_session_path
+    %i[customer cast].each do |role|
+      actor = User.create!(email: "old-index-denied-#{role}@example.com", password: "password", role: role)
+      sign_in actor
+      get admin_booths_path
+      assert_response :forbidden
+      sign_out actor
+    end
   end
 end
