@@ -15,7 +15,7 @@ const accounts = [
   {
     name: "store_admin_dashboard",
     email: "manual+store_admin@example.test",
-    expectedText: "ブース管理",
+    expectedText: "ブース新規作成",
   },
   {
     name: "cast_dashboard",

@@ -101,7 +101,7 @@ test("store_admin normal operation screenshots", async ({ page }) => {
 
   await gotoAndSettle(page, "/dashboard");
   await expect(page).toHaveURL(/\/dashboard/);
-  await expect(page.locator("body")).toContainText("ブース管理");
+  await expect(page.locator("body")).toContainText("ブース新規作成");
   await capture(page, "dashboard", "01_dashboard.png");
 
   await gotoAndSettle(page, "/admin/stores");
@@ -141,12 +141,8 @@ test("store_admin normal operation screenshots", async ({ page }) => {
   await expect(page.locator("body")).toContainText("店舗情報を更新しました");
   await capture(page, "stores", "04_after_update_dashboard.png");
 
-  await gotoAndSettle(page, "/admin/booths");
-  await expect(page).toHaveURL(/\/admin\/booths/);
-  await expect(page.locator("body")).toContainText("ブース管理");
-  await capture(page, "booths", "01_index.png");
-
-  await gotoAndSettle(page, "/admin/booths/new");
+  await gotoAndSettle(page, "/dashboard");
+  await submitAndWaitForURL(page, 'a:has-text("ブース新規作成")', /\/admin\/booths\/new$/);
   await expect(page.locator('input[name="booth[name]"]')).toBeVisible();
   await capture(page, "booths", "02_new_form.png");
 
@@ -173,8 +169,8 @@ test("store_admin normal operation screenshots", async ({ page }) => {
   await capture(page, "booths", "04_after_create_dashboard.png");
 
   await gotoAndSettle(page, "/admin/booths");
-  await expect(page.locator("body")).toContainText(boothName);
-  await capture(page, "booths", "05_index_after_create.png");
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.locator("body")).toContainText("ブース新規作成");
 
   await gotoAndSettle(page, "/admin/casts");
   await expect(page).toHaveURL(/\/admin\/casts/);

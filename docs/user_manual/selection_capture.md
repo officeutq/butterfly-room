@@ -2,6 +2,8 @@
 
 対象は2026-09-16のローカル実装。選択・情報・編集フォーム・空の配信履歴の画像を、実配信を伴わない専用データで撮影する。利用者から報告された実機・実配信の確認は[別記録](../ops/current_selection_local_verification.md)に分ける。
 
+2026-09-18追記：ブース管理統合後のダッシュボード・強制終了・閉鎖・履歴の画像は[#1294の撮影記録](booth_management_capture.md)を参照する。以下は#1278の選択撮影の記録であり、旧画像を今回の管理統合の確認結果として扱わない。
+
 ## 実行環境と準備
 
 既存の開発DBに`manual_capture:prepare`を実行しない。専用の空のPostgreSQLデータベース`butterfly_room_manual_selection`を用意する。下記の`createdb`と`db:schema:load`は初回だけ実行する。既存の同名DBがあれば内容・用途を確認し、初期化し直さない。
