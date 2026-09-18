@@ -1,0 +1,39 @@
+<% stream_session = booth.current_stream_session %>
+<% consistent_stream = stream_session && stream_session.booth_id == booth.id &&
+     stream_session.store_id == booth.store_id && stream_session.live? && stream_session.ended_at.nil? %>
+<% if consistent_stream && StreamSessions::PublisherControl.enabled? %>
+  <% consistent_stream = stream_session.publisher_recording_state == (booth.standby? ? :not_started : :recorded) %>
+<% end %>
+<% can_force_end = consistent_stream && (booth.live? || booth.away?) %>
+<% can_archive = (booth.offline? && booth.current_stream_session_id.nil?) || (booth.standby? && consistent_stream) %>
+<% publisher_target = { stream_session_id: booth.current_stream_session_id.to_s, generation: stream_session&.publisher_generation } %>
+<% target_name = "店舗「#{booth.store.name}」のブース「#{booth.name}」" %>
+
+<div class="booth-management-actions mt-4 pt-3 border-top">
+  <% if consistent_stream %>
+    <p class="small text-muted mb-2">
+      <%= booth.standby? ? "準備中" : (booth.away? ? "離席中" : "配信中") %>：
+      <%= stream_session.title.presence || "タイトル未設定" %>
+      <% if stream_session.broadcast_started_at %>
+        （<%= l(stream_session.broadcast_started_at, format: :short) %> 開始）
+      <% end %>
+    </p>
+  <% end %>
+  <div class="d-flex align-items-center gap-2 flex-wrap">
+    <% if can_force_end %>
+      <%= button_to "強制終了", force_end_admin_booth_path(booth),
+            method: :post, params: publisher_target, class: "btn btn-outline-danger",
+            data: { turbo_confirm: "#{target_name}の配信「#{stream_session.title.presence || 'タイトル未設定'}」を強制終了します。未消化ドリンクは返却されます。よろしいですか？" } %>
+    <% end %>
+    <% if can_archive %>
+      <% preparation = booth.standby? ? "準備中の「#{stream_session.title.presence || 'タイトル未設定'}」を終了し、" : "" %>
+      <%= button_to "閉鎖", archive_admin_booth_path(booth),
+            method: :patch, params: publisher_target, class: "btn btn-outline-danger",
+            data: { turbo_confirm: "#{preparation}#{target_name}を閉鎖します。閉鎖後は配信・編集・共有ができなくなります。よろしいですか？" } %>
+    <% elsif can_force_end %>
+      <span class="text-muted small">閉鎖するには、先に配信を終了してください。</span>
+    <% else %>
+      <p class="text-danger mb-0" role="status">ブースの配信状態を確認できません。画面を読み込み直し、解消しない場合は運用担当者へお問い合わせください。</p>
+    <% end %>
+  </div>
+</div>

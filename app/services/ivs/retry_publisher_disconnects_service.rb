@@ -13,9 +13,12 @@ module Ivs
       self.class.pending(booth: @booth, actor: @actor).exists?
     end
 
-    def state
-      authorize!
-      self.class.state_for(self.class.pending(booth: @booth, actor: @actor))
+    # 情報画面は対象ブースだけを表示する。準備・開始側は本人の別ブースの未切断も含める。
+    def state(booth_only: false)
+      authorize!(allow_previous_publisher: !booth_only)
+      scope = self.class.pending(booth: @booth, actor: @actor)
+      scope = scope.where(booth: @booth) if booth_only
+      self.class.state_for(scope)
     end
 
     def self.state_for(scope)
@@ -27,10 +30,10 @@ module Ivs
           (pending ? "配信接続の切断を再試行しています。次の配信は切断確認後に開始できます。" : "配信接続の切断を確認しました。") }
     end
 
-    def authorize!
+    def authorize!(allow_previous_publisher: true)
       unless StreamSessions::PublisherControl.active_actor?(@actor) &&
           (Authorization::BoothPolicy.new(@actor, @booth).update? ||
-            StreamPublisherConnection.where(booth: @booth, user: @actor).exists?)
+            (allow_previous_publisher && StreamPublisherConnection.where(booth: @booth, user: @actor).exists?))
         raise StreamSessions::PublisherControl::Error.new(code: "forbidden",
           message: "この接続を再確認する権限がありません", booth: @booth, status: :forbidden)
       end

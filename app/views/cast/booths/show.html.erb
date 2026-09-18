@@ -58,33 +58,47 @@
     </div>
 
     <div class="booth-show-actions mt-4 d-flex gap-2 flex-wrap">
-      <button
-        type="button"
-        class="btn btn-primary d-inline-flex align-items-center gap-2"
-        data-bs-toggle="modal"
-        data-bs-target="#booth-share-modal"
-        aria-haspopup="dialog"
-        aria-controls="booth-share-modal">
-        <i class="bi bi-share" aria-hidden="true"></i>
-        <span>ブースを共有</span>
-      </button>
-
       <% unless @booth.archived? %>
+        <button
+          type="button"
+          class="btn btn-primary d-inline-flex align-items-center gap-2"
+          data-bs-toggle="modal"
+          data-bs-target="#booth-share-modal"
+          aria-haspopup="dialog"
+          aria-controls="booth-share-modal">
+          <i class="bi bi-share" aria-hidden="true"></i>
+          <span>ブースを共有</span>
+        </button>
+
         <%= link_to edit_cast_booth_path(@booth),
               data: { turbo_prefetch: false },
               class: "btn btn-outline-secondary d-inline-flex align-items-center gap-2" do %>
           <i class="bi bi-pencil-square" aria-hidden="true"></i>
           <span>編集</span>
         <% end %>
+      <% end %>
 
-        <%= link_to cast_booth_stream_sessions_path(@booth),
-              data: { turbo_prefetch: false },
-              class: "btn btn-outline-secondary d-inline-flex align-items-center gap-2" do %>
-          <i class="bi bi-clock-history" aria-hidden="true"></i>
-          <span>配信履歴</span>
-        <% end %>
+      <%= link_to cast_booth_stream_sessions_path(@booth),
+            data: { turbo_prefetch: false },
+            class: "btn btn-outline-secondary d-inline-flex align-items-center gap-2" do %>
+        <i class="bi bi-clock-history" aria-hidden="true"></i>
+        <span>配信履歴</span>
       <% end %>
     </div>
+
+    <% if @disconnect_status %>
+      <div class="mt-3">
+        <%= turbo_stream_from [@booth, :publisher_disconnect] %>
+        <%= render "shared/publisher_disconnect_status",
+              status: @disconnect_status,
+              target_id: "publisher_disconnect_booth_#{@booth.id}",
+              state_url: publisher_disconnect_state_cast_booth_path(@booth, scope: "booth") %>
+      </div>
+    <% end %>
+
+    <% if current_user.at_least?(:store_admin) && Authorization::BoothPolicy.new(current_user, @booth).update? && !@booth.archived? %>
+      <%= render "cast/booths/management_actions", booth: @booth %>
+    <% end %>
 
     <div class="booth-show-description mt-4">
       <%= simple_format(@booth.description.presence || "-") %>
@@ -93,7 +107,9 @@
   </div>
 </div>
 
-<%= render "cast/booths/share_modal",
+<% unless @booth.archived? %>
+  <%= render "cast/booths/share_modal",
       modal_id: "booth-share-modal",
       share_text: share_text,
       share_url: share_url %>
+<% end %>
