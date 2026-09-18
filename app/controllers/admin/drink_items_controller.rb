@@ -5,9 +5,9 @@ module Admin
     include RemovableImageAttachment
     include AttachmentPersistenceChecker
 
+    before_action :require_form_store!, only: %i[index create], if: -> { action_name == "create" || params[:selection_store_id].present? }
     before_action :require_current_store!
     before_action :set_drink_item, only: %i[update destroy]
-    before_action :require_form_store!, only: %i[create]
 
     def index
       @drink_item = build_drink_item
@@ -35,7 +35,7 @@ module Admin
             "作成しました"
           end
 
-        redirect_to admin_drink_items_path, notice: notice
+        redirect_to drink_save_return_path, notice: notice
       else
         load_drink_items
         @editing_drink_item_id = nil
@@ -62,7 +62,7 @@ module Admin
             "更新しました"
           end
 
-        redirect_to admin_drink_items_path, notice: notice
+        redirect_to drink_save_return_path, notice: notice
       else
         load_drink_items(replace_item: @drink_item)
         @editing_drink_item_id = @drink_item.id
@@ -73,10 +73,16 @@ module Admin
 
     def destroy
       @drink_item.update!(enabled: false) # 論理削除
-      redirect_to admin_drink_items_path, notice: "無効にしました"
+      redirect_to admin_drink_items_path(**store_information_return_options(@drink_item.store)), notice: "無効にしました"
     end
 
     private
+
+    def drink_save_return_path
+      return admin_drink_items_path(**store_information_return_options(@drink_item.store)) if params[:menu_action] == "toggle"
+
+      params[:return_to] == "store_information" ? admin_store_path(@drink_item.store) : admin_drink_items_path
+    end
 
     def set_drink_item
       @drink_item = DrinkItem.with_attached_custom_icon.find(params[:id])

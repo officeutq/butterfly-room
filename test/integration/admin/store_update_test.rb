@@ -18,7 +18,7 @@ class Admin::StoreUpdateTest < ActionDispatch::IntegrationTest
     @tempfiles.each(&:close!)
   end
 
-  test "admin store update redirects to dashboard with notice" do
+  test "admin store update redirects to store information with notice" do
     admin = User.create!(
       email: "admin_store_update@example.com",
       password: "password",
@@ -48,7 +48,7 @@ class Admin::StoreUpdateTest < ActionDispatch::IntegrationTest
       }
     }
 
-    assert_redirected_to dashboard_path
+    assert_redirected_to admin_store_path(store)
     follow_redirect!
     assert_response :success
     assert_includes @response.body, "店舗情報を更新しました"
@@ -59,7 +59,7 @@ class Admin::StoreUpdateTest < ActionDispatch::IntegrationTest
     assert_equal "渋谷", store.area
   end
 
-  test "admin store update failure redirects to edit for html request" do
+  test "admin store update failure preserves HTML input" do
     admin = User.create!(
       email: "admin_store_update_failure@example.com",
       password: "password",
@@ -87,10 +87,8 @@ class Admin::StoreUpdateTest < ActionDispatch::IntegrationTest
       }
     }
 
-    assert_redirected_to edit_admin_store_path(store)
-
-    follow_redirect!
-    assert_response :success
+    assert_response :unprocessable_entity
+    assert_select "textarea[name='store[description]']", text: "更新後概要"
     assert_includes @response.body, "店舗設定"
 
     store.reload
@@ -148,7 +146,7 @@ class Admin::StoreUpdateTest < ActionDispatch::IntegrationTest
       }, as: :json
     end
     assert_response :success
-    assert_equal dashboard_path, response.parsed_body.fetch("redirect_url")
+    assert_equal admin_store_path(store), response.parsed_body.fetch("redirect_url")
     assert_equal "AI入力後に確認した概要", store.reload.description
     assert_not store.published?
     assert_nil @request.session[ApplicationController::STORE_REGISTRATION_COMPLETION_SESSION_KEY]
@@ -174,7 +172,7 @@ class Admin::StoreUpdateTest < ActionDispatch::IntegrationTest
     assert_response :success
     response_body = JSON.parse(response.body)
     assert_equal "complete", response_body.fetch("state")
-    assert_equal dashboard_path, response_body.fetch("redirect_url")
+    assert_equal admin_store_path(store), response_body.fetch("redirect_url")
     store.reload
     assert_equal "画像組店舗", store.name
     assert_equal "画像と一体更新", store.description
@@ -194,7 +192,7 @@ class Admin::StoreUpdateTest < ActionDispatch::IntegrationTest
       image_pair: reedit_pair_params(store)
     }
 
-    assert_redirected_to dashboard_path
+    assert_redirected_to admin_store_path(store)
     store.reload
     assert_equal "再編集", store.description
     assert_equal original_source_id, store.thumbnail_source.blob.id
@@ -207,7 +205,7 @@ class Admin::StoreUpdateTest < ActionDispatch::IntegrationTest
       image_pair: replace_pair_params(store, color: "orange")
     }
 
-    assert_redirected_to dashboard_path
+    assert_redirected_to admin_store_path(store)
     store.reload
     assert_equal "差し替え", store.description
     assert_not_equal reedited_source_id, store.thumbnail_source.blob.id
@@ -220,7 +218,7 @@ class Admin::StoreUpdateTest < ActionDispatch::IntegrationTest
       }
     end
 
-    assert_redirected_to dashboard_path
+    assert_redirected_to admin_store_path(store)
     store.reload
     assert_equal "削除後", store.description
     assert_not store.thumbnail_source.attached?
@@ -244,7 +242,7 @@ class Admin::StoreUpdateTest < ActionDispatch::IntegrationTest
       image_pair: replace_pair_params(store, display: jpeg_upload(1024, 1024))
     }
 
-    assert_redirected_to edit_admin_store_path(store)
+    assert_response :unprocessable_entity
     store.reload
     assert_equal "更新前", store.description
     assert_equal previous_ids, pair_ids(store)

@@ -113,7 +113,7 @@ class StoreShowTest < ActionDispatch::IntegrationTest
     refute_includes @response.body, 'href="javascript:alert(1)"'
   end
 
-  test "store admin sees edit only for stores they administer, independent of the selected store" do
+  test "store admin never sees editing links on public details" do
     store = Store.create!(name: "管理店舗", published: true)
     selected_store = Store.create!(name: "選択中の管理店舗", published: true)
     other_store = Store.create!(name: "他店舗", published: true)
@@ -127,8 +127,7 @@ class StoreShowTest < ActionDispatch::IntegrationTest
     get store_path(store)
 
     assert_response :success
-    assert_select "a.store-show-edit[href=?]", edit_admin_store_path(store, return_to: "store_detail"),
-                  text: "店舗情報を編集", count: 1
+    assert_select "a.store-show-edit", count: 0
     assert_equal selected_store.id, @request.session[:current_store_id].to_i
 
     get store_path(other_store)
@@ -152,7 +151,7 @@ class StoreShowTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "system admin sees edit without membership but unpublished details remain unavailable to operators" do
+  test "system admin sees no editing link and unpublished public details remain unavailable" do
     store = Store.create!(name: "運営編集店舗", published: true)
     system_admin = User.create!(email: "store-show-system@example.com", password: "password", role: :system_admin)
     sign_in system_admin, scope: :user
@@ -160,7 +159,7 @@ class StoreShowTest < ActionDispatch::IntegrationTest
     get store_path(store)
 
     assert_response :success
-    assert_select "a.store-show-edit[href=?]", edit_admin_store_path(store, return_to: "store_detail"), count: 1
+    assert_select "a.store-show-edit", count: 0
 
     store.update!(published: false)
     get store_path(store)

@@ -87,7 +87,7 @@ class AdminStorePayoutAccountTest < ActionDispatch::IntegrationTest
 
     get dashboard_path
     assert_response :success
-    assert_select "span.badge", text: "未設定"
+    assert_select "span.badge", text: "振込先口座未設定"
   end
 
   test "admin store edit does not show payout account section badge anymore" do

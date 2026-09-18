@@ -2,8 +2,15 @@ module Admin
   class BaseController < ApplicationController
     before_action -> { require_at_least!(:store_admin) }
     after_action :store_admin_return_to
+    helper_method :store_information_return_options
 
     private
+
+    def store_information_return_options(store = current_store)
+      return {} unless params[:return_to] == "store_information"
+
+      { selection_store_id: store.id, return_to: "store_information" }
+    end
 
     # admin領域の「直前ページ」をsessionに保存（Issue #270）
     #

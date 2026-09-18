@@ -191,7 +191,7 @@ class AdminStoreInformationTest < ActionDispatch::IntegrationTest
     sign_in @admin, scope: :user
     get store_path(@store)
     assert_response :success
-    assert_select "a.store-show-edit", count: 1
+    assert_select "a.store-show-edit", count: 0
     assert_select "#store-payout-account-title, #store-drink-menu-title", count: 0
     [ account.account_number, account.account_holder_kana, "****3467", "管理者だけの無効メニュー" ].each do |value|
       refute_includes response.body, value

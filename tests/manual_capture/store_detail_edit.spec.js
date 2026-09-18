@@ -19,7 +19,7 @@ for (const [device, viewport] of [
   ["desktop", { width: 1440, height: 1000 }],
   ["mobile", { width: 390, height: 844 }]
 ]) {
-  test(`${device}: detail edit, discard, failed save, retry and unpublish return correctly`, async ({ page }, testInfo) => {
+  test(`${device}: management information edit, discard, failed save, retry and unpublish return correctly`, async ({ page }, testInfo) => {
     await page.setViewportSize(viewport)
     const errors = []
     page.on("pageerror", (error) => errors.push(error.message))
@@ -35,21 +35,24 @@ for (const [device, viewport] of [
     await page.getByRole("button", { name: "登録して店舗設定へ進む" }).click()
     await expect(page).toHaveURL(/registration_setup\/edit$/, { timeout: 20_000 })
     const storeId = new URL(page.url()).pathname.match(/\/stores\/(\d+)\//)[1]
-    const detailPath = `/stores/${storeId}`
+    const publicPath = `/stores/${storeId}`
+    const detailPath = `/admin/stores/${storeId}`
     const detailUrl = new URL(detailPath, page.url()).href
     const editPath = `/admin/stores/${storeId}/edit`
-    const detailEditUrl = new URL(`${editPath}?return_to=store_detail`, page.url()).href
+    const detailEditUrl = new URL(editPath, page.url()).href
 
     await page.goto(editPath)
     await expect(save(page)).toBeDisabled()
     await field(page, "description").fill("保存済みの紹介文")
     await field(page, "published").selectOption("true")
     await confirmSave(page)
-    await expect(page).toHaveURL(/\/dashboard$/, { timeout: 20_000 })
+    await expect(page).toHaveURL(detailUrl, { timeout: 20_000 })
 
+    await page.goto(publicPath)
+    await expect(edit(page)).toHaveCount(0)
     await page.goto(detailPath)
     await expect(edit(page)).toBeVisible()
-    await expect(edit(page)).toHaveAttribute("href", `${editPath}?return_to=store_detail`)
+    await expect(edit(page)).toHaveAttribute("href", editPath)
     await page.screenshot({ path: testInfo.outputPath(`${device}-detail.png`), fullPage: true })
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
     if (device === "mobile") {
@@ -84,23 +87,23 @@ for (const [device, viewport] of [
 
     await edit(page).click()
     await expect(save(page)).toBeDisabled()
-    await field(page, "description").fill("編集して公開ページに戻った紹介文")
+    await field(page, "description").fill("編集して店舗情報に戻った紹介文")
     await field(page, "area").fill("長".repeat(51))
     await confirmSave(page)
     await expect(page.locator('[data-image-pair-form-target="error"]')).toBeVisible()
     await expect(page).toHaveURL(detailEditUrl)
-    await expect(field(page, "description")).toHaveValue("編集して公開ページに戻った紹介文")
-    await expect(page.locator('[name="return_to"]')).toHaveValue("store_detail")
+    await expect(field(page, "description")).toHaveValue("編集して店舗情報に戻った紹介文")
+    await expect(page.locator('[name="return_to"]')).toHaveCount(0)
     await field(page, "area").fill("熊本")
     await confirmSave(page)
     await expect(page).toHaveURL(detailUrl, { timeout: 20_000 })
-    await expect(page.locator(".store-show-description")).toContainText("編集して公開ページに戻った紹介文")
+    await expect(page.locator(".store-show-description")).toContainText("編集して店舗情報に戻った紹介文")
 
     await edit(page).click()
     await expect(save(page)).toBeDisabled()
     await field(page, "published").selectOption("false")
     await confirmSave(page)
-    await expect(page).toHaveURL(/\/dashboard$/, { timeout: 20_000 })
+    await expect(page).toHaveURL(detailUrl, { timeout: 20_000 })
     expect(errors).toEqual([])
   })
 }

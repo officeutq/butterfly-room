@@ -26,7 +26,7 @@ module Admin
 
       if @form.save
         normalize_current_selection
-        redirect_to edit_admin_store_path(@form.store), notice: "代行対象店舗を作成しました"
+        redirect_to edit_admin_store_path(@form.store, return_to: "proxy_registration"), notice: "代行対象店舗を作成しました"
       else
         render :new, status: :unprocessable_entity
       end
@@ -119,13 +119,13 @@ module Admin
 
     def set_store
       @store = Store.find(params[:id])
-      @edit_return_to = "store_detail" if params[:return_to] == "store_detail"
+      @edit_return_to = "proxy_registration" if params[:return_to] == "proxy_registration" && current_user.store_registration_proxy_allowed?
     end
 
     def store_edit_return_path
-      return store_path(@store) if @edit_return_to == "store_detail" && @store.published?
+      return dashboard_path if @edit_return_to == "proxy_registration"
 
-      dashboard_path
+      admin_store_path(@store)
     end
 
     def authorize_store!
@@ -188,7 +188,8 @@ module Admin
         end
 
         format.html do
-          redirect_to edit_admin_store_path(@store, return_to: @edit_return_to), alert: message
+          flash.now[:alert] = message
+          render :edit, status: status
         end
 
         format.json do

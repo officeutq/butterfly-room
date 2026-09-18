@@ -164,6 +164,7 @@ module CurrentSelection
     return new_admin_cast_invitation_path if key == "cast_invitation"
     return edit_admin_payout_account_path if key == "payout_account_edit"
     return result.store ? edit_admin_store_path(result.store) : dashboard_path if key == "store_edit"
+    return result.store ? admin_store_path(result.store) : dashboard_path if key == "store_show"
 
     path = safe_selection_return_to(params[:return_to])
     if path.nil? && [ cast_booths_url, admin_stores_url ].include?(request.referer)
@@ -178,8 +179,23 @@ module CurrentSelection
       selection_booth_path("booth_#{route[:action]}", result.booth)
     elsif route[:controller] == "cast/booths/stream_sessions" && route[:action] == "index"
       selection_booth_path("booth_stream_sessions", result.booth)
-    elsif route[:controller] == "admin/stores" && route[:action] == "edit"
-      result.store ? edit_admin_store_path(result.store) : dashboard_path
+    elsif route[:controller] == "admin/stores" && %w[show edit].include?(route[:action])
+      return dashboard_path unless result.store
+
+      return admin_store_path(result.store) if route[:action] == "show"
+
+      query = Rack::Utils.parse_query(URI.parse(path).query)
+      options = query["return_to"] == "proxy_registration" ? { return_to: "proxy_registration" } : {}
+      edit_admin_store_path(result.store, **options)
+    elsif (route[:controller] == "admin/drink_items" && route[:action] == "index") ||
+        (route[:controller] == "admin/store_payout_accounts" && route[:action] == "edit")
+      query = Rack::Utils.parse_query(URI.parse(path).query)
+      return path unless query["return_to"] == "store_information" || query["selection_store_id"].present?
+      return dashboard_path unless result.store
+
+      options = { selection_store_id: result.store.id }
+      options[:return_to] = "store_information" if query["return_to"] == "store_information"
+      route[:controller] == "admin/drink_items" ? admin_drink_items_path(**options) : edit_admin_payout_account_path(**options)
     elsif %w[cast/current_booths admin/current_stores].include?(route[:controller]) ||
         (%w[cast/booths admin/stores].include?(route[:controller]) && %w[index select_modal].include?(route[:action]))
       dashboard_path
