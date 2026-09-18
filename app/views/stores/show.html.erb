@@ -1,15 +1,5 @@
 <div class="store-show">
-  <div class="store-show-hero">
-    <% if @store.thumbnail.attached? %>
-      <%= image_tag @store.thumbnail,
-            class: "store-show-hero-image",
-            alt: "#{@store.name}の店舗画像" %>
-    <% else %>
-      <div class="store-show-hero-placeholder">
-        <%= image_tag "no_image_logo.png", class: "no-image-logo", alt: "画像なし" %>
-      </div>
-    <% end %>
-  </div>
+  <%= render "stores/hero", store: @store %>
 
   <div class="container store-show-container">
     <div class="store-show-header d-flex justify-content-between align-items-start gap-3">
@@ -29,119 +19,7 @@
       </div>
     </div>
 
-    <div class="store-show-info mt-4">
-      <div class="store-show-info-row">
-        <div class="store-show-info-label">地域</div>
-        <div class="store-show-info-value">
-          <%= @store.area.presence || "-" %>
-        </div>
-      </div>
-
-      <div class="store-show-info-row">
-        <div class="store-show-info-label">業態</div>
-        <div class="store-show-info-value">
-          <% if @store.business_type.present? %>
-            <%= Store::BUSINESS_TYPE_LABELS[@store.business_type.to_sym] || @store.business_type %>
-          <% else %>
-            -
-          <% end %>
-        </div>
-      </div>
-
-      <div class="store-show-info-row">
-        <div class="store-show-info-label">住所</div>
-        <div class="store-show-info-value">
-          <% if @store.address.present? %>
-            <div class="d-flex flex-wrap align-items-center gap-2">
-              <span><%= @store.address %></span>
-              <%= link_to "Google Map",
-                    "https://www.google.com/maps/search/?api=1&query=#{ERB::Util.url_encode(@store.address)}",
-                    target: "_blank",
-                    rel: "noopener",
-                    class: "btn btn-outline-primary btn-sm" %>
-            </div>
-          <% else %>
-            -
-          <% end %>
-        </div>
-      </div>
-
-      <div class="store-show-info-row">
-        <div class="store-show-info-label">電話番号</div>
-        <div class="store-show-info-value">
-          <%= @store.phone_number.presence || "-" %>
-        </div>
-      </div>
-
-      <div class="store-show-info-row">
-        <div class="store-show-info-label">営業時間</div>
-        <div class="store-show-info-value">
-          <%= @store.business_hours.presence || "-" %>
-        </div>
-      </div>
-
-      <div class="store-show-info-row">
-        <div class="store-show-info-label">HP</div>
-        <div class="store-show-info-value">
-          <% if @store.website_url.present? %>
-            <% website_url = safe_external_url(@store.website_url) %>
-            <% if website_url.present? %>
-              <%= link_to @store.website_url, website_url, target: "_blank", rel: "noopener" %>
-            <% elsif @store.website_url.present? %>
-              <%= @store.website_url %>
-            <% else %>
-              -
-            <% end %>
-          <% else %>
-            -
-          <% end %>
-        </div>
-      </div>
-
-      <div class="store-show-info-row">
-        <div class="store-show-info-label">SNS</div>
-        <div class="store-show-info-value">
-          <% sns_links = [] %>
-
-          <% if (url = safe_external_url(@store.x_url)).present? %>
-            <% sns_links << { url: url, icon: "bi-twitter-x", label: "X" } %>
-          <% end %>
-
-          <% if (url = safe_external_url(@store.instagram_url)).present? %>
-            <% sns_links << { url: url, icon: "bi-instagram", label: "Instagram" } %>
-          <% end %>
-
-          <% if (url = safe_external_url(@store.tiktok_url)).present? %>
-            <% sns_links << { url: url, icon: "bi-tiktok", label: "TikTok" } %>
-          <% end %>
-
-          <% if (url = safe_external_url(@store.youtube_url)).present? %>
-            <% sns_links << { url: url, icon: "bi-youtube", label: "YouTube" } %>
-          <% end %>
-
-          <% if sns_links.present? %>
-            <div class="store-show-sns-list">
-              <% sns_links.each do |sns| %>
-                <%= link_to sns[:url],
-                      target: "_blank",
-                      rel: "noopener",
-                      class: "store-show-sns-link",
-                      aria: { label: sns[:label] },
-                      title: sns[:label] do %>
-                  <i class="bi <%= sns[:icon] %>" aria-hidden="true"></i>
-                <% end %>
-              <% end %>
-            </div>
-          <% else %>
-            -
-          <% end %>
-        </div>
-      </div>
-    </div>
-
-    <div class="store-show-description m-3">
-      <%= simple_format(@store.description.presence || "-") %>
-    </div>
+    <%= render "stores/basic_information", store: @store %>
 
     <h2 class="h5 mb-3"><%= @store.name %>のブース一覧</h2>
 

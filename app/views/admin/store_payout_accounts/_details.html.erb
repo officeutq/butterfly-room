@@ -1,0 +1,43 @@
+<% if payout_account.jp_bank? %>
+  <dl class="row mb-0">
+    <dt class="col-sm-4">口座種別</dt>
+    <dd class="col-sm-8">ゆうちょ銀行</dd>
+
+    <dt class="col-sm-4">記号</dt>
+    <dd class="col-sm-8"><%= payout_account.jp_bank_symbol.presence || "-" %></dd>
+
+    <dt class="col-sm-4">番号</dt>
+    <dd class="col-sm-8">
+      <% jp_last4 = payout_account.jp_bank_number.to_s.last(4) %>
+      <%= jp_last4.present? ? "****#{jp_last4}" : "-" %>
+    </dd>
+
+    <dt class="col-sm-4">口座名義カナ</dt>
+    <dd class="col-sm-8 mb-0"><%= truncate(payout_account.account_holder_kana.to_s, length: 32) %></dd>
+  </dl>
+<% else %>
+  <dl class="row mb-0">
+    <dt class="col-sm-4">口座種別</dt>
+    <dd class="col-sm-8">銀行口座</dd>
+
+    <dt class="col-sm-4">銀行コード</dt>
+    <dd class="col-sm-8"><%= payout_account.bank_code %></dd>
+
+    <dt class="col-sm-4">支店コード</dt>
+    <dd class="col-sm-8"><%= payout_account.branch_code %></dd>
+
+    <dt class="col-sm-4">預金種目</dt>
+    <dd class="col-sm-8">
+      <%= payout_account.ordinary? ? "普通" : "当座" %>
+    </dd>
+
+    <dt class="col-sm-4">口座番号</dt>
+    <dd class="col-sm-8">
+      <% last4 = store.payout_account_last4 %>
+      <%= last4.present? ? "****#{last4}" : "-" %>
+    </dd>
+
+    <dt class="col-sm-4">口座名義カナ</dt>
+    <dd class="col-sm-8 mb-0"><%= truncate(payout_account.account_holder_kana.to_s, length: 32) %></dd>
+  </dl>
+<% end %>
