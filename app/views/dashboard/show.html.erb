@@ -105,11 +105,13 @@
 
     <% if current_user.at_least?(:store_admin) %>
       <div class="col-12 col-md-6 col-xl-4">
-        <%= link_to admin_booths_path, class: "text-decoration-none" do %>
+        <% creation_path = store ? new_admin_booth_path : select_modal_admin_stores_path(return_to: new_admin_booth_path, required: 1) %>
+        <%= link_to creation_path, class: "text-decoration-none",
+              data: { turbo_frame: (store ? nil : "modal"), turbo_prefetch: false } do %>
           <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
             <div class="card-body">
-              <h5 class="card-title mb-2">ブース管理</h5>
-              <p class="card-text mb-0">ブースの作成・紐づけ・アーカイブを管理します</p>
+              <h5 class="card-title mb-2">ブース新規作成</h5>
+              <p class="card-text mb-0">店舗に所属するブースを新しく作成します</p>
             </div>
           </div>
         <% end %>

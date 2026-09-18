@@ -39,15 +39,15 @@ class BoothFormUiTest < ActionDispatch::IntegrationTest
     get new_admin_booth_path
 
     assert_response :success
-    assert_select "header#app_header .header-title", text: "ブース作成", count: 1
-    assert_select "main h1", text: "ブース作成", count: 0
+    assert_select "header#app_header .header-title", text: "ブース新規作成", count: 1
+    assert_select "main h1", text: "ブース新規作成", count: 0
     assert_integrated_booth_form(submit_label: "作成", back_path: dashboard_path) do
       assert_select ".form-floating[data-bs-theme='light'] select[name='booth_cast[cast_user_id]']", count: 1 do
         assert_select "option[value='#{cast.id}']", text: cast.display_name, count: 1
       end
       assert_select "label[for='booth_cast_cast_user_id']", text: "所属キャスト", count: 1
-      assert_select ".booth-form__readonly-card", count: 0
-      assert_select ".booth-form__readonly-label", text: "所属店舗", count: 0
+      assert_select ".booth-form__readonly-card", count: 1
+      assert_select ".booth-form__readonly-label", text: "所属店舗", count: 1
     end
 
     assert_creation_order

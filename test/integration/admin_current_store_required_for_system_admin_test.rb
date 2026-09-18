@@ -14,7 +14,7 @@ class AdminCurrentStoreRequiredForSystemAdminTest < ActionDispatch::IntegrationT
   test "system_admin with a sole store is automatically selected" do
     sign_in @system_admin, scope: :user
 
-    get admin_booths_path
+    get new_admin_booth_path
     assert_response :success
     assert_equal @store.id, session[:current_store_id]
   end
@@ -30,7 +30,7 @@ class AdminCurrentStoreRequiredForSystemAdminTest < ActionDispatch::IntegrationT
     # store を削除して session を不正化する
     @store.destroy!
 
-    get admin_booths_path
+    get new_admin_booth_path
     assert_response :conflict
     assert_nil session[:current_store_id]
     assert_includes response.body, "管理可能な店舗がありません"
@@ -39,7 +39,7 @@ class AdminCurrentStoreRequiredForSystemAdminTest < ActionDispatch::IntegrationT
   test "store_admin behavior is not broken (can access admin booths without explicit selection)" do
     sign_in @store_admin, scope: :user
 
-    get admin_booths_path
+    get new_admin_booth_path
     assert_response :success
   end
 end

@@ -35,7 +35,7 @@ class CurrentConsistencyAdminTest < ActionDispatch::IntegrationTest
     assert_equal booth2.id, @request.session[:current_booth_id]
     assert_equal store2.id, @request.session[:current_store_id]
 
-    get admin_booths_path
+    get dashboard_path
     assert_response :success
 
     assert_equal store2.id, @request.session[:current_store_id]
@@ -63,7 +63,7 @@ class CurrentConsistencyAdminTest < ActionDispatch::IntegrationTest
     StreamSession.where(booth_id: booth.id).delete_all
     Booth.delete(booth.id)
 
-    get admin_booths_path
+    get dashboard_path
     assert_response :success
 
     assert_nil @request.session[:current_booth_id]
@@ -98,7 +98,7 @@ class CurrentConsistencyAdminTest < ActionDispatch::IntegrationTest
 
     StoreMembership.delete(m2.id)
 
-    get admin_booths_path
+    get dashboard_path
     assert_response :success
 
     assert_equal booth1.id, @request.session[:current_booth_id]
