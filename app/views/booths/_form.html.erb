@@ -38,6 +38,11 @@
     </div>
   <% end %>
 
+  <div class="booth-form__introduction">
+    <p>ブースは、店舗に所属するオンラインの配信ルームです。同じブースを繰り返し配信に使い、配信履歴や売上を確認できます。</p>
+    <p>ここでは、視聴者に表示するブースの画像・名前・説明文を設定します。</p>
+  </div>
+
   <div class="booth-form__image mb-4">
     <%= render "shared/integrated_image_attachment_editor",
           **image_attachment_editor_state(booth, :thumbnail),
