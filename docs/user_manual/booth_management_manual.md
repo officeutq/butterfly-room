@@ -1,6 +1,6 @@
 # ブース情報・新規作成・閉鎖の操作
 
-2026-09-18の#1291〜#1293を反映した手順です。画像は架空データを使った専用テスト環境で撮影しています。[撮影・検証範囲](booth_management_capture.md)と[環境別の未確認事項](../design/booth_management_validation.md)を参照してください。
+2026-09-18の#1291〜#1293を反映した手順です。画像は架空データを使った専用テスト環境で撮影しています。[撮影・検証範囲](booth_management_capture.md)と[環境別の確認結果](../design/booth_management_validation.md)を参照してください。
 
 ## 管理するブースを開く
 
