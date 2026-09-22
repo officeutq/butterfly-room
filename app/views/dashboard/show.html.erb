@@ -142,7 +142,7 @@
             <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
               <div class="card-body">
                 <h5 class="card-title mb-2">店舗所属者情報</h5>
-                <p class="card-text mb-0">所属するキャスト・店舗管理者と招待状況を確認できます</p>
+                <p class="card-text mb-0">キャスト・店舗管理者の所属情報や招待状況の確認、招待URLの発行ができます</p>
               </div>
             </div>
           <% end %>
@@ -153,31 +153,7 @@
             <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
               <div class="card-body">
                 <h5 class="card-title mb-2">店舗所属者情報</h5>
-                <p class="card-text mb-0">所属するキャスト・店舗管理者と招待状況を確認できます</p>
-              </div>
-            </div>
-          <% end %>
-        <% end %>
-      </div>
-
-      <div class="col-12 col-md-6 col-xl-4">
-        <% if store.present? %>
-          <%= link_to admin_casts_path(tab: "admin_invitations"), class: "text-decoration-none" do %>
-            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
-              <div class="card-body">
-                <h5 class="card-title mb-2">店舗管理者招待</h5>
-                <p class="card-text mb-0">店舗管理者招待URLの発行と確認を行います</p>
-              </div>
-            </div>
-          <% end %>
-        <% else %>
-          <%= link_to select_modal_admin_stores_path(return_to: admin_casts_path(tab: "admin_invitations")),
-                      data: { turbo_frame: "modal", turbo_prefetch: false },
-                      class: "text-decoration-none" do %>
-            <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
-              <div class="card-body">
-                <h5 class="card-title mb-2">店舗管理者招待</h5>
-                <p class="card-text mb-0">店舗管理者招待URLの発行と確認を行います</p>
+                <p class="card-text mb-0">キャスト・店舗管理者の所属情報や招待状況の確認、招待URLの発行ができます</p>
               </div>
             </div>
           <% end %>
