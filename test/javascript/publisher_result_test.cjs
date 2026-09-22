@@ -77,3 +77,29 @@ test("terminal failure is shown and a delayed read from a disconnected view cann
   assert.equal(f.requests.length, 2)
   assert.equal(f.timers.size, 0)
 })
+
+for (const failure of ["network", "http", "invalid-state"]) {
+  test(`result read failure (${failure}) stops after four GETs without claiming AWS disconnect failure`, async () => {
+    const f = resultFixture(async () => {
+      if (failure === "network") throw new Error("offline")
+      if (failure === "http") return { ok: false }
+      return { ok: true, json: async () => ({ disconnect_state: "unknown", message: "invalid" }) }
+    })
+    f.controller.urlValue = "/cast/booths/7/publisher_disconnect_state?scope=booth"
+    f.controller.connect()
+    const delays = []
+    for (let i = 0; i < 4; i++) {
+      await settle()
+      const entry = [...f.timers.entries()].find(([, timer]) => timer.delay < 15000)
+      if (!entry) break
+      f.timers.delete(entry[0]); delays.push(entry[1].delay); entry[1].callback()
+    }
+    await settle()
+    assert.equal(f.requests.length, 4)
+    assert.deepEqual(delays, [500, 1000, 2000])
+    assert.ok(f.requests.every(r => r.url === f.controller.urlValue && !r.options.method && !r.options.body))
+    assert.match(f.controller.element.textContent, /切断結果をまだ確認できません.*画面を読み込み直して/)
+    assert.ok(!f.classes.has("alert-danger"))
+    assert.equal(f.timers.size, 0)
+  })
+}

@@ -2,13 +2,15 @@
 
 この章では、cast（配信者）がログイン後に行う基本操作を説明します。アカウント作成は「アカウント作成」章の cast invitation（配信者招待）を参照してください。
 
-※2026-09-16の選択改修を反映したローカル版です。ステージング・本番には未反映です。[撮影範囲と未更新画像](selection_capture.md)を参照してください。
+※2026-09-16の選択改修を反映したローカル版です。環境への反映状況は[選択改修の記録](../ops/current_selection_staging_verification.md)を参照してください。[撮影範囲と未更新画像](selection_capture.md)を参照してください。
+
+2026-09-18：ダッシュボード画像を更新しました。ブース情報・強制終了・閉鎖・閉鎖済み履歴・新規作成は[共通の管理手順](booth_management_manual.md)を参照してください。一般キャストには強制終了・閉鎖・新規作成を表示しません。画像の取得条件は[管理統合の撮影記録](booth_management_capture.md)に記載しています。
 
 ## dashboard（ダッシュボード）を確認する
 
 ログイン後、dashboard（ダッシュボード）には cast（配信者）が使う画面へのカードが表示されます。
 
-![キャストのダッシュボード](images/cast/selection/01_dashboard.png)
+![キャストのダッシュボード](images/booth_management/cast-1440-dashboard.png)
 
 主なカードは次のとおりです。
 
