@@ -10,7 +10,8 @@
 <% if @tab != "casts" %>
   <div class="d-flex flex-wrap gap-2 mb-4">
     <% invite_path = @tab == "invitations" ? new_admin_cast_invitation_path(selection_store_id: current_store.id) : new_admin_store_admin_invitation_path(selection_store_id: current_store.id) %>
-    <%= link_to "招待URLを発行", invite_path, class: "btn btn-primary", data: { turbo_frame: "modal", turbo_prefetch: false } %>
+    <% invite_label = @tab == "invitations" ? "キャスト招待URLを発行" : "店舗管理者招待URLを発行" %>
+    <%= link_to invite_label, invite_path, class: "btn btn-primary", data: { turbo_frame: "modal", turbo_prefetch: false } %>
     <% if @tab == "admin_invitations" && current_user.store_registration_proxy_allowed? && current_user.admin_of_store?(current_store.id) %>
       <%= link_to "店舗責任者を登録（代行用）", new_admin_store_admin_proxy_registration_path, class: "btn btn-outline-primary" %>
     <% end %>
@@ -50,7 +51,7 @@
 
               <div class="flex-grow-1 min-w-0">
                 <h2 class="h5 mb-1"><%= display_name_or_anonymous(user) %></h2>
-                <span class="badge text-bg-secondary mb-2"><%= membership.admin? ? "店舗管理者" : "キャスト" %></span>
+                <span class="badge <%= membership.admin? ? 'text-bg-primary' : 'text-bg-success' %> mb-2"><%= membership.admin? ? "店舗管理者" : "キャスト" %></span>
                 <div class="small text-muted text-break">
                   <%= truncate(user.bio.to_s.squish.presence || "紹介文未設定", length: 60) %>
                 </div>
@@ -64,7 +65,7 @@
               <% if booths.present? %>
                 <div class="d-flex gap-2 flex-wrap">
                   <% booths.each do |booth| %>
-                    <span class="badge text-bg-secondary"><%= booth.name.presence || "(no name)" %></span>
+                    <span class="badge text-bg-warning"><%= booth.name.presence || "(no name)" %></span>
                   <% end %>
                 </div>
               <% else %>

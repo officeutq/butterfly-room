@@ -866,4 +866,4 @@ User / Store / Boothの新方式では、1用途につき編集元画像・表�
 - `StoreAdminInvitations::UpdateInvitation` が現在の管理権限を再確認し、メモ・共有完了・取消を行ロック下で保存する。`AcceptInvitation.accept_if_member!` は既存所属者の閲覧時の使用済み更新も担当する。管理者招待の状態変更ではキャスト招待用の進捗を更新しない。
 - `invitation_modal_controller.js` は発行・メモ・共有・取消の画面操作を両招待で共用する。既存の `cast-invitation` は同じクラスを登録し、初回案内の属性・イベントを維持する。管理者モードではこれらを送出しない。
 - `invitation_list_controller.js` はモーダルの変更・閉じ完了を受け、元の店舗IDを照合して同じタブの一覧部分を更新する。店舗選択が変わった場合は置換せず案内する。
-- `invitation_share_controller.js` は管理者一覧の共有・コピー成功イベントから共有完了を保存する。通信失敗時は端末操作を繰り返さず記録だけを再試行できる。
+- 両招待一覧は `admin/casts/_invitation_card.html.erb` で同じ6項目を描画する。URL欄と一覧内の共有・コピー操作は表示しない。共有完了の記録と再試行は既存の発行モーダル内で行う。

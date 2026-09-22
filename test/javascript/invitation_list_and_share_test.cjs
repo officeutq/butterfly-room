@@ -47,23 +47,6 @@ test("changed selection and network failure keep the displayed list and show rec
   }
 })
 
-test("list sharing retries only completion storage and does not repeat the device share", async () => {
-  let attempts = 0
-  const c = controller("invitation_share", { document: { querySelector: () => ({ content: "csrf" }) },
-    fetch: async (_url, options) => { attempts++; assert.equal(options.method, "POST"); return { ok: attempts > 1 } } })
-  c.statusTarget = {}
-  c.retryTarget = { hidden: true }
-  c.urlValue = "/admin/store_admin_invitations/1/shared"
-  await c.record()
-  assert.equal(c.retryTarget.hidden, false)
-  assert.match(c.statusTarget.textContent, /共有・コピーは完了/)
-  await c.record()
-  assert.equal(c.retryTarget.hidden, true)
-  assert.equal(c.recorded, true)
-  await c.record()
-  assert.equal(attempts, 2)
-})
-
 test("failed clipboard fallback never signals successful sharing", async () => {
   let signalled = false
   const c = controller("clipboard", { navigator: {}, document: {

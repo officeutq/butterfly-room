@@ -93,7 +93,7 @@ let browser
 
       for (const kind of ["admin", "cast"]) {
         await turboClick(page.getByRole("link", { name: kind === "admin" ? "管理者招待一覧" : "キャスト招待一覧", exact: true }))
-        const button = page.getByRole("link", { name: "招待URLを発行", exact: true })
+        const button = page.getByRole("link", { name: kind === "admin" ? "店舗管理者招待URLを発行" : "キャスト招待URLを発行", exact: true })
         await button.click()
         const modal = page.locator(".modal.show")
         await expect(modal.getByRole("button", { name: "招待URLをコピー", exact: true })).toBeEnabled()
@@ -105,23 +105,16 @@ let browser
         await modal.getByLabel("管理者用メモ（任意）").fill(note + " 保存")
         await page.screenshot({ path: path.join(out, `${scenario.role}-${scenario.width}-${kind}-modal.png`), fullPage: true })
         await modal.getByRole("button", { name: "閉じる", exact: true }).last().click()
-        await expect(page.locator(".modal.show")).toHaveCount(0)
+        await expect(page.locator("#modal .modal")).toHaveCount(0)
         await expect(page.locator("#store_invitation_list")).toContainText(note + " 保存")
         assert.ok((await page.evaluate(() => window.copiedUrls)).includes(url))
         await expect(button).toBeFocused()
         if (kind === "admin") {
-          await page.evaluate(() => Object.defineProperty(navigator, "share", { configurable: true, value: async data => window.sharedPayloads.push(data) }))
-          await page.locator("#store_invitation_list").getByRole("button", { name: "招待URLを共有", exact: true }).click()
-          await expect(page.locator("[data-invitation-share-target=status]")).toContainText("記録しました")
-          const payload = await page.evaluate(() => window.sharedPayloads.at(-1))
-          assert.equal(payload.text.split(url).length - 1, 1)
-          assert.equal(payload.url, undefined)
-          await page.evaluate(() => Object.defineProperty(navigator, "share", { configurable: true, value: undefined }))
           await button.click()
           await expect(modal.getByRole("button", { name: "招待URLをコピー", exact: true })).toBeEnabled()
           await modal.getByLabel("管理者用メモ（任意）").fill("取消されるメモ")
           await modal.getByRole("button", { name: "キャンセル", exact: true }).click()
-          await expect(page.locator(".modal.show")).toHaveCount(0)
+          await expect(page.locator("#modal .modal")).toHaveCount(0)
           await expect(page.locator("#store_invitation_list")).not.toContainText("取消されるメモ")
           await expect(page.locator("#store_invitation_list .referral-code-card")).toHaveCount(1)
         }
@@ -129,7 +122,7 @@ let browser
       }
       assert.deepEqual(errors, [])
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, "horizontal overflow")
-      report.push({ ...scenario, email: undefined, checked: "所属・両招待発行・メモ保存・コピー・一覧反映・管理者再共有・取消・フォーカス復帰" })
+      report.push({ ...scenario, email: undefined, checked: "所属・両招待発行・メモ保存・コピー・一覧反映・管理者取消・フォーカス復帰" })
       await context.close()
     }
     child.stdin.write("quit\n")

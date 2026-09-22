@@ -37,7 +37,8 @@ class StoreMembersInvitationsTest < ActionDispatch::IntegrationTest
     { "invitations" => new_admin_cast_invitation_path(selection_store_id: @store.id),
       "admin_invitations" => new_admin_store_admin_invitation_path(selection_store_id: @store.id) }.each do |tab, path|
       get admin_casts_path(tab: tab)
-      assert_select "a[href=?][data-turbo-frame='modal']", path, text: "招待URLを発行"
+      label = tab == "invitations" ? "キャスト招待URLを発行" : "店舗管理者招待URLを発行"
+      assert_select "a[href=?][data-turbo-frame='modal']", path, text: label
     end
     get admin_store_admin_invitations_path
     assert_redirected_to admin_casts_path(tab: "admin_invitations")
@@ -136,7 +137,8 @@ class StoreMembersInvitationsTest < ActionDispatch::IntegrationTest
     assert_response :ok
     %w[表示メモ 有効 使用済み 期限切れ].each { |text| assert_includes response.body, text }
     %w[取消メモ 別店舗メモ].each { |text| refute_includes response.body, text }
-    assert_select "[data-invitation-share-url-value=?]", shared_admin_store_admin_invitation_path(visible)
+    refute_includes response.body, visible.issued_url
+    assert_select "#store_invitation_list button", count: 0
   end
 
   test "stale list and modal cannot issue in changed store and updates stay with original invitation" do

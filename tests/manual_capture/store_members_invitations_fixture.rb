@@ -16,6 +16,8 @@ scenarios = %i[store_admin system_admin].product([ 1440, 390 ]).map do |role, wi
   store = Store.create!(name: "所属者確認店舗 #{role} #{width}", onboarding_step: :completed)
   StoreMembership.create!(store: store, user: admin, membership_role: :admin)
   StoreMembership.create!(store: store, user: cast, membership_role: :cast)
+  booth = Booth.create!(store: store, name: "確認用ブース", status: :offline)
+  BoothCast.create!(booth: booth, cast_user: cast)
   { email: admin.email, role: role, width: width, store_id: store.id }
 end
 server = Puma::Server.new(Rails.application)
