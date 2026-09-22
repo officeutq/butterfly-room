@@ -26,7 +26,7 @@ class AdminCastsInvitationIssuedUrlTest < ActionDispatch::IntegrationTest
     assert_select "main [data-controller='share']", count: 0
   end
 
-  test "issuing store_admin invitation saves issued_url and shows url + copy button in list" do
+  test "issuing store_admin invitation shows its URL with text sharing and copy buttons" do
     post admin_store_admin_invitations_path, params: { selection_store_id: @store.id }
     assert_response :redirect
     follow_redirect!
@@ -37,6 +37,14 @@ class AdminCastsInvitationIssuedUrlTest < ActionDispatch::IntegrationTest
     assert invitation.issued_url.present?
 
     assert_includes response.body, invitation.issued_url
+    assert_select "button[data-controller='share']", count: 1 do |buttons|
+      button = buttons.first
+      assert_equal "click->share#share", button["data-action"]
+      assert_equal "Butterflyve", button["data-share-title"]
+      assert_equal "Butterflyveの店舗管理者招待はこちら", button["data-share-text"]
+      assert_equal invitation.issued_url, button["data-share-url"]
+      assert_equal "true", button["data-share-url-in-text"]
+    end
     assert_includes response.body, 'data-controller="clipboard"'
     assert_includes response.body, 'data-action="click->clipboard#copy"'
     assert_includes response.body, "data-clipboard-text=\"#{invitation.issued_url}\""
