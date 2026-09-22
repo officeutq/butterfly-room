@@ -73,7 +73,7 @@ class StoreFaqTest < ActionDispatch::IntegrationTest
       assert_select "#faq-q21", text: /招待URLは1人用で、発行から1週間有効です。/
       assert_select "#faq-q22", text: /所属キャスト・招待中のキャストを確認するには？/
       assert_select "#faq-q22", text: /「所属一覧」タブ/
-      assert_select "#faq-q22", text: /「キャスト招待一覧」「管理者招待一覧」タブ/
+      assert_select "#faq-q22", text: /「キャスト招待」「店舗管理者招待」タブ/
       assert_select "#faq-q23", text: /1人のキャストが複数の店舗に所属できますか？/
       assert_select "#faq-q24", text: /キャストが退店した場合、所属を解除できますか？/
     end
