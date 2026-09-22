@@ -92,7 +92,7 @@ let browser
       await page.screenshot({ path: path.join(out, `${scenario.role}-${scenario.width}-members.png`), fullPage: true })
 
       for (const kind of ["admin", "cast"]) {
-        await turboClick(page.getByRole("link", { name: kind === "admin" ? "管理者招待一覧" : "キャスト招待一覧", exact: true }))
+        await turboClick(page.locator("nav[aria-label='店舗所属者情報の切り替え']").getByRole("link", { name: kind === "admin" ? "店舗管理者招待" : "キャスト招待", exact: true }))
         const button = page.getByRole("link", { name: kind === "admin" ? "店舗管理者招待URLを発行" : "キャスト招待URLを発行", exact: true })
         await button.click()
         const modal = page.locator(".modal.show")

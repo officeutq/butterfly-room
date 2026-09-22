@@ -3,8 +3,8 @@
 <p class="text-body-secondary"><i class="bi bi-shop me-1" aria-hidden="true"></i><%= current_store.name %></p>
 <nav class="nav nav-tabs mb-4" aria-label="店舗所属者情報の切り替え">
   <%= link_to "所属一覧", admin_casts_path, class: "nav-link #{'active' if @tab == 'casts'}", aria: { current: @tab == 'casts' ? 'page' : nil } %>
-  <%= link_to "キャスト招待一覧", admin_casts_path(tab: "invitations"), class: "nav-link #{'active' if @tab == 'invitations'}", aria: { current: @tab == 'invitations' ? 'page' : nil } %>
-  <%= link_to "管理者招待一覧", admin_casts_path(tab: "admin_invitations"), class: "nav-link #{'active' if @tab == 'admin_invitations'}", aria: { current: @tab == 'admin_invitations' ? 'page' : nil } %>
+  <%= link_to "キャスト招待", admin_casts_path(tab: "invitations"), class: "nav-link #{'active' if @tab == 'invitations'}", aria: { current: @tab == 'invitations' ? 'page' : nil } %>
+  <%= link_to "店舗管理者招待", admin_casts_path(tab: "admin_invitations"), class: "nav-link #{'active' if @tab == 'admin_invitations'}", aria: { current: @tab == 'admin_invitations' ? 'page' : nil } %>
 </nav>
 
 <% if @tab != "casts" %>
