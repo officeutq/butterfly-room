@@ -18,7 +18,11 @@ export default class extends Controller {
     this.element.disabled = true
 
     try {
-      await navigator.share({ title, text, url })
+      // 本文だけを受け取る共有先向け。URL欄にも渡すと重複するため省く。
+      const shareData = this.element.dataset.shareUrlInText === "true"
+        ? { title, text: text ? `${text}\n\n${url}` : url }
+        : { title, text, url }
+      await navigator.share(shareData)
       const step = await this.notifyOnboardingShareIfNeeded()
 
       if (step) {
