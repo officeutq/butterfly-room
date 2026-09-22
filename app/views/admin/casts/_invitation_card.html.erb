@@ -1,0 +1,46 @@
+<div class="card referral-code-card <%= "text-muted" unless invitation.usable? %>" data-bs-theme="light">
+  <div class="card-body">
+    <div class="referral-code-row">
+      <div class="referral-code-label">管理者用メモ</div>
+      <div class="referral-code-value text-pre-wrap text-break"><%= invitation.note.presence || "未設定" %></div>
+    </div>
+    <div class="referral-code-row">
+      <div class="referral-code-label">発行日時</div>
+      <div class="referral-code-value"><%= l(invitation.created_at) %></div>
+    </div>
+    <div class="referral-code-row">
+      <div class="referral-code-label">状態</div>
+      <div class="referral-code-value">
+        <% if invitation.usable? %>
+          <span class="badge text-bg-success"><%= invitation.status_label %></span>
+        <% elsif invitation.expired? && !invitation.used? %>
+          <span class="badge text-bg-danger"><%= invitation.status_label %></span>
+        <% else %>
+          <span class="badge text-bg-secondary"><%= invitation.status_label %></span>
+        <% end %>
+      </div>
+    </div>
+    <div class="referral-code-row">
+      <div class="referral-code-label">期限</div>
+      <div class="referral-code-value"><%= l(invitation.expires_at) %></div>
+    </div>
+    <div class="referral-code-row">
+      <div class="referral-code-label">発行者</div>
+      <div class="referral-code-value d-flex align-items-center gap-2">
+        <%= user_avatar_badge(invitation.invited_by_user, size: 28) %>
+        <span><%= display_name_or_anonymous(invitation.invited_by_user) %></span>
+      </div>
+    </div>
+    <div class="referral-code-row">
+      <div class="referral-code-label">承認者</div>
+      <div class="referral-code-value d-flex align-items-center gap-2">
+        <% if invitation.accepted_by_user.present? %>
+          <%= user_avatar_badge(invitation.accepted_by_user, size: 28) %>
+          <span><%= display_name_or_anonymous(invitation.accepted_by_user) %></span>
+        <% else %>
+          -
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

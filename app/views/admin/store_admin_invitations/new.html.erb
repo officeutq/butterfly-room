@@ -1,0 +1,39 @@
+<% content_for :title, "店舗管理者を招待" %>
+<%= turbo_frame_tag "modal" do %>
+  <div class="modal fade" tabindex="-1" aria-labelledby="adminInviteTitle" aria-modal="true" role="dialog"
+       data-controller="invitation-modal"
+       data-invitation-modal-admin-value="true"
+       data-invitation-modal-create-url-value="<%= admin_store_admin_invitations_path %>"
+       data-invitation-modal-store-id-value="<%= @store.id %>"
+       data-invitation-modal-request-key-value="<%= @request_key %>">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 id="adminInviteTitle" class="modal-title fs-5">店舗管理者を招待</h1>
+          <button type="button" class="btn-close" aria-label="閉じる" data-action="invitation-modal#close" data-invitation-modal-target="closeButton"></button>
+        </div>
+        <div class="modal-body">
+          <p class="fw-semibold"><i class="bi bi-shop me-1" aria-hidden="true"></i><%= @store.name %></p>
+          <p>招待URLを店舗管理者本人に送りましょう。相手が招待を承認すると、この店舗の管理者として所属します。</p>
+          <div class="alert alert-danger" role="alert" hidden data-invitation-modal-target="error"></div>
+          <p role="status" aria-live="polite" data-invitation-modal-target="status">招待URLを発行しています…</p>
+          <button type="button" class="btn btn-outline-primary mb-3" hidden data-invitation-modal-target="retry" data-action="invitation-modal#issue">発行を再試行</button>
+          <div hidden data-invitation-modal-target="content">
+            <label for="adminInviteUrl" class="form-label">招待URL</label>
+            <input id="adminInviteUrl" class="form-control mb-2" readonly data-invitation-modal-target="url">
+            <p class="small text-body-secondary">このURLは1人用です。発行から1週間有効です。<br>有効期限：<span data-invitation-modal-target="expires"></span></p>
+            <label for="adminInviteNote" class="form-label">管理者用メモ（任意）</label>
+            <textarea id="adminInviteNote" class="form-control" rows="2" aria-describedby="adminInviteNoteHelp" data-invitation-modal-target="note"></textarea>
+            <p id="adminInviteNoteHelp" class="small text-body-secondary mt-2">誰に送る招待か、名前などを控えておけます。このメモは相手には表示されません。</p>
+            <p class="small text-body-secondary" hidden data-invitation-modal-target="unsupported">このブラウザでは共有機能を利用できません。招待URLをコピーして送ってください。</p>
+          </div>
+          <p class="small text-body-secondary mb-0" data-invitation-modal-target="cancelHelp">キャンセルすると、この招待URLは使えなくなります。</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-invitation-modal-target="closeButton closeLabel" data-action="invitation-modal#close">キャンセル</button>
+          <button type="button" class="btn btn-primary" disabled data-invitation-modal-target="shareButton" data-action="invitation-modal#share">招待URLを共有</button>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>

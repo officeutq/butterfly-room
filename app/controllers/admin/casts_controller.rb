@@ -3,16 +3,22 @@
 module Admin
   class CastsController < Admin::BaseController
     before_action :require_current_store!
+    before_action :require_form_store!, only: :index, if: -> { params[:selection_store_id].present? }
 
     def index
-      @tab = params[:tab] == "invitations" ? "invitations" : "casts"
+      @tab = %w[invitations admin_invitations].include?(params[:tab]) ? params[:tab] : "casts"
       @store_cast_invitations = current_store.store_cast_invitations
         .visible_in_list.includes(:invited_by_user, :accepted_by_user).recent_first if @tab == "invitations"
       return if @tab == "invitations"
-      @cast_memberships =
+      if @tab == "admin_invitations"
+        @store_admin_invitations = current_store.store_admin_invitations
+          .visible_in_list.includes(:invited_by_user, :accepted_by_user).recent_first
+        return
+      end
+      @memberships =
         StoreMembership
           .includes(user: { booth_casts: :booth })
-          .where(store_id: current_store.id, membership_role: :cast)
+          .where(store_id: current_store.id, membership_role: %i[cast admin])
           .order(:id)
     end
 

@@ -26,28 +26,19 @@ class AdminCastsInvitationIssuedUrlTest < ActionDispatch::IntegrationTest
     assert_select "main [data-controller='share']", count: 0
   end
 
-  test "issuing store_admin invitation shows its URL with text sharing and copy buttons" do
-    post admin_store_admin_invitations_path, params: { selection_store_id: @store.id }
-    assert_response :redirect
-    follow_redirect!
+  test "issuing store_admin invitation returns URL while list stays read only" do
+    post admin_store_admin_invitations_path, params: { store_id: @store.id, request_key: SecureRandom.uuid }, as: :json
     assert_response :ok
-
     invitation = StoreAdminInvitation.order(:id).last
     assert invitation.present?
     assert invitation.issued_url.present?
 
-    assert_includes response.body, invitation.issued_url
-    assert_select "button[data-controller='share']", count: 1 do |buttons|
-      button = buttons.first
-      assert_equal "click->share#share", button["data-action"]
-      assert_equal "Butterflyve", button["data-share-title"]
-      assert_equal "Butterflyveの店舗管理者招待はこちら", button["data-share-text"]
-      assert_equal invitation.issued_url, button["data-share-url"]
-      assert_equal "true", button["data-share-url-in-text"]
-    end
-    assert_includes response.body, 'data-controller="clipboard"'
-    assert_includes response.body, 'data-action="click->clipboard#copy"'
-    assert_includes response.body, "data-clipboard-text=\"#{invitation.issued_url}\""
+    assert_equal invitation.issued_url, response.parsed_body["url"]
+    get admin_casts_path(tab: "admin_invitations")
+    assert_response :ok
+    refute_includes response.body, invitation.issued_url
+    assert_select "main [data-controller='clipboard']", count: 0
+    assert_select "main [data-controller='share']", count: 0
   end
 
   test "legacy cast invitation record is visible without a URL" do
@@ -63,10 +54,11 @@ class AdminCastsInvitationIssuedUrlTest < ActionDispatch::IntegrationTest
     get admin_casts_path(tab: "invitations")
     assert_response :ok
 
-    assert_includes response.body, "未承認"
+    assert_select ".referral-code-card", count: 1
+    assert_select ".referral-code-row:last-child .referral-code-value", text: "-"
   end
 
-  test "legacy store_admin invitation record with nil issued_url does not error and shows placeholder" do
+  test "legacy store_admin invitation record is visible without a URL" do
     StoreAdminInvitation.create!(
       store: @store,
       invited_by_user: @store_admin,
@@ -75,9 +67,10 @@ class AdminCastsInvitationIssuedUrlTest < ActionDispatch::IntegrationTest
       issued_url: nil
     )
 
-    get admin_store_admin_invitations_path
+    get admin_casts_path(tab: "admin_invitations")
     assert_response :ok
 
-    assert_includes response.body, "（発行時に控えてください）"
+    assert_select ".referral-code-card", count: 1
+    assert_select ".referral-code-row:last-child .referral-code-value", text: "-"
   end
 end

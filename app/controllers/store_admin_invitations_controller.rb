@@ -24,16 +24,7 @@ class StoreAdminInvitationsController < ApplicationController
     )
 
     if @already_member && @invitation.usable?
-      ActiveRecord::Base.transaction do
-        @invitation.lock!
-
-        if @invitation.usable?
-          @invitation.update!(
-            used_at: Time.current,
-            accepted_by_user: current_user
-          )
-        end
-      end
+      StoreAdminInvitations::AcceptInvitation.accept_if_member!(invitation: @invitation, actor: current_user)
     end
 
     render :show, status: :ok

@@ -857,5 +857,13 @@ User / Store / Boothの新方式では、1用途につき編集元画像・表�
 - `StoreCastInvitations::UpdateInvitation` がメモ更新・取消・共有完了を行ロック付きで処理する。各操作は招待の店舗に対する現在の管理権限を確認し、sessionの別店舗へ書き込まない。
 - 招待モーダルは共有・コピーをクリック直後に実行し、メモ保存通信を待たない。メモ保存と共有成功は別状態として管理する。成功後にメモを編集した場合は閉じる際に保存し、失敗時は入力を保持する。共有通知だけが失敗した場合も、閉じる際に通知を再試行する。
 - キャンセルはサーバーで無効化できてから閉じる。発行応答が不明なら同じキーで復旧して取消する。端末の共有画面のキャンセルは招待取消と区別する。
-- `Admin::CastsController#index` は `tab=invitations` で取消済みを除いた閲覧専用一覧を表示する。旧 `GET /admin/cast_invitations` は新タブへ転送する。
+- `Admin::CastsController#index` は所属一覧と2種類の招待一覧を表示する（#1359）。`tab=invitations` の招待カードは閲覧専用のまま、両招待タブにモーダルを開く発行ボタンを置く。旧招待一覧GETは各タブへ転送する。
 - `Stores::AdvanceOnboarding` はダッシュボード到達・スキップ時の状態変更を担当する。招待発行・共有に伴う進捗は対応する招待Serviceが更新する。
+
+### 管理者招待モーダルと店舗所属者情報（#1359）
+
+- `Admin::StoreAdminInvitationsController#new` はモーダル枠だけを返す。`create` は選択店舗・認可・発行キーを確認し、`StoreAdminInvitations::IssueInvitation` が招待とURLを同じtransactionで保存する。同じ発行者・キーの再試行では同じ招待を返す。
+- `StoreAdminInvitations::UpdateInvitation` が現在の管理権限を再確認し、メモ・共有完了・取消を行ロック下で保存する。`AcceptInvitation.accept_if_member!` は既存所属者の閲覧時の使用済み更新も担当する。管理者招待の状態変更ではキャスト招待用の進捗を更新しない。
+- `invitation_modal_controller.js` は発行・メモ・共有・取消の画面操作を両招待で共用する。既存の `cast-invitation` は同じクラスを登録し、初回案内の属性・イベントを維持する。管理者モードではこれらを送出しない。
+- `invitation_list_controller.js` はモーダルの変更・閉じ完了を受け、元の店舗IDを照合して同じタブの一覧部分を更新する。店舗選択が変わった場合は置換せず案内する。
+- 両招待一覧は `admin/casts/_invitation_card.html.erb` で同じ6項目を描画する。URL欄と一覧内の共有・コピー操作は表示しない。共有完了の記録と再試行は既存の発行モーダル内で行う。

@@ -18,11 +18,12 @@ module Admin
         redirect_to dashboard_path
         return
       end
-      @store = entry_store
+      @store = params[:selection_store_id].present? ? authorized_store(params[:selection_store_id]) : entry_store
       unless @store
         redirect_to select_modal_admin_stores_path(return_to_key: "cast_invitation")
         return
       end
+      return unless require_selected_store!(@store)
       @request_key = SecureRandom.uuid
       render :new, layout: false
     end

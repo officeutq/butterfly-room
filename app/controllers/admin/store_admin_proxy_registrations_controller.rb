@@ -16,7 +16,7 @@ module Admin
       )
 
       if @form.save
-        redirect_to admin_store_admin_invitations_path, flash_for(@form.result)
+        redirect_to admin_casts_path(tab: "admin_invitations"), flash_for(@form.result)
       else
         render :new, status: :unprocessable_entity
       end

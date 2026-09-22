@@ -149,7 +149,7 @@ module CurrentSelection
     flash[:notice] = notice
     respond_to do |format|
       format.json do
-        render json: { redirect_url: path, frame: params[:return_to_key] == "cast_invitation" ? "modal" : nil,
+        render json: { redirect_url: path, frame: %w[cast_invitation store_admin_invitation].include?(params[:return_to_key]) ? "modal" : nil,
           store_name: current_store&.name, booth_name: current_booth&.name }
       end
       format.html { redirect_to path, status: :see_other }
@@ -162,6 +162,7 @@ module CurrentSelection
     @selection_preparation_requested = key == "booth_live"
     return selection_booth_path(key, result.booth) if key.start_with?("booth_")
     return new_admin_cast_invitation_path if key == "cast_invitation"
+    return new_admin_store_admin_invitation_path if key == "store_admin_invitation"
     return edit_admin_payout_account_path if key == "payout_account_edit"
     return result.store ? edit_admin_store_path(result.store) : dashboard_path if key == "store_edit"
     return result.store ? admin_store_path(result.store) : dashboard_path if key == "store_show"

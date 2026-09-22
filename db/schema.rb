@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_17_020000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_22_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -509,16 +509,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_17_020000) do
 
   create_table "store_admin_invitations", force: :cascade do |t|
     t.bigint "accepted_by_user_id"
+    t.datetime "cancelled_at"
     t.datetime "created_at", null: false
     t.datetime "expires_at", null: false
     t.bigint "invited_by_user_id", null: false
     t.text "issued_url"
+    t.text "note"
+    t.string "request_key"
+    t.datetime "shared_at"
     t.bigint "store_id", null: false
     t.string "token_digest", null: false
     t.datetime "updated_at", null: false
     t.datetime "used_at"
     t.index ["accepted_by_user_id"], name: "index_store_admin_invitations_on_accepted_by_user_id"
     t.index ["expires_at"], name: "index_store_admin_invitations_on_expires_at"
+    t.index ["invited_by_user_id", "request_key"], name: "idx_on_invited_by_user_id_request_key_32684ddb62", unique: true
     t.index ["invited_by_user_id"], name: "index_store_admin_invitations_on_invited_by_user_id"
     t.index ["issued_url"], name: "index_store_admin_invitations_on_issued_url"
     t.index ["store_id", "created_at"], name: "index_store_admin_invitations_on_store_id_and_created_at"

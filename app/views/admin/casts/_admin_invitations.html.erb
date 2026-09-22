@@ -1,0 +1,7 @@
+<% if @store_admin_invitations.empty? %>
+  <p class="alert alert-info">表示できる招待はありません。「店舗管理者招待URLを発行」から招待できます。</p>
+<% else %>
+  <div class="referral-codes-list">
+    <%= render partial: "invitation_card", collection: @store_admin_invitations, as: :invitation %>
+  </div>
+<% end %>

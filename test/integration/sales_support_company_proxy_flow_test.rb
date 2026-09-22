@@ -33,7 +33,7 @@ class SalesSupportCompanyProxyFlowTest < ActionDispatch::IntegrationTest
     assert_equal company_a.id, session[:current_store_id].to_i
     post admin_current_store_path, params: { store_id: store_b.id }
 
-    get admin_store_admin_invitations_path
+    get admin_casts_path(tab: "admin_invitations")
     assert_response :success
     assert_select "a[href=?]", new_admin_store_admin_proxy_registration_path,
                   text: "店舗責任者を登録（代行用）"
@@ -46,7 +46,7 @@ class SalesSupportCompanyProxyFlowTest < ActionDispatch::IntegrationTest
     }
 
     manager = User.find_by!(email: "store-b-manager@example.com")
-    assert_redirected_to admin_store_admin_invitations_path
+    assert_redirected_to admin_casts_path(tab: "admin_invitations")
     assert StoreMembership.admin_only.exists?(store: store_b, user: manager)
     assert_not manager.store_registration_proxy_allowed?
 

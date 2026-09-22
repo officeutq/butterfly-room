@@ -16,7 +16,7 @@ class AdminStoreAdminProxyRegistrationTest < ActionDispatch::IntegrationTest
     sign_in @actor, scope: :user
     post admin_current_store_path, params: { store_id: @store.id }
 
-    get admin_store_admin_invitations_path
+    get admin_casts_path(tab: "admin_invitations")
     assert_response :success
     assert_select "a[href=?]", new_admin_store_admin_proxy_registration_path,
                   text: "店舗責任者を登録（代行用）"
@@ -32,7 +32,7 @@ class AdminStoreAdminProxyRegistrationTest < ActionDispatch::IntegrationTest
       end
     end
 
-    assert_redirected_to admin_store_admin_invitations_path
+    assert_redirected_to admin_casts_path(tab: "admin_invitations")
     user = User.find_by!(email: "proxy-responsible@example.com")
     assert StoreMembership.admin_only.exists?(store: @store, user: user)
   end
