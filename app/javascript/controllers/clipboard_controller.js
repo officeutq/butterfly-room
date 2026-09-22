@@ -23,10 +23,12 @@ export default class extends Controller {
         ta.style.left = "-9999px"
         document.body.appendChild(ta)
         ta.select()
-        document.execCommand("copy")
+        const copied = document.execCommand("copy")
         document.body.removeChild(ta)
+        if (!copied) throw new Error("コピーできませんでした")
       }
 
+      this.dispatch("success")
       const step = await this.notifyOnboardingCopyIfNeeded()
 
       this.showFlash("success", successMessage)

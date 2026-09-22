@@ -27,7 +27,8 @@ module StoreAdmins
     def require_token!
       @token = params[:token].to_s
       invitation = StoreAdminInvitation.find_by_token(@token)
-      head :not_found if invitation.blank?
+      return head :not_found if invitation.blank?
+      redirect_to store_admin_invitation_path(@token), alert: "この招待は使用できません" unless invitation.usable?
     end
 
     def registration_params

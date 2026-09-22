@@ -23,6 +23,7 @@ export default class extends Controller {
         ? { title, text: text ? `${text}\n\n${url}` : url }
         : { title, text, url }
       await navigator.share(shareData)
+      this.dispatch("success")
       const step = await this.notifyOnboardingShareIfNeeded()
 
       if (step) {

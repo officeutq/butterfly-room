@@ -141,8 +141,8 @@
           <%= link_to admin_casts_path, class: "text-decoration-none" do %>
             <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
               <div class="card-body">
-                <h5 class="card-title mb-2">キャスト一覧</h5>
-                <p class="card-text mb-0">所属キャストと招待状況を確認できます</p>
+                <h5 class="card-title mb-2">店舗所属者情報</h5>
+                <p class="card-text mb-0">所属するキャスト・店舗管理者と招待状況を確認できます</p>
               </div>
             </div>
           <% end %>
@@ -152,8 +152,8 @@
                       class: "text-decoration-none" do %>
             <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
               <div class="card-body">
-                <h5 class="card-title mb-2">キャスト一覧</h5>
-                <p class="card-text mb-0">所属キャストと招待状況を確認できます</p>
+                <h5 class="card-title mb-2">店舗所属者情報</h5>
+                <p class="card-text mb-0">所属するキャスト・店舗管理者と招待状況を確認できます</p>
               </div>
             </div>
           <% end %>
@@ -162,7 +162,7 @@
 
       <div class="col-12 col-md-6 col-xl-4">
         <% if store.present? %>
-          <%= link_to admin_store_admin_invitations_path, class: "text-decoration-none" do %>
+          <%= link_to admin_casts_path(tab: "admin_invitations"), class: "text-decoration-none" do %>
             <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">
               <div class="card-body">
                 <h5 class="card-title mb-2">店舗管理者招待</h5>
@@ -171,7 +171,7 @@
             </div>
           <% end %>
         <% else %>
-          <%= link_to select_modal_admin_stores_path(return_to: admin_store_admin_invitations_path),
+          <%= link_to select_modal_admin_stores_path(return_to: admin_casts_path(tab: "admin_invitations")),
                       data: { turbo_frame: "modal", turbo_prefetch: false },
                       class: "text-decoration-none" do %>
             <div class="card h-100 dashboard-role-card dashboard-role-card-store-admin" data-bs-theme="light">

@@ -3,9 +3,9 @@ const fs = require("node:fs")
 const vm = require("node:vm")
 const test = require("node:test")
 
-function setup(navigator = {}) {
+function setup(navigator = {}, admin = false) {
   const events = []
-  const source = fs.readFileSync("app/javascript/controllers/cast_invitation_controller.js", "utf8")
+  const source = fs.readFileSync("app/javascript/controllers/invitation_modal_controller.js", "utf8")
     .replace('import { Controller } from "@hotwired/stimulus"', "class Controller {}")
     .replace('import { Modal } from "bootstrap"', "")
     .replace("export default class extends Controller", "globalThis.Invite = class extends Controller")
@@ -20,6 +20,8 @@ function setup(navigator = {}) {
   c.element = { dataset: {} }
   c.invitation = { url: "https://example.test/invite", text: "店舗の管理者から", update_url: "/invite/1", shared_url: "/invite/1/shared" }
   c.savedNote = ""
+  c.adminValue = admin
+  c.storeIdValue = 1
   c.completed = false
   c.useCopy = !navigator.share
   c.request = async () => ({ step: "go_dashboard_for_drinks", store_id: 1 })
@@ -119,4 +121,61 @@ test("busy operation ignores repeated share and close", async () => {
   await c.share()
   await c.close()
   assert.equal(hidden(), 0)
+})
+
+test("manager invitation uses its own memo payload and never updates cast onboarding", async () => {
+  const { c, events, hidden } = setup({ clipboard: { writeText: async () => {} } }, true)
+  c.noteTarget.value = "管理者への招待メモ"
+  const requests = []
+  c.request = async (url, method, body) => { requests.push({ url, method, body }); return { step: "go_dashboard_for_drinks", store_id: 1 } }
+  await c.share()
+  assert.equal(requests[0].body.store_admin_invitation.note, "管理者への招待メモ")
+  assert.equal(requests[0].body.store_cast_invitation, undefined)
+  assert.equal(c.element.dataset.onboardingInvitationState, undefined)
+  assert.equal(events.length, 0)
+  assert.equal(hidden(), 0)
+  c.noteTarget.value = "閉じる前の修正"
+  await c.close()
+  assert.equal(c.savedNote, "閉じる前の修正")
+  assert.equal(hidden(), 1)
+  assert.equal(events[0].type, "invitation:changed")
+  assert.equal(events[0].detail.storeId, 1)
+})
+
+test("manager share success with failed note and completion storage is retried without cancelling", async () => {
+  let shares = 0
+  const { c, hidden } = setup({ share: async () => { shares++ } }, true)
+  c.noteTarget.value = "保持するメモ"
+  c.request = async () => { throw new Error("通信失敗") }
+  await c.share()
+  assert.equal(c.completed, true)
+  await c.close()
+  assert.equal(hidden(), 0)
+  const methods = []
+  c.request = async (_url, method) => { methods.push(method); return {} }
+  await c.close()
+  assert.deepEqual(methods, ["PATCH", "POST"])
+  assert.equal(shares, 1)
+  assert.equal(hidden(), 1)
+})
+
+test("unknown issue response is recovered with the original request key before cancellation", async () => {
+  const { c, hidden } = setup({}, true)
+  c.invitation = null
+  c.createUrlValue = "/admin/store_admin_invitations"
+  c.requestKeyValue = "same-request-key"
+  const requests = []
+  let fail = true
+  c.request = async (url, method, body) => {
+    requests.push({ url, method, body })
+    if (fail) throw new Error("応答が失われました")
+    return { url: "https://example.test/invite", update_url: "/invitation/1", note: "", shared: false }
+  }
+  await c.issue()
+  assert.equal(c.invitation, null)
+  fail = false
+  await c.close()
+  assert.equal(requests[0].body.request_key, requests[1].body.request_key)
+  assert.equal(requests[2].method, "DELETE")
+  assert.equal(hidden(), 1)
 })

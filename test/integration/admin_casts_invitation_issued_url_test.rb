@@ -27,9 +27,9 @@ class AdminCastsInvitationIssuedUrlTest < ActionDispatch::IntegrationTest
   end
 
   test "issuing store_admin invitation shows its URL with text sharing and copy buttons" do
-    post admin_store_admin_invitations_path, params: { selection_store_id: @store.id }
-    assert_response :redirect
-    follow_redirect!
+    post admin_store_admin_invitations_path, params: { store_id: @store.id, request_key: SecureRandom.uuid }, as: :json
+    assert_response :ok
+    get admin_casts_path(tab: "admin_invitations")
     assert_response :ok
 
     invitation = StoreAdminInvitation.order(:id).last
@@ -75,7 +75,7 @@ class AdminCastsInvitationIssuedUrlTest < ActionDispatch::IntegrationTest
       issued_url: nil
     )
 
-    get admin_store_admin_invitations_path
+    get admin_casts_path(tab: "admin_invitations")
     assert_response :ok
 
     assert_includes response.body, "（発行時に控えてください）"

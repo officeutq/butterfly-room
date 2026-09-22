@@ -11,28 +11,31 @@ module StoreAdminInvitations
       new(invitation:, actor:).call!
     end
 
+    def self.accept_if_member!(invitation:, actor:)
+      new(invitation:, actor:).call!(existing_member_only: true)
+    end
+
     def initialize(invitation:, actor:)
       @invitation = invitation
       @actor = actor
     end
 
-    def call!
-      raise NotAuthorized, "store_admin でログインしてください" unless @actor&.store_admin?
+    def call!(existing_member_only: false)
+      raise NotAuthorized, "store_admin でログインしてください" unless @actor&.store_admin? && !@actor.deleted?
 
       ActiveRecord::Base.transaction do
         @invitation.lock!
 
-        raise NotUsable, "この招待は使用できません（期限切れ/使用済み）" unless @invitation.usable?
-
-        begin
-          StoreMembership.create!(
-            store: @invitation.store,
-            user: @actor,
-            membership_role: :admin
-          )
-        rescue ActiveRecord::RecordNotUnique
-          # すでに所属済みでも、承認済みとして扱う（安全側・冪等）
+        if existing_member_only
+          return unless @invitation.usable? && StoreMembership.admin_only.exists?(store: @invitation.store, user: @actor)
         end
+        raise NotUsable, "この招待は使用できません（取消済み/期限切れ/使用済み）" unless @invitation.usable?
+
+        StoreMembership.create_or_find_by!(
+          store: @invitation.store,
+          user: @actor,
+          membership_role: :admin
+        )
 
         @invitation.update!(
           used_at: Time.current,

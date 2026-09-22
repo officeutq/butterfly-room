@@ -1,5 +1,5 @@
 <% if @store_cast_invitations.empty? %>
-  <p class="alert alert-info">表示できる招待はありません。<% if current_user.store_admin? %>フッターの「キャスト招待」から招待できます。<% end %></p>
+  <p class="alert alert-info">表示できる招待はありません。「招待URLを発行」から招待できます。</p>
 <% else %>
   <div class="row g-3">
     <% @store_cast_invitations.each do |invitation| %>

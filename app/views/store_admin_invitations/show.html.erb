@@ -20,7 +20,11 @@
     </div>
   </div>
 
-  <% if !user_signed_in? %>
+  <% if !@invitation.usable? && !@already_member %>
+    <div class="alert alert-danger" role="alert">この招待は使用できません（取消済み / 期限切れ / 使用済み）。</div>
+  <% elsif @invitation.cancelled? %>
+    <div class="alert alert-danger" role="alert">この招待は取消済みです。</div>
+  <% elsif !user_signed_in? %>
     <div class="card mb-3">
       <div class="card-body">
         <h2 class="h5 mb-2">store_admin 招待を受ける</h2>

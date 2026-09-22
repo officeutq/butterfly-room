@@ -1,31 +1,47 @@
-<% content_for :title, "キャスト一覧" %>
+<% content_for :title, "店舗所属者情報" %>
 
 <p class="text-body-secondary"><i class="bi bi-shop me-1" aria-hidden="true"></i><%= current_store.name %></p>
-<nav class="nav nav-tabs mb-4" aria-label="キャスト一覧の切り替え">
-  <%= link_to "所属キャスト", admin_casts_path, class: "nav-link #{'active' if @tab == 'casts'}", aria: { current: @tab == 'casts' ? 'page' : nil } %>
+<nav class="nav nav-tabs mb-4" aria-label="店舗所属者情報の切り替え">
+  <%= link_to "所属一覧", admin_casts_path, class: "nav-link #{'active' if @tab == 'casts'}", aria: { current: @tab == 'casts' ? 'page' : nil } %>
   <%= link_to "キャスト招待一覧", admin_casts_path(tab: "invitations"), class: "nav-link #{'active' if @tab == 'invitations'}", aria: { current: @tab == 'invitations' ? 'page' : nil } %>
+  <%= link_to "管理者招待一覧", admin_casts_path(tab: "admin_invitations"), class: "nav-link #{'active' if @tab == 'admin_invitations'}", aria: { current: @tab == 'admin_invitations' ? 'page' : nil } %>
 </nav>
 
-<% if @tab == "invitations" %>
-  <%= render "invitations" %>
+<% if @tab != "casts" %>
+  <div class="d-flex flex-wrap gap-2 mb-4">
+    <% invite_path = @tab == "invitations" ? new_admin_cast_invitation_path(selection_store_id: current_store.id) : new_admin_store_admin_invitation_path(selection_store_id: current_store.id) %>
+    <%= link_to "招待URLを発行", invite_path, class: "btn btn-primary", data: { turbo_frame: "modal", turbo_prefetch: false } %>
+    <% if @tab == "admin_invitations" && current_user.store_registration_proxy_allowed? && current_user.admin_of_store?(current_store.id) %>
+      <%= link_to "店舗責任者を登録（代行用）", new_admin_store_admin_proxy_registration_path, class: "btn btn-outline-primary" %>
+    <% end %>
+  </div>
+  <div id="store_invitation_list" data-controller="invitation-list"
+       data-invitation-list-store-id-value="<%= current_store.id %>"
+       data-invitation-list-url-value="<%= admin_casts_path(tab: @tab, selection_store_id: current_store.id) %>"
+       data-action="invitation:changed@window->invitation-list#changed app-modal:closed@window->invitation-list#refresh">
+    <p class="alert alert-warning" hidden role="alert" data-invitation-list-target="error"></p>
+    <div data-invitation-list-target="content">
+      <%= render(@tab == "invitations" ? "invitations" : "admin_invitations") %>
+    </div>
+  </div>
 <% else %>
 
-<% if @cast_memberships.blank? %>
+<% if @memberships.blank? %>
   <div class="alert alert-warning" role="alert">
-    所属中のキャストがいません。
+    所属者がいません。
   </div>
 <% else %>
   <div class="row g-4">
-    <% @cast_memberships.each do |membership| %>
+    <% @memberships.each do |membership| %>
       <% user = membership.user %>
       <% booths =
-           user.booth_casts
+           membership.cast? ? user.booth_casts
                .filter_map { |booth_cast| booth_cast.booth if booth_cast.booth&.store_id == current_store.id }
                .uniq(&:id)
-               .sort_by(&:id) %>
+               .sort_by(&:id) : [] %>
 
       <div class="col-12 col-lg-6 col-xxl-4">
-        <div class="card h-100" data-bs-theme="light">
+        <div class="card h-100" data-bs-theme="light" data-membership-role="<%= membership.membership_role %>">
           <div class="card-body d-flex flex-column">
             <div class="d-flex align-items-start gap-3">
               <div class="flex-shrink-0">
@@ -34,12 +50,14 @@
 
               <div class="flex-grow-1 min-w-0">
                 <h2 class="h5 mb-1"><%= display_name_or_anonymous(user) %></h2>
+                <span class="badge text-bg-secondary mb-2"><%= membership.admin? ? "店舗管理者" : "キャスト" %></span>
                 <div class="small text-muted text-break">
                   <%= truncate(user.bio.to_s.squish.presence || "紹介文未設定", length: 60) %>
                 </div>
               </div>
             </div>
 
+            <% if membership.cast? %>
             <div class="mt-3">
               <div class="small text-muted mb-2">所属ブース</div>
 
@@ -61,6 +79,7 @@
                     data: { turbo_confirm: "このキャスト登録を解除しますか？" },
                     class: "btn btn-sm btn-outline-danger" %>
             </div>
+            <% end %>
           </div>
         </div>
       </div>

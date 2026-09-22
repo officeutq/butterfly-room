@@ -19,6 +19,7 @@ function setup({ navigator = {}, dataset = {} } = {}) {
     shareTitle: "Butterflyve", shareText: "Butterflyveの店舗管理者招待はこちら",
     shareUrl: "https://example.test/store_admin_invitations/test-token", ...dataset
   } }
+  controller.dispatch = () => {}
   controller.showFlash = (level, message) => flashes.push({ level, message })
   return { controller, flashes, timers }
 }
